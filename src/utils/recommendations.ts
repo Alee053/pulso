@@ -98,8 +98,13 @@ export function getRecommendationReason(
   interests: InterestId[],
   preferenceWeights: PreferenceWeights = {},
 ): string {
+  const selectedInterestIds = new Set(interests)
   const matchingLabels = interestOptions
-    .filter((interest) => interest.signals.some((signal) => startup.tags.includes(signal)))
+    .filter(
+      (interest) =>
+        selectedInterestIds.has(interest.id) &&
+        interest.signals.some((signal) => startup.tags.includes(signal)),
+    )
     .map((interest) => interest.shortLabel.toLowerCase())
   const learnedLabels = startup.tags
     .filter((tag) => (preferenceWeights[tag] ?? 0) > 0)

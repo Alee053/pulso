@@ -15,8 +15,10 @@ import { StartupCard } from './StartupCard'
 import type { Decision, Startup } from '../types/startup'
 
 interface DiscoveryViewProps {
+  activeSignals: string[]
   currentStartup: Startup | undefined
   feedRemaining: number
+  isModalOpen: boolean
   totalStartups: number
   savedIds: string[]
   onDecision: (decision: Decision) => void
@@ -85,8 +87,10 @@ function EmptyFeed({ onRestart }: { onRestart: () => void }) {
 }
 
 export function DiscoveryView({
+  activeSignals,
   currentStartup,
   feedRemaining,
+  isModalOpen,
   totalStartups,
   savedIds,
   onDecision,
@@ -130,6 +134,10 @@ export function DiscoveryView({
   }
 
   useEffect(() => {
+    if (isModalOpen) {
+      return
+    }
+
     function handleKeyDown(event: KeyboardEvent) {
       if (event.metaKey || event.ctrlKey || event.altKey || event.repeat) {
         return
@@ -186,9 +194,13 @@ export function DiscoveryView({
           <div className="hidden lg:block">
             <span className="side-label">SEÑALES ACTIVAS</span>
             <div className="mt-4 flex flex-wrap gap-2">
-              <span className="side-chip">Tecnología</span>
-              <span className="side-chip">Sostenibilidad</span>
-              <span className="side-chip">Local</span>
+              {(activeSignals.length > 0 ? activeSignals : ['Exploración'])
+                .slice(0, 3)
+                .map((signal) => (
+                  <span key={signal} className="side-chip">
+                    {signal}
+                  </span>
+                ))}
             </div>
             <p className="mt-7 max-w-[12rem] text-sm leading-6 text-white/35">
               Tu selección se ajusta un poco cada vez que decides.

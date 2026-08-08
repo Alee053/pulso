@@ -66,20 +66,15 @@ export function StartupCard({
           onDragDecision('skip')
         }
       }}
-      onClick={() => {
+      onClick={(event) => {
         if (!disabled) {
+          event.currentTarget.focus()
           onSelect(startup)
         }
       }}
-      role="button"
-      tabIndex={disabled ? -1 : 0}
+      role="group"
+      tabIndex={-1}
       aria-label={`Ver perfil de ${startup.name}`}
-      onKeyDown={(event) => {
-        if (!disabled && (event.key === 'Enter' || event.key === ' ')) {
-          event.preventDefault()
-          onSelect(startup)
-        }
-      }}
     >
       <div
         className="absolute inset-0"

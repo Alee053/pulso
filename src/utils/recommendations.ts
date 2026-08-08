@@ -3,6 +3,26 @@ import type { Decision, InterestId, Startup } from '../types/startup'
 
 export type PreferenceWeights = Record<string, number>
 
+export const signalLabels: Record<string, string> = {
+  agriculture: 'Agrotech',
+  collaboration: 'Colaboración',
+  'clean-energy': 'Energía limpia',
+  commerce: 'Comercio',
+  community: 'Comunidad',
+  education: 'Educación',
+  food: 'Alimentos',
+  growth: 'Crecimiento',
+  impact: 'Impacto',
+  innovation: 'Innovación',
+  investment: 'Inversión',
+  local: 'Local',
+  mobility: 'Movilidad',
+  products: 'Productos',
+  sustainability: 'Sostenibilidad',
+  technology: 'Tecnología',
+  opportunities: 'Oportunidades',
+}
+
 const interestSignals = new Map(
   interestOptions.map((interest) => [interest.id, interest.signals]),
 )
@@ -13,6 +33,16 @@ export function getMatchingSignals(
 ): string[] {
   const signals = new Set(interests.flatMap((interest) => interestSignals.get(interest) ?? []))
   return startup.tags.filter((tag) => signals.has(tag))
+}
+
+export function getActiveSignals(interests: InterestId[]): string[] {
+  return Array.from(
+    new Set(
+      interests.flatMap((interest) => interestSignals.get(interest) ?? []),
+    ),
+  )
+    .map((signal) => signalLabels[signal] ?? signal)
+    .slice(0, 5)
 }
 
 export function scoreStartup(
@@ -66,18 +96,19 @@ export function adjustPreferenceWeights(
 export function getRecommendationReason(
   startup: Startup,
   interests: InterestId[],
+  preferenceWeights: PreferenceWeights = {},
 ): string {
-  if (interests.length === 0) {
-    return startup.recommendation
+  const matchingLabels = interestOptions
+    .filter((interest) => interest.signals.some((signal) => startup.tags.includes(signal)))
+    .map((interest) => interest.shortLabel.toLowerCase())
+  const learnedLabels = startup.tags
+    .filter((tag) => (preferenceWeights[tag] ?? 0) > 0)
+    .map((tag) => (signalLabels[tag] ?? tag).toLowerCase())
+  const labels = Array.from(new Set([...matchingLabels, ...learnedLabels])).slice(0, 2)
+
+  if (labels.length > 0) {
+    return `Tus intereses conectan con ${labels.join(' y ')} en ${startup.city}.`
   }
 
-  const labels = interests
-    .map((interest) => interestOptions.find((option) => option.id === interest)?.shortLabel)
-    .filter(Boolean)
-
-  if (labels.length === 0) {
-    return startup.recommendation
-  }
-
-  return `Te interesa ${labels.join(', ').toLowerCase()} y ${startup.city}.`
+  return `Te mostramos ${startup.name} como una exploración nueva en ${startup.city}, cerca de proyectos que están creciendo.`
 }

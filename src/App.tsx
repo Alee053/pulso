@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { AnimatePresence } from 'framer-motion'
+import { useCallback, useState } from 'react'
 import { DiscoveryView } from './components/DiscoveryView'
 import { NavigationBar } from './components/NavigationBar'
 import { Onboarding } from './components/Onboarding'
@@ -11,6 +12,7 @@ import type { Startup } from './types/startup'
 function App() {
   const pulso = usePulso()
   const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null)
+  const closeStartup = useCallback(() => setSelectedStartup(null), [])
 
   if (!pulso.hasStarted) {
     return (
@@ -26,8 +28,10 @@ function App() {
   const activeContent = {
     discover: (
       <DiscoveryView
+        activeSignals={pulso.activeSignals}
         currentStartup={pulso.currentStartup}
         feedRemaining={pulso.feed.length}
+        isModalOpen={selectedStartup !== null}
         totalStartups={pulso.mockStartups.length}
         savedIds={pulso.savedIds}
         onDecision={pulso.makeDecision}
@@ -65,13 +69,15 @@ function App() {
         }}
       />
       {activeContent}
-      {selectedStartup && (
-        <StartupDetailModal
-          startup={selectedStartup}
-          recommendation={pulso.getReason(selectedStartup)}
-          onClose={() => setSelectedStartup(null)}
-        />
-      )}
+      <AnimatePresence>
+        {selectedStartup && (
+          <StartupDetailModal
+            startup={selectedStartup}
+            recommendation={pulso.getReason(selectedStartup)}
+            onClose={closeStartup}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

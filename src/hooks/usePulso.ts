@@ -4,6 +4,7 @@ import { mockStartups } from '../data/mockStartups'
 import type { AppView, Decision, InterestId, Startup } from '../types/startup'
 import {
   adjustPreferenceWeights,
+  getActiveSignals,
   getRecommendationReason,
   rankStartups,
   type PreferenceWeights,
@@ -26,6 +27,10 @@ export function usePulso() {
   const interestedStartups = useMemo(
     () => mockStartups.filter((startup) => interestedIds.includes(startup.id)),
     [interestedIds],
+  )
+  const activeSignals = useMemo(
+    () => getActiveSignals(selectedInterests),
+    [selectedInterests],
   )
 
   function toggleInterest(interest: InterestId) {
@@ -91,11 +96,12 @@ export function usePulso() {
   }
 
   function getReason(startup: Startup) {
-    return getRecommendationReason(startup, selectedInterests)
+    return getRecommendationReason(startup, selectedInterests, preferenceWeights)
   }
 
   return {
     activeView,
+    activeSignals,
     currentStartup,
     feed,
     getReason,

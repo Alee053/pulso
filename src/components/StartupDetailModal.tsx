@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion'
+import { motion } from 'framer-motion'
 import {
   ArrowUpRight,
   AtSign,
@@ -12,7 +12,7 @@ import {
   UsersRound,
   X,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Startup } from '../types/startup'
 
 interface StartupDetailModalProps {
@@ -28,27 +28,60 @@ export function StartupDetailModal({
 }: StartupDetailModalProps) {
   const [hasImageError, setHasImageError] = useState(false)
   const [contactStarted, setContactStarted] = useState(false)
+  const modalRef = useRef<HTMLElement>(null)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     const originalOverflow = document.body.style.overflow
+    const previousActiveElement =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null
     document.body.style.overflow = 'hidden'
+    const focusTimeout = window.setTimeout(() => closeButtonRef.current?.focus(), 0)
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
+        event.preventDefault()
         onClose()
+        return
+      }
+
+      if (event.key !== 'Tab') {
+        return
+      }
+
+      const focusableElements = modalRef.current?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+      )
+      const firstElement = focusableElements?.[0]
+      const lastElement = focusableElements?.[focusableElements.length - 1]
+
+      if (!firstElement || !lastElement) {
+        event.preventDefault()
+        return
+      }
+
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault()
+        lastElement.focus()
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault()
+        firstElement.focus()
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => {
+      window.clearTimeout(focusTimeout)
       document.body.style.overflow = originalOverflow
       window.removeEventListener('keydown', handleKeyDown)
+      if (previousActiveElement?.isConnected) {
+        previousActiveElement.focus()
+      }
     }
   }, [onClose])
 
   return (
-    <AnimatePresence>
-      <motion.div
+    <motion.div
         className="modal-backdrop"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -61,6 +94,7 @@ export function StartupDetailModal({
         }}
       >
         <motion.section
+          ref={modalRef}
           className="detail-modal"
           role="dialog"
           aria-modal="true"
@@ -259,8 +293,7 @@ export function StartupDetailModal({
             </div>
           </div>
         </motion.section>
-      </motion.div>
-    </AnimatePresence>
+    </motion.div>
   )
 }
 

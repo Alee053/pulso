@@ -35,7 +35,7 @@ export function NavigationBar({
           {navigationItems.map((item) => {
             const Icon = item.icon
             const isActive = item.id === activeView
-            const count = item.id === 'saved' ? totalSaved : 0
+            const count = item.id === 'saved' ? savedCount : 0
 
             return (
               <button
@@ -68,7 +68,7 @@ export function NavigationBar({
         {navigationItems.map((item) => {
           const Icon = item.icon
           const isActive = item.id === activeView
-          const count = item.id === 'saved' ? totalSaved : 0
+          const count = item.id === 'saved' ? savedCount : 0
 
           return (
             <button

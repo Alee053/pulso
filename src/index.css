@@ -77,6 +77,199 @@ button {
   );
 }
 
+.glass-choice {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1.4rem;
+  padding: 1.1rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  cursor: pointer;
+  transition:
+    border-color 220ms ease,
+    background 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.glass-choice::after {
+  position: absolute;
+  top: -5rem;
+  right: -3rem;
+  width: 8rem;
+  height: 8rem;
+  border-radius: 999px;
+  background: rgba(190, 255, 212, 0.08);
+  filter: blur(24px);
+  content: "";
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+.glass-choice:hover,
+.glass-choice--selected {
+  border-color: rgba(190, 255, 212, 0.38);
+  background: rgba(190, 255, 212, 0.09);
+  box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.15), inset 0 1px rgba(255, 255, 255, 0.13);
+}
+
+.glass-choice:hover::after,
+.glass-choice--selected::after {
+  opacity: 1;
+}
+
+.solid-button {
+  display: inline-flex;
+  min-height: 3.1rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  border: 1px solid rgba(211, 255, 224, 0.9);
+  border-radius: 999px;
+  padding: 0.8rem 1.2rem 0.8rem 1.35rem;
+  background: #baf4ce;
+  color: #0a1710;
+  font-size: 0.82rem;
+  font-weight: 700;
+  box-shadow: 0 0.7rem 2rem rgba(116, 228, 155, 0.12);
+  cursor: pointer;
+  transition:
+    background 180ms ease,
+    box-shadow 180ms ease,
+    opacity 180ms ease;
+}
+
+.solid-button:hover:not(:disabled) {
+  background: #d4f9df;
+  box-shadow: 0 0.9rem 2.2rem rgba(116, 228, 155, 0.2);
+}
+
+.solid-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.nav-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0.6rem 0.9rem;
+  color: rgba(255, 255, 255, 0.43);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color 180ms ease,
+    background 180ms ease;
+}
+
+.nav-pill:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.nav-pill--active {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.nav-count {
+  display: inline-flex;
+  min-width: 1.05rem;
+  height: 1.05rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(186, 244, 206, 0.16);
+  color: #baf4ce;
+  font-size: 0.62rem;
+}
+
+.mobile-nav__item {
+  display: flex;
+  min-width: 5rem;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.27rem;
+  border-radius: 1rem;
+  padding: 0.65rem 0.5rem 0.55rem;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.62rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color 180ms ease,
+    background 180ms ease;
+}
+
+.mobile-nav__item--active {
+  background: rgba(255, 255, 255, 0.09);
+  color: #d6f8e0;
+}
+
+.mobile-nav__count {
+  position: absolute;
+  right: -0.65rem;
+  top: -0.35rem;
+  display: flex;
+  size: 1rem;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #131917;
+  border-radius: 999px;
+  background: #baf4ce;
+  color: #0a1710;
+  font-size: 0.5rem;
+}
+
+.icon-button {
+  display: inline-flex;
+  size: 2.6rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
+}
+
+.icon-button--subtle {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.045);
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.icon-button--subtle:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.mini-badge,
+.interest-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.53);
+  font-size: 0.65rem;
+  line-height: 1;
+}
+
+.mini-badge {
+  padding: 0.42rem 0.58rem;
+}
+
+.interest-pill {
+  padding: 0.6rem 0.75rem;
+  color: rgba(215, 255, 226, 0.72);
+}
+
 .eyebrow {
   display: inline-flex;
   align-items: center;

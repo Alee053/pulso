@@ -463,3 +463,141 @@ button {
   bottom: 7%;
   background: rgba(99, 135, 255, 0.24);
 }
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: auto;
+  padding: 0;
+  background: rgba(3, 7, 5, 0.72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.detail-modal {
+  width: 100%;
+  max-width: 60rem;
+  max-height: min(92vh, 55rem);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 0;
+  border-radius: 2rem 2rem 0 0;
+  background: #101714;
+  box-shadow: 0 -2rem 5rem rgba(0, 0, 0, 0.34), inset 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.detail-modal__hero {
+  position: relative;
+  display: flex;
+  min-height: 20rem;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+}
+
+.detail-modal__body {
+  max-height: calc(min(92vh, 55rem) - 20rem);
+  overflow-y: auto;
+}
+
+.detail-modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1.15rem 1.25rem;
+}
+
+.metric-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.035);
+  padding: 0.8rem;
+}
+
+.modal-link,
+.contact-button {
+  display: inline-flex;
+  min-height: 2.55rem;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  transition:
+    border-color 180ms ease,
+    color 180ms ease,
+    background 180ms ease;
+}
+
+.modal-link {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.modal-link:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.contact-button {
+  border: 1px solid rgba(186, 244, 206, 0.35);
+  background: rgba(186, 244, 206, 0.12);
+  color: #baf4ce;
+  cursor: pointer;
+}
+
+.contact-button:hover {
+  border-color: rgba(186, 244, 206, 0.6);
+  background: rgba(186, 244, 206, 0.2);
+  color: #e1ffea;
+}
+
+@media (min-width: 768px) {
+  .toast {
+    right: 2rem;
+    bottom: 2rem;
+  }
+
+  .modal-backdrop {
+    align-items: center;
+    padding: 1.5rem;
+  }
+
+  .detail-modal {
+    max-height: min(92vh, 55rem);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 2rem;
+  }
+
+  .detail-modal__hero {
+    min-height: 20rem;
+  }
+
+  .detail-modal__footer {
+    padding: 1.15rem 1.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .detail-modal__footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .detail-modal__footer > div:last-child {
+    width: 100%;
+  }
+
+  .modal-link,
+  .contact-button {
+    flex: 1;
+    justify-content: center;
+  }
+}

@@ -4,11 +4,13 @@ import { NavigationBar } from './components/NavigationBar'
 import { Onboarding } from './components/Onboarding'
 import { ProfileView } from './components/ProfileView'
 import { SavedView } from './components/SavedView'
+import { StartupDetailModal } from './components/StartupDetailModal'
 import { usePulso } from './hooks/usePulso'
+import type { Startup } from './types/startup'
 
 function App() {
   const pulso = usePulso()
-  const [selectedStartupId, setSelectedStartupId] = useState<string | null>(null)
+  const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null)
 
   if (!pulso.hasStarted) {
     return (
@@ -31,14 +33,14 @@ function App() {
         onDecision={pulso.makeDecision}
         onRestart={pulso.restartDiscovery}
         onSave={pulso.toggleSaved}
-        onSelectStartup={(startup) => setSelectedStartupId(startup.id)}
+        onSelectStartup={setSelectedStartup}
       />
     ),
     saved: (
       <SavedView
         savedStartups={pulso.savedStartups}
         interestedStartups={pulso.interestedStartups}
-        onSelectStartup={(startup) => setSelectedStartupId(startup.id)}
+        onSelectStartup={setSelectedStartup}
       />
     ),
     profile: (
@@ -58,13 +60,17 @@ function App() {
         savedCount={pulso.savedIds.length}
         interestedCount={pulso.interestedIds.length}
         onNavigate={(view) => {
-          setSelectedStartupId(null)
+          setSelectedStartup(null)
           pulso.goToView(view)
         }}
       />
       {activeContent}
-      {selectedStartupId && (
-        <span className="sr-only">Proyecto seleccionado: {selectedStartupId}</span>
+      {selectedStartup && (
+        <StartupDetailModal
+          startup={selectedStartup}
+          recommendation={pulso.getReason(selectedStartup)}
+          onClose={() => setSelectedStartup(null)}
+        />
       )}
     </div>
   )

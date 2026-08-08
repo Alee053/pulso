@@ -290,6 +290,7 @@ export function DiscoveryView({
             animate={{
               opacity: isDraggingUp ? verticalIntensity : 0,
               scale: isDraggingUp ? 0.9 + verticalIntensity * 0.1 : 0.82,
+              x: '-50%',
               y: isDraggingUp ? 0 : 8,
             }}
             transition={{ duration: 0.12 }}
@@ -305,6 +306,7 @@ export function DiscoveryView({
             animate={{
               opacity: isDraggingDown ? verticalIntensity : 0,
               scale: isDraggingDown ? 0.9 + verticalIntensity * 0.1 : 0.82,
+              x: '-50%',
               y: isDraggingDown ? 0 : -8,
             }}
             transition={{ duration: 0.12 }}

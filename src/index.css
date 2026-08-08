@@ -614,6 +614,7 @@ button {
   flex-direction: column;
   justify-content: space-between;
   overflow: hidden;
+  touch-action: pan-x;
 }
 
 .detail-modal__body {

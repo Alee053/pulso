@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { DiscoveryPlaceholder } from './components/DiscoveryPlaceholder'
+import { DiscoveryView } from './components/DiscoveryView'
 import { NavigationBar } from './components/NavigationBar'
 import { Onboarding } from './components/Onboarding'
 import { ProfileView } from './components/ProfileView'
@@ -22,7 +22,18 @@ function App() {
   }
 
   const activeContent = {
-    discover: <DiscoveryPlaceholder />,
+    discover: (
+      <DiscoveryView
+        currentStartup={pulso.currentStartup}
+        feedRemaining={pulso.feed.length}
+        totalStartups={pulso.mockStartups.length}
+        savedIds={pulso.savedIds}
+        onDecision={pulso.makeDecision}
+        onRestart={pulso.restartDiscovery}
+        onSave={pulso.toggleSaved}
+        onSelectStartup={(startup) => setSelectedStartupId(startup.id)}
+      />
+    ),
     saved: (
       <SavedView
         savedStartups={pulso.savedStartups}

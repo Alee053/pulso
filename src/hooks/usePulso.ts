@@ -42,6 +42,11 @@ export function usePulso() {
     setActiveView('discover')
   }
 
+  function restartDiscovery() {
+    setFeed(rankStartups(mockStartups, selectedInterests, preferenceWeights))
+    setActiveView('discover')
+  }
+
   function toggleSaved(startupId: string) {
     setSavedIds((current) =>
       current.includes(startupId)
@@ -101,6 +106,7 @@ export function usePulso() {
     interestOptions,
     makeDecision,
     mockStartups,
+    restartDiscovery,
     savedIds,
     savedStartups,
     selectedInterests,

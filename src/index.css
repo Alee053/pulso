@@ -270,6 +270,158 @@ button {
   color: rgba(215, 255, 226, 0.72);
 }
 
+.discovery-card {
+  position: relative;
+  width: 100%;
+  max-width: 35rem;
+  min-height: min(68vh, 45rem);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 2.1rem;
+  background: #111916;
+  box-shadow:
+    0 2.5rem 5rem rgba(0, 0, 0, 0.38),
+    0 0.5rem 1.5rem rgba(0, 0, 0, 0.18),
+    inset 0 1px rgba(255, 255, 255, 0.13);
+  cursor: grab;
+  touch-action: pan-y;
+  user-select: none;
+}
+
+.discovery-card:focus-visible {
+  outline: 2px solid #baf4ce;
+  outline-offset: 4px;
+}
+
+.card-badge {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(8, 14, 11, 0.28);
+  padding: 0.45rem 0.62rem;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 0.65rem;
+  line-height: 1;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.discovery-action {
+  display: flex;
+  min-width: 4.5rem;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  color: rgba(255, 255, 255, 0.47);
+  cursor: pointer;
+  transition: color 180ms ease;
+}
+
+.discovery-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+.discovery-action:not(:disabled):hover {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.discovery-action--interested:not(:disabled):hover {
+  color: #f3bbc9;
+}
+
+.discovery-action--save:not(:disabled):hover {
+  color: #baf4ce;
+}
+
+.discovery-action__icon {
+  display: flex;
+  size: 3.15rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.08);
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.discovery-action--interested .discovery-action__icon {
+  border-color: rgba(244, 184, 202, 0.22);
+  background: rgba(244, 184, 202, 0.06);
+}
+
+.discovery-action--save .discovery-action__icon {
+  border-color: rgba(186, 244, 206, 0.2);
+  background: rgba(186, 244, 206, 0.06);
+}
+
+.discovery-action:not(:disabled):hover .discovery-action__icon {
+  border-color: currentColor;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 1.5rem currentColor;
+}
+
+.discovery-action__label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.discovery-action__shortcut {
+  color: rgba(255, 255, 255, 0.24);
+  font-size: 0.6rem;
+  line-height: 1;
+}
+
+.side-label {
+  color: rgba(255, 255, 255, 0.29);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.side-chip {
+  display: inline-flex;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.035);
+  padding: 0.52rem 0.65rem;
+  color: rgba(255, 255, 255, 0.49);
+  font-size: 0.65rem;
+}
+
+.toast {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 6.5rem;
+  z-index: 45;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  border: 1px solid rgba(186, 244, 206, 0.2);
+  border-radius: 999px;
+  background: rgba(19, 28, 23, 0.9);
+  padding: 0.6rem 0.9rem 0.6rem 0.6rem;
+  color: rgba(237, 255, 242, 0.85);
+  font-size: 0.72rem;
+  box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+@media (min-width: 768px) {
+  .toast {
+    right: 2rem;
+    bottom: 2rem;
+  }
+}
+
 .eyebrow {
   display: inline-flex;
   align-items: center;

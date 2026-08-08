@@ -126,7 +126,9 @@ export function Onboarding({
             <p className="text-xs leading-5 text-white/35">
               {selectedInterests.length === 0
                 ? 'Selecciona al menos un interés para personalizar tu pulso.'
-                : `${selectedInterests.length} interés${selectedInterests.length === 1 ? '' : 'es'} seleccionado${selectedInterests.length === 1 ? '' : 's'}.`}
+                : selectedInterests.length === 1
+                  ? '1 interés seleccionado.'
+                  : `${selectedInterests.length} intereses seleccionados.`}
             </p>
             <motion.button
               type="button"

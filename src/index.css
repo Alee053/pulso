@@ -213,7 +213,8 @@ button {
   right: -0.65rem;
   top: -0.35rem;
   display: flex;
-  size: 1rem;
+  width: 1rem;
+  height: 1rem;
   align-items: center;
   justify-content: center;
   border: 2px solid #131917;
@@ -225,7 +226,8 @@ button {
 
 .icon-button {
   display: inline-flex;
-  size: 2.6rem;
+  width: 2.6rem;
+  height: 2.6rem;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
@@ -274,7 +276,7 @@ button {
   position: relative;
   width: 100%;
   max-width: 35rem;
-  min-height: min(68vh, 45rem);
+  min-height: min(56vh, 42rem);
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 2.1rem;
@@ -338,7 +340,8 @@ button {
 
 .discovery-action__icon {
   display: flex;
-  size: 3.15rem;
+  width: 3.15rem;
+  height: 3.15rem;
   align-items: center;
   justify-content: center;
   border: 1px solid rgba(255, 255, 255, 0.12);

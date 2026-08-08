@@ -2,6 +2,8 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
   Bookmark,
   Check,
+  ArrowDown,
+  ArrowUp,
   ChevronLeft,
   ChevronRight,
   Heart,
@@ -101,9 +103,16 @@ export function DiscoveryView({
   const [direction, setDirection] = useState(1)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const isSaved = currentStartup ? savedIds.includes(currentStartup.id) : false
   const activeNumber = Math.min(totalStartups - feedRemaining + 1, totalStartups)
   const progress = totalStartups > 0 ? (activeNumber / totalStartups) * 100 : 0
+  const horizontalIntensity = Math.min(Math.abs(dragOffset.x) / 90, 1)
+  const verticalIntensity = Math.min(Math.abs(dragOffset.y) / 90, 1)
+  const isDraggingLeft = dragOffset.x < -12
+  const isDraggingRight = dragOffset.x > 12
+  const isDraggingUp = dragOffset.y < -12
+  const isDraggingDown = dragOffset.y > 12
 
   useEffect(() => {
     if (!toast) {
@@ -237,6 +246,7 @@ export function DiscoveryView({
                 disabled={isTransitioning}
                 isSaved={isSaved}
                 onSave={handleSave}
+                onDragChange={(x, y) => setDragOffset({ x, y })}
                 onSelect={onSelectStartup}
                 onDragDecision={handleDecision}
               />
@@ -244,6 +254,68 @@ export function DiscoveryView({
               <EmptyFeed key="empty" onRestart={onRestart} />
             )}
           </AnimatePresence>
+
+          <motion.div
+            className="drag-intent drag-intent--skip"
+            animate={{
+              opacity: isDraggingLeft ? horizontalIntensity : 0,
+              scale: isDraggingLeft ? 0.9 + horizontalIntensity * 0.1 : 0.82,
+              x: isDraggingLeft ? 0 : 8,
+            }}
+            transition={{ duration: 0.12 }}
+            aria-hidden="true"
+          >
+            <span className="drag-intent__icon">
+              <X size={21} strokeWidth={2.2} />
+            </span>
+            <span>Pasar</span>
+          </motion.div>
+          <motion.div
+            className="drag-intent drag-intent--interested"
+            animate={{
+              opacity: isDraggingRight ? horizontalIntensity : 0,
+              scale: isDraggingRight ? 0.9 + horizontalIntensity * 0.1 : 0.82,
+              x: isDraggingRight ? 0 : -8,
+            }}
+            transition={{ duration: 0.12 }}
+            aria-hidden="true"
+          >
+            <span className="drag-intent__icon">
+              <Heart size={21} strokeWidth={2.2} />
+            </span>
+            <span>Me interesa</span>
+          </motion.div>
+          <motion.div
+            className="drag-intent drag-intent--detail"
+            animate={{
+              opacity: isDraggingUp ? verticalIntensity : 0,
+              scale: isDraggingUp ? 0.9 + verticalIntensity * 0.1 : 0.82,
+              y: isDraggingUp ? 0 : 8,
+            }}
+            transition={{ duration: 0.12 }}
+            aria-hidden="true"
+          >
+            <span className="drag-intent__icon">
+              <ArrowUp size={21} strokeWidth={2.2} />
+            </span>
+            <span>Ver detalle</span>
+          </motion.div>
+          <motion.div
+            className="drag-intent drag-intent--save"
+            animate={{
+              opacity: isDraggingDown ? verticalIntensity : 0,
+              scale: isDraggingDown ? 0.9 + verticalIntensity * 0.1 : 0.82,
+              y: isDraggingDown ? 0 : -8,
+            }}
+            transition={{ duration: 0.12 }}
+            aria-hidden="true"
+          >
+            <span className="drag-intent__icon">
+              <Bookmark size={20} strokeWidth={2.2} />
+            </span>
+            <span>Guardar</span>
+            <ArrowDown size={15} strokeWidth={2.2} />
+          </motion.div>
 
           <div className="discovery-view__actions mt-6 flex w-full max-w-[35rem] items-start justify-center gap-2 sm:gap-4">
             <ActionButton

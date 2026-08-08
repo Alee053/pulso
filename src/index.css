@@ -308,14 +308,14 @@ button {
 
 .discovery-card__save {
   display: inline-flex;
-  width: 2.35rem;
-  height: 2.35rem;
+  width: 2.8rem;
+  height: 2.8rem;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(186, 244, 206, 0.38);
   border-radius: 999px;
-  background: rgba(7, 13, 10, 0.28);
-  color: rgba(255, 255, 255, 0.72);
+  background: rgba(186, 244, 206, 0.13);
+  color: rgba(221, 255, 231, 0.9);
   cursor: pointer;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -324,6 +324,17 @@ button {
     background 180ms ease,
     color 180ms ease,
     transform 180ms ease;
+}
+
+.discovery-card__title-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.9rem;
+}
+
+.discovery-card__title-row h2 {
+  min-width: 0;
+  flex: 1;
 }
 
 .discovery-card__save:hover:not(:disabled),
@@ -341,9 +352,9 @@ button {
 }
 
 .drag-intent {
-  position: absolute;
+  position: fixed;
   top: 50%;
-  z-index: 4;
+  z-index: 50;
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
@@ -360,15 +371,32 @@ button {
 }
 
 .drag-intent--skip {
-  left: 1.25rem;
+  left: max(0.75rem, calc(50% - 30rem));
   color: #ffd0d6;
   background: rgba(124, 44, 59, 0.5);
 }
 
 .drag-intent--interested {
-  right: 1.25rem;
+  right: max(0.75rem, calc(50% - 30rem));
   color: #c6f8d5;
   background: rgba(30, 107, 66, 0.5);
+}
+
+.drag-intent--detail {
+  top: 5.75rem;
+  left: 50%;
+  color: #c8dcff;
+  background: rgba(45, 72, 133, 0.52);
+  transform: translate(-50%, -50%);
+}
+
+.drag-intent--save {
+  top: auto;
+  bottom: 3.75rem;
+  left: 50%;
+  color: #d7f9df;
+  background: rgba(34, 106, 65, 0.52);
+  transform: translateX(-50%);
 }
 
 .drag-intent__icon {
@@ -721,7 +749,7 @@ button {
 
   .discovery-view {
     min-height: 0;
-    padding: 0 1rem 5.5rem;
+    padding: 0 1rem 6.25rem;
   }
 
   .discovery-view__heading {
@@ -789,6 +817,15 @@ button {
     font-size: 2.35rem;
   }
 
+  .discovery-card__title-row {
+    gap: 0.65rem;
+  }
+
+  .discovery-card__save {
+    width: 2.65rem;
+    height: 2.65rem;
+  }
+
   .discovery-card__description {
     display: none;
   }
@@ -817,5 +854,21 @@ button {
   .toast {
     right: 1rem;
     bottom: 5.8rem;
+  }
+
+  .drag-intent--skip {
+    left: 0.65rem;
+  }
+
+  .drag-intent--interested {
+    right: 0.65rem;
+  }
+
+  .drag-intent--detail {
+    top: 5.2rem;
+  }
+
+  .drag-intent--save {
+    bottom: calc(6.5rem + env(safe-area-inset-bottom));
   }
 }

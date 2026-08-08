@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'
+import { motion, useDragControls } from 'framer-motion'
 import {
   ArrowUpRight,
   AtSign,
@@ -30,6 +30,7 @@ export function StartupDetailModal({
   const [contactStarted, setContactStarted] = useState(false)
   const modalRef = useRef<HTMLElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const dragControls = useDragControls()
 
   useEffect(() => {
     const originalOverflow = document.body.style.overflow
@@ -103,20 +104,23 @@ export function StartupDetailModal({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 18, scale: 0.98 }}
           transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+          drag="y"
+          dragControls={dragControls}
+          dragListener={false}
+          dragConstraints={{ top: 0, bottom: 180 }}
+          dragElastic={0.35}
+          dragMomentum={false}
+          dragSnapToOrigin
+          onDragEnd={(_, info) => {
+            if (info.offset.y > 100 || info.velocity.y > 600) {
+              onClose()
+            }
+          }}
         >
-          <motion.div
+          <div
             className="detail-modal__hero"
             style={{ background: `linear-gradient(145deg, ${startup.accent}65, #17201c)` }}
-            drag="y"
-            dragConstraints={{ top: 0, bottom: 180 }}
-            dragElastic={0.35}
-            dragMomentum={false}
-            dragSnapToOrigin
-            onDragEnd={(_, info) => {
-              if (info.offset.y > 100 || info.velocity.y > 600) {
-                onClose()
-              }
-            }}
+            onPointerDown={(event) => dragControls.start(event)}
           >
             {!hasImageError && (
               <img
@@ -164,7 +168,7 @@ export function StartupDetailModal({
                 <span>{startup.sector}</span>
               </div>
             </div>
-          </motion.div>
+          </div>
 
           <div className="detail-modal__body">
             <div className="flex flex-col gap-8 p-5 sm:p-7 lg:flex-row lg:gap-10">

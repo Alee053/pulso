@@ -124,7 +124,7 @@ export function StartupCard({
           <p className="mt-4 max-w-md text-base font-medium leading-6 text-white/82 sm:text-lg">
             {startup.pitch}
           </p>
-          <p className="mt-3 max-w-lg text-sm leading-6 text-white/48">
+          <p className="discovery-card__description mt-3 max-w-lg text-sm leading-6 text-white/48">
             {startup.description}
           </p>
           <div className="mt-5 flex flex-wrap gap-1.5">

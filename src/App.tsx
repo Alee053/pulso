@@ -56,7 +56,7 @@ function App() {
   }[pulso.activeView]
 
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden text-white">
+    <div className="app-shell relative flex min-h-screen flex-col overflow-hidden text-white">
       <div className="ambient-orb ambient-orb--mint" aria-hidden="true" />
       <div className="ambient-orb ambient-orb--blue" aria-hidden="true" />
       <NavigationBar

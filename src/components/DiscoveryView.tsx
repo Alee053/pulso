@@ -164,8 +164,8 @@ export function DiscoveryView({
   })
 
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-5 pb-32 sm:px-8 lg:px-10 lg:pb-16">
-      <div className="mb-7 flex flex-col justify-between gap-5 sm:mb-9 sm:flex-row sm:items-end">
+    <main className="discovery-view mx-auto flex w-full max-w-7xl flex-1 flex-col px-5 pb-32 sm:px-8 lg:px-10 lg:pb-16">
+      <div className="discovery-view__heading mb-7 flex flex-col justify-between gap-5 sm:mb-9 sm:flex-row sm:items-end">
         <div>
           <span className="eyebrow">PARA TI / SELECCIÓN LOCAL</span>
           <h1 className="mt-4 text-3xl font-medium tracking-[-0.06em] text-white sm:text-5xl">
@@ -176,7 +176,7 @@ export function DiscoveryView({
             alguien la vea.
           </p>
         </div>
-        <div className="flex items-center gap-3 self-start sm:self-auto">
+        <div className="discovery-view__meta flex items-center gap-3 self-start sm:self-auto">
           <span className="flex size-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] text-[#baf4ce]">
             <Sparkles size={16} strokeWidth={1.7} aria-hidden="true" />
           </span>
@@ -189,8 +189,8 @@ export function DiscoveryView({
         </div>
       </div>
 
-      <div className="grid flex-1 items-start gap-8 lg:grid-cols-[minmax(12rem,1fr)_minmax(20rem,34rem)_minmax(12rem,1fr)] lg:items-center lg:gap-10">
-        <aside className="discovery-side discovery-side--left order-2 lg:order-1">
+      <div className="discovery-view__grid grid flex-1 items-start gap-8 lg:grid-cols-[minmax(12rem,1fr)_minmax(20rem,34rem)_minmax(12rem,1fr)] lg:items-center lg:gap-10">
+        <aside className="discovery-side discovery-side--left discovery-view__side order-2 lg:order-1">
           <div className="hidden lg:block">
             <span className="side-label">SEÑALES ACTIVAS</span>
             <div className="mt-4 flex flex-wrap gap-2">
@@ -208,14 +208,14 @@ export function DiscoveryView({
           </div>
         </aside>
 
-        <section className="order-1 flex min-w-0 flex-col items-center lg:order-2">
-          <div className="mb-4 flex w-full max-w-[35rem] items-center justify-between text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-white/35">
+        <section className="discovery-view__stage order-1 flex min-w-0 flex-col items-center lg:order-2">
+          <div className="discovery-view__progress-meta mb-4 flex w-full max-w-[35rem] items-center justify-between text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-white/35">
             <span>
               {String(activeNumber).padStart(2, '0')} / {String(totalStartups).padStart(2, '0')}
             </span>
             <span>{feedRemaining} por descubrir</span>
           </div>
-          <div className="mb-6 h-px w-full max-w-[35rem] overflow-hidden bg-white/10">
+          <div className="discovery-view__progress mb-6 h-px w-full max-w-[35rem] overflow-hidden bg-white/10">
             <motion.div
               className="h-full bg-[#baf4ce] shadow-[0_0_1rem_rgba(186,244,206,0.65)]"
               animate={{ width: `${progress}%` }}
@@ -243,7 +243,7 @@ export function DiscoveryView({
             )}
           </AnimatePresence>
 
-          <div className="mt-6 flex w-full max-w-[35rem] items-start justify-center gap-2 sm:gap-4">
+          <div className="discovery-view__actions mt-6 flex w-full max-w-[35rem] items-start justify-center gap-2 sm:gap-4">
             <ActionButton
               label="Pasar"
               shortcut="←"
@@ -281,7 +281,7 @@ export function DiscoveryView({
           </div>
         </section>
 
-        <aside className="discovery-side discovery-side--right order-3 hidden lg:block">
+        <aside className="discovery-side discovery-side--right discovery-view__side order-3 hidden lg:block">
           <span className="side-label">CÓMO FUNCIONA</span>
           <div className="mt-5 space-y-5">
             <div className="flex gap-3">

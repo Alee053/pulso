@@ -1,12 +1,14 @@
 import { motion } from 'framer-motion'
-import { ArrowUpRight, MapPin } from 'lucide-react'
-import { useState } from 'react'
+import { ArrowUpRight, Bookmark, Heart, MapPin, X } from 'lucide-react'
+import { useRef, useState } from 'react'
 import type { Decision, Startup } from '../types/startup'
 
 interface StartupCardProps {
   startup: Startup
   direction: number
   disabled: boolean
+  isSaved: boolean
+  onSave: () => void
   onSelect: (startup: Startup) => void
   onDragDecision: (decision: Decision) => void
 }
@@ -36,10 +38,17 @@ export function StartupCard({
   startup,
   direction,
   disabled,
+  isSaved,
+  onSave,
   onSelect,
   onDragDecision,
 }: StartupCardProps) {
   const [hasImageError, setHasImageError] = useState(false)
+  const [dragX, setDragX] = useState(0)
+  const didDrag = useRef(false)
+  const dragIntensity = Math.min(Math.abs(dragX) / 90, 1)
+  const isDraggingLeft = dragX < -12
+  const isDraggingRight = dragX > 12
 
   return (
     <motion.article
@@ -58,15 +67,33 @@ export function StartupCard({
       drag={disabled ? false : 'x'}
       dragConstraints={{ left: -135, right: 135 }}
       dragElastic={0.72}
+      dragMomentum={false}
+      dragSnapToOrigin
       whileDrag={{ scale: 1.02, cursor: 'grabbing' }}
+      onDragStart={() => {
+        didDrag.current = true
+      }}
+      onDrag={(_, info) => {
+        setDragX(info.offset.x)
+      }}
       onDragEnd={(_, info) => {
+        setDragX(0)
         if (info.offset.x > 92 || info.velocity.x > 650) {
           onDragDecision('interested')
         } else if (info.offset.x < -92 || info.velocity.x < -650) {
           onDragDecision('skip')
+        } else {
+          window.setTimeout(() => {
+            didDrag.current = false
+          }, 0)
         }
       }}
       onClick={(event) => {
+        if (didDrag.current) {
+          didDrag.current = false
+          return
+        }
+
         if (!disabled) {
           event.currentTarget.focus()
           onSelect(startup)
@@ -96,6 +123,37 @@ export function StartupCard({
         />
       </div>
 
+      <motion.div
+        className="drag-intent drag-intent--skip"
+        animate={{
+          opacity: isDraggingLeft ? dragIntensity : 0,
+          scale: isDraggingLeft ? 0.9 + dragIntensity * 0.1 : 0.82,
+          x: isDraggingLeft ? 0 : 8,
+        }}
+        transition={{ duration: 0.12 }}
+        aria-hidden="true"
+      >
+        <span className="drag-intent__icon">
+          <X size={21} strokeWidth={2.2} />
+        </span>
+        <span>Pasar</span>
+      </motion.div>
+      <motion.div
+        className="drag-intent drag-intent--interested"
+        animate={{
+          opacity: isDraggingRight ? dragIntensity : 0,
+          scale: isDraggingRight ? 0.9 + dragIntensity * 0.1 : 0.82,
+          x: isDraggingRight ? 0 : -8,
+        }}
+        transition={{ duration: 0.12 }}
+        aria-hidden="true"
+      >
+        <span className="drag-intent__icon">
+          <Heart size={21} strokeWidth={2.2} />
+        </span>
+        <span>Me interesa</span>
+      </motion.div>
+
       <div className="relative flex h-full flex-col justify-between p-5 sm:p-6">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2 rounded-full border border-white/15 bg-black/20 px-2 py-1.5 backdrop-blur-md">
@@ -104,9 +162,29 @@ export function StartupCard({
             </span>
             <span className="pr-1 text-xs font-medium text-white/70">{startup.name}</span>
           </div>
-          <span className="rounded-full border border-white/15 bg-black/20 px-3 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-white/65 backdrop-blur-md">
-            {startup.stage}
-          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="discovery-card__save"
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation()
+                onSave()
+              }}
+              disabled={disabled}
+              aria-label={isSaved ? 'Quitar de guardados' : 'Guardar startup'}
+            >
+              <Bookmark
+                size={17}
+                strokeWidth={isSaved ? 2.4 : 1.8}
+                fill={isSaved ? 'currentColor' : 'none'}
+                aria-hidden="true"
+              />
+            </button>
+            <span className="rounded-full border border-white/15 bg-black/20 px-3 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-white/65 backdrop-blur-md">
+              {startup.stage}
+            </span>
+          </div>
         </div>
 
         <div className="max-w-[32rem]">

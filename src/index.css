@@ -306,6 +306,81 @@ button {
   outline-offset: 4px;
 }
 
+.discovery-card__save {
+  display: inline-flex;
+  width: 2.35rem;
+  height: 2.35rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(7, 13, 10, 0.28);
+  color: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.discovery-card__save:hover:not(:disabled),
+.discovery-card__save:focus-visible {
+  border-color: rgba(186, 244, 206, 0.65);
+  background: rgba(186, 244, 206, 0.16);
+  color: #baf4ce;
+  outline: none;
+  transform: scale(1.06);
+}
+
+.discovery-card__save:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.drag-intent {
+  position: absolute;
+  top: 50%;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 0.55rem 0.75rem 0.55rem 0.55rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  transform: translateY(-50%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.drag-intent--skip {
+  left: 1.25rem;
+  color: #ffd0d6;
+  background: rgba(124, 44, 59, 0.5);
+}
+
+.drag-intent--interested {
+  right: 1.25rem;
+  color: #c6f8d5;
+  background: rgba(30, 107, 66, 0.5);
+}
+
+.drag-intent__icon {
+  display: inline-flex;
+  width: 2.05rem;
+  height: 2.05rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
 .card-badge {
   display: inline-flex;
   align-items: center;
@@ -723,9 +798,7 @@ button {
   }
 
   .discovery-view__actions {
-    flex: 0 0 auto;
-    margin-top: 0.5rem;
-    gap: 0.15rem;
+    display: none;
   }
 
   .discovery-action {

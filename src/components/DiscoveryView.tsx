@@ -235,6 +235,8 @@ export function DiscoveryView({
                 startup={currentStartup}
                 direction={direction}
                 disabled={isTransitioning}
+                isSaved={isSaved}
+                onSave={handleSave}
                 onSelect={onSelectStartup}
                 onDragDecision={handleDecision}
               />

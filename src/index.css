@@ -41,6 +41,14 @@ body {
   overscroll-behavior: none;
 }
 
+.app-shell > main:not(.discovery-view) {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 button,
 a {
   -webkit-tap-highlight-color: transparent;
@@ -745,6 +753,13 @@ button {
   .app-shell > main {
     min-height: 0;
     max-height: 100%;
+    flex: 1 1 auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .app-shell > main.discovery-view {
     overflow: hidden;
   }
 

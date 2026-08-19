@@ -2,7 +2,7 @@
 
 ## Scope
 
-This is the target architecture for the two-project monorepo. It constrains dependencies and ownership while the product model is still being established. It does not claim that the prototype has already been migrated to Angular or that the backend has domain features.
+This is the working architecture for the two-project monorepo. It constrains dependencies and ownership while the product model is still being established. The frontend migration to Angular is complete; the backend remains a bootstrap with only operational endpoints.
 
 ## System shape
 
@@ -12,8 +12,8 @@ This is the target architecture for the two-project monorepo. It constrains depe
 └──────────────┬───────────────┘
                │ HTTP/JSON
 ┌──────────────▼───────────────┐
-│ frontend/                    │  UI, feature state, API adapters
-│ Angular target               │
+│ frontend/                    │  Angular UI, feature state, API adapters
+│ Angular standalone           │
 └──────────────┬───────────────┘
                │ versioned HTTP interface
 ┌──────────────▼───────────────┐

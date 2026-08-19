@@ -7,7 +7,7 @@ Scalability is a sequence of measured changes, not a reason to add layers or inf
 | Area | Default now | Add complexity when evidence shows |
 | --- | --- | --- |
 | Frontend state | Local state inside the owning feature | Multiple routes need the same server state or transitions become difficult to reason about |
-| Frontend loading | One prototype bundle | Route/feature cost materially affects startup or interaction metrics |
+| Frontend loading | One Angular application bundle | Route/feature cost materially affects startup or interaction metrics |
 | HTTP | Synchronous request/response | A use case is long-running, retryable, or independent enough for a job/event |
 | Backend | Stateless application processes | A measured bottleneck requires a specific cache, worker, or horizontal scale strategy |
 | Database | PostgreSQL with bounded queries | Query plans, contention, or dataset size show a specific index, read model, partition, or replica need |

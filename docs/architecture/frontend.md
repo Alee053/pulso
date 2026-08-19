@@ -1,91 +1,87 @@
 # Frontend architecture
 
-## Current implementation: Vite + React prototype
+## Current implementation: Angular standalone
 
-The current frontend is intentionally small and local-data driven:
-
-```text
-frontend/src/
-├── main.tsx                    # browser bootstrap
-├── App.tsx                     # screen composition and navigation state
-├── components/                 # reusable UI modules
-├── hooks/usePulso.ts           # prototype interaction state and orchestration
-├── data/                       # mock interests and startups
-├── types/                      # TypeScript product-facing types
-└── utils/recommendations.ts    # pure ranking and explanation logic
-```
-
-Current responsibilities:
-
-- `App` selects the active screen and coordinates the selected-startup modal.
-- `usePulso` owns prototype state transitions such as onboarding, saved items, and decisions.
-- `data` is a temporary adapter for mock data, not a future database contract.
-- `utils/recommendations.ts` is a pure policy module and should remain independent of React and browser APIs.
-- UI modules receive data and callbacks through their interfaces; they should not reach into the hook's internal state.
-
-## Target implementation: Angular by feature
-
-When the real application replaces the prototype, keep `frontend/` as the project seam and organize the Angular source by feature rather than by a repository-wide technical bucket:
+The frontend is an Angular 22 application in the `frontend/` project seam. It uses standalone components, strict TypeScript, Tailwind CSS for utility styling, and feature-oriented source layout.
 
 ```text
 frontend/src/
+├── main.ts                              # Angular browser bootstrap
+├── index.html                           # document shell
+├── index.css                            # global theme and shared visual primitives
 └── app/
-    ├── core/                         # app-wide infrastructure only
-    ├── shell/                        # layout, navigation, app bootstrap UI
+    ├── app.ts                           # application composition
+    ├── app.config.ts                    # application-wide providers
     ├── features/
-    │   ├── discovery/
-    │   │   ├── data-access/           # HTTP adapters and DTO mapping
-    │   │   ├── domain/                # pure feature rules and types
-    │   │   └── ui/                    # feature screens and presentational modules
-    │   ├── saved/
-    │   └── profile/
-    ├── shared/                       # proven cross-feature UI primitives only
-    ├── app.routes.ts
-    └── app.config.ts
-└── main.ts
+    │   └── discovery/
+    │       ├── application/             # session state and orchestration
+    │       ├── data-access/             # current local mock adapter
+    │       ├── domain/                  # startup types and pure recommendation policy
+    │       └── ui/                      # onboarding, feed, saved, profile, and modal UI
+    └── shared/
+        ├── brand-mark/                  # stable Pulso brand primitive
+        └── icon/                        # small local icon surface for the prototype
 ```
 
-This follows Angular's guidance to organize by feature area, colocate related files, and avoid generic dumping grounds such as `helpers.ts`, `utils.ts`, or `common.ts`. See the [Angular style guide](https://angular.dev/style-guide).
+The current flow is deliberately local-data driven. [`PulsoSession`](../../frontend/src/app/features/discovery/application/pulso-session.ts) is the application-facing session module: it owns onboarding completion, the active view, discovery feed, saved items, interested items, and learned preference weights. [`recommendations.ts`](../../frontend/src/app/features/discovery/domain/recommendations.ts) is a pure policy module and has no Angular or browser dependency. [`mock-startups.ts`](../../frontend/src/app/features/discovery/data-access/mock-startups.ts) is an adapter for fictional data, not a future database contract.
 
-## Frontend rules
+The former Vite/React demo has been removed from the project. There is one frontend framework and one root development command: `pnpm dev`.
 
-### Feature ownership
+## Boundaries and dependency direction
 
-- A feature owns its routes, state, data-access adapters, domain rules, and UI modules.
-- `core` is for application-wide infrastructure that has one intentional instance, such as configuration, auth coordination, or telemetry. It is not a second `shared` folder.
-- `shared` contains only modules used by at least two features and stable enough to deserve a common interface. Do not move code there preemptively.
-- Keep feature-local code feature-local until reuse is demonstrated.
+```text
+Angular UI → discovery session/application → domain policy
+                                      └──→ data-access adapter
+```
 
-### State and data access
+- UI components receive inputs and emit user intents. They do not rank startups or own the whole session.
+- Application state coordinates feature workflows but does not contain template markup or browser-only rendering details.
+- Domain rules accept data and return results. They should remain testable without Angular, HTTP, or a DOM.
+- Data-access modules own the transition from mock data today to HTTP DTO mapping later.
+- Shared components are intentionally small and stable. A feature-local component should move into `shared/` only after a second feature needs the same interface.
 
-- Keep ephemeral UI state local to the smallest owning module.
-- Keep server state in a feature data-access module; do not duplicate the same server entity in several unrelated stores.
-- Keep HTTP, browser storage, and analytics behind adapters. Screens and presentational modules should consume interfaces, not concrete clients.
-- Map transport DTOs to frontend domain types at the adapter seam. Do not let backend naming or nullability rules leak through every UI module.
-- Use loading, empty, error, and retry states as part of the feature interface.
+These are deep-module seams: the caller-facing surface is small, while the module hides state transitions, ranking policy, or rendering details. Keep the interface stable and the implementation local.
 
-### UI quality and performance
+## Feature rules
 
-- Treat keyboard access, focus management, semantic HTML, and useful labels as acceptance criteria.
-- Prefer route-level and feature-level lazy loading when the application has enough feature weight to justify it.
-- Avoid global state and unnecessary subscriptions; measure before adding memoization or caching.
-- Keep pure calculations side-effect free so they can be tested without a browser.
-- Colocate tests with the module they exercise. A feature's test should cross its public interface rather than reaching into private implementation details.
+### State
+
+- Keep ephemeral presentation state in the smallest component that owns it.
+- Keep discovery session state in the discovery application module until another feature genuinely shares it.
+- Do not introduce a global store for a single feature. Add one only when state ownership and update semantics are clearer than the existing application service.
+- Treat loading, empty, error, and retry states as part of every server-backed feature interface.
+
+### Data access
+
+- Keep HTTP clients, browser storage, analytics, and retry policy behind feature data-access modules.
+- Map transport DTOs to frontend domain types at the adapter seam. Backend field names and nullable transport details must not spread through templates.
+- Keep API base URLs and credentials in configuration, never in UI components.
+- Prefer a small adapter interface that returns domain results over exposing a concrete HTTP client to every consumer.
+
+### UI and accessibility
+
+- Use semantic elements and meaningful labels for all interactive controls.
+- Treat keyboard access, focus management, modal focus trapping, reduced-motion behavior, and visible focus states as acceptance criteria.
+- Keep component templates focused on composition and user intent. Move non-trivial policy into a class, application module, or pure domain function.
+- Use route-level lazy loading once feature routes exist and the feature weight justifies it.
 
 ### Naming and files
 
-- Use lower-kebab-case file names for Angular code.
+- Use lower-kebab-case filenames for Angular code.
 - Keep a component's TypeScript, template, styles, and test together when separate files are used.
-- Name modules after product language from [`CONTEXT.md`](../../CONTEXT.md), not database columns or vague technical categories.
-- Avoid `utils`, `helpers`, `common`, and `misc` directories. Name a module after the behavior it owns.
+- Name folders after product behavior (`discovery`, `saved`, `profile`), not generic buckets such as `utils`, `helpers`, or `common`.
+- Keep feature-local code local until reuse is demonstrated. `shared/` is a curated public surface, not a dumping ground.
 
-## React-to-Angular migration path
+## Next frontend seam: real API integration
 
-1. Freeze the prototype's observable flows and capture the important ones with browser-level tests.
-2. Scaffold Angular in the existing `frontend/` project seam while keeping root commands stable.
-3. Migrate one vertical feature at a time: route, state, data adapter, domain policy, and UI.
-4. Put all backend calls behind the new adapter interface; do not carry mock-data assumptions into production modules.
-5. Run React and Angular side by side only for a bounded migration period with an explicit removal date.
-6. Remove React-only dependencies and prototype modules after parity is verified.
+The next vertical slice should replace the mock data-access implementation while preserving the domain and UI interfaces:
 
-Do not introduce a permanent dual-framework architecture. If migration risk is high, use a temporary branch or isolated migration workspace and merge only the finished feature seams.
+1. Define the first `/api/v1` request and response contract with the backend.
+2. Add a discovery HTTP adapter and DTO-to-domain mapper under `features/discovery/data-access/`.
+3. Model loading, empty, error, retry, and stale-data behavior in the application module.
+4. Add adapter and component tests at the public interfaces.
+5. Remove mock data only after the real endpoint has a verified local integration path.
+
+Do not create a shared TypeScript package for the first endpoint. Generate or share contract artifacts only after repeated cross-project duplication proves that it reduces rather than increases coupling.
+
+See the [Angular style guide](https://angular.dev/style-guide), [Angular file structure reference](https://angular.dev/reference/configs/file-structure), and [current stack](../stack.md).

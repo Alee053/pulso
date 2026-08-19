@@ -6,7 +6,7 @@ This directory is the durable reference for the codebase: what is deployed in th
 
 1. [Current stack](./stack.md) — versions, project responsibilities, local services, and known gaps.
 2. [Architecture overview](./architecture/overview.md) — system shape, dependency direction, and integration rules.
-3. [Frontend architecture](./architecture/frontend.md) — current React prototype and the path to Angular feature modules.
+3. [Frontend architecture](./architecture/frontend.md) — Angular feature modules, state ownership, and UI boundaries.
 4. [Backend architecture](./architecture/backend.md) — Spring package structure, HTTP seams, persistence, and testing.
 5. [Scalability](./architecture/scalability.md) — default decisions and triggers for adding complexity.
 6. [Working agreements](./engineering/working-agreements.md) — team workflow, review standards, and definition of done.

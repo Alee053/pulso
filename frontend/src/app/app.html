@@ -1,0 +1,58 @@
+<ng-container *ngIf="!session.hasStarted(); else applicationShell">
+  <pulso-onboarding
+    [interestOptions]="session.interestOptions"
+    [selectedInterests]="session.selectedInterests()"
+    (interestToggled)="session.toggleInterest($event)"
+    (started)="session.startDiscovery()"
+  />
+</ng-container>
+
+<ng-template #applicationShell>
+  <div class="app-shell relative flex min-h-screen flex-col overflow-hidden text-white">
+    <div class="ambient-orb ambient-orb--mint" aria-hidden="true"></div>
+    <div class="ambient-orb ambient-orb--blue" aria-hidden="true"></div>
+
+    <pulso-navigation-bar
+      [activeView]="session.activeView()"
+      [savedCount]="session.savedIds().length"
+      [interestedCount]="session.interestedIds().length"
+      (navigated)="navigateTo($event)"
+    />
+
+    <ng-container [ngSwitch]="session.activeView()">
+      <pulso-discovery-view
+        *ngSwitchCase="'discover'"
+        [activeSignals]="session.activeSignals()"
+        [currentStartup]="session.currentStartup()"
+        [feedRemaining]="session.feed().length"
+        [isModalOpen]="selectedStartup() !== null"
+        [totalStartups]="session.mockStartups.length"
+        [savedIds]="session.savedIds()"
+        (decisionMade)="session.makeDecision($event)"
+        (restarted)="session.restartDiscovery()"
+        (startupSaved)="session.toggleSaved($event)"
+        (startupSelected)="selectStartup($event)"
+      />
+
+      <pulso-saved-view
+        *ngSwitchCase="'saved'"
+        [savedStartups]="session.savedStartups()"
+        [interestedStartups]="session.interestedStartups()"
+        (startupSelected)="selectStartup($event)"
+      />
+
+      <pulso-profile-view
+        *ngSwitchCase="'profile'"
+        [interestOptions]="session.interestOptions"
+        [selectedInterests]="session.selectedInterests()"
+      />
+    </ng-container>
+
+    <pulso-startup-detail-modal
+      *ngIf="selectedStartup() as startup"
+      [startup]="startup"
+      [recommendation]="session.getReason(startup)"
+      (closed)="closeStartup()"
+    />
+  </div>
+</ng-template>

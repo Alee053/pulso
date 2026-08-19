@@ -8,10 +8,10 @@ The documentation index and architecture conventions are in [`docs/`](docs/READM
 
 | Project | Directory | Current stack | Role |
 | --- | --- | --- | --- |
-| Frontend | `frontend/` | Vite + React prototype | Temporary UI while the production frontend is migrated to Angular |
+| Frontend | `frontend/` | Angular 22 standalone + TypeScript 6 + Tailwind CSS 4 | Browser application and feature UI |
 | Backend | `backend/` | Java 21 + Spring Boot 4.1 + Gradle | API boundary and PostgreSQL integration point |
 
-The checked-in frontend is a Vite/React demo. It is intentionally preserved while the future Angular application is designed and implemented.
+The checked-in frontend is an Angular standalone application. Its discovery data is still local mock data while the Spring Boot API contract is being defined.
 
 ## Prerequisites
 
@@ -51,7 +51,7 @@ pnpm dev
 
 The development services are available at:
 
-- Frontend: <http://localhost:5173>
+- Frontend: <http://localhost:4200>
 - Backend liveness: <http://localhost:8080/api/health>
 - Backend dependency health: <http://localhost:8080/actuator/health>
 
@@ -66,7 +66,7 @@ pnpm db:down
 | Command | Purpose |
 | --- | --- |
 | `pnpm dev` | Run the frontend development server |
-| `pnpm build` | Type-check and build the frontend |
+| `pnpm build` | Strictly compile and build the frontend |
 | `pnpm preview` | Preview the frontend production build |
 | `pnpm backend:run` | Run the Spring Boot API |
 | `pnpm backend:test` | Run backend tests |

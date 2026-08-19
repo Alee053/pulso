@@ -5,3 +5,6 @@ dist/
 .env
 .env.*
 !.env.example
+.gradle/
+backend/build/
+backend/out/

@@ -1,4 +1,5 @@
 import { motion, useDragControls } from 'framer-motion'
+import type { PanInfo } from 'framer-motion'
 import {
   ArrowUpRight,
   AtSign,
@@ -12,7 +13,7 @@ import {
   UsersRound,
   X,
 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import type { Startup } from '../types/startup'
 
 interface StartupDetailModalProps {
@@ -88,7 +89,7 @@ export function StartupDetailModal({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
-        onMouseDown={(event) => {
+        onMouseDown={(event: ReactMouseEvent<HTMLElement>) => {
           if (event.target === event.currentTarget) {
             onClose()
           }
@@ -111,7 +112,10 @@ export function StartupDetailModal({
           dragElastic={0.35}
           dragMomentum={false}
           dragSnapToOrigin
-          onDragEnd={(_, info) => {
+          onDragEnd={(
+            _event: MouseEvent | TouchEvent | PointerEvent,
+            info: PanInfo,
+          ) => {
             if (info.offset.y > 100 || info.velocity.y > 600) {
               onClose()
             }

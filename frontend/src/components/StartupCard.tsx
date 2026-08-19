@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
+import type { PanInfo } from 'framer-motion'
 import { ArrowUpRight, Bookmark, MapPin } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import type { Decision, Startup } from '../types/startup'
 
 interface StartupCardProps {
@@ -72,10 +73,16 @@ export function StartupCard({
         didDrag.current = true
         onDragChange(0, 0)
       }}
-      onDrag={(_, info) => {
+      onDrag={(
+        _event: MouseEvent | TouchEvent | PointerEvent,
+        info: PanInfo,
+      ) => {
         onDragChange(info.offset.x, info.offset.y)
       }}
-      onDragEnd={(_, info) => {
+      onDragEnd={(
+        _event: MouseEvent | TouchEvent | PointerEvent,
+        info: PanInfo,
+      ) => {
         onDragChange(0, 0)
         const isVertical = Math.abs(info.offset.y) > Math.abs(info.offset.x)
 
@@ -93,7 +100,7 @@ export function StartupCard({
           }, 0)
         }
       }}
-      onClick={(event) => {
+      onClick={(event: ReactMouseEvent<HTMLElement>) => {
         if (didDrag.current) {
           didDrag.current = false
           return

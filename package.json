@@ -2,26 +2,19 @@
   "name": "pulso",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
+  "packageManager": "pnpm@11.17.0",
+  "engines": {
+    "node": ">=24.15.0 <27"
+  },
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "framer-motion": "^13.0.0",
-    "lucide-react": "^0.542.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8"
-  },
-  "devDependencies": {
-    "@tailwindcss/vite": "^4.3.3",
-    "@types/node": "^26.2.0",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
-    "@vitejs/plugin-react": "^6.0.5",
-    "tailwindcss": "^4.3.3",
-    "typescript": "~7.0.2",
-    "vite": "^8.2.1"
+    "dev": "pnpm --filter @pulso/frontend dev",
+    "build": "pnpm --filter @pulso/frontend build",
+    "preview": "pnpm --filter @pulso/frontend preview",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f postgres",
+    "backend:run": "./backend/gradlew -p backend bootRun",
+    "backend:test": "./backend/gradlew -p backend test",
+    "backend:build": "./backend/gradlew -p backend build"
   }
 }

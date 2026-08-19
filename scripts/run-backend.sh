@@ -63,15 +63,15 @@ if [ -f .env ]; then
   done < .env
 fi
 
-if [ -z "${SPRING_DATASOURCE_URL:-}" ]; then
+if [ -z "${SPRING_DATASOURCE_URL+x}" ]; then
   export SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-pulso}"
 fi
 
-if [ -z "${SPRING_DATASOURCE_USERNAME:-}" ]; then
+if [ -z "${SPRING_DATASOURCE_USERNAME+x}" ]; then
   export SPRING_DATASOURCE_USERNAME="${POSTGRES_USER:-pulso}"
 fi
 
-if [ -z "${SPRING_DATASOURCE_PASSWORD:-}" ]; then
+if [ -z "${SPRING_DATASOURCE_PASSWORD+x}" ]; then
   export SPRING_DATASOURCE_PASSWORD="${POSTGRES_PASSWORD:-}"
 fi
 

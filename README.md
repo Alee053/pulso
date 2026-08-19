@@ -24,6 +24,8 @@ The repository includes `.nvmrc` and a Gradle Wrapper for consistent local tooli
 Install the frontend workspace dependencies:
 
 ```sh
+cp .env.example .env
+# Edit .env and set POSTGRES_PASSWORD to a local-only value.
 pnpm install
 ```
 
@@ -48,8 +50,8 @@ pnpm dev
 The development services are available at:
 
 - Frontend: <http://localhost:5173>
-- Backend health: <http://localhost:8080/api/health>
-- Spring Actuator health: <http://localhost:8080/actuator/health>
+- Backend liveness: <http://localhost:8080/api/health>
+- Backend dependency health: <http://localhost:8080/actuator/health>
 
 Stop PostgreSQL when finished:
 
@@ -73,6 +75,8 @@ pnpm db:down
 
 ## Configuration
 
-Copy `.env.example` to `.env` when you need to customize the Docker Compose database values. The backend has matching local defaults and accepts the `SPRING_DATASOURCE_*` and `SERVER_PORT` environment variables directly.
+Copy `.env.example` to `.env` and set `POSTGRES_PASSWORD` before starting PostgreSQL. Compose loads the file automatically, and `pnpm backend:run` loads the same supported local configuration for the Spring Boot process. The backend also accepts `SPRING_DATASOURCE_*` and `SERVER_PORT` environment variables directly when Gradle is run outside the root script.
+
+`/api/health` is an API liveness check and does not claim that PostgreSQL is available. Use `/actuator/health` for dependency health.
 
 Do not commit `.env` files or real credentials.

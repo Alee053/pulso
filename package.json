@@ -13,7 +13,7 @@
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f postgres",
-    "backend:run": "./backend/gradlew -p backend bootRun",
+    "backend:run": "./scripts/run-backend.sh",
     "backend:test": "./backend/gradlew -p backend test",
     "backend:build": "./backend/gradlew -p backend build"
   }

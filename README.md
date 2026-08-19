@@ -2,6 +2,8 @@
 
 Pulso is a monorepo for the product frontend and backend API.
 
+The documentation index and architecture conventions are in [`docs/`](docs/README.md).
+
 ## Projects
 
 | Project | Directory | Current stack | Role |

@@ -75,7 +75,7 @@ pnpm db:down
 
 ## Configuration
 
-Copy `.env.example` to `.env` and set `POSTGRES_PASSWORD` before starting PostgreSQL. Compose loads the file automatically, and `pnpm backend:run` loads the same supported local configuration for the Spring Boot process. The backend also accepts `SPRING_DATASOURCE_*` and `SERVER_PORT` environment variables directly when Gradle is run outside the root script.
+Copy `.env.example` to `.env` and set `POSTGRES_PASSWORD` before starting PostgreSQL. Compose loads the file automatically, and `pnpm backend:run` loads the same supported local configuration for the Spring Boot process. The root runner accepts unquoted, single-line `KEY=value` entries for the variables listed in `.env.example`, rejects ambiguous dotenv syntax, and preserves explicitly set shell variables. The backend also accepts `SPRING_DATASOURCE_*` and `SERVER_PORT` environment variables directly when Gradle is run outside the root script.
 
 `/api/health` is an API liveness check and does not claim that PostgreSQL is available. Use `/actuator/health` for dependency health.
 

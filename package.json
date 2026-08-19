@@ -10,7 +10,7 @@
     "dev": "pnpm --filter @pulso/frontend dev",
     "build": "pnpm --filter @pulso/frontend build",
     "preview": "pnpm --filter @pulso/frontend preview",
-    "db:up": "docker compose up -d postgres",
+    "db:up": "docker compose up -d --wait postgres",
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f postgres",
     "backend:run": "./scripts/run-backend.sh",

@@ -7,11 +7,15 @@ This directory is the durable reference for the codebase: what is deployed in th
 1. [Current stack](./stack.md) — versions, project responsibilities, local services, and known gaps.
 2. [Product specification](./especificacion-general.md) — product vision, scope, users, capabilities, and roadmap.
 3. [Architecture overview](./architecture/overview.md) — system shape, dependency direction, and integration rules.
-4. [Frontend architecture](./architecture/frontend.md) — Angular feature modules, state ownership, and UI boundaries.
-5. [Backend architecture](./architecture/backend.md) — Spring package structure, HTTP seams, persistence, and testing.
-6. [Scalability](./architecture/scalability.md) — default decisions and triggers for adding complexity.
-7. [Working agreements](./engineering/working-agreements.md) — team workflow, review standards, and definition of done.
-8. [Architecture decisions](./adr/0001-monorepo-project-seams.md) — decisions that are costly or surprising to reverse.
+4. [API examples](./api.md) — current endpoint contracts, authentication, and curl examples.
+5. [Frontend architecture](./architecture/frontend.md) — Angular feature modules, state ownership, and UI boundaries.
+6. [Backend architecture](./architecture/backend.md) — Spring package structure, HTTP seams, persistence, and testing.
+7. [Scalability](./architecture/scalability.md) — default decisions and triggers for adding complexity.
+8. [Working agreements](./engineering/working-agreements.md) — team workflow, review standards, and definition of done.
+9. [Architecture decisions](./adr/0001-monorepo-project-seams.md) — decisions that are costly or surprising to reverse.
+10. [Supabase decision](./adr/0003-supabase-database-and-auth.md) — database, migrations, RLS, and Auth boundaries.
+
+The database-specific workflow starts at [`database/README.md`](../database/README.md).
 
 The product vocabulary is maintained in [`CONTEXT.md`](../CONTEXT.md). It intentionally contains language, not implementation details.
 

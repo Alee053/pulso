@@ -2,7 +2,10 @@
 
 ## Scope
 
-This is the working architecture for the two-project monorepo. It constrains dependencies and ownership while the product model is still being established. The frontend migration to Angular is complete; the backend remains a bootstrap with only operational endpoints.
+This is the working architecture for the monorepo. It constrains dependencies
+and ownership while the product model is still being established. The first
+vertical slice is intentionally small: a public startup catalog, a protected
+JWT example, and a Supabase schema that can be recreated locally.
 
 ## System shape
 
@@ -22,7 +25,7 @@ This is the working architecture for the two-project monorepo. It constrains dep
 └──────────────┬───────────────┘
                │ repository adapters
 ┌──────────────▼───────────────┐
-│ PostgreSQL                   │  system of record
+│ Supabase PostgreSQL + Auth   │  system of record and identity provider
 └──────────────────────────────┘
 ```
 
@@ -37,7 +40,8 @@ The frontend and backend are separate projects with a single integration seam: t
 | API contract | Backend HTTP interface | The backend owns request/response compatibility and error semantics. |
 | Business rules | Backend domain module | Rules must be testable without HTTP, Spring, or PostgreSQL. |
 | Persistence | Backend infrastructure adapter | Database details stay behind a repository interface and never leak into the frontend. |
-| Database schema | Backend/database ownership | Schema changes require a migration and a review of backward compatibility. |
+| Database schema and seed | `database/` through Supabase CLI | Schema changes require an ordered migration and a review of backward compatibility. |
+| Authentication | Supabase Auth + backend security configuration | Angular holds a session; Spring validates the JWT and owns product authorization. |
 | Cross-project types | Contract tooling | Do not create a shared package until duplication is proven; prefer generated clients from a versioned contract. |
 
 ## Dependency direction
@@ -49,6 +53,10 @@ Frontend UI → feature state/use cases → HTTP adapter → backend HTTP interf
 
 Backend HTTP adapter → application use case → domain policy
 Backend infrastructure adapter ────────────────┘
+
+Angular Auth gateway → Supabase Auth session
+Spring Security ← validated Supabase JWT
+database/ migrations → Supabase PostgreSQL
 ```
 
 The backend domain must not depend on Spring MVC, JDBC, PostgreSQL types, or external providers. The frontend feature policy must not depend on a concrete HTTP library when a small adapter interface can hide it.
@@ -70,10 +78,14 @@ Use a **module** for any unit with an interface and an implementation. Prefer de
 - Use additive changes first. For breaking changes, introduce a new version or a migration window and document it.
 - Keep API calls in frontend data-access adapters. UI modules should not scatter raw URLs or duplicate response mapping.
 - Do not share database models, Java classes, or TypeScript implementation types across projects.
+- Keep the Supabase browser client behind an Auth gateway. It may manage a
+  session, but it must not become a second product data-access path.
+- Treat RLS as a database defense-in-depth boundary for direct Supabase access;
+  JDBC-backed API use cases still perform server-side authorization.
 
 ## How architecture changes
 
-When a change alters a project seam, dependency direction, persistence strategy, API versioning, or deployment shape:
+When a change alters a project seam, dependency direction, persistence strategy, API versioning, authentication boundary, or deployment shape:
 
 1. Write or update an ADR in [`docs/adr/`](../adr/0001-monorepo-project-seams.md).
 2. Update the affected architecture page.

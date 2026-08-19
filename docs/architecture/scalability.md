@@ -45,7 +45,8 @@ Scalability is a sequence of measured changes, not a reason to add layers or inf
 ## A practical evolution path
 
 1. Establish the first feature contract and baseline tests.
-2. Add migrations and repository integration tests when persistence begins.
+2. Add each schema change as a reviewed Supabase migration and add repository
+   integration tests when an adapter's query behavior is product-critical.
 3. Add structured logs, request identifiers, metrics, and traces before production traffic.
 4. Measure the critical frontend and backend paths.
 5. Address the measured bottleneck with one change and a before/after check.

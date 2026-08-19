@@ -10,11 +10,20 @@
     "dev": "pnpm --filter @pulso/frontend dev",
     "build": "pnpm --filter @pulso/frontend build",
     "preview": "pnpm --filter @pulso/frontend preview",
-    "db:up": "docker compose up -d --wait postgres",
-    "db:down": "docker compose down",
-    "db:logs": "docker compose logs -f postgres",
+    "db:up": "pnpm exec supabase --workdir database start",
+    "db:down": "pnpm exec supabase --workdir database stop",
+    "db:reset": "pnpm exec supabase --workdir database db reset --local",
+    "db:push": "pnpm exec supabase --workdir database db push --linked",
+    "db:lint": "pnpm exec supabase --workdir database db lint --local",
+    "db:test": "pnpm exec supabase --workdir database test db --local",
+    "db:status": "pnpm exec supabase --workdir database status",
+    "db:migration:new": "pnpm exec supabase --workdir database migration new",
+    "db:push:dry-run": "pnpm exec supabase --workdir database db push --linked --dry-run",
     "backend:run": "./scripts/run-backend.sh",
     "backend:test": "./backend/gradlew -p backend test",
     "backend:build": "./backend/gradlew -p backend build"
+  },
+  "devDependencies": {
+    "supabase": "2.109.1"
   }
 }

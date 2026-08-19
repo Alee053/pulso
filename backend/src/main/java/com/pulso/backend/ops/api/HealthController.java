@@ -1,4 +1,4 @@
-package com.pulso.backend.api;
+package com.pulso.backend.ops.api;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

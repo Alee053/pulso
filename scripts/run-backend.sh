@@ -7,18 +7,6 @@ set_env_if_unset() {
   value=$2
 
   case "$key" in
-    POSTGRES_DB)
-      if [ -z "${POSTGRES_DB+x}" ]; then export "POSTGRES_DB=$value"; fi
-      ;;
-    POSTGRES_USER)
-      if [ -z "${POSTGRES_USER+x}" ]; then export "POSTGRES_USER=$value"; fi
-      ;;
-    POSTGRES_PASSWORD)
-      if [ -z "${POSTGRES_PASSWORD+x}" ]; then export "POSTGRES_PASSWORD=$value"; fi
-      ;;
-    POSTGRES_PORT)
-      if [ -z "${POSTGRES_PORT+x}" ]; then export "POSTGRES_PORT=$value"; fi
-      ;;
     SPRING_DATASOURCE_URL)
       if [ -z "${SPRING_DATASOURCE_URL+x}" ]; then export "SPRING_DATASOURCE_URL=$value"; fi
       ;;
@@ -30,6 +18,24 @@ set_env_if_unset() {
       ;;
     SERVER_PORT)
       if [ -z "${SERVER_PORT+x}" ]; then export "SERVER_PORT=$value"; fi
+      ;;
+    SUPABASE_JWT_ISSUER)
+      if [ -z "${SUPABASE_JWT_ISSUER+x}" ]; then export "SUPABASE_JWT_ISSUER=$value"; fi
+      ;;
+    SUPABASE_JWT_AUDIENCE)
+      if [ -z "${SUPABASE_JWT_AUDIENCE+x}" ]; then export "SUPABASE_JWT_AUDIENCE=$value"; fi
+      ;;
+    SUPABASE_JWT_JWK_SET_URI)
+      if [ -z "${SUPABASE_JWT_JWK_SET_URI+x}" ]; then export "SUPABASE_JWT_JWK_SET_URI=$value"; fi
+      ;;
+    SUPABASE_JWT_SECRET)
+      if [ -z "${SUPABASE_JWT_SECRET+x}" ]; then export "SUPABASE_JWT_SECRET=$value"; fi
+      ;;
+    CORS_ALLOWED_ORIGINS)
+      if [ -z "${CORS_ALLOWED_ORIGINS+x}" ]; then export "CORS_ALLOWED_ORIGINS=$value"; fi
+      ;;
+    DB_CONNECTION_TIMEOUT_MS)
+      if [ -z "${DB_CONNECTION_TIMEOUT_MS+x}" ]; then export "DB_CONNECTION_TIMEOUT_MS=$value"; fi
       ;;
     *)
       printf '%s\n' 'Unsupported variable in .env.' >&2
@@ -64,17 +70,34 @@ if [ -f .env ]; then
 fi
 
 if [ -z "${SPRING_DATASOURCE_URL+x}" ]; then
-  export SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-pulso}"
+  export SPRING_DATASOURCE_URL="jdbc:postgresql://127.0.0.1:54322/postgres"
 fi
 
 if [ -z "${SPRING_DATASOURCE_USERNAME+x}" ]; then
-  export SPRING_DATASOURCE_USERNAME="${POSTGRES_USER:-pulso}"
+  export SPRING_DATASOURCE_USERNAME="postgres"
 fi
 
 if [ -z "${SPRING_DATASOURCE_PASSWORD+x}" ]; then
-  export SPRING_DATASOURCE_PASSWORD="${POSTGRES_PASSWORD:-}"
+  export SPRING_DATASOURCE_PASSWORD=""
 fi
 
-: "${SPRING_DATASOURCE_PASSWORD:?Set POSTGRES_PASSWORD or SPRING_DATASOURCE_PASSWORD in the environment or .env}"
+: "${SPRING_DATASOURCE_PASSWORD:?Set SPRING_DATASOURCE_PASSWORD in the environment or .env}"
+
+if [ -z "${SUPABASE_JWT_ISSUER+x}" ]; then
+  export SUPABASE_JWT_ISSUER="http://127.0.0.1:54321/auth/v1"
+fi
+
+if [ -z "${SUPABASE_JWT_AUDIENCE+x}" ]; then
+  export SUPABASE_JWT_AUDIENCE="authenticated"
+fi
+
+if [ -z "${SUPABASE_JWT_JWK_SET_URI+x}" ]; then
+  export SUPABASE_JWT_JWK_SET_URI="http://127.0.0.1:54321/auth/v1/.well-known/jwks.json"
+fi
+
+if [ -z "${SUPABASE_JWT_JWK_SET_URI:-}" ] && [ -z "${SUPABASE_JWT_SECRET:-}" ]; then
+  printf '%s\n' 'Set SUPABASE_JWT_JWK_SET_URI or SUPABASE_JWT_SECRET in the environment or .env.' >&2
+  exit 1
+fi
 
 exec ./backend/gradlew -p backend bootRun

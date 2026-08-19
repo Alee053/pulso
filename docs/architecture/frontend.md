@@ -12,10 +12,13 @@ frontend/src/
 └── app/
     ├── app.ts                           # application composition
     ├── app.config.ts                    # application-wide providers
+    ├── core/
+    │   ├── auth/                        # Supabase session gateway and interceptor
+    │   └── config/                      # public API/Auth configuration
     ├── features/
     │   └── discovery/
     │       ├── application/             # session state and orchestration
-    │       ├── data-access/             # current local mock adapter
+    │       ├── data-access/             # mock adapter and typed HTTP adapter
     │       ├── domain/                  # startup types and pure recommendation policy
     │       └── ui/                      # onboarding, feed, saved, profile, and modal UI
     └── shared/
@@ -23,7 +26,9 @@ frontend/src/
         └── icon/                        # small local icon surface for the prototype
 ```
 
-The current flow is deliberately local-data driven. [`PulsoSession`](../../frontend/src/app/features/discovery/application/pulso-session.ts) is the application-facing session module: it owns onboarding completion, the active view, discovery feed, saved items, interested items, and learned preference weights. [`recommendations.ts`](../../frontend/src/app/features/discovery/domain/recommendations.ts) is a pure policy module and has no Angular or browser dependency. [`mock-startups.ts`](../../frontend/src/app/features/discovery/data-access/mock-startups.ts) is an adapter for fictional data, not a future database contract.
+The visual flow is deliberately local-data driven. [`PulsoSession`](../../frontend/src/app/features/discovery/application/pulso-session.ts) is the application-facing session module: it owns onboarding completion, the active view, discovery feed, saved items, interested items, and learned preference weights. [`recommendations.ts`](../../frontend/src/app/features/discovery/domain/recommendations.ts) is a pure policy module and has no Angular or browser dependency. [`mock-startups.ts`](../../frontend/src/app/features/discovery/data-access/mock-startups.ts) is an adapter for fictional data, not a future database contract.
+
+The first server-backed seam is [`StartupsApi`](../../frontend/src/app/features/discovery/data-access/startups-api.ts), a typed Angular `HttpClient` adapter for `GET /api/v1/startups`. It maps transport DTOs to a small discovery summary type and validates bounded pagination inputs. [`SupabaseAuthGateway`](../../frontend/src/app/core/auth/supabase-auth.gateway.ts) hides the provider client and returns only the current access token. The global [`authInterceptor`](../../frontend/src/app/core/auth/auth.interceptor.ts) adds that token only to backend API requests without placing Auth or raw URLs in UI components.
 
 The former Vite/React demo has been removed from the project. There is one frontend framework and one root development command: `pnpm dev`.
 
@@ -31,13 +36,16 @@ The former Vite/React demo has been removed from the project. There is one front
 
 ```text
 Angular UI → discovery session/application → domain policy
-                                      └──→ data-access adapter
+                                      └──→ feature data-access adapter → HTTP API
+
+Angular HTTP interceptor → Auth gateway → Supabase Auth session
 ```
 
 - UI components receive inputs and emit user intents. They do not rank startups or own the whole session.
 - Application state coordinates feature workflows but does not contain template markup or browser-only rendering details.
 - Domain rules accept data and return results. They should remain testable without Angular, HTTP, or a DOM.
-- Data-access modules own the transition from mock data today to HTTP DTO mapping later.
+- Data-access modules own the transition from mock data today to HTTP DTO mapping later. `StartupsApi` is an example; it is not yet wired into the mock-driven visual session.
+- Supabase is an Auth dependency only in the browser. Product data goes through backend adapters so the server remains the authorization boundary.
 - Shared components are intentionally small and stable. A feature-local component should move into `shared/` only after a second feature needs the same interface.
 
 These are deep-module seams: the caller-facing surface is small, while the module hides state transitions, ranking policy, or rendering details. Keep the interface stable and the implementation local.
@@ -72,14 +80,14 @@ These are deep-module seams: the caller-facing surface is small, while the modul
 - Name folders after product behavior (`discovery`, `saved`, `profile`), not generic buckets such as `utils`, `helpers`, or `common`.
 - Keep feature-local code local until reuse is demonstrated. `shared/` is a curated public surface, not a dumping ground.
 
-## Next frontend seam: real API integration
+## Next frontend seam: replace the discovery mock
 
 The next vertical slice should replace the mock data-access implementation while preserving the domain and UI interfaces:
 
-1. Define the first `/api/v1` request and response contract with the backend.
-2. Add a discovery HTTP adapter and DTO-to-domain mapper under `features/discovery/data-access/`.
-3. Model loading, empty, error, retry, and stale-data behavior in the application module.
-4. Add adapter and component tests at the public interfaces.
+1. Map the API summary DTO to the discovery domain type without leaking transport fields into templates.
+2. Model loading, empty, error, retry, and stale-data behavior in the application module.
+3. Decide how much server data is needed for the full startup detail before changing the response contract.
+4. Add an integration test against the local Supabase seed and backend.
 5. Remove mock data only after the real endpoint has a verified local integration path.
 
 Do not create a shared TypeScript package for the first endpoint. Generate or share contract artifacts only after repeated cross-project duplication proves that it reduces rather than increases coupling.

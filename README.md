@@ -1,51 +1,65 @@
 # Pulso
 
-Pulso is a monorepo for the product frontend and backend API.
+Pulso is a pnpm monorepo for the product frontend, backend API, and database
+change history.
 
-The documentation index and architecture conventions are in [`docs/`](docs/README.md).
+The documentation index and architecture conventions are in
+[`docs/`](docs/README.md). The product context and requirements are in
+[`docs/especificacion-general.md`](docs/especificacion-general.md).
 
 ## Projects
 
-| Project | Directory | Current stack | Role |
+| Project | Directory | Stack | Role |
 | --- | --- | --- | --- |
-| Frontend | `frontend/` | Angular 22 standalone + TypeScript 6 + Tailwind CSS 4 | Browser application and feature UI |
-| Backend | `backend/` | Java 21 + Spring Boot 4.1 + Gradle | API boundary and PostgreSQL integration point |
+| Frontend | `frontend/` | Angular 22 standalone, TypeScript 6, Tailwind CSS 4, RxJS 7 | Browser application and feature UI |
+| Backend | `backend/` | Java 21, Spring Boot 4.1, Gradle 9.4.1 | Versioned REST API and PostgreSQL integration |
+| Database | `database/` | Supabase CLI, PostgreSQL, Supabase Auth | Local services, migrations, seed data, and hosted Supabase workflow |
 
-The checked-in frontend is an Angular standalone application. Its discovery data is still local mock data while the Spring Boot API contract is being defined.
+The browser talks to the backend through `/api/v1`. It uses the Supabase
+client only for Auth sessions. The backend validates Supabase JWTs and owns
+product authorization; the browser never connects to PostgreSQL directly.
+
+The discovery UI remains a visual prototype backed by fictional local mocks.
+The typed `StartupsApi` adapter and backend endpoint are the first integration
+seam for replacing those mocks in a later vertical slice.
 
 ## Prerequisites
 
-- Node.js 24 or 26 and pnpm 11
+- Node.js 24 LTS or 26 and pnpm 11
 - Java 21
-- Docker Compose
+- Docker Engine with Compose support
 
-The repository includes `.nvmrc` and a Gradle Wrapper for consistent local tooling. The first backend command may download the Gradle distribution and Java dependencies.
+The Supabase CLI is a pinned project dependency, so a separate global CLI is
+not required. The repository includes `.nvmrc` and a Gradle Wrapper for
+consistent local tooling. The first commands may download Java dependencies and
+Supabase Docker images.
 
 ## Quick start
 
-Install the frontend workspace dependencies:
+Install dependencies and create the ignored backend environment file:
 
 ```sh
-cp .env.example .env
-# Edit .env and set POSTGRES_PASSWORD to a local-only value.
 pnpm install
+cp .env.example .env
 ```
 
-Start PostgreSQL:
+Start the local Supabase stack, apply migrations, and inspect local connection
+values:
 
 ```sh
 pnpm db:up
+pnpm db:reset
+pnpm db:status
 ```
 
-Run the backend API in a second terminal:
+The local `.env.example` already points the backend to the Supabase Auth JWKS
+endpoint. Keep the JWT secret fallback blank unless a legacy HS256 token is
+being tested; never commit it.
+
+Run the backend and frontend in separate terminals:
 
 ```sh
 pnpm backend:run
-```
-
-Run the frontend in a third terminal:
-
-```sh
 pnpm dev
 ```
 
@@ -54,8 +68,11 @@ The development services are available at:
 - Frontend: <http://localhost:4200>
 - Backend liveness: <http://localhost:8080/api/health>
 - Backend dependency health: <http://localhost:8080/actuator/health>
+- Supabase API/Auth: <http://localhost:54321>
+- Supabase Studio: <http://localhost:54323>
+- Supabase Mailpit: <http://localhost:54324>
 
-Stop PostgreSQL when finished:
+Stop local Supabase when finished:
 
 ```sh
 pnpm db:down
@@ -65,20 +82,48 @@ pnpm db:down
 
 | Command | Purpose |
 | --- | --- |
-| `pnpm dev` | Run the frontend development server |
-| `pnpm build` | Strictly compile and build the frontend |
-| `pnpm preview` | Preview the frontend production build |
-| `pnpm backend:run` | Run the Spring Boot API |
+| `pnpm install` | Install the workspace dependencies |
+| `pnpm dev` | Run the Angular development server |
+| `pnpm build` | Build the frontend |
+| `pnpm --filter @pulso/frontend test` | Run the Angular/Vitest suite |
+| `pnpm backend:run` | Load `.env` and run Spring Boot |
 | `pnpm backend:test` | Run backend tests |
 | `pnpm backend:build` | Build the backend executable JAR |
-| `pnpm db:up` | Start the local PostgreSQL container |
-| `pnpm db:down` | Stop the local PostgreSQL container |
-| `pnpm db:logs` | Follow PostgreSQL logs |
+| `pnpm db:up` | Start the local Supabase services |
+| `pnpm db:down` | Stop the local Supabase services |
+| `pnpm db:reset` | Recreate the local database and run migrations/seed |
+| `pnpm db:status` | Show local URLs and development keys |
+| `pnpm db:lint` | Check local SQL migrations |
+| `pnpm db:test` | Run Supabase database tests when present |
+| `pnpm db:migration:new <name>` | Create an ordered migration file |
+| `pnpm db:push:dry-run` | Preview migrations for the linked hosted project |
+| `pnpm db:push` | Apply migrations to a linked hosted project after review |
 
 ## Configuration
 
-Copy `.env.example` to `.env` and set `POSTGRES_PASSWORD` before starting PostgreSQL. Compose loads the file automatically, and `pnpm backend:run` loads the same supported local configuration for the Spring Boot process. The root runner accepts unquoted, single-line `KEY=value` entries for the variables listed in `.env.example`, rejects ambiguous dotenv syntax, and preserves explicitly set shell variables. The backend also accepts `SPRING_DATASOURCE_*` and `SERVER_PORT` environment variables directly when Gradle is run outside the root script.
+The root `.env` is backend-only. It supports the variables in
+[`.env.example`](.env.example):
 
-`/api/health` is an API liveness check and does not claim that PostgreSQL is available. Use `/actuator/health` for dependency health.
+- `SPRING_DATASOURCE_*` configure the JDBC connection.
+- `SUPABASE_JWT_ISSUER` and `SUPABASE_JWT_AUDIENCE` validate token claims.
+- Local development uses the JWKS endpoint emitted by the Supabase CLI.
+- Hosted Supabase should use `SUPABASE_JWT_JWK_SET_URI` with asymmetric signing
+  keys; `SUPABASE_JWT_SECRET` is only an explicit legacy fallback. Do not copy
+  a hosted service-role key into the backend or frontend.
+- `CORS_ALLOWED_ORIGINS` controls browser access to the API.
 
-Do not commit `.env` files or real credentials.
+Browser Auth configuration lives in
+[`frontend/src/app/core/config/app-config.ts`](frontend/src/app/core/config/app-config.ts).
+Only the Supabase URL and publishable/anon key belong there; both are public
+browser configuration. The gateway intentionally remains inactive while those
+values are blank, so the visual prototype can run without an Auth project.
+
+The endpoint examples and response contracts are documented in
+[`docs/api.md`](docs/api.md). The database workflow and schema ownership are in
+[`database/README.md`](database/README.md).
+
+`/api/health` is an API liveness check and does not claim that PostgreSQL is
+available. Use `/actuator/health` for dependency health.
+
+Do not commit `.env` files, hosted credentials, JWT secrets, service-role keys,
+or generated Supabase local state.

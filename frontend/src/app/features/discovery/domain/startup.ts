@@ -55,3 +55,13 @@ export interface Startup {
   popularity: number
   exploration: number
 }
+
+export interface StartupSummary {
+  id: string
+  slug: string
+  name: string
+  tagline: string
+  sector: string
+  city: string
+  stage: string
+}

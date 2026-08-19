@@ -1,0 +1,9 @@
+pulso:
+  security:
+    supabase:
+      issuer: http://test.supabase.local/auth/v1
+      jwk-set-uri:
+      secret: test-secret-that-is-long-enough-for-local-tests
+      audience: authenticated
+  cors:
+    allowed-origins: http://localhost:4200

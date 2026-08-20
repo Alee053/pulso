@@ -1,0 +1,151 @@
+# Backend architecture
+
+## Current implementation: Spring Boot foundation
+
+The backend uses Java 21, Spring Boot 4.1, Spring MVC, Spring Security's OAuth2
+resource-server support, Spring JDBC, and PostgreSQL. Its current package shape
+is:
+
+```text
+com.pulso.backend/
+├── PulsoBackendApplication.java       # application bootstrap
+├── config/                            # security, CORS, typed provider config
+├── ops/
+│   └── api/                           # liveness endpoint
+└── discovery/
+    ├── api/                           # startup and current-user HTTP contracts
+    ├── application/                   # use cases and output ports
+    ├── domain/                        # transport-independent results
+    └── infrastructure/                # JDBC adapter
+```
+
+The public examples are:
+
+- `GET /api/health` — process liveness.
+- `GET /api/v1/startups?limit=20` — published startup catalog.
+- `GET /api/v1/me` — authenticated JWT claim example.
+- `/actuator/health` — datasource/dependency health.
+
+The endpoint schemas and curl examples live in [`docs/api.md`](../api.md).
+
+## Feature plus inward layers
+
+The first real product feature is organized by business capability. Add another
+feature package only when there is a real business capability, not merely
+because a new table or controller exists. Spring Boot does not require this
+layout; it is a deliberate choice for locality and team ownership. See
+[Spring's code-structuring guidance](https://docs.spring.io/spring-boot/reference/using/structuring-your-code.html).
+
+### `api`
+
+- Translate HTTP requests into application inputs and application results into
+  stable responses.
+- Own transport DTOs, validation, status codes, and problem-detail mapping.
+- Never contain business policy, SQL, transaction choreography, or provider
+  calls.
+- Keep controllers thin and exercise their contract with MVC slice tests.
+
+### `application`
+
+- Expose small use-case interfaces with meaningful inputs and results.
+- Coordinate domain policies and output ports.
+- Define transaction boundaries and authorization decisions for the use case.
+- Do not return JDBC records or HTTP DTOs.
+
+### `domain`
+
+- Own product rules, invariants, value objects, and domain decisions.
+- Remain independent of Spring, HTTP, PostgreSQL, and external SDKs.
+- Return explicit results or domain errors; do not hide meaningful failures in
+  `null`.
+
+### `infrastructure`
+
+- Implement output ports through adapters such as JDBC repositories, outbound
+  HTTP clients, or queues.
+- Translate database records at the seam.
+- Own connection details, timeouts, and provider-specific failure mapping.
+- Never make infrastructure types part of the domain interface.
+
+### `config` and `ops`
+
+- `config` wires cross-cutting concerns and typed configuration; it is not a
+  general-purpose service layer.
+- `ops` contains health behavior separate from product capabilities.
+- `/api/health` is liveness. Actuator health is the dependency/readiness signal.
+
+## Authentication boundary
+
+Supabase Auth is the identity provider. Angular sends the access token in the
+`Authorization: Bearer` header; Spring Security validates its signature, issuer,
+timestamps, and audience before a protected controller receives a `Jwt`.
+
+- Hosted Supabase: configure `SUPABASE_JWT_JWK_SET_URI` and prefer the project's
+  asymmetric JWKS endpoint. Configure exactly one verification source.
+- Local Supabase CLI: use the local Auth JWKS endpoint from `.env.example`; the
+  current CLI issues ES256 user tokens.
+- `SUPABASE_JWT_SECRET` remains available only as an explicit legacy HS256
+  fallback.
+- Protected user routes accept the `authenticated` JWT role and reject the
+  `service_role` role.
+- The server must never log or return the JWT secret or a service-role key.
+- `GET /api/v1/startups` is public by design for the discovery baseline;
+  `GET /api/v1/me` demonstrates a protected route.
+- Every future write use case must make its authorization rule explicit in the
+  application layer. Authentication alone is not authorization.
+
+The full database/Auth choice and its trade-offs are recorded in
+[ADR 0003](../adr/0003-supabase-database-and-auth.md).
+
+## Persistence rules
+
+- Supabase PostgreSQL is the system of record.
+- The canonical schema is the ordered SQL history in
+  [`database/supabase/migrations/`](../../database/supabase/migrations/).
+- Use explicit JDBC queries behind an application port for the first slices;
+  do not introduce JPA/Hibernate before the domain model and aggregate
+  boundaries justify it.
+- Application startup must not create or alter tables.
+- Keep transactions around one application use case where possible and avoid
+  holding a transaction across remote calls.
+- Use explicit query boundaries, pagination for collections, and indexes
+  justified by query patterns.
+- Do not expose entities, `Row` objects, or database records directly from
+  controllers.
+- Keep connection pool size, query timeouts, and retry policy configurable
+  through environment-backed configuration.
+
+The backend uses a direct or session-pooled PostgreSQL connection. A transaction
+pooler should not be used for this JDBC setup when prepared statements are
+enabled.
+
+## API rules
+
+- New product endpoints start under `/api/v1` and use resource-oriented nouns.
+- Define request/response DTOs per interface. Do not reuse persistence records
+  as API contracts.
+- Validate at the HTTP seam, then enforce business invariants again in the
+  domain when they matter.
+- Collection endpoints use a bounded `offset`/`limit` window with stable
+  ordering, or a cursor when offset pagination is no longer adequate.
+- Use `ProblemDetail` for client errors and avoid leaking database exception
+  details.
+- Prefer additive contract changes. Breaking changes require a new version or
+  a documented compatibility period.
+
+## Testing strategy
+
+- Domain tests: fast unit tests for policies and invariants with no Spring or
+  database.
+- Application tests: use-case tests with fake adapters at the seam.
+- API tests: MVC tests for status, validation, security, and response contracts.
+- Infrastructure tests: PostgreSQL-backed integration tests when repository
+  adapters exist.
+- Database checks: reset, lint, and SQL tests through the Supabase CLI.
+- System smoke tests: start Supabase and the application, then exercise health
+  and one critical path.
+
+The current backend tests cover the health contract, the startup use case and
+controller, and the protected `/api/v1/me` behavior. The remaining live
+database smoke test is a local-environment check, not a substitute for tests at
+the application seams.

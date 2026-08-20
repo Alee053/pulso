@@ -1,7 +1,14 @@
 node_modules/
+.angular/
 dist/
 *.tsbuildinfo
 .DS_Store
 .env
 .env.*
 !.env.example
+database/.env
+database/supabase/.branches/
+database/supabase/.temp/
+.gradle/
+backend/build/
+backend/out/

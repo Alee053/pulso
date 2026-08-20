@@ -2,26 +2,28 @@
   "name": "pulso",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview"
+  "packageManager": "pnpm@11.17.0",
+  "engines": {
+    "node": ">=24.15.0 <25 || >=26.0.0 <27"
   },
-  "dependencies": {
-    "framer-motion": "^13.0.0",
-    "lucide-react": "^0.542.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+  "scripts": {
+    "dev": "pnpm --filter @pulso/frontend dev",
+    "build": "pnpm --filter @pulso/frontend build",
+    "preview": "pnpm --filter @pulso/frontend preview",
+    "db:up": "pnpm exec supabase --workdir database start",
+    "db:down": "pnpm exec supabase --workdir database stop",
+    "db:reset": "pnpm exec supabase --workdir database db reset --local",
+    "db:push": "pnpm exec supabase --workdir database db push --linked",
+    "db:lint": "pnpm exec supabase --workdir database db lint --local",
+    "db:test": "pnpm exec supabase --workdir database test db --local",
+    "db:status": "pnpm exec supabase --workdir database status",
+    "db:migration:new": "pnpm exec supabase --workdir database migration new",
+    "db:push:dry-run": "pnpm exec supabase --workdir database db push --linked --dry-run",
+    "backend:run": "./scripts/run-backend.sh",
+    "backend:test": "./backend/gradlew -p backend test",
+    "backend:build": "./backend/gradlew -p backend build"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.3.3",
-    "@types/node": "^26.2.0",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
-    "@vitejs/plugin-react": "^6.0.5",
-    "tailwindcss": "^4.3.3",
-    "typescript": "~7.0.2",
-    "vite": "^8.2.1"
+    "supabase": "2.109.1"
   }
 }

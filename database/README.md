@@ -5,15 +5,23 @@ The canonical schema is the ordered SQL history in
 [`supabase/migrations/`](supabase/migrations/); application startup does not
 create or alter tables.
 
+For the complete developer onboarding flow, including the backend and Angular
+dev server, start at [`../README.md#developer-onboarding`](../README.md#developer-onboarding).
+
 ## Local workflow
 
-From the repository root:
+From the repository root, start the local database services:
 
 ```sh
 pnpm db:up
 pnpm db:reset
 pnpm db:status
 ```
+
+Keep the services running in the background or in one terminal. In another
+terminal, run `pnpm backend:run`; in a third terminal, run `pnpm dev`. The
+backend expects the local PostgreSQL password and Auth JWKS values from the
+ignored root `.env` created from [`.env.example`](../.env.example).
 
 The local stack provides PostgreSQL, Auth, Studio and Mailpit through Docker.
 It is for development only and must not be exposed to public traffic.
@@ -49,6 +57,10 @@ pnpm db:test
 `seed.sql` supplies two fictional published startups. The pgTAP foundation
 checks live in `supabase/tests/database/01_foundation.sql` and run against the
 local database after a reset.
+
+`pnpm db:reset` is the normal way to make a new checkout deterministic or to
+replay a migration. It removes local database data before applying the complete
+migration and seed history; never run it against a linked hosted project.
 
 Use `pnpm db:push` only after linking this checkout to the intended hosted
 Supabase project. Review `pnpm db:push:dry-run` before applying a remote

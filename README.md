@@ -34,36 +34,103 @@ not required. The repository includes `.nvmrc` and a Gradle Wrapper for
 consistent local tooling. The first commands may download Java dependencies and
 Supabase Docker images.
 
-## Quick start
+## Developer onboarding
 
-Install dependencies and create the ignored backend environment file:
+This is the canonical first-run path for a full local environment. It starts
+the Supabase services, the Spring Boot API, and the Angular dev server. The
+first `pnpm db:up` may download several Docker images.
+
+### 1. Check the local toolchain
+
+Use Node 24 LTS or 26, Java 21, pnpm 11, and a running Docker daemon:
+
+```sh
+node --version
+pnpm --version
+java --version
+docker info
+docker compose version
+```
+
+If you use `nvm`, the repository includes the recommended Node major version:
+
+```sh
+nvm install
+nvm use
+```
+
+If pnpm is not installed, enable the version declared by the repository:
+
+```sh
+corepack enable
+corepack prepare pnpm@11.17.0 --activate
+```
+
+### 2. Install dependencies and create local configuration
+
+Run these commands from the repository root. Create `.env` only if it does not
+already exist; it is ignored by Git and contains local backend defaults.
 
 ```sh
 pnpm install
-cp .env.example .env
+test -f .env || cp .env.example .env
 ```
 
-Start the local Supabase stack, apply migrations, and inspect local connection
-values:
+The checked-in example points to the local Supabase database and Auth JWKS.
+Do not replace the JWKS configuration with a service-role key. The frontend
+can run with its Supabase values blank because the current visual prototype
+uses fictional local data; configure the publishable key later in
+`frontend/src/app/core/config/app-config.ts` when Auth UI is introduced.
+
+### 3. Start Supabase — Terminal 1
+
+Keep this terminal or the Docker services running while using the backend:
 
 ```sh
 pnpm db:up
 pnpm db:reset
-pnpm db:status
 ```
 
-The local `.env.example` already points the backend to the Supabase Auth JWKS
-endpoint. Keep the JWT secret fallback blank unless a legacy HS256 token is
-being tested; never commit it.
+`db:reset` recreates the local database, applies every migration, and loads the
+two fictional seed startups. It is safe for this local development database,
+but it deletes local data created by previous runs. Use `pnpm db:status` when
+you need the local URLs or development keys; do not paste those keys into
+issues, logs, or commits.
 
-Run the backend and frontend in separate terminals:
+### 4. Start the backend — Terminal 2
+
+Open a second terminal in the repository root:
 
 ```sh
 pnpm backend:run
+```
+
+The runner loads `.env`, connects Spring Boot to local Supabase PostgreSQL,
+and starts the API on port `8080`. Wait until the logs show that the
+application has started before testing API requests.
+
+### 5. Start the frontend — Terminal 3
+
+Open a third terminal in the repository root:
+
+```sh
 pnpm dev
 ```
 
-The development services are available at:
+Open <http://localhost:4200>. The Angular development server does not start the
+backend, so its terminal must remain running for server-backed requests.
+
+### 6. Verify the local stack
+
+Run these checks from any terminal:
+
+```sh
+curl http://localhost:8080/api/health
+curl http://localhost:8080/actuator/health
+curl 'http://localhost:8080/api/v1/startups?offset=0&limit=2'
+```
+
+The local services are available at:
 
 - Frontend: <http://localhost:4200>
 - Backend liveness: <http://localhost:8080/api/health>
@@ -72,11 +139,41 @@ The development services are available at:
 - Supabase Studio: <http://localhost:54323>
 - Supabase Mailpit: <http://localhost:54324>
 
-Stop local Supabase when finished:
+### Stop the environment
+
+Press `Ctrl+C` in the frontend and backend terminals, then stop Supabase:
 
 ```sh
 pnpm db:down
 ```
+
+### Frontend-only quick path
+
+If you only need to work on the current visual prototype, Supabase and Spring
+Boot are not required:
+
+```sh
+pnpm install
+pnpm dev
+```
+
+The prototype uses local mock data. Start the full stack when working on the
+real API, database migrations, or Auth integration.
+
+## Troubleshooting
+
+| Symptom | Fix |
+| --- | --- |
+| `pnpm: command not found` | Enable Corepack or install pnpm 11, then rerun `pnpm install`. |
+| Node engine or Angular version warning | Use Node 24 LTS or 26; run `nvm install && nvm use` if using nvm. |
+| Docker connection error during `pnpm db:up` | Start Docker Engine/Desktop and confirm `docker info` succeeds. |
+| Backend says `Set SPRING_DATASOURCE_PASSWORD` | Create `.env` from `.env.example`, or provide the variable in the shell. |
+| `/actuator/health` is down | Start Supabase first, then restart `pnpm backend:run`; `/api/health` only checks process liveness. |
+| Port `4200`, `8080`, or `54321` is busy | Stop the process using the port before starting the corresponding service. |
+| Local data or migrations are stale | Run `pnpm db:reset`; this deletes local database data and reapplies migrations/seed. |
+
+For database-specific workflows, see [`database/README.md`](database/README.md).
+For endpoint contracts and curl examples, see [`docs/api.md`](docs/api.md).
 
 ## Commands
 

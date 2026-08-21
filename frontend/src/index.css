@@ -27,7 +27,7 @@ body {
   margin: 0;
   overscroll-behavior: none;
   background:
-    radial-gradient(circle at 8% 0%, rgba(151, 255, 196, 0.08), transparent 29rem),
+    radial-gradient(circle at 8% 0%, rgba(112, 209, 255, 0.08), transparent 29rem),
     radial-gradient(circle at 92% 5%, rgba(119, 175, 255, 0.08), transparent 30rem),
     #0a0e0d;
 }
@@ -85,7 +85,7 @@ button {
 
 ::selection {
   color: #0a0e0d;
-  background: #b9f5d0;
+  background: #bdeaff;
 }
 
 .glass-panel {
@@ -117,7 +117,7 @@ button {
     rgba(255, 255, 255, 0.1),
     transparent 28%,
     transparent 68%,
-    rgba(180, 255, 212, 0.04)
+    rgba(176, 228, 255, 0.04)
   );
 }
 
@@ -143,7 +143,7 @@ button {
   width: 8rem;
   height: 8rem;
   border-radius: 999px;
-  background: rgba(190, 255, 212, 0.08);
+  background: rgba(179, 228, 255, 0.08);
   filter: blur(24px);
   content: "";
   opacity: 0;
@@ -152,8 +152,8 @@ button {
 
 .glass-choice:hover,
 .glass-choice--selected {
-  border-color: rgba(190, 255, 212, 0.38);
-  background: rgba(190, 255, 212, 0.09);
+  border-color: rgba(179, 228, 255, 0.38);
+  background: rgba(179, 228, 255, 0.09);
   box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.15), inset 0 1px rgba(255, 255, 255, 0.13);
 }
 
@@ -168,14 +168,14 @@ button {
   align-items: center;
   justify-content: center;
   gap: 0.65rem;
-  border: 1px solid rgba(211, 255, 224, 0.9);
+  border: 1px solid rgba(218, 244, 255, 0.9);
   border-radius: 999px;
   padding: 0.8rem 1.2rem 0.8rem 1.35rem;
-  background: #baf4ce;
-  color: #0a1710;
+  background: #a9e1ff;
+  color: #071521;
   font-size: 0.82rem;
   font-weight: 700;
-  box-shadow: 0 0.7rem 2rem rgba(116, 228, 155, 0.12);
+  box-shadow: 0 0.7rem 2rem rgba(75, 174, 236, 0.12);
   cursor: pointer;
   transition:
     background 180ms ease,
@@ -184,8 +184,8 @@ button {
 }
 
 .solid-button:hover:not(:disabled) {
-  background: #d4f9df;
-  box-shadow: 0 0.9rem 2.2rem rgba(116, 228, 155, 0.2);
+  background: #d5f1ff;
+  box-shadow: 0 0.9rem 2.2rem rgba(75, 174, 236, 0.2);
 }
 
 .solid-button:disabled {
@@ -224,8 +224,8 @@ button {
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: rgba(186, 244, 206, 0.16);
-  color: #baf4ce;
+  background: rgba(169, 225, 255, 0.16);
+  color: #a9e1ff;
   font-size: 0.62rem;
 }
 
@@ -249,7 +249,7 @@ button {
 
 .mobile-nav__item--active {
   background: rgba(255, 255, 255, 0.09);
-  color: #d6f8e0;
+  color: #d8f3ff;
 }
 
 .mobile-nav__count {
@@ -263,8 +263,8 @@ button {
   justify-content: center;
   border: 2px solid #131917;
   border-radius: 999px;
-  background: #baf4ce;
-  color: #0a1710;
+  background: #a9e1ff;
+  color: #071521;
   font-size: 0.5rem;
 }
 
@@ -313,7 +313,7 @@ button {
 
 .interest-pill {
   padding: 0.6rem 0.75rem;
-  color: rgba(215, 255, 226, 0.72);
+  color: rgba(213, 241, 255, 0.72);
 }
 
 .discovery-card {
@@ -335,7 +335,7 @@ button {
 }
 
 .discovery-card:focus-visible {
-  outline: 2px solid #baf4ce;
+  outline: 2px solid #a9e1ff;
   outline-offset: 4px;
 }
 
@@ -345,10 +345,10 @@ button {
   height: 2.8rem;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(186, 244, 206, 0.38);
+  border: 1px solid rgba(169, 225, 255, 0.38);
   border-radius: 999px;
-  background: rgba(186, 244, 206, 0.13);
-  color: rgba(221, 255, 231, 0.9);
+  background: rgba(169, 225, 255, 0.13);
+  color: rgba(216, 244, 255, 0.9);
   cursor: pointer;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -372,9 +372,9 @@ button {
 
 .discovery-card__save:hover:not(:disabled),
 .discovery-card__save:focus-visible {
-  border-color: rgba(186, 244, 206, 0.65);
-  background: rgba(186, 244, 206, 0.16);
-  color: #baf4ce;
+  border-color: rgba(169, 225, 255, 0.65);
+  background: rgba(169, 225, 255, 0.16);
+  color: #a9e1ff;
   outline: none;
   transform: scale(1.06);
 }
@@ -427,8 +427,8 @@ button {
   top: auto;
   bottom: 3.75rem;
   left: 50%;
-  color: #d7f9df;
-  background: rgba(34, 106, 65, 0.52);
+  color: #d8f3ff;
+  background: rgba(36, 100, 142, 0.52);
   transform: translateX(-50%);
 }
 
@@ -482,7 +482,7 @@ button {
 }
 
 .discovery-action--save:not(:disabled):hover {
-  color: #baf4ce;
+  color: #a9e1ff;
 }
 
 .discovery-action__icon {
@@ -507,8 +507,8 @@ button {
 }
 
 .discovery-action--save .discovery-action__icon {
-  border-color: rgba(186, 244, 206, 0.2);
-  background: rgba(186, 244, 206, 0.06);
+  border-color: rgba(169, 225, 255, 0.2);
+  background: rgba(169, 225, 255, 0.06);
 }
 
 .discovery-action:not(:disabled):hover .discovery-action__icon {
@@ -554,11 +554,11 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 0.65rem;
-  border: 1px solid rgba(186, 244, 206, 0.2);
+  border: 1px solid rgba(169, 225, 255, 0.2);
   border-radius: 999px;
   background: rgba(19, 28, 23, 0.9);
   padding: 0.6rem 0.9rem 0.6rem 0.6rem;
-  color: rgba(237, 255, 242, 0.85);
+  color: rgba(237, 249, 255, 0.85);
   font-size: 0.72rem;
   box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.28);
   backdrop-filter: blur(20px);
@@ -576,7 +576,7 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  color: rgba(190, 250, 211, 0.78);
+  color: rgba(185, 230, 255, 0.78);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.19em;
@@ -587,8 +587,8 @@ button {
   width: 0.45rem;
   height: 0.45rem;
   border-radius: 999px;
-  background: #a9f3c4;
-  box-shadow: 0 0 1rem rgba(169, 243, 196, 0.7);
+  background: #8fd5ff;
+  box-shadow: 0 0 1rem rgba(143, 213, 255, 0.7);
   content: "";
 }
 
@@ -602,10 +602,10 @@ button {
   pointer-events: none;
 }
 
-.ambient-orb--mint {
+.ambient-orb--sky {
   top: 10%;
   left: -12rem;
-  background: rgba(107, 229, 158, 0.32);
+  background: rgba(75, 174, 236, 0.32);
 }
 
 .ambient-orb--blue {
@@ -698,16 +698,16 @@ button {
 }
 
 .contact-button {
-  border: 1px solid rgba(186, 244, 206, 0.35);
-  background: rgba(186, 244, 206, 0.12);
-  color: #baf4ce;
+  border: 1px solid rgba(169, 225, 255, 0.35);
+  background: rgba(169, 225, 255, 0.12);
+  color: #a9e1ff;
   cursor: pointer;
 }
 
 .contact-button:hover {
-  border-color: rgba(186, 244, 206, 0.6);
-  background: rgba(186, 244, 206, 0.2);
-  color: #e1ffea;
+  border-color: rgba(169, 225, 255, 0.6);
+  background: rgba(169, 225, 255, 0.2);
+  color: #e1f6ff;
 }
 
 @media (min-width: 768px) {

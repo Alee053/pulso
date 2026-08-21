@@ -48,7 +48,7 @@
       <p class="mt-4 max-w-md text-base font-medium leading-6 text-white/82 sm:text-lg">{{ startup.pitch }}</p>
       <p class="discovery-card__description mt-3 max-w-lg text-sm leading-6 text-white/48">{{ startup.description }}</p>
       <div class="mt-5 flex flex-wrap gap-1.5"><span *ngFor="let badge of startup.badges" class="card-badge">{{ badge }}</span></div>
-      <button type="button" class="mt-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.13em] text-[#c5f8d4] transition hover:text-white" (click)="selectFromButton($event)">
+      <button type="button" class="mt-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.13em] text-[#c5edff] transition hover:text-white" (click)="selectFromButton($event)">
         Ver perfil completo <pulso-icon name="arrow-up-right" [size]="14" [strokeWidth]="1.8" />
       </button>
     </div>

@@ -9,7 +9,7 @@
     <div class="grid gap-10 lg:grid-cols-2 lg:gap-8">
       <section>
         <div class="mb-4 flex items-center justify-between">
-          <div class="flex items-center gap-2.5"><pulso-icon name="bookmark" [size]="16" class="text-[#baf4ce]" /><h2 class="text-sm font-semibold uppercase tracking-[0.13em] text-white/65">Guardados</h2></div>
+          <div class="flex items-center gap-2.5"><pulso-icon name="bookmark" [size]="16" class="text-[#a9e1ff]" /><h2 class="text-sm font-semibold uppercase tracking-[0.13em] text-white/65">Guardados</h2></div>
           <span class="text-xs text-white/30">{{ savedStartups.length }}</span>
         </div>
         <div *ngIf="savedStartups.length > 0; else noSaved" class="space-y-3">
@@ -47,7 +47,7 @@
 
   <ng-template #emptySavedState>
     <div class="flex flex-col items-center justify-center rounded-[1.75rem] border border-dashed border-white/12 bg-white/[0.025] px-6 py-16 text-center">
-      <span class="flex size-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-[#baf4ce]"><pulso-icon name="bookmark" [size]="21" [strokeWidth]="1.6" /></span>
+      <span class="flex size-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-[#a9e1ff]"><pulso-icon name="bookmark" [size]="21" [strokeWidth]="1.6" /></span>
       <h3 class="mt-5 text-base font-medium text-white/85">Tu radar está vacío</h3>
       <p class="mt-2 max-w-xs text-sm leading-6 text-white/40">Guarda las ideas que quieras volver a mirar y aparecerán aquí.</p>
     </div>

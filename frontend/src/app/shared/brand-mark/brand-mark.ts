@@ -8,11 +8,10 @@ import { Component, Input } from '@angular/core'
   template: `
     <div class="flex items-center gap-3">
       <span
-        class="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-[0.9rem] border border-white/20 bg-[#baf4ce] text-sm font-semibold text-[#0a1710] shadow-[0_0_2rem_rgba(173,245,200,0.2)]"
+        class="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-[0.9rem] shadow-[0_0_2rem_rgba(105,190,242,0.24)]"
         aria-hidden="true"
       >
-        <span class="absolute -right-2 -top-3 size-7 rounded-full bg-white/60 blur-md"></span>
-        <span class="relative">P</span>
+        <img src="assets/pulso-logo.svg" alt="" class="size-full object-cover" />
       </span>
       <span
         *ngIf="!compact"

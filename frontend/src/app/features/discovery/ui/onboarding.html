@@ -1,5 +1,5 @@
 <main class="relative min-h-screen overflow-hidden px-5 pb-8 pt-6 sm:px-10 sm:pb-12 sm:pt-8">
-  <div class="ambient-orb ambient-orb--mint" aria-hidden="true"></div>
+  <div class="ambient-orb ambient-orb--sky" aria-hidden="true"></div>
   <div class="ambient-orb ambient-orb--blue" aria-hidden="true"></div>
 
   <div class="relative mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-6xl flex-col">
@@ -46,7 +46,7 @@
             [style.animation-delay]="(0.2 + index * 0.06) + 's'"
             (click)="interestToggled.emit(interest.id)"
           >
-            <span class="flex size-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] text-[#c1f7d1] transition-colors group-hover:bg-white/10">
+            <span class="flex size-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] text-[#c7ecff] transition-colors group-hover:bg-white/10">
               <pulso-icon [name]="interest.icon" />
             </span>
             <span class="mt-6 block text-sm font-medium leading-5 text-white/90">
@@ -57,7 +57,7 @@
             </span>
             <span
               *ngIf="isSelected(interest)"
-              class="absolute right-4 top-4 flex size-6 items-center justify-center rounded-full bg-[#baf4ce] text-[#0c1710]"
+              class="absolute right-4 top-4 flex size-6 items-center justify-center rounded-full bg-[#a9e1ff] text-[#071521]"
               aria-label="Seleccionado"
             >
               <pulso-icon name="check" [size]="14" [strokeWidth]="3" />

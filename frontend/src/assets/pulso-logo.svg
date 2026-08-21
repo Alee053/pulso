@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="pulso-logo-title pulso-logo-description">
+  <title id="pulso-logo-title">Pulso</title>
+  <desc id="pulso-logo-description">A bright pulse waveform inside a sky-blue tile.</desc>
+  <rect x="2" y="2" width="92" height="92" rx="27" fill="#0d1c28" stroke="#ffffff" stroke-opacity="0.18" stroke-width="2" />
+  <rect x="9" y="9" width="78" height="78" rx="22" fill="#a9e1ff" />
+  <path d="M9 31C28 17 59 17 87 34V9H9Z" fill="#ffffff" fill-opacity="0.22" />
+  <path d="M20 50h13l8-19 11 34 10-24h14" fill="none" stroke="#f4fcff" stroke-linecap="round" stroke-linejoin="round" stroke-width="6" />
+  <path d="M20 50h13l8-19 11 34 10-24h14" fill="none" stroke="#0a2435" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
+  <circle cx="76" cy="41" r="3.5" fill="#ffffff" />
+</svg>

@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "pnpm --filter @pulso/frontend dev",
+    "start": "pnpm --filter @pulso/frontend start",
     "build": "pnpm --filter @pulso/frontend build",
     "preview": "pnpm --filter @pulso/frontend preview",
     "db:up": "pnpm exec supabase --workdir database start",

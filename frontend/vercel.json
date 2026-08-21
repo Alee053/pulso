@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "angular",
+  "buildCommand": "pnpm build",
+  "outputDirectory": "dist/pulso-frontend/browser"
+}

@@ -1,0 +1,282 @@
+classDiagram
+  direction LR
+
+  %% Supabase Auth es externo al dominio. Profile.id coincide con auth.users.id.
+  %% Los campos de auditoria createdAt/updatedAt se muestran solo donde ayudan
+  %% a entender el dominio y no en todas las entidades.
+
+  %% ---------------------------------------------------------------------------
+  %% Identidad y onboarding
+  %% ---------------------------------------------------------------------------
+
+  class Profile {
+    +UUID id
+    +text profileKind
+    +text displayName
+    +text city
+    +text department
+    +text verificationStatus
+    +text accountStatus
+    +text platformRole
+  }
+
+  class ProfilePreferences {
+    +UUID profileId
+    +json intentions
+    +json preferredSectors
+    +json preferredStages
+  }
+
+  class Tag {
+    +UUID id
+    +text slug
+    +text name
+    +text tagType
+    +boolean isActive
+  }
+
+  class ProfileTag {
+    +UUID profileId
+    +UUID tagId
+    +timestamp createdAt
+  }
+
+  class Skill {
+    +UUID id
+    +text slug
+    +text name
+    +text category
+    +boolean isActive
+  }
+
+  class ProfileSkill {
+    +UUID profileId
+    +UUID skillId
+    +text proficiency
+    +boolean isPrimary
+  }
+
+  %% ---------------------------------------------------------------------------
+  %% Proyectos y equipos
+  %% ---------------------------------------------------------------------------
+
+  class Sector {
+    +UUID id
+    +text slug
+    +text name
+    +boolean isActive
+  }
+
+  class Project {
+    +UUID id
+    +text slug
+    +text name
+    +text tagline
+    +text stage
+    +text city
+    +text department
+    +text status
+    +text verificationStatus
+    +json media
+    +json externalLinks
+  }
+
+  class ProjectTag {
+    +UUID projectId
+    +UUID tagId
+    +timestamp createdAt
+  }
+
+  class ProjectMember {
+    +UUID id
+    +UUID projectId
+    +UUID profileId
+    +text role
+    +text membershipStatus
+    +text displayTitle
+    +boolean isFeatured
+    +boolean isPublic
+  }
+
+  %% ---------------------------------------------------------------------------
+  %% Necesidades y oportunidades
+  %% ---------------------------------------------------------------------------
+
+  class ProjectOpportunity {
+    +UUID id
+    +UUID projectId
+    +text opportunityType
+    +text title
+    +text status
+    +text city
+    +boolean remoteAllowed
+  }
+
+  class OpportunitySkill {
+    +UUID opportunityId
+    +UUID skillId
+    +text importance
+  }
+
+  %% ---------------------------------------------------------------------------
+  %% Discovery e interacciones
+  %% ---------------------------------------------------------------------------
+
+  class SavedProject {
+    +UUID profileId
+    +UUID projectId
+    +timestamp savedAt
+    +timestamp unsavedAt
+  }
+
+  class ProjectFeedback {
+    +UUID profileId
+    +UUID projectId
+    +text feedbackType
+    +timestamp changedAt
+  }
+
+  class InteractionEvent {
+    +UUID id
+    +UUID profileId
+    +UUID projectId
+    +UUID opportunityId
+    +text eventType
+    +text source
+    +int position
+    +int durationMs
+    +json metadata
+    +timestamp occurredAt
+  }
+
+  %% ---------------------------------------------------------------------------
+  %% Conexion y mensajeria
+  %% ---------------------------------------------------------------------------
+
+  class ConnectionIntent {
+    +UUID id
+    +UUID fromProfileId
+    +UUID projectId
+    +UUID opportunityId
+    +text reason
+    +text status
+    +text outcomeType
+    +timestamp confirmedAt
+  }
+
+  class Conversation {
+    +UUID id
+    +text conversationType
+    +UUID projectId
+    +text status
+    +timestamp lastMessageAt
+  }
+
+  class ConversationParticipant {
+    +UUID conversationId
+    +UUID profileId
+    +text participantRole
+    +timestamp lastReadAt
+    +timestamp mutedAt
+  }
+
+  class Message {
+    +UUID id
+    +UUID conversationId
+    +UUID senderProfileId
+    +text body
+    +text messageType
+    +text status
+    +timestamp createdAt
+  }
+
+  class ProfileBlock {
+    +UUID blockerProfileId
+    +UUID blockedProfileId
+    +timestamp createdAt
+  }
+
+  %% ---------------------------------------------------------------------------
+  %% Operacion minima
+  %% ---------------------------------------------------------------------------
+
+  class Notification {
+    +UUID id
+    +UUID recipientProfileId
+    +text notificationType
+    +text title
+    +timestamp readAt
+    +timestamp createdAt
+  }
+
+  class Report {
+    +UUID id
+    +UUID reporterProfileId
+    +text reason
+    +text status
+    +text resolutionNote
+    +timestamp createdAt
+  }
+
+  class AdminAuditLog {
+    +UUID id
+    +UUID actorProfileId
+    +text action
+    +text targetType
+    +UUID targetId
+    +timestamp createdAt
+  }
+
+  %% ---------------------------------------------------------------------------
+  %% Relaciones principales
+  %% ---------------------------------------------------------------------------
+
+  Profile "1" --> "0..1" ProfilePreferences : configura
+  Profile "1" --> "*" ProfileTag : selecciona
+  Tag "1" --> "*" ProfileTag : clasifica
+  Profile "1" --> "*" ProfileSkill : declara
+  Skill "1" --> "*" ProfileSkill : representa
+
+  Profile "1" --> "*" Project : crea
+  Sector "1" --> "*" Project : clasifica
+  Project "1" --> "*" ProjectTag : usa
+  Tag "1" --> "*" ProjectTag : etiqueta
+  Project "1" --> "*" ProjectMember : contiene
+  Profile "1" --> "*" ProjectMember : participa
+
+  Project "1" --> "*" ProjectOpportunity : declara
+  Profile "1" --> "*" ProjectOpportunity : publica
+  ProjectOpportunity "1" --> "*" OpportunitySkill : requiere
+  Skill "1" --> "*" OpportunitySkill : aporta
+
+  Profile "1" --> "*" SavedProject : guarda
+  Project "1" --> "*" SavedProject : es guardado
+  Profile "1" --> "*" ProjectFeedback : evalua
+  Project "1" --> "*" ProjectFeedback : recibe feedback
+  Profile "0..1" --> "*" InteractionEvent : genera
+  Project "0..1" --> "*" InteractionEvent : recibe
+  ProjectOpportunity "0..1" --> "*" InteractionEvent : recibe
+
+  Profile "1" --> "*" ConnectionIntent : envia
+  Project "1" --> "*" ConnectionIntent : recibe
+  ProjectOpportunity "0..1" --> "*" ConnectionIntent : contextualiza
+  ConnectionIntent "0..1" --> "0..1" Conversation : inicia
+
+  Conversation "1" --> "*" ConversationParticipant : agrupa
+  Profile "1" --> "*" ConversationParticipant : participa
+  Conversation "1" --> "*" Message : contiene
+  Profile "1" --> "*" Message : envia
+  Profile "1" --> "*" ProfileBlock : bloquea
+  Profile "1" --> "*" ProfileBlock : es bloqueado
+
+  Profile "1" --> "*" Notification : recibe
+  Profile "0..1" --> "*" Notification : origina
+  Project "0..1" --> "*" Notification : contextualiza
+  Profile "1" --> "*" Report : reporta
+  Profile "0..1" --> "*" Report : es reportado
+  Project "0..1" --> "*" Report : es reportado
+  Message "0..1" --> "*" Report : es reportado
+  Profile "1" --> "*" AdminAuditLog : ejecuta
+
+  %% Extensiones futuras: Organization, RecommendationRun, MatchResult,
+  %% AnalyticsDaily, VerificationRequest y ProjectMedia.

@@ -5,6 +5,12 @@ The canonical schema is the ordered SQL history in
 [`supabase/migrations/`](supabase/migrations/); application startup does not
 create or alter tables.
 
+The current logical MVP model is documented in
+[`pulso.dbml`](pulso.dbml), with a conceptual overview in the
+[Pulso class diagram](../docs/diagrams/pulso-class-diagram.mmd). The DBML and
+diagram describe the intended domain shape; the ordered SQL migrations remain
+the source of truth for what is implemented in Supabase.
+
 For the complete developer onboarding flow, including the backend and Angular
 dev server, start at [`../README.md#developer-onboarding`](../README.md#developer-onboarding).
 

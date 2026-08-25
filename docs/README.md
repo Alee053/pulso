@@ -8,13 +8,14 @@ This directory is the durable reference for the codebase: what is deployed in th
 2. [Current stack](./stack.md) — versions, project responsibilities, local services, and known gaps.
 3. [Product specification](./especificacion-general.md) — product vision, scope, users, capabilities, and roadmap.
 4. [Architecture overview](./architecture/overview.md) — system shape, dependency direction, and integration rules.
-5. [API examples](./api.md) — current endpoint contracts, authentication, and curl examples.
-6. [Frontend architecture](./architecture/frontend.md) — Angular feature modules, state ownership, and UI boundaries.
-7. [Backend architecture](./architecture/backend.md) — Spring package structure, HTTP seams, persistence, and testing.
-8. [Scalability](./architecture/scalability.md) — default decisions and triggers for adding complexity.
-9. [Working agreements](./engineering/working-agreements.md) — team workflow, review standards, and definition of done.
-10. [Architecture decisions](./adr/0001-monorepo-project-seams.md) — decisions that are costly or surprising to reverse.
-11. [Supabase decision](./adr/0003-supabase-database-and-auth.md) — database, migrations, RLS, and Auth boundaries.
+5. [Logical data model](../database/pulso.dbml) and [class diagram](./diagrams/pulso-class-diagram.mmd) — current MVP entities and relationships.
+6. [API examples](./api.md) — current endpoint contracts, authentication, and curl examples.
+7. [Frontend architecture](./architecture/frontend.md) — Angular feature modules, state ownership, and UI boundaries.
+8. [Backend architecture](./architecture/backend.md) — Spring package structure, HTTP seams, persistence, and testing.
+9. [Scalability](./architecture/scalability.md) — default decisions and triggers for adding complexity.
+10. [Working agreements](./engineering/working-agreements.md) — team workflow, review standards, and definition of done.
+11. [Architecture decisions](./adr/0001-monorepo-project-seams.md) — decisions that are costly or surprising to reverse.
+12. [Supabase decision](./adr/0003-supabase-database-and-auth.md) — database, migrations, RLS, and Auth boundaries.
 
 The database-specific workflow starts at [`database/README.md`](../database/README.md).
 

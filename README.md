@@ -173,6 +173,9 @@ real API, database migrations, or Auth integration.
 | Local data or migrations are stale | Run `pnpm db:reset`; this deletes local database data and reapplies migrations/seed. |
 
 For database-specific workflows, see [`database/README.md`](database/README.md).
+The current logical MVP model is in
+[`database/pulso.dbml`](database/pulso.dbml), with a visual overview in the
+[Pulso class diagram](docs/diagrams/pulso-class-diagram.mmd).
 For endpoint contracts and curl examples, see [`docs/api.md`](docs/api.md).
 
 ## Commands

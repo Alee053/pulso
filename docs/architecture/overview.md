@@ -31,6 +31,11 @@ JWT example, and a Supabase schema that can be recreated locally.
 
 The frontend and backend are separate projects with a single integration seam: the HTTP contract. The frontend never reads PostgreSQL directly, and the backend never imports frontend code.
 
+The current logical MVP persistence model is documented in
+[`database/pulso.dbml`](../../database/pulso.dbml), with its conceptual
+relationships visualized in the [class diagram](../diagrams/pulso-class-diagram.mmd).
+The deployed schema remains defined by the ordered Supabase migrations.
+
 ## Ownership
 
 | Concern | Owner | Rule |

@@ -1,0 +1,516 @@
+Project pulso_mvp {
+  database_type: "PostgreSQL"
+  Note: "Esquema inicial y escalable de Pulso para un proyecto universitario. Supabase Auth queda fuera del modelo; profiles.id es el UUID que coincide con auth.users.id."
+}
+
+// -----------------------------------------------------------------------------
+// Alcance de esta versión
+// -----------------------------------------------------------------------------
+//
+// Este modelo prioriza el recorrido principal:
+// registro -> onboarding -> descubrir proyectos -> guardar o mostrar interés
+// -> conversar -> facilitar una conexión.
+//
+// Se mantienen como extensiones futuras: organizaciones separadas, catálogo
+// detallado de intenciones, recommendation_runs, match_results, analytics
+// agregados, verificaciones documentales y workflow de moderación avanzado.
+// Las señales necesarias para crecer ya quedan en interaction_events y en los
+// campos de estado actuales.
+//
+// La tabla actual del prototipo se llama startups. El nombre canónico del
+// dominio final es projects; una vista de compatibilidad puede conservar la API
+// actual durante la migración.
+
+// -----------------------------------------------------------------------------
+// 1. Identidad y onboarding
+// -----------------------------------------------------------------------------
+
+Table profiles {
+  id uuid [pk, note: "UUID de Supabase auth.users; Auth no se modela aquí"]
+  profile_kind text [not null, default: 'PERSON', note: "PERSON u ORGANIZATION en esta versión; puede separarse después"]
+  display_name text [not null]
+  avatar_storage_path text
+  short_bio text
+  city text
+  department text
+  profile_visibility text [not null, default: 'PUBLIC', note: "PUBLIC, MEMBERS_ONLY o PRIVATE"]
+  verification_status text [not null, default: 'UNVERIFIED', note: "UNVERIFIED, PENDING, VERIFIED o REVOKED"]
+  account_status text [not null, default: 'ACTIVE', note: "ACTIVE, SUSPENDED o DELETED"]
+  platform_role text [not null, default: 'USER', note: "USER, MODERATOR o ADMIN"]
+  onboarding_completed_at timestamptz
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  deleted_at timestamptz
+
+  indexes {
+    (account_status, created_at)
+    (city, department)
+    profile_kind
+  }
+
+  Note: "Perfil personal simplificado. El email, contraseña, sesiones y recuperación son responsabilidad exclusiva de Supabase Auth."
+}
+
+Table profile_preferences {
+  profile_id uuid [pk]
+  intentions jsonb [not null, default: `'[]'::jsonb`, note: "Valores controlados como descubrir, comprar, colaborar, trabajar, invertir, buscar socios, clientes o proveedores"]
+  preferred_sectors jsonb [not null, default: `'[]'::jsonb`, note: "IDs o slugs de sectors; se puede normalizar a una tabla de relación cuando el matching lo requiera"]
+  preferred_stages jsonb [not null, default: `'[]'::jsonb`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  Note: "Mantiene simple el onboarding. Intereses y habilidades que sí se consultan con frecuencia tienen tablas relacionales propias."
+}
+
+Table tags {
+  id uuid [pk, default: `gen_random_uuid()`]
+  slug text [not null, unique]
+  name text [not null]
+  tag_type text [not null, default: 'TOPIC', note: "TOPIC, INDUSTRY o OTHER"]
+  is_active boolean [not null, default: true]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+}
+
+Table profile_tags {
+  profile_id uuid [not null]
+  tag_id uuid [not null]
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (profile_id, tag_id) [pk]
+    tag_id
+  }
+
+  Note: "Intereses seleccionados o agregados al perfil. Para el MVP no se distinguen todavía fuentes complejas de preferencia."
+}
+
+Table skills {
+  id uuid [pk, default: `gen_random_uuid()`]
+  slug text [not null, unique]
+  name text [not null]
+  category text
+  is_active boolean [not null, default: true]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+}
+
+Table profile_skills {
+  profile_id uuid [not null]
+  skill_id uuid [not null]
+  proficiency text [note: "BEGINNER, INTERMEDIATE, ADVANCED o EXPERT"]
+  is_primary boolean [not null, default: false]
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (profile_id, skill_id) [pk]
+    skill_id
+  }
+}
+
+// -----------------------------------------------------------------------------
+// 2. Proyectos y equipos
+// -----------------------------------------------------------------------------
+
+Table sectors {
+  id uuid [pk, default: `gen_random_uuid()`]
+  slug text [not null, unique]
+  name text [not null]
+  description text
+  is_active boolean [not null, default: true]
+  sort_order int [not null, default: 0]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  Note: "Catálogo pequeño administrable: tecnología, educación, agro, salud, sostenibilidad, etc."
+}
+
+Table projects {
+  id uuid [pk, default: `gen_random_uuid()`]
+  slug text [not null, unique]
+  name text [not null]
+  tagline text [not null]
+  short_description text
+  description text
+  problem text
+  solution text
+  value_proposition text
+  product_or_service text
+  sector_id uuid [not null]
+  stage text [not null, note: "IDEA, PROTOTYPE, MVP, EARLY_STAGE, GROWING o ESTABLISHED"]
+  city text
+  department text
+  logo_storage_path text
+  cover_storage_path text
+  media jsonb [note: "Lista de rutas de imágenes o video; se puede mover a project_media si crece"]
+  external_links jsonb [note: "Website y redes sociales como objetos {type, url, label}"]
+  status text [not null, default: 'DRAFT', note: "DRAFT, PENDING_REVIEW, PUBLISHED, REJECTED, ARCHIVED o SUSPENDED"]
+  verification_status text [not null, default: 'UNVERIFIED', note: "UNVERIFIED, PENDING, VERIFIED o REVOKED"]
+  created_by_profile_id uuid [not null]
+  reviewed_by_profile_id uuid
+  review_note text
+  reviewed_at timestamptz
+  published_at timestamptz
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  archived_at timestamptz
+
+  indexes {
+    (status, published_at, id)
+    (sector_id, stage, city)
+    created_by_profile_id
+  }
+
+  Note: "Entidad central. Un proyecto publicado debe tener al menos un project_members activo con role OWNER. primary sector y la relación industria-sector pueden refinarse después."
+}
+
+Table project_tags {
+  project_id uuid [not null]
+  tag_id uuid [not null]
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (project_id, tag_id) [pk]
+    tag_id
+  }
+}
+
+Table project_members {
+  id uuid [pk, default: `gen_random_uuid()`]
+  project_id uuid [not null]
+  profile_id uuid
+  invitee_email text
+  invite_token_digest text [unique, note: "Solo digest; nunca guardar tokens en texto plano"]
+  role text [not null, default: 'MEMBER', note: "OWNER, ADMIN o MEMBER"]
+  membership_status text [not null, default: 'INVITED', note: "INVITED, ACTIVE, LEFT o REMOVED"]
+  display_title text
+  is_featured boolean [not null, default: false]
+  is_public boolean [not null, default: true]
+  created_by_profile_id uuid [not null]
+  joined_at timestamptz
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (project_id, profile_id) [unique]
+    (project_id, membership_status, is_public)
+    profile_id
+  }
+
+  Note: "Fusiona membresía e invitación para mantener el MVP pequeño. Debe existir profile_id o invitee_email, pero no ambos vacíos."
+}
+
+// -----------------------------------------------------------------------------
+// 3. Needs / oportunidades
+// -----------------------------------------------------------------------------
+
+Table project_opportunities {
+  id uuid [pk, default: `gen_random_uuid()`]
+  project_id uuid [not null]
+  opportunity_type text [not null, note: "TALENT, COLLABORATION, CUSTOMER, BETA_TESTER, INVESTMENT, MENTOR, SUPPLIER, PARTNERSHIP u OTHER"]
+  title text [not null]
+  description text [not null]
+  status text [not null, default: 'OPEN', note: "DRAFT, OPEN, PAUSED, FILLED, CLOSED o ARCHIVED"]
+  city text
+  department text
+  remote_allowed boolean [not null, default: false]
+  created_by_profile_id uuid [not null]
+  starts_at timestamptz
+  ends_at timestamptz
+  closed_at timestamptz
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (project_id, status, created_at)
+    (opportunity_type, city, department)
+  }
+
+  Note: "Necesidad estructurada para alimentar el matching, no una oferta laboral ni un ATS."
+}
+
+Table opportunity_skills {
+  opportunity_id uuid [not null]
+  skill_id uuid [not null]
+  importance text [not null, default: 'PREFERRED', note: "REQUIRED o PREFERRED"]
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (opportunity_id, skill_id) [pk]
+    skill_id
+  }
+}
+
+// -----------------------------------------------------------------------------
+// 4. Discovery e interacciones
+// -----------------------------------------------------------------------------
+
+Table saved_projects {
+  profile_id uuid [not null]
+  project_id uuid [not null]
+  saved_at timestamptz [not null, default: `now()`]
+  unsaved_at timestamptz
+
+  indexes {
+    (profile_id, project_id) [pk]
+    (profile_id, unsaved_at, saved_at)
+    project_id
+  }
+
+  Note: "Estado actual de guardado. Los cambios históricos se registran en interaction_events."
+}
+
+Table project_feedback {
+  profile_id uuid [not null]
+  project_id uuid [not null]
+  feedback_type text [not null, note: "INTERESTED, DISMISSED o NONE"]
+  changed_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (profile_id, project_id) [pk]
+    (project_id, feedback_type)
+  }
+
+  Note: "Estado actual de interés o descarte. No se muestran contadores públicos de popularidad en el MVP."
+}
+
+Table interaction_events {
+  id uuid [pk, default: `gen_random_uuid()`]
+  profile_id uuid
+  anonymous_session_id uuid
+  project_id uuid
+  opportunity_id uuid
+  event_type text [not null, note: "PROJECT_VIEWED, PROJECT_OPENED, MEMBER_VIEWED, OPPORTUNITY_VIEWED, SAVED, UNSAVED, INTERESTED, DISMISSED, SHARED, CONTACT_STARTED o MESSAGE_STARTED"]
+  source text [not null, note: "FEED, SEARCH, PROJECT_DETAIL, OPPORTUNITY, MESSAGE o EXTERNAL_SHARE"]
+  position int
+  duration_ms int
+  metadata jsonb
+  occurred_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (profile_id, occurred_at)
+    (project_id, event_type, occurred_at)
+    (event_type, occurred_at)
+  }
+
+  Note: "Log append-only de señales para un feed inicial por reglas y para futuros recommendation_runs/match_results."
+}
+
+// -----------------------------------------------------------------------------
+// 5. Conexión y mensajería
+// -----------------------------------------------------------------------------
+
+Table connection_intents {
+  id uuid [pk, default: `gen_random_uuid()`]
+  from_profile_id uuid [not null]
+  project_id uuid [not null]
+  opportunity_id uuid
+  reason text [not null, note: "COLLABORATE, WORK, TRY_PRODUCT, BUY, INSTITUTION, INVEST, OFFER_SERVICE u OTHER"]
+  message text
+  status text [not null, default: 'PENDING', note: "PENDING, ACCEPTED, DECLINED, WITHDRAWN, EXPIRED o CONVERTED"]
+  outcome_type text [note: "COLLABORATION, CUSTOMER, TALENT, PARTNERSHIP u OTHER; opcional en el MVP"]
+  responded_by_profile_id uuid
+  created_at timestamptz [not null, default: `now()`]
+  responded_at timestamptz
+  confirmed_at timestamptz
+
+  indexes {
+    (project_id, status, created_at)
+    from_profile_id
+    opportunity_id
+  }
+
+  Note: "Representa Mostrar interés y funciona como solicitud contextual de contacto. Una conexión útil puede confirmarse sin crear todavía otra entidad."
+}
+
+Table conversations {
+  id uuid [pk, default: `gen_random_uuid()`]
+  conversation_type text [not null, note: "PROJECT_CONTACT o DIRECT"]
+  project_id uuid
+  connection_intent_id uuid
+  created_by_profile_id uuid [not null]
+  status text [not null, default: 'ACTIVE', note: "ACTIVE, ARCHIVED, BLOCKED o CLOSED"]
+  last_message_at timestamptz
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (project_id, last_message_at)
+    created_by_profile_id
+    connection_intent_id
+  }
+
+  Note: "El proyecto es contexto; los participantes reales son perfiles."
+}
+
+Table conversation_participants {
+  conversation_id uuid [not null]
+  profile_id uuid [not null]
+  participant_role text [not null, default: 'PARTICIPANT', note: "INITIATOR, PROJECT_MEMBER o PARTICIPANT"]
+  last_read_at timestamptz
+  muted_at timestamptz
+  joined_at timestamptz [not null, default: `now()`]
+  left_at timestamptz
+
+  indexes {
+    (conversation_id, profile_id) [pk]
+    profile_id
+  }
+}
+
+Table messages {
+  id uuid [pk, default: `gen_random_uuid()`]
+  conversation_id uuid [not null]
+  sender_profile_id uuid [not null]
+  reply_to_message_id uuid
+  body text [not null]
+  message_type text [not null, default: 'TEXT', note: "TEXT o SYSTEM"]
+  status text [not null, default: 'SENT', note: "SENT, EDITED o DELETED"]
+  created_at timestamptz [not null, default: `now()`]
+  edited_at timestamptz
+  deleted_at timestamptz
+
+  indexes {
+    (conversation_id, created_at)
+    sender_profile_id
+  }
+}
+
+Table profile_blocks {
+  blocker_profile_id uuid [not null]
+  blocked_profile_id uuid [not null]
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (blocker_profile_id, blocked_profile_id) [pk]
+    blocked_profile_id
+  }
+
+  Note: "Un bloqueo impide nuevos contactos y mensajes entre esos perfiles; la aplicación debe impedir bloquearse a sí mismo."
+}
+
+// -----------------------------------------------------------------------------
+// 6. Operación mínima
+// -----------------------------------------------------------------------------
+
+Table notifications {
+  id uuid [pk, default: `gen_random_uuid()`]
+  recipient_profile_id uuid [not null]
+  actor_profile_id uuid
+  project_id uuid
+  conversation_id uuid
+  connection_intent_id uuid
+  notification_type text [not null, note: "NEW_MESSAGE, USER_INTERESTED, MEMBERSHIP_UPDATE, PROJECT_APPROVED, PROJECT_VERIFIED o ADMIN_UPDATE"]
+  title text [not null]
+  body text
+  payload jsonb
+  read_at timestamptz
+  created_at timestamptz [not null, default: `now()`]
+  expires_at timestamptz
+
+  indexes {
+    (recipient_profile_id, read_at, created_at)
+    recipient_profile_id
+  }
+}
+
+Table reports {
+  id uuid [pk, default: `gen_random_uuid()`]
+  reporter_profile_id uuid [not null]
+  target_profile_id uuid
+  target_project_id uuid
+  target_message_id uuid
+  reason text [not null]
+  description text
+  status text [not null, default: 'OPEN', note: "OPEN, IN_REVIEW, RESOLVED o DISMISSED"]
+  assigned_moderator_id uuid
+  resolution_note text
+  created_at timestamptz [not null, default: `now()`]
+  resolved_at timestamptz
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (status, created_at)
+    reporter_profile_id
+    target_profile_id
+    target_project_id
+    target_message_id
+  }
+
+  Note: "Debe existir exactamente uno de target_profile_id, target_project_id o target_message_id."
+}
+
+Table admin_audit_logs {
+  id uuid [pk, default: `gen_random_uuid()`]
+  actor_profile_id uuid [not null]
+  action text [not null]
+  target_type text
+  target_id uuid
+  metadata jsonb
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (actor_profile_id, created_at)
+    (target_type, target_id, created_at)
+  }
+
+  Note: "Auditoría mínima para revisiones, suspensiones y cambios administrativos. No guardar secretos ni tokens."
+}
+
+// -----------------------------------------------------------------------------
+// Foreign keys
+// -----------------------------------------------------------------------------
+
+Ref: profile_preferences.profile_id > profiles.id
+Ref: profile_tags.profile_id > profiles.id
+Ref: profile_tags.tag_id > tags.id
+Ref: profile_skills.profile_id > profiles.id
+Ref: profile_skills.skill_id > skills.id
+
+Ref: projects.sector_id > sectors.id
+Ref: projects.created_by_profile_id > profiles.id
+Ref: projects.reviewed_by_profile_id > profiles.id
+Ref: project_tags.project_id > projects.id
+Ref: project_tags.tag_id > tags.id
+Ref: project_members.project_id > projects.id
+Ref: project_members.profile_id > profiles.id
+Ref: project_members.created_by_profile_id > profiles.id
+
+Ref: project_opportunities.project_id > projects.id
+Ref: project_opportunities.created_by_profile_id > profiles.id
+Ref: opportunity_skills.opportunity_id > project_opportunities.id
+Ref: opportunity_skills.skill_id > skills.id
+
+Ref: saved_projects.profile_id > profiles.id
+Ref: saved_projects.project_id > projects.id
+Ref: project_feedback.profile_id > profiles.id
+Ref: project_feedback.project_id > projects.id
+Ref: interaction_events.profile_id > profiles.id
+Ref: interaction_events.project_id > projects.id
+Ref: interaction_events.opportunity_id > project_opportunities.id
+
+Ref: connection_intents.from_profile_id > profiles.id
+Ref: connection_intents.project_id > projects.id
+Ref: connection_intents.opportunity_id > project_opportunities.id
+Ref: connection_intents.responded_by_profile_id > profiles.id
+Ref: conversations.project_id > projects.id
+Ref: conversations.connection_intent_id > connection_intents.id
+Ref: conversations.created_by_profile_id > profiles.id
+Ref: conversation_participants.conversation_id > conversations.id
+Ref: conversation_participants.profile_id > profiles.id
+Ref: messages.conversation_id > conversations.id
+Ref: messages.sender_profile_id > profiles.id
+Ref: messages.reply_to_message_id > messages.id
+Ref: profile_blocks.blocker_profile_id > profiles.id
+Ref: profile_blocks.blocked_profile_id > profiles.id
+
+Ref: notifications.recipient_profile_id > profiles.id
+Ref: notifications.actor_profile_id > profiles.id
+Ref: notifications.project_id > projects.id
+Ref: notifications.conversation_id > conversations.id
+Ref: notifications.connection_intent_id > connection_intents.id
+Ref: reports.reporter_profile_id > profiles.id
+Ref: reports.target_profile_id > profiles.id
+Ref: reports.target_project_id > projects.id
+Ref: reports.target_message_id > messages.id
+Ref: reports.assigned_moderator_id > profiles.id
+Ref: admin_audit_logs.actor_profile_id > profiles.id

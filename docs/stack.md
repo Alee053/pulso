@@ -2,8 +2,7 @@
 
 This is the baseline approved for the first development phase. “Current” means
 the repository contains a working example or configuration; “Convention” means
-the rule new features should follow even when the visual prototype still uses
-local data.
+the rule new features should follow even when some interactions remain local.
 
 ## Projects and runtimes
 
@@ -66,8 +65,9 @@ are versioned; health and Actuator endpoints are operational only.
   public `PULSO_*` API/Auth variables through the Angular build wrapper; server
   credentials are rejected before bundling.
 - [`PulsoSession`](../frontend/src/app/features/discovery/application/pulso-session.ts)
-  still owns the visual prototype using fictional mock data. Switching it to
-  the API is a later vertical slice, after loading/error behavior is designed.
+  loads the discovery catalog through `StartupsApi`, maps it to the domain
+  model, and keeps saved/interested decisions local until persistence stories
+  are implemented. Loading, error, and empty states are explicit.
 
 ### Backend
 

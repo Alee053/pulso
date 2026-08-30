@@ -19,9 +19,10 @@ The browser talks to the backend through `/api/v1`. It uses the Supabase
 client only for Auth sessions. The backend validates Supabase JWTs and owns
 product authorization; the browser never connects to PostgreSQL directly.
 
-The discovery UI remains a visual prototype backed by fictional local mocks.
-The typed `StartupsApi` adapter and backend endpoint are the first integration
-seam for replacing those mocks in a later vertical slice.
+The discovery UI loads its published catalog through the typed `StartupsApi`
+adapter and the Spring/Supabase backend. Saved projects, interest decisions,
+and preference weights remain local session interactions until their
+persistence stories are implemented.
 
 ## Prerequisites
 
@@ -167,16 +168,18 @@ pnpm db:down
 
 ### Frontend-only quick path
 
-If you only need to work on the current visual prototype, Supabase and Spring
-Boot are not required:
+If you only need to work on frontend UI or tests, Supabase and Spring Boot are
+not required:
 
 ```sh
 pnpm install
 pnpm dev
 ```
 
-The prototype uses local mock data. Start the full stack when working on the
-real API, database migrations, or Auth integration.
+The discovery screen shows its loading, error, or empty state when the real API
+is unavailable; it does not silently fall back to fictional data. Start the
+full stack when working on the real discovery feed, database migrations, or
+Auth integration.
 
 ## Troubleshooting
 
@@ -245,16 +248,16 @@ Vercel production builds receive these variables from the Vercel project
 environment and run the normal `pnpm build` command. They are public browser
 configuration, so never use a service-role key, database password, or JWT
 secret in them. If the publishable key is missing, the Auth gateway returns no
-session; it does not invent credentials, and `StartupsApi` does not replace API
-errors with mock data. The current visual session remains an explicitly
-documented prototype until PUL-40 wires it to the adapter.
+session; it does not invent credentials. `StartupsApi` does not replace API
+errors with mock data, and the discovery session keeps that failure visible
+while using the API-backed catalog as its runtime source.
 
 Browser Auth configuration is exposed through
 [`frontend/src/app/core/config/app-config.ts`](frontend/src/app/core/config/app-config.ts).
 Only the Supabase URL and publishable/anon key belong in the frontend build;
 both are public browser configuration. The gateway intentionally remains
-inactive while the publishable key is blank, so the visual prototype can run
-without an Auth project.
+inactive while the publishable key is blank, so the frontend can run without an
+Auth project.
 
 The endpoint examples and response contracts are documented in
 [`docs/api.md`](docs/api.md). The database workflow and schema ownership are in

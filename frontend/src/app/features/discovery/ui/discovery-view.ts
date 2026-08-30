@@ -13,12 +13,15 @@ import { StartupCardComponent } from './startup-card'
 export class DiscoveryViewComponent implements OnDestroy {
   @Input() activeSignals: string[] = []
   @Input() currentStartup: Startup | undefined
+  @Input() errorMessage: string | null = null
   @Input() feedRemaining = 0
+  @Input() isLoading = false
   @Input() isModalOpen = false
   @Input() totalStartups = 0
   @Input() savedIds: string[] = []
   @Output() decisionMade = new EventEmitter<Decision>()
   @Output() restarted = new EventEmitter<void>()
+  @Output() retryRequested = new EventEmitter<void>()
   @Output() startupSaved = new EventEmitter<string>()
   @Output() startupSelected = new EventEmitter<Startup>()
 

@@ -30,6 +30,11 @@ The visual flow is deliberately local-data driven. [`PulsoSession`](../../fronte
 
 The first server-backed seam is [`StartupsApi`](../../frontend/src/app/features/discovery/data-access/startups-api.ts), a typed Angular `HttpClient` adapter for `GET /api/v1/startups`. It maps transport DTOs to a small discovery summary type and validates bounded pagination inputs. [`SupabaseAuthGateway`](../../frontend/src/app/core/auth/supabase-auth.gateway.ts) hides the provider client and returns only the current access token. The global [`authInterceptor`](../../frontend/src/app/core/auth/auth.interceptor.ts) adds that token only to backend API requests without placing Auth or raw URLs in UI components.
 
+The `Startup*` names in this first adapter match the temporary HTTP contract,
+not the canonical domain name. The database cutover to `projects` is documented
+in [ADR 0004](../adr/0004-project-startup-compatibility.md); the adapter can be
+renamed only when its consumers are migrated deliberately.
+
 The former Vite/React demo has been removed from the project. There is one frontend framework and one root development command: `pnpm dev`.
 
 ## Boundaries and dependency direction

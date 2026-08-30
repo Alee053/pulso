@@ -58,7 +58,8 @@ are versioned; health and Actuator endpoints are operational only.
 - [`SupabaseAuthGateway`](../frontend/src/app/core/auth/supabase-auth.gateway.ts)
   exposes the smallest session boundary needed by the API client.
 - [`StartupsApi`](../frontend/src/app/features/discovery/data-access/startups-api.ts)
-  is a typed adapter for `GET /api/v1/startups` with input validation.
+  is a typed adapter for the temporary `GET /api/v1/startups` compatibility
+  route with input validation.
 - [`PulsoSession`](../frontend/src/app/features/discovery/application/pulso-session.ts)
   still owns the visual prototype using fictional mock data. Switching it to
   the API is a later vertical slice, after loading/error behavior is designed.
@@ -77,13 +78,19 @@ are versioned; health and Actuator endpoints are operational only.
 
 ### Database
 
-- The first migration creates `profiles`, `startups`, and `startup_members`.
+- The first migration currently creates `profiles`, `startups`, and
+  `startup_members`; S0.3 transforms the foundation in place to the canonical
+  `projects` and `project_members` names.
 - Row Level Security is enabled on all three tables; profile/membership access
   is current-user scoped, and startup rows are not granted directly to the
   public Data API in this base.
 - `seed.sql` inserts two fictional published startups for local endpoint
   examples.
 - `database/README.md` defines reset, lint, test, linking, and push commands.
+
+The `/api/v1/startups` route remains stable during that internal schema
+migration. See [ADR 0004](./adr/0004-project-startup-compatibility.md) for the
+full mapping and migration order.
 
 ## What is intentionally not in this base
 

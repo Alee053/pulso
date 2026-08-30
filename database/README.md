@@ -9,7 +9,9 @@ The current logical MVP model is documented in
 [`pulso.dbml`](pulso.dbml), with a conceptual overview in the
 [Pulso class diagram](../docs/diagrams/pulso-class-diagram.mmd). The DBML and
 diagram describe the intended domain shape; the ordered SQL migrations remain
-the source of truth for what is implemented in Supabase.
+the source of truth for what is implemented in Supabase. The naming boundary
+between the logical model and the current foundation is recorded in
+[ADR 0004](../docs/adr/0004-project-startup-compatibility.md).
 
 For the complete developer onboarding flow, including the backend and Angular
 dev server, start at [`../README.md#developer-onboarding`](../README.md#developer-onboarding).
@@ -32,13 +34,21 @@ ignored root `.env` created from [`.env.example`](../.env.example).
 The local stack provides PostgreSQL, Auth, Studio and Mailpit through Docker.
 It is for development only and must not be exposed to public traffic.
 
-The foundation migration creates:
+The foundation migration currently creates:
 
 - `public.profiles`, linked to `auth.users` and populated by the local profile
   trigger when a user signs up.
-- `public.startups`, including the `DRAFT`/`PUBLISHED`/`ARCHIVED` lifecycle
-  used by the first API endpoint.
-- `public.startup_members`, with owner/admin/member roles for future writes.
+- `public.startups`, the temporary compatibility table for the first API
+  endpoint and its `DRAFT`/`PUBLISHED`/`ARCHIVED` lifecycle.
+- `public.startup_members`, the temporary compatibility membership table with
+  owner/admin/member roles.
+
+S0.3 will transform the foundation in place to the canonical `public.projects`
+and `public.project_members` tables, then update the seed, pgTAP checks, and
+JDBC adapter together. Do not add new product tables or writes that depend on
+the temporary startup names. The existing `/api/v1/startups` route remains
+stable across that database migration; the API, not a duplicate SQL model, is
+the compatibility boundary.
 
 RLS is enabled on all three tables. Profiles and memberships have narrow
 current-user grants for deliberate Auth/Data API use; startups currently have

@@ -17,9 +17,11 @@ Project pulso_mvp {
 // Las señales necesarias para crecer ya quedan en interaction_events y en los
 // campos de estado actuales.
 //
-// La tabla actual del prototipo se llama startups. El nombre canónico del
-// dominio final es projects; una vista de compatibilidad puede conservar la API
-// actual durante la migración.
+// El nombre canónico del dominio y de la persistencia es projects, con
+// project_members como relación de equipo. La foundation actual todavía usa
+// startups/startup_members; S0.3 debe transformarla en sitio y conservar la
+// compatibilidad únicamente en /api/v1/startups, sin una segunda fuente de
+// escritura ni una vista SQL permanente.
 
 // -----------------------------------------------------------------------------
 // 1. Identidad y onboarding

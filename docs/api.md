@@ -5,10 +5,24 @@ health endpoints are operational and are not part of the product API.
 
 Base URL during local development: `http://localhost:8080`.
 
+## Naming and compatibility baseline
+
+`Project`/`projects` is the canonical domain and database name described by the
+[MVP model](../database/pulso.dbml) and [class diagram](./diagrams/pulso-class-diagram.mmd).
+The foundation migration currently uses `startups`/`startup_members`; the
+ordered S0.3 migration will transform that schema in place and align the seed,
+database tests, and JDBC adapter with the canonical names.
+
+The public `GET /api/v1/startups` route and its `Startup*` transport names are
+an intentional compatibility contract for the first vertical slice. They stay
+unchanged during Sprint 0, so an internal database rename does not break
+clients. The API is the compatibility boundary; the database will not keep a
+second writable model or a permanent SQL alias.
+
 ## `GET /api/v1/startups`
 
-Lists published startups. This is the first public endpoint and requires no
-access token.
+Lists published projects through the temporary startup-named route. This is the
+first public endpoint and requires no access token.
 
 Query parameters:
 

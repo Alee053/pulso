@@ -1,6 +1,8 @@
 classDiagram
   direction LR
 
+  %% Project/ProjectMember son los nombres canónicos del dominio. El endpoint
+  %% de compatibilidad /api/v1/startups puede conservar Startup* temporalmente.
   %% Supabase Auth es externo al dominio. Profile.id coincide con auth.users.id.
   %% Los campos de auditoria createdAt/updatedAt se muestran solo donde ayudan
   %% a entender el dominio y no en todas las entidades.

@@ -156,8 +156,13 @@ For local development:
 1. Run `pnpm db:up` and use the local values in `.env.example`.
 2. The backend verifies the current local Auth tokens through
    `http://127.0.0.1:54321/auth/v1/.well-known/jwks.json`.
-3. Use the local Supabase Auth API to create a test user or configure the
-   frontend publishable key in `frontend/src/app/core/config/app-config.ts`.
+3. Configure the frontend with the local publishable/anon key only for the
+   browser build. The Auth panel supports registration, password sign-in, and
+   sign-out; the gateway persists the session through Supabase Auth storage.
+4. Run `pnpm auth:verify` for a reproducible API-boundary check using a
+   temporary local user; it also confirms that no token, an invalid token, and
+   the local `service_role` token all receive `401`. The verifier does not
+   print or retain its key, token, password, or response files.
 
 For a hosted project, set `SUPABASE_JWT_ISSUER`,
 `SUPABASE_JWT_AUDIENCE=authenticated`, and

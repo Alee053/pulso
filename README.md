@@ -79,9 +79,9 @@ test -f .env || cp .env.example .env
 The checked-in example points the backend to the local Supabase database and
 Auth JWKS. Do not replace the JWKS configuration with a service-role key. The
 frontend build has safe local defaults for the API and Supabase URL; its
-publishable key is intentionally blank until Auth is configured. Set the public
-key through the frontend build variables described below when Auth UI is
-introduced.
+publishable key is intentionally blank until Auth is enabled. Set the public
+key through the frontend build variables described below when testing the
+local Auth panel.
 
 ### 3. Start Supabase — Terminal 1
 
@@ -139,6 +139,14 @@ with the PostgreSQL connection deliberately unavailable, run
 `pnpm backend:verify` with Supabase running and `.env` created from
 `.env.example`. The script uses temporary ports `18080` and `18081` and stops
 only the processes it starts.
+
+To verify the Auth path with a real local user, run `pnpm auth:verify` while
+Supabase is running. The script obtains the local publishable/anon key in
+memory, creates a unique temporary user, validates its JWT through
+`GET /api/v1/me`, checks the unauthenticated and invalid-token responses, and
+rejects the local `service_role` token before logging the user out. It uses port
+`18082` for a temporary backend and removes all temporary responses,
+credentials, and logs when it finishes.
 
 The local services are available at:
 
@@ -198,6 +206,7 @@ For endpoint contracts and curl examples, see [`docs/api.md`](docs/api.md).
 | `pnpm --filter @pulso/frontend test` | Run the Angular/Vitest suite |
 | `pnpm backend:run` | Load `.env` and run Spring Boot |
 | `pnpm backend:verify` | Verify JDBC, seed, liveness, and readiness with local Supabase |
+| `pnpm auth:verify` | Verify local Supabase signup, login, JWT claims, 401 responses including `service_role`, and logout |
 | `pnpm backend:test` | Run backend tests |
 | `pnpm backend:build` | Build the backend executable JAR |
 | `pnpm db:up` | Start the local Supabase services |

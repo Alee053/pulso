@@ -1,0 +1,73 @@
+<section class="mx-auto w-full max-w-6xl px-5 pt-4 sm:px-10" aria-labelledby="auth-panel-title">
+  <div class="glass-panel flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+    <div class="min-w-0">
+      <span class="eyebrow">CUENTA LOCAL</span>
+      <h2 id="auth-panel-title" class="mt-2 text-sm font-medium text-white/85">
+        {{ auth.session() ? 'Sesión conectada' : 'Conecta tu cuenta para probar Auth' }}
+      </h2>
+    </div>
+
+    <ng-container *ngIf="auth.isLoading(); else loadedAuth">
+      <p class="text-xs text-white/45" role="status">Comprobando sesión...</p>
+    </ng-container>
+
+    <ng-template #loadedAuth>
+      <ng-container *ngIf="auth.session() as session; else signedOut">
+        <div class="flex flex-wrap items-center justify-end gap-3">
+          <span class="max-w-full truncate text-xs text-white/55">{{ session.email || session.id }}</span>
+          <button type="button" class="contact-button" [disabled]="isBusy()" (click)="signOut()">
+            Cerrar sesión
+          </button>
+        </div>
+      </ng-container>
+    </ng-template>
+
+    <ng-template #signedOut>
+      <ng-container *ngIf="auth.isConfigured; else missingConfiguration">
+        <form class="flex w-full flex-col gap-2 sm:max-w-3xl sm:flex-row sm:items-end" (submit)="submit($event)">
+          <label class="min-w-0 flex-1 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-white/35">
+            Correo
+            <input
+              class="mt-1 block h-10 w-full rounded-xl border border-white/10 bg-black/15 px-3 text-sm font-normal normal-case tracking-normal text-white outline-none transition placeholder:text-white/25 focus:border-[#a9e1ff]/60"
+              type="email"
+              name="email"
+              autocomplete="email"
+              placeholder="tu@correo.com"
+              [value]="email"
+              (input)="email = $any($event.target).value"
+              required
+            />
+          </label>
+          <label class="min-w-0 flex-1 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-white/35">
+            Contraseña
+            <input
+              class="mt-1 block h-10 w-full rounded-xl border border-white/10 bg-black/15 px-3 text-sm font-normal normal-case tracking-normal text-white outline-none transition placeholder:text-white/25 focus:border-[#a9e1ff]/60"
+              type="password"
+              name="password"
+              autocomplete="current-password"
+              placeholder="Mínimo 6 caracteres"
+              [value]="password"
+              (input)="password = $any($event.target).value"
+              required
+              minlength="6"
+            />
+          </label>
+          <button type="submit" class="solid-button h-10 min-h-10 shrink-0" [disabled]="isBusy()">
+            {{ mode() === 'sign-in' ? 'Entrar' : 'Registrarme' }}
+          </button>
+          <button type="button" class="contact-button h-10 shrink-0" [disabled]="isBusy()" (click)="toggleMode()">
+            {{ mode() === 'sign-in' ? 'Crear cuenta' : 'Ya tengo cuenta' }}
+          </button>
+        </form>
+      </ng-container>
+    </ng-template>
+
+    <ng-template #missingConfiguration>
+      <p class="max-w-md text-right text-xs leading-5 text-white/40" role="status">
+        Auth está inactivo. Define PULSO_SUPABASE_PUBLISHABLE_KEY para habilitar registro e inicio de sesión local.
+      </p>
+    </ng-template>
+
+    <p *ngIf="message()" class="text-xs leading-5 text-[#a9e1ff]" role="status">{{ message() }}</p>
+  </div>
+</section>

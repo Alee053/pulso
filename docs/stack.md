@@ -56,7 +56,9 @@ are versioned; health and Actuator endpoints are operational only.
 - [`app.config.ts`](../frontend/src/app/app.config.ts) registers Angular
   `HttpClient` and the Auth interceptor.
 - [`SupabaseAuthGateway`](../frontend/src/app/core/auth/supabase-auth.gateway.ts)
-  exposes the smallest session boundary needed by the API client.
+  owns the browser session and exposes registration, password sign-in, sign-out,
+  and the access token needed by the API client. [`AuthPanelComponent`](../frontend/src/app/core/auth/auth-panel.ts)
+  provides the local registration and sign-in surface.
 - [`StartupsApi`](../frontend/src/app/features/discovery/data-access/startups-api.ts)
   is a typed adapter for the temporary `GET /api/v1/startups` compatibility
   route with input validation.
@@ -80,6 +82,8 @@ are versioned; health and Actuator endpoints are operational only.
 - Backend tests cover the use-case, API response contract, validation, and
   protected endpoint behavior without requiring a running database;
   `pnpm backend:verify` exercises the real local JDBC and health boundaries.
+  `pnpm auth:verify` exercises local Auth registration, JWT validation through
+  `/api/v1/me`, rejected unauthenticated/service-role requests, and logout.
 
 ### Database
 
@@ -100,7 +104,8 @@ full mapping and migration order.
 
 ## What is intentionally not in this base
 
-- Full signup/login UI and password recovery flows.
+- Password recovery and account-management flows beyond the local signup/login
+  surface.
 - Complete product features from the specification (profiles, submissions,
   matching, messaging, notifications, moderation, and analytics).
 - Storage, realtime, Edge Functions, background jobs, deployment manifests, or

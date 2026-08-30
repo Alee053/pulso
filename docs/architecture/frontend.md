@@ -28,7 +28,7 @@ frontend/src/
 
 The visual flow is deliberately local-data driven. [`PulsoSession`](../../frontend/src/app/features/discovery/application/pulso-session.ts) is the application-facing session module: it owns onboarding completion, the active view, discovery feed, saved items, interested items, and learned preference weights. [`recommendations.ts`](../../frontend/src/app/features/discovery/domain/recommendations.ts) is a pure policy module and has no Angular or browser dependency. [`mock-startups.ts`](../../frontend/src/app/features/discovery/data-access/mock-startups.ts) is an adapter for fictional data, not a future database contract.
 
-The first server-backed seam is [`StartupsApi`](../../frontend/src/app/features/discovery/data-access/startups-api.ts), a typed Angular `HttpClient` adapter for `GET /api/v1/startups`. It maps transport DTOs to a small discovery summary type and validates bounded pagination inputs. [`SupabaseAuthGateway`](../../frontend/src/app/core/auth/supabase-auth.gateway.ts) hides the provider client and returns only the current access token. The global [`authInterceptor`](../../frontend/src/app/core/auth/auth.interceptor.ts) adds that token only to backend API requests without placing Auth or raw URLs in UI components.
+The first server-backed seam is [`StartupsApi`](../../frontend/src/app/features/discovery/data-access/startups-api.ts), a typed Angular `HttpClient` adapter for `GET /api/v1/startups`. It maps transport DTOs to a small discovery summary type and validates bounded pagination inputs. [`SupabaseAuthGateway`](../../frontend/src/app/core/auth/supabase-auth.gateway.ts) hides the provider client, owns the current session, exposes sign-up/sign-in/sign-out operations, and returns only the current access token to data-access code. [`AuthPanelComponent`](../../frontend/src/app/core/auth/auth-panel.ts) is the small UI surface for local Auth. The global [`authInterceptor`](../../frontend/src/app/core/auth/auth.interceptor.ts) adds that token only to backend API requests without placing Auth or raw URLs in discovery UI components.
 
 [`app-config.ts`](../../frontend/src/app/core/config/app-config.ts) is compiled
 with safe local defaults by `angular.json`. The frontend build wrapper
@@ -78,7 +78,8 @@ These are deep-module seams: the caller-facing surface is small, while the modul
 - Map transport DTOs to frontend domain types at the adapter seam. Backend field names and nullable transport details must not spread through templates.
 - Keep API base URLs and public Auth configuration in the build configuration,
   never in UI components. Missing public Auth values leave the gateway
-  inactive; data-access errors must remain visible to their caller.
+  inactive; the session gateway persists the browser session and data-access
+  errors must remain visible to their caller.
 - Prefer a small adapter interface that returns domain results over exposing a concrete HTTP client to every consumer.
 
 ### UI and accessibility

@@ -60,6 +60,9 @@ are versioned; health and Actuator endpoints are operational only.
 - [`StartupsApi`](../frontend/src/app/features/discovery/data-access/startups-api.ts)
   is a typed adapter for the temporary `GET /api/v1/startups` compatibility
   route with input validation.
+- Frontend build configuration uses safe local defaults and accepts only the
+  public `PULSO_*` API/Auth variables through the Angular build wrapper; server
+  credentials are rejected before bundling.
 - [`PulsoSession`](../frontend/src/app/features/discovery/application/pulso-session.ts)
   still owns the visual prototype using fictional mock data. Switching it to
   the API is a later vertical slice, after loading/error behavior is designed.

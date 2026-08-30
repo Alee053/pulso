@@ -30,6 +30,14 @@ The visual flow is deliberately local-data driven. [`PulsoSession`](../../fronte
 
 The first server-backed seam is [`StartupsApi`](../../frontend/src/app/features/discovery/data-access/startups-api.ts), a typed Angular `HttpClient` adapter for `GET /api/v1/startups`. It maps transport DTOs to a small discovery summary type and validates bounded pagination inputs. [`SupabaseAuthGateway`](../../frontend/src/app/core/auth/supabase-auth.gateway.ts) hides the provider client and returns only the current access token. The global [`authInterceptor`](../../frontend/src/app/core/auth/auth.interceptor.ts) adds that token only to backend API requests without placing Auth or raw URLs in UI components.
 
+[`app-config.ts`](../../frontend/src/app/core/config/app-config.ts) is compiled
+with safe local defaults by `angular.json`. The frontend build wrapper
+[`build-frontend.mjs`](../../frontend/scripts/build-frontend.mjs) replaces those
+values from `PULSO_API_BASE_URL`, `PULSO_SUPABASE_URL`, and
+`PULSO_SUPABASE_PUBLISHABLE_KEY` for deployment builds. Only the publishable
+key is allowed in the browser bundle; backend credentials are rejected by the
+wrapper and are never read as frontend configuration.
+
 The `Startup*` names in this first adapter match the temporary HTTP contract,
 not the canonical domain name. The database cutover to `projects` is documented
 in [ADR 0004](../adr/0004-project-startup-compatibility.md); the adapter can be
@@ -68,7 +76,9 @@ These are deep-module seams: the caller-facing surface is small, while the modul
 
 - Keep HTTP clients, browser storage, analytics, and retry policy behind feature data-access modules.
 - Map transport DTOs to frontend domain types at the adapter seam. Backend field names and nullable transport details must not spread through templates.
-- Keep API base URLs and credentials in configuration, never in UI components.
+- Keep API base URLs and public Auth configuration in the build configuration,
+  never in UI components. Missing public Auth values leave the gateway
+  inactive; data-access errors must remain visible to their caller.
 - Prefer a small adapter interface that returns domain results over exposing a concrete HTTP client to every consumer.
 
 ### UI and accessibility

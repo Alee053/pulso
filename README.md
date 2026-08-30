@@ -76,11 +76,12 @@ pnpm install
 test -f .env || cp .env.example .env
 ```
 
-The checked-in example points to the local Supabase database and Auth JWKS.
-Do not replace the JWKS configuration with a service-role key. The frontend
-can run with its Supabase values blank because the current visual prototype
-uses fictional local data; configure the publishable key later in
-`frontend/src/app/core/config/app-config.ts` when Auth UI is introduced.
+The checked-in example points the backend to the local Supabase database and
+Auth JWKS. Do not replace the JWKS configuration with a service-role key. The
+frontend build has safe local defaults for the API and Supabase URL; its
+publishable key is intentionally blank until Auth is configured. Set the public
+key through the frontend build variables described below when Auth UI is
+introduced.
 
 ### 3. Start Supabase — Terminal 1
 
@@ -223,11 +224,28 @@ The root `.env` is backend-only. It supports the variables in
   a hosted service-role key into the backend or frontend.
 - `CORS_ALLOWED_ORIGINS` controls browser access to the API.
 
-Browser Auth configuration lives in
+Frontend builds read these public values at build time through Angular's
+`define` mechanism:
+
+- `PULSO_API_BASE_URL` defaults to `http://localhost:8080`.
+- `PULSO_SUPABASE_URL` defaults to `http://127.0.0.1:54321`.
+- `PULSO_SUPABASE_PUBLISHABLE_KEY` defaults to empty, which keeps the Auth
+  gateway inactive until a publishable/anon key is supplied.
+
+Vercel production builds receive these variables from the Vercel project
+environment and run the normal `pnpm build` command. They are public browser
+configuration, so never use a service-role key, database password, or JWT
+secret in them. If the publishable key is missing, the Auth gateway returns no
+session; it does not invent credentials, and `StartupsApi` does not replace API
+errors with mock data. The current visual session remains an explicitly
+documented prototype until PUL-40 wires it to the adapter.
+
+Browser Auth configuration is exposed through
 [`frontend/src/app/core/config/app-config.ts`](frontend/src/app/core/config/app-config.ts).
-Only the Supabase URL and publishable/anon key belong there; both are public
-browser configuration. The gateway intentionally remains inactive while those
-values are blank, so the visual prototype can run without an Auth project.
+Only the Supabase URL and publishable/anon key belong in the frontend build;
+both are public browser configuration. The gateway intentionally remains
+inactive while the publishable key is blank, so the visual prototype can run
+without an Auth project.
 
 The endpoint examples and response contracts are documented in
 [`docs/api.md`](docs/api.md). The database workflow and schema ownership are in

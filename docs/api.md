@@ -103,11 +103,15 @@ does not accept a browser Supabase service-role key as an access token.
 ```sh
 curl http://localhost:8080/api/health
 curl http://localhost:8080/actuator/health
+curl http://localhost:8080/actuator/health/liveness
+curl http://localhost:8080/actuator/health/readiness
 ```
 
 `/api/health` proves that the process is alive. `/actuator/health` includes the
-configured datasource health and is the dependency/readiness signal. Neither
-endpoint should be used as a product authorization check.
+configured datasource health and is the dependency/readiness signal. The
+`liveness` probe remains `UP` when PostgreSQL is unavailable; the `readiness`
+probe returns `503` when the datasource cannot be reached. Neither endpoint
+should be used as a product authorization check.
 
 ## Authentication configuration
 

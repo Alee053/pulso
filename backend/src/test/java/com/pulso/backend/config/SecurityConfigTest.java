@@ -9,7 +9,10 @@ import java.util.Date;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -44,6 +47,20 @@ class SecurityConfigTest {
                 new SupabaseJwtProperties(ISSUER, "http://jwks.test", SECRET, "authenticated")))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("exactly one");
+    }
+
+    @Test
+    void allowsOnlyConfiguredCorsOrigin() {
+        CorsConfigurationSource source = new SecurityConfig()
+                .corsConfigurationSource("http://localhost:4200");
+        CorsConfiguration configuration = source.getCorsConfiguration(
+                new MockHttpServletRequest("GET", "/api/v1/startups"));
+
+        assertThat(configuration).isNotNull();
+        assertThat(configuration.checkOrigin("http://localhost:4200"))
+                .isEqualTo("http://localhost:4200");
+        assertThat(configuration.checkOrigin("https://untrusted.example"))
+                .isNull();
     }
 
     private static JwtDecoder decoder() {

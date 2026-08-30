@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -17,10 +18,7 @@ import com.pulso.backend.discovery.domain.StartupSummary;
 
 class StartupControllerTest {
 
-    private final MockMvc mockMvc = MockMvcBuilders
-            .standaloneSetup(new StartupController(new ListPublishedStartups(catalog())))
-            .setControllerAdvice(new ApiExceptionHandler())
-            .build();
+    private final MockMvc mockMvc = mockMvc(catalog());
 
     @Test
     void returnsAStableStartupListContract() throws Exception {
@@ -51,6 +49,25 @@ class StartupControllerTest {
         mockMvc.perform(get("/api/v1/startups").param("offset", "-1"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.title").value("Invalid request"));
+    }
+
+    @Test
+    void reportsUnavailableDataStoreAsServiceUnavailable() throws Exception {
+        MockMvc unavailableMockMvc = mockMvc((offset, limit) -> {
+            throw new DataAccessResourceFailureException("database unavailable");
+        });
+
+        unavailableMockMvc.perform(get("/api/v1/startups"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.title").value("Data store unavailable"))
+                .andExpect(jsonPath("$.status").value(503));
+    }
+
+    private static MockMvc mockMvc(StartupCatalog catalog) {
+        return MockMvcBuilders
+                .standaloneSetup(new StartupController(new ListPublishedStartups(catalog)))
+                .setControllerAdvice(new ApiExceptionHandler())
+                .build();
     }
 
     private static StartupCatalog catalog() {

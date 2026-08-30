@@ -147,8 +147,9 @@ enabled.
 - Infrastructure tests: PostgreSQL-backed integration tests when repository
   adapters exist.
 - Database checks: reset, lint, and SQL tests through the Supabase CLI.
-- System smoke tests: start Supabase and the application, then exercise health
-  and one critical path.
+- System smoke tests: `pnpm smoke:verify` starts the required local services,
+  exercises health, Auth, `/api/v1/me`, and the seeded discovery journey from a
+  real browser, then cleans up only its temporary application processes.
 
 The current backend tests cover the health contract, the startup use case and
 controller, and the protected `/api/v1/me` behavior. Run

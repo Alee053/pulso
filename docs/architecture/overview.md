@@ -34,7 +34,10 @@ The frontend and backend are separate projects with a single integration seam: t
 The current logical MVP persistence model is documented in
 [`database/pulso.dbml`](../../database/pulso.dbml), with its conceptual
 relationships visualized in the [class diagram](../diagrams/pulso-class-diagram.mmd).
-The deployed schema remains defined by the ordered Supabase migrations.
+The deployed schema remains defined by the ordered Supabase migrations. The
+current `startups` foundation and canonical `projects` model are intentionally
+bridged by the compatibility decision in
+[ADR 0004](../adr/0004-project-startup-compatibility.md).
 
 ## Ownership
 

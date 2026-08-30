@@ -26,7 +26,10 @@ The public examples are:
 - `GET /api/v1/me` — authenticated JWT claim example.
 - `/actuator/health` — datasource/dependency health.
 
-The endpoint schemas and curl examples live in [`docs/api.md`](../api.md).
+The endpoint schemas and curl examples live in [`docs/api.md`](../api.md). The
+startup-named route and `Startup*` DTOs are the temporary compatibility surface
+for the first vertical slice; the canonical domain/persistence naming and
+cutover sequence are in [ADR 0004](../adr/0004-project-startup-compatibility.md).
 
 ## Feature plus inward layers
 

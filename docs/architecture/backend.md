@@ -25,6 +25,8 @@ The public examples are:
 - `GET /api/v1/startups?limit=20` — published startup catalog.
 - `GET /api/v1/me` — authenticated JWT claim example.
 - `/actuator/health` — datasource/dependency health.
+- `/actuator/health/liveness` and `/actuator/health/readiness` — public process
+  and dependency probes for local orchestration.
 
 The endpoint schemas and curl examples live in [`docs/api.md`](../api.md). The
 startup-named route and `Startup*` DTOs are the temporary compatibility surface
@@ -149,6 +151,7 @@ enabled.
   and one critical path.
 
 The current backend tests cover the health contract, the startup use case and
-controller, and the protected `/api/v1/me` behavior. The remaining live
-database smoke test is a local-environment check, not a substitute for tests at
-the application seams.
+controller, and the protected `/api/v1/me` behavior. Run
+`pnpm backend:verify` with local Supabase and `.env` available to exercise the
+real JDBC catalog plus the available/unavailable dependency cases; it is a
+local-environment check, not a substitute for tests at the application seams.

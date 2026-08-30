@@ -22,6 +22,7 @@
     "db:migration:new": "pnpm exec supabase --workdir database migration new",
     "db:push:dry-run": "pnpm exec supabase --workdir database db push --linked --dry-run",
     "backend:run": "./scripts/run-backend.sh",
+    "backend:verify": "./scripts/verify-local-backend.sh",
     "backend:test": "./backend/gradlew -p backend test",
     "backend:build": "./backend/gradlew -p backend build"
   },

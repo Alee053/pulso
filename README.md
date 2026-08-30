@@ -128,8 +128,16 @@ Run these checks from any terminal:
 ```sh
 curl http://localhost:8080/api/health
 curl http://localhost:8080/actuator/health
+curl http://localhost:8080/actuator/health/liveness
+curl http://localhost:8080/actuator/health/readiness
 curl 'http://localhost:8080/api/v1/startups?offset=0&limit=2'
 ```
+
+To repeat the complete backend verification with the database available and
+with the PostgreSQL connection deliberately unavailable, run
+`pnpm backend:verify` with Supabase running and `.env` created from
+`.env.example`. The script uses temporary ports `18080` and `18081` and stops
+only the processes it starts.
 
 The local services are available at:
 
@@ -188,6 +196,7 @@ For endpoint contracts and curl examples, see [`docs/api.md`](docs/api.md).
 | `pnpm build` | Build the frontend |
 | `pnpm --filter @pulso/frontend test` | Run the Angular/Vitest suite |
 | `pnpm backend:run` | Load `.env` and run Spring Boot |
+| `pnpm backend:verify` | Verify JDBC, seed, liveness, and readiness with local Supabase |
 | `pnpm backend:test` | Run backend tests |
 | `pnpm backend:build` | Build the backend executable JAR |
 | `pnpm db:up` | Start the local Supabase services |
@@ -225,7 +234,8 @@ The endpoint examples and response contracts are documented in
 [`database/README.md`](database/README.md).
 
 `/api/health` is an API liveness check and does not claim that PostgreSQL is
-available. Use `/actuator/health` for dependency health.
+available. Use `/actuator/health` or its public `liveness` and `readiness`
+probes for dependency health; readiness includes the PostgreSQL datasource.
 
 Do not commit `.env` files, hosted credentials, JWT secrets, service-role keys,
 or generated Supabase local state.

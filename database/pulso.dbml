@@ -18,10 +18,11 @@ Project pulso_mvp {
 // campos de estado actuales.
 //
 // El nombre canónico del dominio y de la persistencia es projects, con
-// project_members como relación de equipo. La foundation actual todavía usa
-// startups/startup_members; S0.3 debe transformarla en sitio y conservar la
-// compatibilidad únicamente en /api/v1/startups, sin una segunda fuente de
-// escritura ni una vista SQL permanente.
+// project_members como relación de equipo. La primera migration conserva los
+// nombres históricos startups/startup_members; la migration de alineación los
+// transforma en sitio y conserva la compatibilidad únicamente en
+// /api/v1/startups, sin una segunda fuente de escritura ni una vista SQL
+// permanente.
 
 // -----------------------------------------------------------------------------
 // 1. Identidad y onboarding

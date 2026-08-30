@@ -78,13 +78,14 @@ are versioned; health and Actuator endpoints are operational only.
 
 ### Database
 
-- The first migration currently creates `profiles`, `startups`, and
+- The first migration creates the historical `profiles`, `startups`, and
   `startup_members`; S0.3 transforms the foundation in place to the canonical
-  `projects` and `project_members` names.
-- Row Level Security is enabled on all three tables; profile/membership access
-  is current-user scoped, and startup rows are not granted directly to the
-  public Data API in this base.
-- `seed.sql` inserts two fictional published startups for local endpoint
+  `sectors`, `projects`, and `project_members` names.
+- Row Level Security is enabled on the canonical application tables;
+  profile/project-membership access is current-user scoped, active sectors are
+  readable by authenticated users, and project rows are not granted directly
+  to the public Data API in this base.
+- `seed.sql` inserts two fictional published projects for local endpoint
   examples.
 - `database/README.md` defines reset, lint, test, linking, and push commands.
 

@@ -1,39 +1,61 @@
 begin;
 
-select plan(8);
+select plan(12);
 
 select has_table('public', 'profiles', 'profiles table exists');
-select has_table('public', 'startups', 'startups table exists');
-select has_table('public', 'startup_members', 'startup_members table exists');
+select has_table('public', 'sectors', 'sectors table exists');
+select has_table('public', 'projects', 'projects table exists');
+select has_table('public', 'project_members', 'project_members table exists');
 select has_index(
   'public',
-  'startups',
-  'startups_published_created_at_idx',
-  'published startup ordering has an index'
+  'projects',
+  'projects_status_published_at_id_idx',
+  'published project ordering has an index'
 );
 select is(
-  (select count(*) from public.startups where status = 'PUBLISHED'),
+  (select count(*) from public.sectors where is_active),
   2::bigint,
-  'local seed contains two published startups'
+  'local seed contains two active sectors'
+);
+select is(
+  (select count(*) from public.projects where status = 'PUBLISHED'),
+  2::bigint,
+  'local seed contains two published projects'
 );
 select is(
   (select count(*) from pg_policies
     where schemaname = 'public'
-      and tablename = 'startups'
-      and policyname = 'Published startups are publicly readable'),
+      and tablename = 'projects'
+      and policyname = 'Published projects are publicly readable'),
   1::bigint,
-  'published startups have a public read policy'
+  'published projects have a public read policy'
 );
 select is(
   (select relrowsecurity from pg_class
-    where oid = 'public.startups'::regclass),
+    where oid = 'public.projects'::regclass),
   true,
-  'row level security is enabled for startups'
+  'row level security is enabled for projects'
 );
 select is(
-  has_table_privilege('anon', 'public.startups', 'select'),
+  has_table_privilege('anon', 'public.projects', 'select'),
   false,
-  'public startup rows are not exposed through a direct table grant'
+  'public project rows are not exposed through a direct table grant'
+);
+select is(
+  (select count(*) from pg_constraint
+    where conrelid = 'public.profiles'::regclass
+      and confrelid = 'auth.users'::regclass
+      and contype = 'f'),
+  1::bigint,
+  'profiles remain linked to Supabase Auth users'
+);
+select is(
+  (select count(*) from pg_constraint
+    where conrelid = 'public.project_members'::regclass
+      and confrelid = 'public.profiles'::regclass
+      and contype = 'f'),
+  2::bigint,
+  'project memberships reference profiles for member and creator'
 );
 
 select * from finish();

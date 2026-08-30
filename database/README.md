@@ -40,7 +40,7 @@ Auth health endpoint. It does not reset data, link a hosted project, or call
 The local stack provides PostgreSQL, Auth, Studio and Mailpit through Docker.
 It is for development only and must not be exposed to public traffic.
 
-The foundation migration currently creates:
+The first migration creates the historical foundation:
 
 - `public.profiles`, linked to `auth.users` and populated by the local profile
   trigger when a user signs up.
@@ -49,18 +49,26 @@ The foundation migration currently creates:
 - `public.startup_members`, the temporary compatibility membership table with
   owner/admin/member roles.
 
-S0.3 will transform the foundation in place to the canonical `public.projects`
-and `public.project_members` tables, then update the seed, pgTAP checks, and
-JDBC adapter together. Do not add new product tables or writes that depend on
-the temporary startup names. The existing `/api/v1/startups` route remains
-stable across that database migration; the API, not a duplicate SQL model, is
-the compatibility boundary.
+The ordered S0.3 migration transforms that foundation in place to the
+canonical `public.sectors`, `public.projects`, and `public.project_members`
+tables, then aligns the seed, pgTAP checks, and JDBC adapter. After a full
+reset, those canonical tables are the schema consumed by the backend. Do not
+add new product tables or writes that depend on the temporary startup names.
+The existing `/api/v1/startups` route remains stable across that database
+migration; the API, not a duplicate SQL model, is the compatibility boundary.
 
-RLS is enabled on all three tables. Profiles and memberships have narrow
-current-user grants for deliberate Auth/Data API use; startups currently have
-no direct public table grant, so the Spring backend remains the only product
-data path. The published-startup policy stays in the schema as defense in
-depth if a safe view or an intentional direct Data API surface is added later.
+The two public seed projects are system data and are created before any
+authenticated profile exists, so their `created_by_profile_id` is intentionally
+nullable in this foundation. User-created projects must always provide that
+profile reference; a later profile/project migration can make the column
+strict after the seed strategy has an authenticated owner.
+
+RLS is enabled on the canonical application tables. Profiles and project
+memberships have narrow current-user grants, active sectors are readable by
+authenticated users, and projects have no direct public table grant, so the
+Spring backend remains the product data path for projects. The published-
+project policy stays in the schema as defense in depth for any deliberate
+future direct Supabase access.
 
 Create a migration with:
 
@@ -77,7 +85,7 @@ pnpm db:test
 pnpm db:verify
 ```
 
-`seed.sql` supplies two fictional published startups. The pgTAP foundation
+`seed.sql` supplies two fictional published projects. The pgTAP foundation
 checks live in `supabase/tests/database/01_foundation.sql` and run against the
 local database after a reset.
 

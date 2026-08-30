@@ -9,8 +9,8 @@ Base URL during local development: `http://localhost:8080`.
 
 `Project`/`projects` is the canonical domain and database name described by the
 [MVP model](../database/pulso.dbml) and [class diagram](./diagrams/pulso-class-diagram.mmd).
-The foundation migration currently uses `startups`/`startup_members`; the
-ordered S0.3 migration will transform that schema in place and align the seed,
+The historical foundation migration uses `startups`/`startup_members`; the
+ordered S0.3 migration transforms that schema in place and aligns the seed,
 database tests, and JDBC adapter with the canonical names.
 
 The public `GET /api/v1/startups` route and its `Startup*` transport names are
@@ -59,7 +59,7 @@ Response `200 OK`:
 ```
 
 The endpoint uses `limit + 1` internally to calculate `hasMore`. The backend
-returns only `limit` records and orders published rows by `created_at DESC,
+returns only `limit` records and orders published rows by `published_at DESC,
 id DESC`; request the next page with `offset + limit` while `hasMore` is true.
 
 Invalid limits return `400` with a problem response:

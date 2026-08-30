@@ -93,7 +93,7 @@ pnpm db:verify
 ```
 
 `db:reset` recreates the local database, applies every migration, and loads the
-two fictional seed startups. It is safe for this local development database,
+two fictional seed projects. It is safe for this local development database,
 but it deletes local data created by previous runs. Use `pnpm db:status` when
 you need the local URLs or development keys; do not paste those keys into
 issues, logs, or commits.

@@ -15,7 +15,7 @@ pnpm db:test
 seed_count=$(docker exec "$db_container" psql \
   -U postgres \
   -d postgres \
-  -Atc "select count(*) from public.startups where status = 'PUBLISHED';")
+  -Atc "select count(*) from public.projects where status = 'PUBLISHED';")
 
 if [ "$seed_count" -ne 2 ]; then
   printf 'Se esperaban 2 proyectos publicados y se encontraron %s.\n' "$seed_count" >&2

@@ -23,10 +23,11 @@ public class JdbcStartupCatalog implements StartupCatalog {
     @Override
     public List<StartupSummary> findPublished(int offset, int limit) {
         return jdbcClient.sql("""
-                select id, slug, name, tagline, sector, city, stage
-                from public.startups
-                where status = 'PUBLISHED'
-                order by created_at desc, id desc
+                select p.id, p.slug, p.name, p.tagline, s.name as sector, p.city, p.stage
+                from public.projects p
+                join public.sectors s on s.id = p.sector_id
+                where p.status = 'PUBLISHED'
+                order by p.published_at desc, p.id desc
                 offset :offset
                 limit :limit
                 """)

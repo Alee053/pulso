@@ -23,6 +23,28 @@
     </aside>
 
     <section class="discovery-view__stage flex min-w-0 flex-col items-center">
+      <ng-container *ngIf="isLoading; else resolvedFeed">
+        <div class="glass-panel flex w-full max-w-[35rem] flex-col items-center px-7 py-16 text-center sm:px-12 sm:py-24" role="status" aria-live="polite">
+          <span class="flex size-14 items-center justify-center rounded-2xl border border-[#a9e1ff]/20 bg-[#a9e1ff]/10 text-[#a9e1ff]"><pulso-icon name="sparkles" [size]="25" [strokeWidth]="1.6" /></span>
+          <span class="eyebrow mt-7">CARGANDO DISCOVERY</span>
+          <h2 class="mt-5 text-3xl font-medium tracking-[-0.055em] text-white sm:text-4xl">Buscando proyectos publicados.</h2>
+          <p class="mt-4 max-w-sm text-sm leading-6 text-white/45">Estamos consultando el catálogo real de Pulso.</p>
+        </div>
+      </ng-container>
+
+      <ng-template #resolvedFeed>
+        <ng-container *ngIf="errorMessage; else loadedFeed">
+          <div class="glass-panel flex w-full max-w-[35rem] flex-col items-center px-7 py-16 text-center sm:px-12 sm:py-24" role="alert">
+            <span class="flex size-14 items-center justify-center rounded-2xl border border-[#efb4c6]/20 bg-[#efb4c6]/10 text-[#efb4c6]"><pulso-icon name="x" [size]="25" [strokeWidth]="1.6" /></span>
+            <span class="eyebrow mt-7">NO SE PUDO CARGAR</span>
+            <h2 class="mt-5 text-3xl font-medium tracking-[-0.055em] text-white sm:text-4xl">El catálogo no está disponible.</h2>
+            <p class="mt-4 max-w-sm text-sm leading-6 text-white/45">{{ errorMessage }}</p>
+            <button type="button" class="solid-button mt-8" (click)="retryRequested.emit()"><pulso-icon name="rotate-ccw" [size]="15" />Reintentar</button>
+          </div>
+        </ng-container>
+      </ng-template>
+
+      <ng-template #loadedFeed>
       <ng-container *ngIf="currentStartup as startup; else emptyFeed">
         <div class="discovery-view__progress-meta mb-2 flex w-full max-w-[35rem] items-center justify-between text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-white/30">
           <span>Exploración {{ activeNumber | number:'2.0-0' }} / {{ totalStartups | number:'2.0-0' }}</span>
@@ -54,8 +76,20 @@
           <button type="button" class="discovery-action discovery-action--interested" [disabled]="isTransitioning" aria-label="Me interesa (→)" (click)="handleDecision('interested')"><span class="discovery-action__icon"><pulso-icon name="heart" [size]="19" /></span><span class="discovery-action__label">Me interesa</span><span class="discovery-action__shortcut">→</span></button>
         </div>
       </ng-container>
+      </ng-template>
 
       <ng-template #emptyFeed>
+        <ng-container *ngIf="totalStartups === 0; else completedFeed">
+          <div class="glass-panel flex w-full max-w-[35rem] flex-col items-center px-7 py-16 text-center sm:px-12 sm:py-24 fade-in-up">
+            <span class="flex size-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-white/45"><pulso-icon name="compass" [size]="25" [strokeWidth]="1.6" /></span>
+            <span class="eyebrow mt-7">CATÁLOGO VACÍO</span>
+            <h2 class="mt-5 text-3xl font-medium tracking-[-0.055em] text-white sm:text-4xl">Todavía no hay proyectos publicados.</h2>
+            <p class="mt-4 max-w-sm text-sm leading-6 text-white/45">Cuando exista un proyecto publicado aparecerá aquí para descubrirlo.</p>
+          </div>
+        </ng-container>
+      </ng-template>
+
+      <ng-template #completedFeed>
         <div class="glass-panel flex w-full max-w-[35rem] flex-col items-center px-7 py-16 text-center sm:px-12 sm:py-24 fade-in-up">
           <span class="flex size-14 items-center justify-center rounded-2xl border border-[#a9e1ff]/20 bg-[#a9e1ff]/10 text-[#a9e1ff]"><pulso-icon name="check" [size]="25" [strokeWidth]="1.6" /></span>
           <span class="eyebrow mt-7">PRIMERA VUELTA COMPLETA</span>

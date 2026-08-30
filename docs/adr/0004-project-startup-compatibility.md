@@ -9,7 +9,7 @@
 | Logical model | [`database/pulso.dbml`](../../database/pulso.dbml) and [`pulso-class-diagram.mmd`](../diagrams/pulso-class-diagram.mmd) use `projects` and `project_members`. | Keep these names as the domain model. |
 | Database | [`20260819000000_create_pulso_foundation.sql`](../../database/supabase/migrations/20260819000000_create_pulso_foundation.sql) creates `public.startups` and `public.startup_members`; [`seed.sql`](../../database/supabase/seed.sql) and pgTAP currently use them. | S0.3 transforms the foundation in place to `public.sectors`, `public.projects`, and `public.project_members`, preserving identifiers and data where possible. There is no second writable source of truth and no long-lived SQL compatibility view. |
 | Backend | `JdbcStartupCatalog` reads `public.projects` and joins `public.sectors`; `StartupSummary` and `StartupResponse` expose the startup-shaped result. | Keep the canonical SQL target behind the adapter while the S0 HTTP response remains stable. |
-| Frontend | `StartupsApi` calls `/api/v1/startups`; `PulsoSession` still uses local mock data until PUL-40. | Keep the current adapter and transport names until their consumers can be migrated deliberately. |
+| Frontend | `StartupsApi` calls `/api/v1/startups`; `PulsoSession` maps that summary into the discovery domain model. Saved and interested interactions remain local until their persistence stories. | Keep the current adapter and transport names until their consumers can be migrated deliberately. |
 | HTTP | Public `GET /api/v1/startups` with bounded `offset`/`limit` pagination. | Preserve this route and JSON shape throughout Sprint 0; a future project-named endpoint must be additive or versioned. |
 
 ## Decision
@@ -30,7 +30,7 @@
 5. **S0.5 — HTTP contract:** formalize the stable route, DTO fields, pagination, CORS, and `400`/`401`/`503` behavior.
 6. **S0.6 — Angular environments:** make API and public Supabase configuration explicit without putting secrets in the bundle.
 7. **S0.7 — Auth E2E:** connect local Auth, session preservation, token forwarding, and protected `/api/v1/me`.
-8. **S0.8 — Real discovery:** replace the discovery feed's mock source while preserving local-only saved and interest interactions until their own stories.
+8. **S0.8 — Real discovery (completed):** replace the discovery feed's mock source while preserving local-only saved and interest interactions until their own stories.
 9. **S0.9 — Smoke gate:** run the complete local path and verify health, Auth, `/api/v1/me`, and real discovery before Sprint 1.
 
 The compatibility route can only be deprecated after all known clients use the project-named contract, an additive replacement exists if needed, and the full smoke/regression path passes. That removal is outside S0.

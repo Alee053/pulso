@@ -1,6 +1,8 @@
-import { computed, Injectable, signal } from '@angular/core'
+import { computed, inject, Injectable, signal } from '@angular/core'
+import { firstValueFrom } from 'rxjs'
 import { interestOptions } from '../data-access/interests'
-import { mockStartups } from '../data-access/mock-startups'
+import { StartupsApi } from '../data-access/startups-api'
+import { toStartupViewModel } from '../data-access/startup-view-model'
 import {
   adjustPreferenceWeights,
   getActiveSignals,
@@ -12,23 +14,28 @@ import type { AppView, Decision, InterestId, Startup } from '../domain/startup'
 
 @Injectable({ providedIn: 'root' })
 export class PulsoSession {
+  private readonly startupsApi = inject(StartupsApi)
+
   readonly interestOptions = interestOptions
-  readonly mockStartups = mockStartups
 
   readonly selectedInterests = signal<InterestId[]>([])
   readonly hasStarted = signal(false)
   readonly activeView = signal<AppView>('discover')
   readonly feed = signal<Startup[]>([])
+  readonly catalog = signal<Startup[]>([])
+  readonly isLoading = signal(false)
+  readonly errorMessage = signal<string | null>(null)
+  readonly hasLoadedCatalog = signal(false)
   readonly savedIds = signal<string[]>([])
   readonly interestedIds = signal<string[]>([])
   readonly preferenceWeights = signal<PreferenceWeights>({})
 
   readonly currentStartup = computed(() => this.feed()[0])
   readonly savedStartups = computed(() =>
-    this.mockStartups.filter((startup) => this.savedIds().includes(startup.id)),
+    this.catalog().filter((startup) => this.savedIds().includes(startup.id)),
   )
   readonly interestedStartups = computed(() =>
-    this.mockStartups.filter((startup) =>
+    this.catalog().filter((startup) =>
       this.interestedIds().includes(startup.id),
     ),
   )
@@ -44,21 +51,37 @@ export class PulsoSession {
     )
   }
 
-  startDiscovery(): void {
-    this.feed.set(rankStartups(this.mockStartups, this.selectedInterests()))
+  async startDiscovery(): Promise<void> {
+    if (this.isLoading()) {
+      return
+    }
+
     this.hasStarted.set(true)
     this.activeView.set('discover')
+    await this.loadCatalog()
   }
 
   restartDiscovery(): void {
+    if (this.isLoading()) {
+      return
+    }
+
     this.feed.set(
       rankStartups(
-        this.mockStartups,
+        this.catalog(),
         this.selectedInterests(),
         this.preferenceWeights(),
       ),
     )
     this.activeView.set('discover')
+  }
+
+  retryDiscovery(): void {
+    if (this.isLoading()) {
+      return
+    }
+
+    void this.loadCatalog()
   }
 
   toggleSaved(startupId: string): void {
@@ -110,5 +133,29 @@ export class PulsoSession {
       this.selectedInterests(),
       this.preferenceWeights(),
     )
+  }
+
+  private async loadCatalog(): Promise<void> {
+    this.isLoading.set(true)
+    this.errorMessage.set(null)
+    this.hasLoadedCatalog.set(false)
+    this.feed.set([])
+    this.catalog.set([])
+
+    try {
+      const response = await firstValueFrom(this.startupsApi.list())
+      const catalog = response.data.map(toStartupViewModel)
+      this.catalog.set(catalog)
+      this.feed.set(
+        rankStartups(catalog, this.selectedInterests(), this.preferenceWeights()),
+      )
+      this.hasLoadedCatalog.set(true)
+    } catch {
+      this.errorMessage.set(
+        'No pudimos cargar los proyectos publicados. Comprueba que el backend esté disponible e inténtalo de nuevo.',
+      )
+    } finally {
+      this.isLoading.set(false)
+    }
   }
 }

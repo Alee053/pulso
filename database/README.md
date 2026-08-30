@@ -31,6 +31,12 @@ terminal, run `pnpm backend:run`; in a third terminal, run `pnpm dev`. The
 backend expects the local PostgreSQL password and Auth JWKS values from the
 ignored root `.env` created from [`.env.example`](../.env.example).
 
+After resetting the local database, run `pnpm db:verify` to repeat the local
+acceptance checks without printing development keys. It verifies service
+status, migration linting, pgTAP tests, the two seeded projects, and the local
+Auth health endpoint. It does not reset data, link a hosted project, or call
+`db:push`.
+
 The local stack provides PostgreSQL, Auth, Studio and Mailpit through Docker.
 It is for development only and must not be exposed to public traffic.
 
@@ -68,6 +74,7 @@ After editing the SQL, replay the complete history:
 pnpm db:reset
 pnpm db:lint
 pnpm db:test
+pnpm db:verify
 ```
 
 `seed.sql` supplies two fictional published startups. The pgTAP foundation

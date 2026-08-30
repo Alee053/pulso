@@ -89,6 +89,7 @@ Keep this terminal or the Docker services running while using the backend:
 ```sh
 pnpm db:up
 pnpm db:reset
+pnpm db:verify
 ```
 
 `db:reset` recreates the local database, applies every migration, and loads the
@@ -195,6 +196,7 @@ For endpoint contracts and curl examples, see [`docs/api.md`](docs/api.md).
 | `pnpm db:status` | Show local URLs and development keys |
 | `pnpm db:lint` | Check local SQL migrations |
 | `pnpm db:test` | Run Supabase database tests when present |
+| `pnpm db:verify` | Verify local Supabase status, seed, tests, and Auth health |
 | `pnpm db:migration:new <name>` | Create an ordered migration file |
 | `pnpm db:push:dry-run` | Preview migrations for the linked hosted project |
 | `pnpm db:push` | Apply migrations to a linked hosted project after review |

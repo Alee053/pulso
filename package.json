@@ -18,6 +18,7 @@
     "db:lint": "pnpm exec supabase --workdir database db lint --local",
     "db:test": "pnpm exec supabase --workdir database test db --local",
     "db:status": "pnpm exec supabase --workdir database status",
+    "db:verify": "./scripts/verify-local-supabase.sh",
     "db:migration:new": "pnpm exec supabase --workdir database migration new",
     "db:push:dry-run": "pnpm exec supabase --workdir database db push --linked --dry-run",
     "backend:run": "./scripts/run-backend.sh",

@@ -24,6 +24,7 @@
     "backend:run": "./scripts/run-backend.sh",
     "backend:verify": "./scripts/verify-local-backend.sh",
     "auth:verify": "./scripts/verify-local-auth.sh",
+    "smoke:verify": "./scripts/verify-local-smoke.sh",
     "backend:test": "./backend/gradlew -p backend test",
     "backend:build": "./backend/gradlew -p backend build"
   },

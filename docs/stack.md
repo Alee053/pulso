@@ -84,6 +84,9 @@ are versioned; health and Actuator endpoints are operational only.
   `pnpm backend:verify` exercises the real local JDBC and health boundaries.
   `pnpm auth:verify` exercises local Auth registration, JWT validation through
   `/api/v1/me`, rejected unauthenticated/service-role requests, and logout.
+  `pnpm smoke:verify` runs the ordered end-to-end local stack check, including
+  the built browser application and a headless Chrome journey against the
+  seeded API.
 
 ### Database
 

@@ -29,6 +29,7 @@ persistence stories are implemented.
 - Node.js 24 LTS or 26 and pnpm 11
 - Java 21
 - Docker Engine with Compose support
+- Google Chrome, available as `google-chrome`, for the browser smoke test
 
 The Supabase CLI is a pinned project dependency, so a separate global CLI is
 not required. The repository includes `.nvmrc` and a Gradle Wrapper for
@@ -149,6 +150,26 @@ rejects the local `service_role` token before logging the user out. It uses port
 `18082` for a temporary backend and removes all temporary responses,
 credentials, and logs when it finishes.
 
+To verify the complete Sprint 0 stack from a real browser, run
+`pnpm smoke:verify`. The command runs, in order, dependency installation from
+the lockfile, local Supabase startup, database reset/lint/tests/verification,
+frontend/backend/Auth checks, a production frontend build, a temporary Spring
+Boot backend, the built frontend, and a headless Chrome journey. The journey
+registers and persists a local Auth session, calls `/api/v1/me`, loads the
+seeded discovery catalog through the browser, confirms the bearer request, and
+logs out.
+
+The smoke test needs no hosted Supabase project, linked project, `.env` file,
+or manually supplied secret. It reads the local public Auth URL/key from the
+Supabase CLI and supplies the local backend connection values internally. Its
+temporary services use ports `4200` (frontend), `8080` (backend), and `9222`
+(Chrome DevTools). Override them with `PULSO_SMOKE_FRONTEND_PORT`,
+`PULSO_SMOKE_BACKEND_PORT`, and `PULSO_SMOKE_CDP_PORT` when necessary. The
+script removes its temporary users, logs, responses, browser profile, and
+child processes; Supabase remains running for subsequent development commands.
+Because it runs `pnpm db:reset`, it deletes data in the local database and
+reapplies the migrations and seed. It does not touch a hosted project.
+
 The local services are available at:
 
 - Frontend: <http://localhost:4200>
@@ -190,8 +211,9 @@ Auth integration.
 | Docker connection error during `pnpm db:up` | Start Docker Engine/Desktop and confirm `docker info` succeeds. |
 | Backend says `Set SPRING_DATASOURCE_PASSWORD` | Create `.env` from `.env.example`, or provide the variable in the shell. |
 | `/actuator/health` is down | Start Supabase first, then restart `pnpm backend:run`; `/api/health` only checks process liveness. |
-| Port `4200`, `8080`, or `54321` is busy | Stop the process using the port before starting the corresponding service. |
+| Port `4200`, `8080`, `54321`, or `9222` is busy | Stop the process using the port before starting the corresponding service or set the smoke-test port override. |
 | Local data or migrations are stale | Run `pnpm db:reset`; this deletes local database data and reapplies migrations/seed. |
+| `pnpm smoke:verify` cannot find Chrome | Install Google Chrome and make sure the executable is available as `google-chrome` in `PATH`. |
 
 For database-specific workflows, see [`database/README.md`](database/README.md).
 The current logical MVP model is in
@@ -210,6 +232,7 @@ For endpoint contracts and curl examples, see [`docs/api.md`](docs/api.md).
 | `pnpm backend:run` | Load `.env` and run Spring Boot |
 | `pnpm backend:verify` | Verify JDBC, seed, liveness, and readiness with local Supabase |
 | `pnpm auth:verify` | Verify local Supabase signup, login, JWT claims, 401 responses including `service_role`, and logout |
+| `pnpm smoke:verify` | Run the complete local database, backend, frontend, Auth, and browser smoke test |
 | `pnpm backend:test` | Run backend tests |
 | `pnpm backend:build` | Build the backend executable JAR |
 | `pnpm db:up` | Start the local Supabase services |

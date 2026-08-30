@@ -20,7 +20,12 @@
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
             "assets": ["src/assets"],
-            "styles": ["src/index.css"]
+            "styles": ["src/index.css"],
+            "define": {
+              "__PULSO_API_BASE_URL__": "'http://localhost:8080'",
+              "__PULSO_SUPABASE_URL__": "'http://127.0.0.1:54321'",
+              "__PULSO_SUPABASE_PUBLISHABLE_KEY__": "''"
+            }
           },
           "configurations": {
             "production": {

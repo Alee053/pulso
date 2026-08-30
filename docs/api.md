@@ -73,6 +73,18 @@ Invalid limits return `400` with a problem response:
 }
 ```
 
+If the backend cannot read PostgreSQL, the catalog returns `503 Service
+Unavailable` without exposing the database error:
+
+```json
+{
+  "type": "about:blank",
+  "title": "Data store unavailable",
+  "status": 503,
+  "detail": "The data store is temporarily unavailable."
+}
+```
+
 ## `GET /api/v1/me`
 
 Returns claims extracted from the validated Supabase JWT. It is an example of a
@@ -98,6 +110,17 @@ Response `200 OK`:
 Without a valid bearer token the response is `401 Unauthorized`. The backend
 does not accept a browser Supabase service-role key as an access token.
 
+Clients should treat `401` as an expired, missing, or invalid user session and
+must not retry it with a service-role key.
+
+## CORS
+
+The backend reads `CORS_ALLOWED_ORIGINS` as a comma-separated list of exact
+browser origins. Local development defaults to `http://localhost:4200`; origins
+not in the configured list receive no `Access-Control-Allow-Origin` response
+header. Credentials are disabled, and the allowed methods and headers are
+limited to the API methods used by the application.
+
 ## Operational endpoints
 
 ```sh
@@ -112,6 +135,13 @@ configured datasource health and is the dependency/readiness signal. The
 `liveness` probe remains `UP` when PostgreSQL is unavailable; the `readiness`
 probe returns `503` when the datasource cannot be reached. Neither endpoint
 should be used as a product authorization check.
+
+## Contract evolution
+
+Any incompatible change must update the Spring DTO/controller, the Angular
+data-access adapter, this document, and their tests in the same change. Prefer
+additive fields or a new versioned route; keep `/api/v1/startups` and its
+startup-shaped response stable while the compatibility boundary remains active.
 
 ## Authentication configuration
 

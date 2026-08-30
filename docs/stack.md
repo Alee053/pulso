@@ -66,7 +66,8 @@ are versioned; health and Actuator endpoints are operational only.
 
 ### Backend
 
-- `/api/health` is liveness and `/actuator/health` reports dependency health.
+- `/api/health` is process liveness; `/actuator/health` and its readiness probe
+  report dependency health, while the liveness probe stays process-scoped.
 - `GET /api/v1/startups?offset=0&limit=20` is public and reads published rows
   through a bounded JDBC adapter.
 - `GET /api/v1/me` is protected and demonstrates Supabase JWT extraction.
@@ -74,7 +75,8 @@ are versioned; health and Actuator endpoints are operational only.
   configured hosted JWKS URI in deployment. An explicit HMAC secret remains a
   legacy fallback.
 - Backend tests cover the use-case, API response contract, validation, and
-  protected endpoint behavior without requiring a running database.
+  protected endpoint behavior without requiring a running database;
+  `pnpm backend:verify` exercises the real local JDBC and health boundaries.
 
 ### Database
 

@@ -70,20 +70,22 @@ corepack prepare pnpm@11.17.0 --activate
 
 ### 2. Install dependencies and create local configuration
 
-Run these commands from the repository root. Create `.env` only if it does not
-already exist; it is ignored by Git and contains local backend defaults.
+Run these commands from the repository root. Environment files are ignored by
+Git and must never contain values committed to the repository.
 
 ```sh
 pnpm install
-test -f .env || cp .env.example .env
 ```
 
-The checked-in example points the backend to the local Supabase database and
-Auth JWKS. Do not replace the JWKS configuration with a service-role key. The
-frontend build has safe local defaults for the API and Supabase URL; its
-publishable key is intentionally blank until Auth is enabled. Set the public
-key through the frontend build variables described below when testing the
-local Auth panel.
+`pnpm backend:run` automatically loads `backend/.env.development` when it is
+present, then falls back to `backend/.env` and the root `.env`. Set
+`PULSO_BACKEND_ENV_FILE` when another backend environment file is needed. The
+checked-in [`.env.example`](.env.example) remains a safe local fallback.
+
+The frontend `dev`, `start`, `preview`, and `build` commands automatically load
+`frontend/.env.development`. Shell environment variables take precedence over
+the file. Only the frontend API URL, Supabase URL, and publishable/anon key are
+accepted; server passwords, JWT secrets, and service-role keys are rejected.
 
 ### 3. Start Supabase — Terminal 1
 
@@ -248,7 +250,7 @@ For endpoint contracts and curl examples, see [`docs/api.md`](docs/api.md).
 
 ## Configuration
 
-The root `.env` is backend-only. It supports the variables in
+The backend environment file supports the variables in
 [`.env.example`](.env.example):
 
 - `SPRING_DATASOURCE_*` configure the JDBC connection.
@@ -259,21 +261,19 @@ The root `.env` is backend-only. It supports the variables in
   a hosted service-role key into the backend or frontend.
 - `CORS_ALLOWED_ORIGINS` controls browser access to the API.
 
-Frontend builds read these public values at build time through Angular's
-`define` mechanism:
+Frontend commands read these public values at startup/build time through
+Angular's `define` mechanism:
 
 - `PULSO_API_BASE_URL` defaults to `http://localhost:8080`.
 - `PULSO_SUPABASE_URL` defaults to `http://127.0.0.1:54321`.
 - `PULSO_SUPABASE_PUBLISHABLE_KEY` defaults to empty, which keeps the Auth
   gateway inactive until a publishable/anon key is supplied.
 
-Vercel production builds receive these variables from the Vercel project
-environment and run the normal `pnpm build` command. They are public browser
-configuration, so never use a service-role key, database password, or JWT
-secret in them. If the publishable key is missing, the Auth gateway returns no
-session; it does not invent credentials. `StartupsApi` does not replace API
-errors with mock data, and the discovery session keeps that failure visible
-while using the API-backed catalog as its runtime source.
+They are public browser configuration, so never use a service-role key,
+database password, or JWT secret in them. If the publishable key is missing, the
+Auth gateway returns no session; it does not invent credentials. `StartupsApi`
+does not replace API errors with mock data, and the discovery session keeps that
+failure visible while using the API-backed catalog as its runtime source.
 
 Browser Auth configuration is exposed through
 [`frontend/src/app/core/config/app-config.ts`](frontend/src/app/core/config/app-config.ts).

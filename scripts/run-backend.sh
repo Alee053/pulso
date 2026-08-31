@@ -38,13 +38,29 @@ set_env_if_unset() {
       if [ -z "${DB_CONNECTION_TIMEOUT_MS+x}" ]; then export "DB_CONNECTION_TIMEOUT_MS=$value"; fi
       ;;
     *)
-      printf '%s\n' 'Unsupported variable in .env.' >&2
+      printf '%s\n' 'Unsupported variable in the selected environment file.' >&2
       exit 1
       ;;
   esac
 }
 
-if [ -f .env ]; then
+env_file=${PULSO_BACKEND_ENV_FILE:-}
+if [ -z "$env_file" ]; then
+  if [ -f backend/.env.development ]; then
+    env_file=backend/.env.development
+  elif [ -f backend/.env ]; then
+    env_file=backend/.env
+  elif [ -f .env ]; then
+    env_file=.env
+  fi
+fi
+
+if [ -n "$env_file" ] && [ ! -r "$env_file" ]; then
+  printf 'Environment file not found: %s\n' "$env_file" >&2
+  exit 1
+fi
+
+if [ -n "$env_file" ]; then
   while IFS= read -r line || [ -n "$line" ]; do
     case "$line" in
       ""|\#*)
@@ -55,7 +71,7 @@ if [ -f .env ]; then
         value=${line#*=}
         case "$value" in
           *[[:space:]]*|*\"*|*\'*)
-            printf '%s\n' 'Unsupported .env value syntax; use an unquoted single-line KEY=value entry.' >&2
+            printf '%s\n' 'Unsupported environment value syntax; use an unquoted single-line KEY=value entry.' >&2
             exit 1
             ;;
         esac
@@ -66,7 +82,7 @@ if [ -f .env ]; then
         exit 1
         ;;
     esac
-  done < .env
+  done < "$env_file"
 fi
 
 if [ -z "${SPRING_DATASOURCE_URL+x}" ]; then

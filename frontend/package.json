@@ -4,11 +4,11 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
-    "dev": "ng serve",
+    "start": "node scripts/serve-frontend.mjs --configuration production",
+    "dev": "node scripts/serve-frontend.mjs --configuration development",
     "build": "node scripts/build-frontend.mjs",
     "watch": "ng build --watch --configuration development",
-    "preview": "ng serve --configuration production",
+    "preview": "node scripts/serve-frontend.mjs --configuration production",
     "test": "ng test --watch=false"
   },
   "dependencies": {

@@ -28,8 +28,8 @@ pnpm db:status
 
 Keep the services running in the background or in one terminal. In another
 terminal, run `pnpm backend:run`; in a third terminal, run `pnpm dev`. The
-backend expects the local PostgreSQL password and Auth JWKS values from the
-ignored root `.env` created from [`.env.example`](../.env.example).
+backend command automatically loads `backend/.env.development` when present.
+Use `PULSO_BACKEND_ENV_FILE` to select another ignored environment file.
 
 After resetting the local database, run `pnpm db:verify` to repeat the local
 acceptance checks without printing development keys. It verifies service
@@ -95,14 +95,15 @@ migration and seed history; never run it against a linked hosted project.
 
 Use `pnpm db:push` only after linking this checkout to the intended hosted
 Supabase project. Review `pnpm db:push:dry-run` before applying a remote
-change.
+change. The local database commands in this section do not validate a hosted
+staging database.
 
 ## Backend connection
 
-Run `pnpm db:status` to obtain the local database URL, then copy the values into
-the ignored root `.env`. The Spring Boot backend connects to PostgreSQL through
-JDBC. The browser uses Supabase Auth, but never receives the database password
-or a service-role key.
+The Spring Boot backend connects to PostgreSQL through JDBC. The browser uses
+Supabase Auth, but never receives the database password or a service-role key.
+Keep staging credentials in `backend/.env.development` or another ignored file;
+do not put them in the frontend environment.
 
 Hosted Supabase credentials belong in the deployment secret manager. Do not
 commit `.env`, project passwords, JWT secrets, or service-role keys.

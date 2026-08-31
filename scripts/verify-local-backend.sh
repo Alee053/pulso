@@ -5,6 +5,7 @@ set -eu
 available_port=${PULSO_VERIFY_BACKEND_PORT:-18080}
 unavailable_backend_port=$((available_port + 1))
 unavailable_db_port=${PULSO_VERIFY_UNAVAILABLE_DB_PORT:-55432}
+backend_env_file=${PULSO_VERIFY_BACKEND_ENV_FILE:-}
 temporary_dir=$(mktemp -d)
 backend_pid=
 
@@ -36,6 +37,14 @@ command -v ss >/dev/null 2>&1 || fail 'Se necesita ss para comprobar que los pue
 
 if [ ! -f .env ] && [ -z "${SPRING_DATASOURCE_PASSWORD:-}" ]; then
   fail 'Crea .env desde .env.example o define SPRING_DATASOURCE_PASSWORD antes de verificar el backend.'
+fi
+
+if [ -z "$backend_env_file" ]; then
+  if [ -f .env ]; then
+    backend_env_file=.env
+  else
+    backend_env_file=/dev/null
+  fi
 fi
 
 assert_port_free() {
@@ -83,7 +92,8 @@ assert_body_contains() {
 }
 
 start_available_backend() {
-  SERVER_PORT="$available_port" setsid ./scripts/run-backend.sh \
+  PULSO_BACKEND_ENV_FILE="$backend_env_file" \
+    SERVER_PORT="$available_port" setsid ./scripts/run-backend.sh \
     >"$temporary_dir/backend-available.log" 2>&1 &
   backend_pid=$!
 }
@@ -91,6 +101,7 @@ start_available_backend() {
 start_unavailable_backend() {
   SPRING_DATASOURCE_URL="jdbc:postgresql://127.0.0.1:$unavailable_db_port/postgres" \
     SERVER_PORT="$unavailable_backend_port" \
+    PULSO_BACKEND_ENV_FILE="$backend_env_file" \
     setsid ./scripts/run-backend.sh \
     >"$temporary_dir/backend-unavailable.log" 2>&1 &
   backend_pid=$!

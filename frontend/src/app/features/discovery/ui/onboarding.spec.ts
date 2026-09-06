@@ -50,14 +50,18 @@ describe('OnboardingComponent', () => {
     const fixture = TestBed.createComponent(OnboardingComponent)
     const component = fixture.componentInstance
 
-    component.catalogsLoading = true
+    fixture.componentRef.setInput('catalogsLoading', true)
     fixture.detectChanges()
+
     expect(fixture.nativeElement.textContent).toContain(
-      'Cargando sectores, temas y habilidades',
+    'Cargando sectores, temas y habilidades',
     )
 
-    component.catalogsLoading = false
-    component.catalogsErrorMessage = 'Backend no disponible.'
+    fixture.componentRef.setInput('catalogsLoading', false)
+    fixture.componentRef.setInput(
+    'catalogsErrorMessage',
+    'Backend no disponible.',
+    )
     const retry = vi.fn()
     component.catalogsRetryRequested.subscribe(retry)
     fixture.detectChanges()
@@ -69,11 +73,11 @@ describe('OnboardingComponent', () => {
     retryButton.click()
     expect(retry).toHaveBeenCalledOnce()
 
-    component.catalogsErrorMessage = null
-    component.catalogsLoaded = true
-    component.sectors = []
-    component.tags = []
-    component.skills = []
+    fixture.componentRef.setInput('catalogsErrorMessage', null)
+    fixture.componentRef.setInput('catalogsLoaded', true)
+    fixture.componentRef.setInput('sectors', [])
+    fixture.componentRef.setInput('tags', [])
+    fixture.componentRef.setInput('skills', [])
     fixture.detectChanges()
 
     const text = fixture.nativeElement.textContent

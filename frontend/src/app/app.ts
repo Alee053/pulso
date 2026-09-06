@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common'
-import { Component, inject, signal } from '@angular/core'
+import { Component, inject, OnInit, signal } from '@angular/core'
 import { AuthPanelComponent } from './core/auth/auth-panel'
 import { DiscoveryViewComponent } from './features/discovery/ui/discovery-view'
 import { NavigationBarComponent } from './features/discovery/ui/navigation-bar'
@@ -26,9 +26,13 @@ import type { AppView, Startup } from './features/discovery/domain/startup'
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   readonly session = inject(PulsoSession)
   readonly selectedStartup = signal<Startup | null>(null)
+
+  ngOnInit(): void {
+    void this.session.loadReferenceCatalogs()
+  }
 
   selectStartup(startup: Startup): void {
     this.selectedStartup.set(startup)

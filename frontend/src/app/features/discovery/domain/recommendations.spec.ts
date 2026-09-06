@@ -1,5 +1,5 @@
-// @ts-expect-error Vitest is provided by the test runner.
 import { describe, expect, it } from 'vitest'
+
 import { mockStartups } from '../data-access/mock-startups'
 import {
   getActiveSignals,

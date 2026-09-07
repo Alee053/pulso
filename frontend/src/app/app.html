@@ -4,7 +4,20 @@
   <pulso-onboarding
     [interestOptions]="session.interestOptions"
     [selectedInterests]="session.selectedInterests()"
+    [sectors]="session.referenceCatalogs().sectors"
+    [tags]="session.referenceCatalogs().tags"
+    [skills]="session.referenceCatalogs().skills"
+    [selectedSectorIds]="session.selectedSectorIds()"
+    [selectedTagIds]="session.selectedTagIds()"
+    [selectedSkillIds]="session.selectedSkillIds()"
+    [catalogsLoading]="session.areCatalogsLoading()"
+    [catalogsLoaded]="session.hasLoadedReferenceCatalogs()"
+    [catalogsErrorMessage]="session.catalogsErrorMessage()"
     (interestToggled)="session.toggleInterest($event)"
+    (sectorToggled)="session.toggleSector($event)"
+    (tagToggled)="session.toggleTag($event)"
+    (skillToggled)="session.toggleSkill($event)"
+    (catalogsRetryRequested)="session.retryReferenceCatalogs()"
     (started)="session.startDiscovery()"
   />
 </ng-container>

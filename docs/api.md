@@ -1,5 +1,3 @@
-# API examples
-
 The backend owns the HTTP contract. Product endpoints start under `/api/v1`;
 health endpoints are operational and are not part of the product API.
 
@@ -84,6 +82,73 @@ Unavailable` without exposing the database error:
   "detail": "The data store is temporarily unavailable."
 }
 ```
+
+## `GET /api/v1/catalogs`
+
+Returns the active reference catalogs used by authenticated product flows. The
+route is versioned, requires a valid user access token, and does not expose
+database rows directly. Each catalog is bounded internally to 500 entries.
+
+Ordering is stable and defined by the backend:
+
+- sectors: `sort_order ASC, name ASC, id ASC`;
+- tags: `name ASC, id ASC`;
+- skills: `name ASC, id ASC`.
+
+Only rows with `is_active = true` are returned. The client must not depend on
+`sort_order`, timestamps, RLS fields, or other persistence-only columns because
+those fields are intentionally absent from the HTTP contract.
+
+```sh
+curl \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  http://localhost:8080/api/v1/catalogs
+```
+
+Response `200 OK`:
+
+```json
+{
+  "data": {
+    "sectors": [
+      {
+        "id": "11111111-1111-1111-1111-111111111111",
+        "slug": "sostenibilidad",
+        "name": "Sostenibilidad",
+        "description": "Soluciones que reducen residuos y mejoran el uso de recursos."
+      }
+    ],
+    "tags": [
+      {
+        "id": "22222222-2222-2222-2222-222222222222",
+        "slug": "inteligencia-artificial",
+        "name": "Inteligencia artificial",
+        "type": "TOPIC"
+      }
+    ],
+    "skills": [
+      {
+        "id": "33333333-3333-3333-3333-333333333333",
+        "slug": "java",
+        "name": "Java",
+        "category": "DESARROLLO"
+      }
+    ]
+  }
+}
+```
+
+An existing catalog with no active entries is represented by an empty array;
+for example, `"tags": []`. If PostgreSQL cannot be read, the endpoint returns
+the same sanitized `503 Service Unavailable` `ProblemDetail` used by the
+discovery catalog. Missing or invalid bearer tokens return `401 Unauthorized`.
+
+`tags` and `skills` were already part of the canonical DBML model but were not
+created by the ordered migrations before PUL-44. Migration
+`20260906000000_create_tag_and_skill_catalogs.sql` closes that implementation
+gap using the existing DBML fields (`id`, `slug`, `name`, `tag_type`/`category`,
+`is_active`, and timestamps); it does not create profile/project relationship
+tables, which belong to the stories that persist those relationships.
 
 ## `GET /api/v1/me`
 

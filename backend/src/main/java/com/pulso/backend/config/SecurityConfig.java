@@ -54,6 +54,7 @@ public class SecurityConfig {
                                 "/actuator/info")
                         .permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/startups").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/catalogs").authenticated()
                         .requestMatchers("/api/v1/me").authenticated()
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {

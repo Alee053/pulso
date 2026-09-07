@@ -1,9 +1,11 @@
 begin;
 
-select plan(12);
+select plan(19);
 
 select has_table('public', 'profiles', 'profiles table exists');
 select has_table('public', 'sectors', 'sectors table exists');
+select has_table('public', 'tags', 'tags table exists');
+select has_table('public', 'skills', 'skills table exists');
 select has_table('public', 'projects', 'projects table exists');
 select has_table('public', 'project_members', 'project_members table exists');
 select has_index(
@@ -17,6 +19,42 @@ select is(
   2::bigint,
   'local seed contains two active sectors'
 );
+
+select is(
+  (select count(*) from pg_policies
+    where schemaname = 'public'
+      and tablename = 'tags'
+      and policyname = 'Active tags are readable by authenticated users'),
+  1::bigint,
+  'active tags have an authenticated read policy'
+);
+select is(
+  (select count(*) from pg_policies
+    where schemaname = 'public'
+      and tablename = 'skills'
+      and policyname = 'Active skills are readable by authenticated users'),
+  1::bigint,
+  'active skills have an authenticated read policy'
+);
+select has_index(
+  'public',
+  'sectors',
+  'sectors_active_catalog_order_idx',
+  'active sectors have a stable catalog ordering index'
+);
+select has_index(
+  'public',
+  'tags',
+  'tags_active_catalog_order_idx',
+  'active tags have a stable catalog ordering index'
+);
+select has_index(
+  'public',
+  'skills',
+  'skills_active_catalog_order_idx',
+  'active skills have a stable catalog ordering index'
+);
+
 select is(
   (select count(*) from public.projects where status = 'PUBLISHED'),
   2::bigint,

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+
 import { mockStartups } from '../data-access/mock-startups'
 import {
   getActiveSignals,

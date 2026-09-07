@@ -66,6 +66,97 @@
         </div>
       </section>
 
+      <section class="mt-10 fade-in-up fade-in-up--more-delayed" aria-labelledby="catalog-preferences-title">
+        <div class="mb-5">
+          <p class="text-xs font-semibold uppercase tracking-[0.16em] text-white/35">
+            Opcional
+          </p>
+          <h2 id="catalog-preferences-title" class="mt-2 text-xl font-medium tracking-[-0.03em] text-white sm:text-2xl">
+            Afina lo que quieres encontrar
+          </h2>
+          <p class="mt-2 max-w-2xl text-sm leading-6 text-white/40">
+            Estas selecciones quedan preparadas en tu sesión para el onboarding. Su persistencia se conectará en una tarea posterior.
+          </p>
+        </div>
+
+        <div *ngIf="catalogsLoading" class="glass-panel px-5 py-6" role="status" aria-live="polite">
+          <p class="text-sm text-white/55">Cargando sectores, temas y habilidades...</p>
+        </div>
+
+        <div *ngIf="!catalogsLoading && catalogsErrorMessage" class="glass-panel px-5 py-6" role="alert">
+          <p class="text-sm leading-6 text-white/60">{{ catalogsErrorMessage }}</p>
+          <button
+            type="button"
+            class="contact-button mt-4"
+            (click)="catalogsRetryRequested.emit()"
+          >
+            Reintentar
+          </button>
+        </div>
+
+        <div *ngIf="!catalogsLoading && !catalogsErrorMessage && catalogsLoaded" class="grid gap-5 lg:grid-cols-3">
+          <section class="glass-panel p-5" aria-labelledby="sector-options-title">
+            <h3 id="sector-options-title" class="text-sm font-medium text-white/85">Sectores preferidos</h3>
+            <p class="mt-1 text-xs leading-5 text-white/35">Elige los sectores que quieres seguir.</p>
+
+            <div *ngIf="sectors.length > 0; else emptySectors" class="mt-4 flex flex-wrap gap-2">
+              <button
+                *ngFor="let sector of sectors"
+                type="button"
+                [class]="isSectorSelected(sector) ? 'contact-button border-white text-white' : 'contact-button'"
+                [attr.aria-pressed]="isSectorSelected(sector)"
+                (click)="sectorToggled.emit(sector.id)"
+              >
+                {{ sector.name }}
+              </button>
+            </div>
+            <ng-template #emptySectors>
+              <p class="mt-4 text-xs leading-5 text-white/40" role="status">No hay sectores activos disponibles.</p>
+            </ng-template>
+          </section>
+
+          <section class="glass-panel p-5" aria-labelledby="tag-options-title">
+            <h3 id="tag-options-title" class="text-sm font-medium text-white/85">Temas de interés</h3>
+            <p class="mt-1 text-xs leading-5 text-white/35">Usa los tags activos del catálogo de Pulso.</p>
+
+            <div *ngIf="tags.length > 0; else emptyTags" class="mt-4 flex flex-wrap gap-2">
+              <button
+                *ngFor="let tag of tags"
+                type="button"
+                [class]="isTagSelected(tag) ? 'contact-button border-white text-white' : 'contact-button'"
+                [attr.aria-pressed]="isTagSelected(tag)"
+                (click)="tagToggled.emit(tag.id)"
+              >
+                {{ tag.name }}
+              </button>
+            </div>
+            <ng-template #emptyTags>
+              <p class="mt-4 text-xs leading-5 text-white/40" role="status">No hay tags activos disponibles.</p>
+            </ng-template>
+          </section>
+
+          <section class="glass-panel p-5" aria-labelledby="skill-options-title">
+            <h3 id="skill-options-title" class="text-sm font-medium text-white/85">Habilidades</h3>
+            <p class="mt-1 text-xs leading-5 text-white/35">Selecciona capacidades que puedes aportar.</p>
+
+            <div *ngIf="skills.length > 0; else emptySkills" class="mt-4 flex flex-wrap gap-2">
+              <button
+                *ngFor="let skill of skills"
+                type="button"
+                [class]="isSkillSelected(skill) ? 'contact-button border-white text-white' : 'contact-button'"
+                [attr.aria-pressed]="isSkillSelected(skill)"
+                (click)="skillToggled.emit(skill.id)"
+              >
+                {{ skill.name }}
+              </button>
+            </div>
+            <ng-template #emptySkills>
+              <p class="mt-4 text-xs leading-5 text-white/40" role="status">No hay habilidades activas disponibles.</p>
+            </ng-template>
+          </section>
+        </div>
+      </section>
+
       <div class="mt-8 flex flex-col items-start gap-4 sm:mt-10 sm:flex-row sm:items-center sm:justify-between fade-in-up fade-in-up--more-delayed">
         <p class="text-xs leading-5 text-white/35">
           <ng-container [ngSwitch]="selectedInterests.length">

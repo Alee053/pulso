@@ -178,6 +178,32 @@ does not accept a browser Supabase service-role key as an access token.
 Clients should treat `401` as an expired, missing, or invalid user session and
 must not retry it with a service-role key.
 
+## Profile persistence contract for PUL-54
+
+The product profile is stored in `public.profiles`; Supabase Auth remains the
+owner of credentials, sessions, recovery tokens, and email identity data.
+`profiles.id` is the immutable UUID from `auth.users` and must be derived from
+the validated JWT subject on the server. The client must not choose or replace
+that identifier.
+
+The persistence fields available to the profile use case are:
+
+- product content: `profile_kind`, `display_name`, `avatar_storage_path`,
+  `short_bio`, `city`, `department`, `profile_visibility`, and
+  `onboarding_completed_at`;
+- server-managed state: `verification_status`, `account_status`,
+  `platform_role`, `created_at`, `updated_at`, and `deleted_at`.
+
+The direct `authenticated` database role can read only its own row and can
+write only the product-content fields. It cannot delete a profile, change the
+external UUID, or change server-managed state. The PUL-54 API must preserve the
+same authorization rule even though the backend uses its own PostgreSQL
+connection; RLS is a database defense-in-depth boundary, not a replacement for
+server-side authorization.
+
+Migration `20260907000000_complete_profiles.sql` establishes this contract and
+keeps the signup trigger responsible for creating one profile per Auth user.
+
 ## CORS
 
 The backend reads `CORS_ALLOWED_ORIGINS` as a comma-separated list of exact

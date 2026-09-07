@@ -1,6 +1,8 @@
 # Database development
 
-Pulso uses the Supabase CLI as the local development and migration interface.
+Pulso uses the ordered Supabase SQL history as its schema source of truth.
+Compose is the default local development interface; the pinned Supabase CLI
+remains available for migration tooling and the full database/browser checks.
 The canonical schema is the ordered SQL history in
 [`supabase/migrations/`](supabase/migrations/); application startup does not
 create or alter tables.
@@ -16,7 +18,33 @@ between the logical model and the current foundation is recorded in
 For the complete developer onboarding flow, including the backend and Angular
 dev server, start at [`../README.md#developer-onboarding`](../README.md#developer-onboarding).
 
-## Local workflow
+## Local workflow with Compose
+
+The repository root contains [`compose.yaml`](../compose.yaml), which is the
+short path for day-to-day local development. From the repository root:
+
+```sh
+docker compose up -d
+docker compose ps
+```
+
+The Compose `migrator` waits for local Auth, applies every pending SQL file in
+`supabase/migrations/`, records it in `supabase_migrations.schema_migrations`,
+and runs `supabase/seed.sql`. Edit the seed and rerun it with:
+
+```sh
+pnpm db:compose:seed
+```
+
+The database and storage volumes persist between `docker compose up -d` runs.
+For a disposable full rebuild only, run `docker compose down -v` before
+starting again; this removes local data.
+
+The pinned Supabase CLI workflow remains available for SQL linting, pgTAP and
+the complete browser smoke test. Do not run both local stacks simultaneously,
+because they bind the same default ports.
+
+## Local workflow with the Supabase CLI
 
 From the repository root, start the local database services:
 
@@ -25,6 +53,11 @@ pnpm db:up
 pnpm db:reset
 pnpm db:status
 ```
+
+The CLI stack generates its own local ES256 Auth keys. The root `.env.example`
+is configured for the Compose stack's local HS256 fixture, so use the values
+reported by `pnpm db:status` in an ignored backend environment file when
+running the backend manually against the CLI stack.
 
 Keep the services running in the background or in one terminal. In another
 terminal, run `pnpm backend:run`; in a third terminal, run `pnpm dev`. The

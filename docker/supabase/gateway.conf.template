@@ -1,0 +1,57 @@
+map $http_authorization $supabase_authorization {
+  default $http_authorization;
+  "" "Bearer $ANON_KEY";
+}
+
+server {
+  listen 8000;
+  server_name _;
+  client_max_body_size 50m;
+
+  location = /health {
+    default_type application/json;
+    return 200 '{"status":"ok"}';
+  }
+
+  location = /auth/v1/health {
+    proxy_pass http://auth:9999/health;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+
+  location /auth/v1/ {
+    proxy_pass http://auth:9999/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header apikey $http_apikey;
+    proxy_set_header Authorization $supabase_authorization;
+  }
+
+  location /rest/v1/ {
+    proxy_pass http://rest:3000/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header apikey $http_apikey;
+    proxy_set_header Authorization $supabase_authorization;
+  }
+
+  location /storage/v1/ {
+    proxy_pass http://storage:5000/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header apikey $http_apikey;
+    proxy_set_header Authorization $supabase_authorization;
+  }
+
+  location /realtime/v1/ {
+    proxy_pass http://realtime:4000/;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header apikey $http_apikey;
+    proxy_set_header Authorization $supabase_authorization;
+  }
+}

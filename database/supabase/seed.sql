@@ -1,3 +1,6 @@
+-- Local development fixtures. Keep this file idempotent so it can be rerun
+-- after changing the seed without deleting data created by a developer.
+
 insert into public.sectors (
   slug,
   name,

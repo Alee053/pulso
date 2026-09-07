@@ -40,7 +40,7 @@ Supabase Docker images.
 
 This is the canonical first-run path for a full local environment. It starts
 the Supabase services, the Spring Boot API, and the Angular dev server. The
-first `pnpm db:up` may download several Docker images.
+first `docker compose up -d` may download several Docker images.
 
 ### 1. Check the local toolchain
 
@@ -75,33 +75,51 @@ Git and must never contain values committed to the repository.
 
 ```sh
 pnpm install
+cp .env.example .env
+cp frontend/.env.development.example frontend/.env.development
 ```
 
 `pnpm backend:run` automatically loads `backend/.env.development` when it is
 present, then falls back to `backend/.env` and the root `.env`. Set
 `PULSO_BACKEND_ENV_FILE` when another backend environment file is needed. The
-checked-in [`.env.example`](.env.example) remains a safe local fallback.
+checked-in [`.env.example`](.env.example) is a local-only HS256 fixture for the
+repository Compose stack; never reuse it for a hosted environment.
 
 The frontend `dev`, `start`, `preview`, and `build` commands automatically load
 `frontend/.env.development`. Shell environment variables take precedence over
 the file. Only the frontend API URL, Supabase URL, and publishable/anon key are
 accepted; server passwords, JWT secrets, and service-role keys are rejected.
 
-### 3. Start Supabase — Terminal 1
+### 3. Start Supabase with Compose — Terminal 1
 
 Keep this terminal or the Docker services running while using the backend:
 
 ```sh
-pnpm db:up
-pnpm db:reset
-pnpm db:verify
+docker compose up -d
+docker compose ps
+docker compose logs --no-color migrator
 ```
 
-`db:reset` recreates the local database, applies every migration, and loads the
-two fictional seed projects. It is safe for this local development database,
-but it deletes local data created by previous runs. Use `pnpm db:status` when
-you need the local URLs or development keys; do not paste those keys into
-issues, logs, or commits.
+Compose starts Postgres, Auth, REST, Realtime, Storage, Studio and Mailpit. The
+`migrator` service applies the ordered files in
+[`database/supabase/migrations/`](database/supabase/migrations/) and then runs
+[`database/supabase/seed.sql`](database/supabase/seed.sql). The seed is
+idempotent and can be rerun after editing it:
+
+```sh
+pnpm db:compose:seed
+```
+
+When a new migration is added, run `docker compose up -d` again. To rebuild the
+throwaway local database from zero, use the destructive local-only command:
+
+```sh
+docker compose down -v
+docker compose up -d
+```
+
+Do not run the Compose stack and the alternative `pnpm db:up` Supabase CLI stack
+at the same time; both use the default local Supabase ports.
 
 ### 4. Start the backend — Terminal 2
 
@@ -172,6 +190,10 @@ child processes; Supabase remains running for subsequent development commands.
 Because it runs `pnpm db:reset`, it deletes data in the local database and
 reapplies the migrations and seed. It does not touch a hosted project.
 
+The `pnpm db:*` commands and `pnpm smoke:verify` retain the pinned Supabase CLI
+workflow for linting, pgTAP and the complete browser smoke test. Use that
+workflow or the repository Compose stack, not both at the same time.
+
 The local services are available at:
 
 - Frontend: <http://localhost:4200>
@@ -183,10 +205,10 @@ The local services are available at:
 
 ### Stop the environment
 
-Press `Ctrl+C` in the frontend and backend terminals, then stop Supabase:
+Press `Ctrl+C` in the frontend and backend terminals, then stop Compose:
 
 ```sh
-pnpm db:down
+docker compose down
 ```
 
 ### Frontend-only quick path
@@ -210,11 +232,11 @@ Auth integration.
 | --- | --- |
 | `pnpm: command not found` | Enable Corepack or install pnpm 11, then rerun `pnpm install`. |
 | Node engine or Angular version warning | Use Node 24 LTS or 26; run `nvm install && nvm use` if using nvm. |
-| Docker connection error during `pnpm db:up` | Start Docker Engine/Desktop and confirm `docker info` succeeds. |
+| Docker connection error during `docker compose up -d` | Start Docker Engine/Desktop and confirm `docker info` succeeds. |
 | Backend says `Set SPRING_DATASOURCE_PASSWORD` | Create `.env` from `.env.example`, or provide the variable in the shell. |
 | `/actuator/health` is down | Start Supabase first, then restart `pnpm backend:run`; `/api/health` only checks process liveness. |
 | Port `4200`, `8080`, `54321`, or `9222` is busy | Stop the process using the port before starting the corresponding service or set the smoke-test port override. |
-| Local data or migrations are stale | Run `pnpm db:reset`; this deletes local database data and reapplies migrations/seed. |
+| Local data or migrations are stale | Run `docker compose down -v` and then `docker compose up -d`; this deletes local database data and reapplies migrations/seed. |
 | `pnpm smoke:verify` cannot find Chrome | Install Google Chrome and make sure the executable is available as `google-chrome` in `PATH`. |
 
 For database-specific workflows, see [`database/README.md`](database/README.md).
@@ -244,6 +266,9 @@ For endpoint contracts and curl examples, see [`docs/api.md`](docs/api.md).
 | `pnpm db:lint` | Check local SQL migrations |
 | `pnpm db:test` | Run Supabase database tests when present |
 | `pnpm db:verify` | Verify local Supabase status, seed, tests, and Auth health |
+| `docker compose up -d` | Start the repository Compose stack and apply pending migrations/seed |
+| `pnpm db:compose:seed` | Rerun the editable local seed without resetting the database |
+| `pnpm db:compose:status` | Show Compose service status |
 | `pnpm db:migration:new <name>` | Create an ordered migration file |
 | `pnpm db:push:dry-run` | Preview migrations for the linked hosted project |
 | `pnpm db:push` | Apply migrations to a linked hosted project after review |
@@ -255,9 +280,9 @@ The backend environment file supports the variables in
 
 - `SPRING_DATASOURCE_*` configure the JDBC connection.
 - `SUPABASE_JWT_ISSUER` and `SUPABASE_JWT_AUDIENCE` validate token claims.
-- Local development uses the JWKS endpoint emitted by the Supabase CLI.
-- Hosted Supabase should use `SUPABASE_JWT_JWK_SET_URI` with asymmetric signing
-  keys; `SUPABASE_JWT_SECRET` is only an explicit legacy fallback. Do not copy
+- The repository Compose stack uses the local-only HS256 fixture from
+  [`.env.example`](.env.example); hosted Supabase should use
+  `SUPABASE_JWT_JWK_SET_URI` with asymmetric signing keys instead. Do not copy
   a hosted service-role key into the backend or frontend.
 - `CORS_ALLOWED_ORIGINS` controls browser access to the API.
 
@@ -268,6 +293,11 @@ Angular's `define` mechanism:
 - `PULSO_SUPABASE_URL` defaults to `http://127.0.0.1:54321`.
 - `PULSO_SUPABASE_PUBLISHABLE_KEY` defaults to empty, which keeps the Auth
   gateway inactive until a publishable/anon key is supplied.
+
+For Compose-based local Auth, copy
+[`frontend/.env.development.example`](frontend/.env.development.example) to
+`frontend/.env.development`. Its key is a public, local-only fixture; it must
+never be replaced with a service-role key.
 
 They are public browser configuration, so never use a service-role key,
 database password, or JWT secret in them. If the publishable key is missing, the

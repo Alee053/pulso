@@ -103,6 +103,58 @@ on conflict (slug) do update set
   is_active = true,
   updated_at = timezone('utc', now());
 
+insert into public.skills (
+  slug,
+  name,
+  category
+)
+values
+  (
+    'desarrollo-web',
+    'Desarrollo web',
+    'DESARROLLO'
+  ),
+  (
+    'desarrollo-movil',
+    'Desarrollo móvil',
+    'DESARROLLO'
+  ),
+  (
+    'analisis-de-datos',
+    'Análisis de datos',
+    'DATOS'
+  ),
+  (
+    'marketing-digital',
+    'Marketing digital',
+    'NEGOCIOS'
+  ),
+  (
+    'ventas',
+    'Ventas',
+    'NEGOCIOS'
+  ),
+  (
+    'gestion-de-proyectos',
+    'Gestión de proyectos',
+    'GESTION'
+  ),
+  (
+    'diseno-ux',
+    'Diseño UX',
+    'DISENO'
+  ),
+  (
+    'agricultura-sostenible',
+    'Agricultura sostenible',
+    'AGRO'
+  )
+on conflict (slug) do update set
+  name = excluded.name,
+  category = excluded.category,
+  is_active = true,
+  updated_at = timezone('utc', now());
+
 insert into public.projects (
   id,
   slug,

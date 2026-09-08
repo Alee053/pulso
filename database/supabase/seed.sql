@@ -51,6 +51,58 @@ on conflict (slug) do update set
   is_active = true,
   updated_at = timezone('utc', now());
 
+insert into public.tags (
+  slug,
+  name,
+  tag_type
+)
+values
+  (
+    'innovacion',
+    'Innovación',
+    'TOPIC'
+  ),
+  (
+    'impacto-social',
+    'Impacto social',
+    'TOPIC'
+  ),
+  (
+    'economia-circular',
+    'Economía circular',
+    'TOPIC'
+  ),
+  (
+    'inteligencia-artificial',
+    'Inteligencia artificial',
+    'TOPIC'
+  ),
+  (
+    'comercio-electronico',
+    'Comercio electrónico',
+    'INDUSTRY'
+  ),
+  (
+    'inclusion-financiera',
+    'Inclusión financiera',
+    'INDUSTRY'
+  ),
+  (
+    'agricultura',
+    'Agricultura',
+    'INDUSTRY'
+  ),
+  (
+    'talento-local',
+    'Talento local',
+    'OTHER'
+  )
+on conflict (slug) do update set
+  name = excluded.name,
+  tag_type = excluded.tag_type,
+  is_active = true,
+  updated_at = timezone('utc', now());
+
 insert into public.projects (
   id,
   slug,

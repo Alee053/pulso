@@ -118,9 +118,13 @@ pnpm db:test
 pnpm db:verify
 ```
 
-`seed.sql` supplies two fictional published projects. The pgTAP foundation
-checks live in `supabase/tests/database/01_foundation.sql` and run against the
-local database after a reset.
+`seed.sql` supplies six active sectors, eight active tags, eight active skills,
+and two fictional published projects. Catalog rows use stable slugs and are
+updated by slug, so the seed can be rerun without duplicating reference data or
+breaking the project fixtures. The pgTAP foundation checks live in
+`supabase/tests/database/01_foundation.sql`, while catalog and seed behavior
+checks live in `supabase/tests/database/03_catalog_seed.sql`; both run against
+the local database after a reset.
 
 `pnpm db:reset` is the normal way to make a new checkout deterministic or to
 replay a migration. It removes local database data before applying the complete

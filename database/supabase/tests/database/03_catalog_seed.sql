@@ -1,6 +1,6 @@
 begin;
 
-select plan(11);
+select plan(14);
 
 select ok(
   (select count(*) >= 2 from public.sectors where is_active),
@@ -43,6 +43,52 @@ select is(
   (select count(*) from public.skills),
   (select count(distinct slug) from public.skills),
   'skill slugs are unique'
+);
+select is(
+  (select count(*)
+   from public.sectors
+   where slug in (
+     'sostenibilidad',
+     'energia-limpia',
+     'agroindustria',
+     'educacion',
+     'salud',
+     'tecnologia'
+   )),
+  6::bigint,
+  'sector slugs remain stable'
+);
+select is(
+  (select count(*)
+   from public.tags
+   where slug in (
+     'innovacion',
+     'impacto-social',
+     'economia-circular',
+     'inteligencia-artificial',
+     'comercio-electronico',
+     'inclusion-financiera',
+     'agricultura',
+     'talento-local'
+   )),
+  8::bigint,
+  'tag slugs remain stable'
+);
+select is(
+  (select count(*)
+   from public.skills
+   where slug in (
+     'desarrollo-web',
+     'desarrollo-movil',
+     'analisis-de-datos',
+     'marketing-digital',
+     'ventas',
+     'gestion-de-proyectos',
+     'diseno-ux',
+     'agricultura-sostenible'
+   )),
+  8::bigint,
+  'skill slugs remain stable'
 );
 select is(
   (select count(*) from public.projects where status = 'PUBLISHED' and sector_id is not null),

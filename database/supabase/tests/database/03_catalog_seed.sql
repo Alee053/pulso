@@ -1,6 +1,6 @@
 begin;
 
-select plan(5);
+select plan(8);
 
 select ok(
   (select count(*) >= 2 from public.sectors where is_active),
@@ -15,6 +15,20 @@ select is(
   (select count(*) from public.sectors where is_active),
   (select count(*) from public.sectors),
   'seeded sectors are active'
+);
+select ok(
+  (select count(*) >= 8 from public.tags where is_active),
+  'local seed contains at least eight active tags'
+);
+select is(
+  (select count(*) from public.tags where is_active),
+  (select count(*) from public.tags),
+  'seeded tags are active'
+);
+select is(
+  (select count(*) from public.tags),
+  (select count(distinct slug) from public.tags),
+  'tag slugs are unique'
 );
 select is(
   (select count(*) from public.projects where status = 'PUBLISHED' and sector_id is not null),

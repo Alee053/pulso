@@ -19,6 +19,30 @@ values
     'Energía limpia',
     'Tecnologías y servicios para una transición energética responsable.',
     2
+  ),
+  (
+    'agroindustria',
+    'Agroindustria',
+    'Tecnologías y servicios para mejorar la producción y transformación de alimentos locales.',
+    3
+  ),
+  (
+    'educacion',
+    'Educación',
+    'Herramientas para ampliar el acceso y la calidad del aprendizaje.',
+    4
+  ),
+  (
+    'salud',
+    'Salud',
+    'Servicios y soluciones para el cuidado de la salud en comunidades bolivianas.',
+    5
+  ),
+  (
+    'tecnologia',
+    'Tecnología',
+    'Productos digitales e infraestructura para resolver problemas cotidianos.',
+    6
   )
 on conflict (slug) do update set
   name = excluded.name,

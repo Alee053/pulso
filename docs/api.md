@@ -152,8 +152,8 @@ tables, which belong to the stories that persist those relationships.
 
 ## `GET /api/v1/me`
 
-Returns claims extracted from the validated Supabase JWT. It is an example of a
-protected endpoint, not yet a complete profile endpoint.
+Returns the authenticated product profile. The profile lookup always uses the
+validated JWT subject; the client cannot choose a different profile ID.
 
 ```sh
 curl \
@@ -168,7 +168,23 @@ Response `200 OK`:
   "subject": "user-uuid",
   "email": "person@example.com",
   "role": "authenticated",
-  "audience": ["authenticated"]
+  "audience": ["authenticated"],
+  "profile": {
+    "id": "user-uuid",
+    "profileKind": "PERSON",
+    "displayName": "Persona Uno",
+    "avatarStoragePath": null,
+    "shortBio": "Una biografía breve.",
+    "city": "Cochabamba",
+    "department": "Cochabamba",
+    "profileVisibility": "PUBLIC",
+    "verificationStatus": "UNVERIFIED",
+    "accountStatus": "ACTIVE",
+    "platformRole": "USER",
+    "onboardingCompletedAt": null,
+    "createdAt": "2026-09-08T12:00:00Z",
+    "updatedAt": "2026-09-08T12:00:00Z"
+  }
 }
 ```
 
@@ -177,6 +193,27 @@ does not accept a browser Supabase service-role key as an access token.
 
 Clients should treat `401` as an expired, missing, or invalid user session and
 must not retry it with a service-role key.
+
+## `PATCH /api/v1/me`
+
+Updates only the authenticated user's product-content fields and returns the
+same response as `GET /api/v1/me`. The request uses camelCase fields:
+
+```sh
+curl -X PATCH \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"displayName":"Persona actualizada","profileVisibility":"MEMBERS_ONLY"}' \
+  http://localhost:8080/api/v1/me
+```
+
+Editable fields are `profileKind`, `displayName`, `avatarStoragePath`,
+`shortBio`, `city`, `department`, `profileVisibility`, and
+`onboardingCompletedAt`. Fields that are absent or `null` remain unchanged.
+Unknown fields and invalid lengths or enum values return `400 Bad Request`.
+Identity, credentials, verification, account status, platform role, deletion
+state, and timestamps are server-managed and cannot be changed through this
+endpoint.
 
 ## Profile persistence contract for PUL-54
 

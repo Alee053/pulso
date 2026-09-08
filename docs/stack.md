@@ -75,7 +75,8 @@ are versioned; health and Actuator endpoints are operational only.
   report dependency health, while the liveness probe stays process-scoped.
 - `GET /api/v1/startups?offset=0&limit=20` is public and reads published rows
   through a bounded JDBC adapter.
-- `GET /api/v1/me` is protected and demonstrates Supabase JWT extraction.
+- `GET/PATCH /api/v1/me` are protected and scope product-profile access to the
+  Supabase JWT subject.
 - Security uses the local Supabase Auth JWKS endpoint in development and a
   configured hosted JWKS URI in deployment. An explicit HMAC secret remains a
   legacy fallback.

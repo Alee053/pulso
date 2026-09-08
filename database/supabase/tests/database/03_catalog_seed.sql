@@ -1,6 +1,6 @@
 begin;
 
-select plan(14);
+select plan(19);
 
 select ok(
   (select count(*) >= 2 from public.sectors where is_active),
@@ -89,6 +89,42 @@ select is(
    )),
   8::bigint,
   'skill slugs remain stable'
+);
+
+create temporary table seed_catalog_counts on commit drop as
+select
+  (select count(*) from public.sectors) as sectors_count,
+  (select count(*) from public.tags) as tags_count,
+  (select count(*) from public.skills) as skills_count,
+  (select count(*) from public.projects) as projects_count,
+  (select count(*) from public.projects where status = 'PUBLISHED') as published_projects_count;
+
+\ir ../../seed.sql
+
+select is(
+  (select count(*) from public.sectors),
+  (select sectors_count from seed_catalog_counts),
+  're-running the seed does not duplicate sectors'
+);
+select is(
+  (select count(*) from public.tags),
+  (select tags_count from seed_catalog_counts),
+  're-running the seed does not duplicate tags'
+);
+select is(
+  (select count(*) from public.skills),
+  (select skills_count from seed_catalog_counts),
+  're-running the seed does not duplicate skills'
+);
+select is(
+  (select count(*) from public.projects),
+  (select projects_count from seed_catalog_counts),
+  're-running the seed does not duplicate projects'
+);
+select is(
+  (select count(*) from public.projects where status = 'PUBLISHED'),
+  (select published_projects_count from seed_catalog_counts),
+  're-running the seed keeps published projects intact'
 );
 select is(
   (select count(*) from public.projects where status = 'PUBLISHED' and sector_id is not null),

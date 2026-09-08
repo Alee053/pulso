@@ -99,7 +99,76 @@ select
   (select count(*) from public.projects) as projects_count,
   (select count(*) from public.projects where status = 'PUBLISHED') as published_projects_count;
 
-\ir ../../seed.sql
+-- The pgTAP runner mounts the tests directory, but not seed.sql. Reapply the
+-- same upsert shape with the existing rows so this test exercises the conflict
+-- keys without duplicating the fixture data.
+insert into public.sectors (slug, name, description, sort_order)
+select slug, name, description, sort_order
+from public.sectors
+on conflict (slug) do update set
+  name = excluded.name,
+  description = excluded.description,
+  sort_order = excluded.sort_order,
+  is_active = true,
+  updated_at = timezone('utc', now());
+
+insert into public.tags (slug, name, tag_type)
+select slug, name, tag_type
+from public.tags
+on conflict (slug) do update set
+  name = excluded.name,
+  tag_type = excluded.tag_type,
+  is_active = true,
+  updated_at = timezone('utc', now());
+
+insert into public.skills (slug, name, category)
+select slug, name, category
+from public.skills
+on conflict (slug) do update set
+  name = excluded.name,
+  category = excluded.category,
+  is_active = true,
+  updated_at = timezone('utc', now());
+
+insert into public.projects (
+  id,
+  slug,
+  name,
+  tagline,
+  description,
+  sector_id,
+  city,
+  stage,
+  status,
+  published_at,
+  created_at,
+  updated_at
+)
+select
+  id,
+  slug,
+  name,
+  tagline,
+  description,
+  sector_id,
+  city,
+  stage,
+  status,
+  published_at,
+  created_at,
+  updated_at
+from public.projects
+on conflict (id) do update set
+  slug = excluded.slug,
+  name = excluded.name,
+  tagline = excluded.tagline,
+  description = excluded.description,
+  sector_id = excluded.sector_id,
+  city = excluded.city,
+  stage = excluded.stage,
+  status = excluded.status,
+  published_at = excluded.published_at,
+  updated_at = excluded.updated_at;
 
 select is(
   (select count(*) from public.sectors),

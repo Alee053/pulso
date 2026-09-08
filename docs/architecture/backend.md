@@ -13,10 +13,14 @@ com.pulso.backend/
 ├── ops/
 │   └── api/                           # liveness endpoint
 ├── discovery/
-    ├── api/                           # startup and current-user HTTP contracts
-    ├── application/                   # use cases and output ports
-    ├── domain/                        # transport-independent results
-    └── infrastructure/                # JDBC adapter
+│   ├── api/                           # startup and current-user HTTP contracts
+│   ├── application/                   # use cases and output ports
+│   ├── domain/                        # transport-independent results
+│   └── infrastructure/                # JDBC adapter
+├── project/
+│   ├── application/                   # draft-project use case and output port
+│   ├── domain/                        # project and membership values
+│   └── infrastructure/                # project JDBC adapter
 └── profile/
     ├── api/                           # profile request/response DTOs
     ├── application/                   # profile use cases and output port

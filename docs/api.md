@@ -150,6 +150,77 @@ gap using the existing DBML fields (`id`, `slug`, `name`, `tag_type`/`category`,
 `is_active`, and timestamps); it does not create profile/project relationship
 tables, which belong to the stories that persist those relationships.
 
+## `GET /api/v1/me/preferences`
+
+Returns the onboarding preferences of the authenticated profile. The profile
+ID is always derived from the validated JWT subject; there is no profile ID
+parameter that a client can use to read another person's preferences. If the
+profile has not saved preferences yet, the endpoint returns three empty arrays.
+
+```sh
+curl \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  http://localhost:8080/api/v1/me/preferences
+```
+
+Response `200 OK`:
+
+```json
+{
+  "profileId": "11111111-1111-1111-1111-111111111111",
+  "intentions": ["DISCOVER", "COLLABORATE"],
+  "preferredSectors": ["sostenibilidad"],
+  "preferredStages": ["MVP"]
+}
+```
+
+## `PUT /api/v1/me/preferences`
+
+Replaces all onboarding preferences for the authenticated profile. Repeating
+the same request is safe and keeps one row in
+`public.profile_preferences` because `profile_id` is the primary key and the
+repository uses an upsert.
+
+The request does not accept `profileId`; the server takes it from the JWT.
+`preferredSectors` is optional and defaults to `[]`; the other preference
+properties must be arrays, although an empty array is valid.
+
+```sh
+curl -X PUT \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "intentions": ["discover", "collaborate"],
+    "preferredSectors": ["sostenibilidad"],
+    "preferredStages": ["mvp"]
+  }' \
+  http://localhost:8080/api/v1/me/preferences
+```
+
+The backend normalizes intention and stage codes to uppercase. A preferred
+sector is accepted as an active catalog UUID or slug, using the active-sector
+lookup from `GET /api/v1/catalogs` (PUL-44), and is normalized to lowercase.
+The supported intention codes are `DISCOVER`, `BUY`, `COLLABORATE`, `WORK`,
+`INVEST`, `FIND_PARTNERS`, `FIND_CUSTOMERS`, `FIND_PROVIDERS`,
+and `EXPLORE_ECOSYSTEM`. Supported project stage codes are `IDEA`,
+`PROTOTYPE`, `MVP`, `EARLY_STAGE`, `GROWING`, and `ESTABLISHED`.
+
+Each preference array accepts at most 10 items. Blank, malformed, unknown or
+inactive values, and duplicates after normalization or active-sector resolution
+return `400 Bad Request`:
+
+```json
+{
+  "type": "about:blank",
+  "title": "Invalid preferences",
+  "status": 400,
+  "detail": "preferredSectors contains unknown or inactive sector 'desconocido'."
+}
+```
+
+Database failures return the sanitized `503 Service Unavailable` response
+documented above. Missing or invalid bearer tokens return `401 Unauthorized`.
+
 ## `GET /api/v1/me`
 
 Returns the authenticated product profile. The profile lookup always uses the

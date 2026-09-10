@@ -3,6 +3,8 @@ package com.pulso.backend.catalog.infrastructure;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.UUID;
+
 import javax.sql.DataSource;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -105,6 +107,25 @@ class JdbcActiveCatalogRepositoryTest {
         assertThat(repository.findActiveSectors(10)).isEmpty();
         assertThat(repository.findActiveTags(10)).isEmpty();
         assertThat(repository.findActiveSkills(10)).isEmpty();
+    }
+
+    @Test
+    void resolvesOnlyActiveSectorsByUuidOrSlug() {
+        jdbcClient.sql("""
+                insert into public.sectors (id, slug, name, description, is_active, sort_order) values
+                ('00000000-0000-0000-0000-000000000001', 'sostenibilidad', 'Sostenibilidad', null, true, 1),
+                ('00000000-0000-0000-0000-000000000002', 'oculto', 'Oculto', null, false, 2)
+                """).update();
+
+        assertThat(repository.findActiveSectorId(
+                "00000000-0000-0000-0000-000000000001"))
+                .contains(UUID.fromString("00000000-0000-0000-0000-000000000001"));
+        assertThat(repository.findActiveSectorId("sostenibilidad"))
+                .contains(UUID.fromString("00000000-0000-0000-0000-000000000001"));
+        assertThat(repository.findActiveSectorId(
+                "00000000-0000-0000-0000-000000000002")).isEmpty();
+        assertThat(repository.findActiveSectorId("oculto")).isEmpty();
+        assertThat(repository.findActiveSectorId("desconocido")).isEmpty();
     }
 
     @Test

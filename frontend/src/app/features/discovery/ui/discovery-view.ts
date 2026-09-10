@@ -82,10 +82,24 @@ export class DiscoveryViewComponent implements OnDestroy {
     } else if (event.key === 'ArrowRight') {
       event.preventDefault()
       this.handleDecision('interested')
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      this.showCurrentStartup()
+    } else if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      this.handleSave()
     } else if (event.key.toLowerCase() === 's') {
       event.preventDefault()
       this.handleSave()
     }
+  }
+
+  showCurrentStartup(): void {
+    if (!this.currentStartup || this.isTransitioning) {
+      return
+    }
+
+    this.startupSelected.emit(this.currentStartup)
   }
 
   handleDecision(decision: Decision): void {

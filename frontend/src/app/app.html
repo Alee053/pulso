@@ -1,5 +1,3 @@
-<pulso-auth-panel />
-
 <ng-container *ngIf="!session.hasStarted(); else applicationShell">
   <pulso-onboarding
     [interestOptions]="session.interestOptions"
@@ -34,37 +32,39 @@
       (navigated)="navigateTo($event)"
     />
 
-    <ng-container [ngSwitch]="session.activeView()">
-      <pulso-discovery-view
-        *ngSwitchCase="'discover'"
-        [activeSignals]="session.activeSignals()"
-        [currentStartup]="session.currentStartup()"
-        [errorMessage]="session.errorMessage()"
-        [feedRemaining]="session.feed().length"
-        [isLoading]="session.isLoading()"
-        [isModalOpen]="selectedStartup() !== null"
-        [totalStartups]="session.catalog().length"
-        [savedIds]="session.savedIds()"
-        (decisionMade)="session.makeDecision($event)"
-        (restarted)="session.restartDiscovery()"
-        (retryRequested)="session.retryDiscovery()"
-        (startupSaved)="session.toggleSaved($event)"
-        (startupSelected)="selectStartup($event)"
-      />
+    <div class="app-shell__content">
+      <ng-container [ngSwitch]="session.activeView()">
+        <pulso-discovery-view
+          *ngSwitchCase="'discover'"
+          [activeSignals]="session.activeSignals()"
+          [currentStartup]="session.currentStartup()"
+          [errorMessage]="session.errorMessage()"
+          [feedRemaining]="session.feed().length"
+          [isLoading]="session.isLoading()"
+          [isModalOpen]="selectedStartup() !== null"
+          [totalStartups]="session.catalog().length"
+          [savedIds]="session.savedIds()"
+          (decisionMade)="session.makeDecision($event)"
+          (restarted)="session.restartDiscovery()"
+          (retryRequested)="session.retryDiscovery()"
+          (startupSaved)="session.toggleSaved($event)"
+          (startupSelected)="selectStartup($event)"
+        />
 
-      <pulso-saved-view
-        *ngSwitchCase="'saved'"
-        [savedStartups]="session.savedStartups()"
-        [interestedStartups]="session.interestedStartups()"
-        (startupSelected)="selectStartup($event)"
-      />
+        <pulso-saved-view
+          *ngSwitchCase="'saved'"
+          [savedStartups]="session.savedStartups()"
+          [interestedStartups]="session.interestedStartups()"
+          (startupSelected)="selectStartup($event)"
+        />
 
-      <pulso-profile-view
-        *ngSwitchCase="'profile'"
-        [interestOptions]="session.interestOptions"
-        [selectedInterests]="session.selectedInterests()"
-      />
-    </ng-container>
+        <pulso-profile-view
+          *ngSwitchCase="'profile'"
+          [interestOptions]="session.interestOptions"
+          [selectedInterests]="session.selectedInterests()"
+        />
+      </ng-container>
+    </div>
 
     <pulso-startup-detail-modal
       *ngIf="selectedStartup() as startup"

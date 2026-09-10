@@ -24,8 +24,8 @@
     <div class="absolute -right-20 top-20 size-60 rounded-full blur-3xl" [style.backgroundColor]="startup.accent + '28'"></div>
   </div>
 
-  <div class="relative flex h-full flex-col justify-between p-5 sm:p-6">
-    <div class="flex items-start justify-between gap-3">
+  <div class="discovery-card__surface relative flex h-full min-h-0 flex-col justify-between p-5 sm:p-6">
+    <div class="discovery-card__header flex items-start justify-between gap-3">
       <div class="flex items-center gap-2 rounded-full border border-white/15 bg-black/20 px-2 py-1.5 backdrop-blur-md">
         <span class="flex size-8 items-center justify-center rounded-full border border-white/15 bg-white/10 text-[0.65rem] font-semibold text-white/90">{{ startup.logoMark }}</span>
         <span class="pr-1 text-xs font-medium text-white/70">{{ startup.name }}</span>
@@ -33,14 +33,14 @@
       <span class="rounded-full border border-white/15 bg-black/20 px-3 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-white/65 backdrop-blur-md">{{ startup.stage }}</span>
     </div>
 
-    <div class="max-w-[32rem]">
+    <div class="discovery-card__content max-w-[32rem]">
       <div class="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-white/60">
         <span class="inline-flex items-center gap-1.5"><pulso-icon name="map-pin" [size]="13" [strokeWidth]="1.8" />{{ startup.city }}</span>
         <span class="size-1 rounded-full bg-white/35" aria-hidden="true"></span>
         <span>{{ startup.sector }}</span>
       </div>
       <div class="discovery-card__title-row">
-        <h2 class="text-[2.75rem] font-medium leading-[0.96] tracking-[-0.07em] text-white sm:text-6xl">{{ startup.name }}</h2>
+        <h2 class="discovery-card__title text-[2.75rem] font-medium leading-[0.96] tracking-[-0.07em] text-white sm:text-6xl">{{ startup.name }}</h2>
         <button type="button" class="discovery-card__save" (pointerdown)="$event.stopPropagation()" (click)="saveFromButton($event)" [disabled]="disabled" [attr.aria-label]="isSaved ? 'Quitar de guardados' : 'Guardar startup'">
           <pulso-icon name="bookmark" [size]="19" [strokeWidth]="isSaved ? 2.4 : 1.8" [filled]="isSaved" />
         </button>
@@ -48,7 +48,7 @@
       <p class="mt-4 max-w-md text-base font-medium leading-6 text-white/82 sm:text-lg">{{ startup.pitch }}</p>
       <p class="discovery-card__description mt-3 max-w-lg text-sm leading-6 text-white/48">{{ startup.description }}</p>
       <div class="mt-5 flex flex-wrap gap-1.5"><span *ngFor="let badge of startup.badges" class="card-badge">{{ badge }}</span></div>
-      <button type="button" class="mt-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.13em] text-[#c5edff] transition hover:text-white" (click)="selectFromButton($event)">
+      <button type="button" class="discovery-card__profile-link mt-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.13em] text-[#c5edff] transition hover:text-white" (click)="selectFromButton($event)">
         Ver perfil completo <pulso-icon name="arrow-up-right" [size]="14" [strokeWidth]="1.8" />
       </button>
     </div>

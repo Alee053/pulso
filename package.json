@@ -25,7 +25,7 @@
     "db:compose:status": "docker compose ps",
     "db:migration:new": "pnpm exec supabase --workdir database migration new",
     "db:push:dry-run": "pnpm exec supabase --workdir database db push --linked --dry-run",
-    "backend:run": "./scripts/run-backend.sh",
+    "backend:run": "sh ./scripts/run-backend.sh",
     "backend:verify": "./scripts/verify-local-backend.sh",
     "auth:verify": "./scripts/verify-local-auth.sh",
     "smoke:verify": "./scripts/verify-local-smoke.sh",

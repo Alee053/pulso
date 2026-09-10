@@ -12,18 +12,27 @@ com.pulso.backend/
 ├── config/                            # security, CORS, typed provider config
 ├── ops/
 │   └── api/                           # liveness endpoint
-└── discovery/
-    ├── api/                           # startup and current-user HTTP contracts
-    ├── application/                   # use cases and output ports
-    ├── domain/                        # transport-independent results
-    └── infrastructure/                # JDBC adapter
+├── discovery/
+│   ├── api/                           # startup and current-user HTTP contracts
+│   ├── application/                   # use cases and output ports
+│   ├── domain/                        # transport-independent results
+│   └── infrastructure/                # JDBC adapter
+├── project/
+│   ├── application/                   # draft-project use case and output port
+│   ├── domain/                        # project and membership values
+│   └── infrastructure/                # project JDBC adapter
+└── profile/
+    ├── api/                           # profile request/response DTOs
+    ├── application/                   # profile use cases and output port
+    ├── domain/                        # profile rules and values
+    └── infrastructure/                # profile JDBC adapter
 ```
 
 The public examples are:
 
 - `GET /api/health` — process liveness.
 - `GET /api/v1/startups?limit=20` — published startup catalog.
-- `GET /api/v1/me` — authenticated JWT claim example.
+- `GET/PATCH /api/v1/me` — authenticated product-profile contract.
 - `/actuator/health` — datasource/dependency health.
 - `/actuator/health/liveness` and `/actuator/health/readiness` — public process
   and dependency probes for local orchestration.
@@ -95,7 +104,7 @@ timestamps, and audience before a protected controller receives a `Jwt`.
   `service_role` role.
 - The server must never log or return the JWT secret or a service-role key.
 - `GET /api/v1/startups` is public by design for the discovery baseline;
-  `GET /api/v1/me` demonstrates a protected route.
+  `GET/PATCH /api/v1/me` are protected profile routes.
 - Every future write use case must make its authorization rule explicit in the
   application layer. Authentication alone is not authorization.
 

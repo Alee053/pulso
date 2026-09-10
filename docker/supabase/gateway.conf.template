@@ -1,3 +1,5 @@
+# This template is mounted into Nginx; keep its line endings as LF.
+
 map $http_origin $pulso_cors_origin {
   default "";
   "http://localhost:4200" $http_origin;

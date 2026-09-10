@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
+# This script runs inside Linux containers; keep its line endings as LF.
 
 set -eu
 

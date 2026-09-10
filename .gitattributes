@@ -1,0 +1,3 @@
+*.sh text eol=lf
+gradlew text eol=lf
+docker/supabase/gateway.conf.template text eol=lf

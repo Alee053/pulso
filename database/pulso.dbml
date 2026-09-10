@@ -67,7 +67,7 @@ Table profile_preferences {
 Table tags {
   id uuid [pk, default: `gen_random_uuid()`]
   slug text [not null, unique]
-  name text [not null]
+  name text [not null, unique]
   tag_type text [not null, default: 'TOPIC', note: "TOPIC, INDUSTRY o OTHER"]
   is_active boolean [not null, default: true]
   created_at timestamptz [not null, default: `now()`]
@@ -90,7 +90,7 @@ Table profile_tags {
 Table skills {
   id uuid [pk, default: `gen_random_uuid()`]
   slug text [not null, unique]
-  name text [not null]
+  name text [not null, unique]
   category text
   is_active boolean [not null, default: true]
   created_at timestamptz [not null, default: `now()`]
@@ -117,7 +117,7 @@ Table profile_skills {
 Table sectors {
   id uuid [pk, default: `gen_random_uuid()`]
   slug text [not null, unique]
-  name text [not null]
+  name text [not null, unique]
   description text
   is_active boolean [not null, default: true]
   sort_order int [not null, default: 0]

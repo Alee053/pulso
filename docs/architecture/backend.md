@@ -17,6 +17,11 @@ com.pulso.backend/
 │   ├── application/                   # use cases and output ports
 │   ├── domain/                        # transport-independent results
 │   └── infrastructure/                # JDBC adapter
+├── preference/
+│   ├── api/                           # onboarding preference HTTP contract
+│   ├── application/                   # preference use cases and output port
+│   ├── domain/                        # preference rules and values
+│   └── infrastructure/                # JSONB JDBC adapter
 ├── project/
 │   ├── application/                   # draft-project use case and output port
 │   ├── domain/                        # project and membership values
@@ -33,6 +38,7 @@ The public examples are:
 - `GET /api/health` — process liveness.
 - `GET /api/v1/startups?limit=20` — published startup catalog.
 - `GET/PATCH /api/v1/me` — authenticated product-profile contract.
+- `GET/PUT /api/v1/me/preferences` — authenticated onboarding preferences.
 - `/actuator/health` — datasource/dependency health.
 - `/actuator/health/liveness` and `/actuator/health/readiness` — public process
   and dependency probes for local orchestration.
@@ -104,7 +110,8 @@ timestamps, and audience before a protected controller receives a `Jwt`.
   `service_role` role.
 - The server must never log or return the JWT secret or a service-role key.
 - `GET /api/v1/startups` is public by design for the discovery baseline;
-  `GET/PATCH /api/v1/me` are protected profile routes.
+  `GET/PATCH /api/v1/me` and `GET/PUT /api/v1/me/preferences` are protected
+  profile routes.
 - Every future write use case must make its authorization rule explicit in the
   application layer. Authentication alone is not authorization.
 

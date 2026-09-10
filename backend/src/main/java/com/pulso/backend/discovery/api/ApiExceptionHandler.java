@@ -8,6 +8,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.pulso.backend.preference.domain.OnboardingPreferencesValidationException;
 import com.pulso.backend.profile.application.InvalidAuthenticatedSubjectException;
 import com.pulso.backend.profile.application.ProfileNotFoundException;
 import com.pulso.backend.profile.domain.ProfileValidationException;
@@ -48,6 +49,15 @@ public class ApiExceptionHandler {
                 HttpStatus.BAD_REQUEST,
                 exception.getMessage());
         problem.setTitle("Invalid profile");
+        return problem;
+    }
+
+    @ExceptionHandler(OnboardingPreferencesValidationException.class)
+    ProblemDetail invalidOnboardingPreferences(OnboardingPreferencesValidationException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                exception.getMessage());
+        problem.setTitle("Invalid preferences");
         return problem;
     }
 

@@ -4,6 +4,11 @@ import { CatalogsApi } from '../data-access/catalogs-api'
 import { interestOptions } from '../data-access/interests'
 import { StartupsApi } from '../data-access/startups-api'
 import { toStartupViewModel } from '../data-access/startup-view-model'
+
+import { SupabaseAuthGateway } from '../../../core/auth/supabase-auth.gateway';
+import { ProfileApi } from '../data-access/profile-api';
+import type { Profile } from '../domain/profile';
+
 import {
   adjustPreferenceWeights,
   getActiveSignals,
@@ -18,6 +23,9 @@ import type { AppView, Decision, InterestId, Startup } from '../domain/startup'
 export class PulsoSession {
   private readonly startupsApi = inject(StartupsApi)
   private readonly catalogsApi = inject(CatalogsApi)
+
+    private readonly profileApi = inject(ProfileApi);
+    private readonly auth = inject(SupabaseAuthGateway);
 
   readonly interestOptions = interestOptions
 
@@ -40,6 +48,15 @@ export class PulsoSession {
   readonly savedIds = signal<string[]>([])
   readonly interestedIds = signal<string[]>([])
   readonly preferenceWeights = signal<PreferenceWeights>({})
+
+    // Profile
+    readonly profile = signal<Profile | null>(null);
+    readonly isProfileLoading = signal(false);
+    readonly isProfileSaving = signal(false);
+    readonly profileError = signal<string | null>(null);
+    readonly profileSuccess = signal<string | null>(null);
+
+    readonly currentUser = computed(() => this.auth.session());
 
   readonly currentStartup = computed(() => this.feed()[0])
   readonly savedStartups = computed(() =>
@@ -206,6 +223,60 @@ export class PulsoSession {
       current.filter((id) => skillIds.has(id)),
     )
   }
+
+    // ============ Profile Methods ============
+
+    async loadProfile(): Promise<void> {
+        const user = this.currentUser();
+        if (!user) {
+            this.profileError.set('Usuario no autenticado');
+            return;
+        }
+
+        this.isProfileLoading.set(true);
+        this.profileError.set(null);
+        this.profileSuccess.set(null);
+
+        try {
+            const profile = await firstValueFrom(this.profileApi.getProfile(user.id));
+            this.profile.set(profile);
+        } catch (error) {
+            this.profileError.set(
+                error instanceof Error ? error.message : 'Error al cargar el perfil'
+            );
+        } finally {
+            this.isProfileLoading.set(false);
+        }
+    }
+
+    async saveProfile(updatedProfile: Profile): Promise<void> {
+        this.isProfileSaving.set(true);
+        this.profileError.set(null);
+        this.profileSuccess.set(null);
+
+        try {
+            const profile = await firstValueFrom(
+                this.profileApi.updateProfile(updatedProfile)
+            );
+            this.profile.set(profile);
+            this.profileSuccess.set('Perfil actualizado exitosamente');
+            setTimeout(() => {
+                this.profileSuccess.set(null);
+            }, 3000);
+        } catch (error) {
+            this.profileError.set(
+                error instanceof Error ? error.message : 'Error al guardar el perfil'
+            );
+        } finally {
+            this.isProfileSaving.set(false);
+        }
+    }
+
+    clearProfileMessages(): void {
+        this.profileError.set(null);
+        this.profileSuccess.set(null);
+    }
+
 
   private async loadCatalog(): Promise<void> {
     this.isLoading.set(true)

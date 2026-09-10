@@ -33,6 +33,6 @@
     "backend:build": "./backend/gradlew -p backend build"
   },
   "devDependencies": {
-    "supabase": "2.109.1"
+    "supabase": "2.116.0"
   }
 }

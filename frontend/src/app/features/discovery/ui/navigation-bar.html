@@ -1,32 +1,43 @@
-<header class="relative z-30 mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-5 sm:px-8 sm:py-7 lg:px-10">
-  <pulso-brand-mark />
-
-  <nav class="hidden items-center gap-1 rounded-full border border-white/10 bg-white/[0.035] p-1 backdrop-blur-xl md:flex">
-    <button
-      *ngFor="let item of navigationItems"
-      type="button"
-      class="nav-pill"
-      [class.nav-pill--active]="item.id === activeView"
-      (click)="navigated.emit(item.id)"
-    >
-      <pulso-icon [name]="item.icon" [size]="15" [strokeWidth]="item.id === activeView ? 2 : 1.7" />
-      {{ item.label }}
-      <span *ngIf="countFor(item) > 0" class="nav-count">{{ countFor(item) }}</span>
-    </button>
-  </nav>
-
-  <div class="flex items-center gap-3 text-right">
-    <div class="hidden sm:block">
-      <p class="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/30">Tu pulso</p>
-      <p class="mt-1 text-xs text-white/60">Curiosidad local</p>
-    </div>
-    <span class="flex size-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-xs font-medium text-white/75">
-      {{ totalSaved > 0 ? totalSaved : 1 }}
-    </span>
+<aside class="desktop-nav" aria-label="Navegación principal">
+  <div class="desktop-nav__brand">
+    <pulso-brand-mark />
   </div>
+
+  <div class="desktop-nav__section">
+    <nav class="desktop-nav__menu">
+      <button
+        *ngFor="let item of navigationItems"
+        type="button"
+        class="desktop-nav__item"
+        [class.desktop-nav__item--active]="item.id === activeView"
+        [attr.aria-current]="item.id === activeView ? 'page' : null"
+        (click)="navigated.emit(item.id)"
+      >
+        <span class="desktop-nav__item-icon">
+          <pulso-icon [name]="item.icon" [size]="18" [strokeWidth]="item.id === activeView ? 2 : 1.7" />
+        </span>
+        <span>{{ item.label }}</span>
+        <span *ngIf="countFor(item) > 0" class="desktop-nav__count">{{ countFor(item) }}</span>
+      </button>
+    </nav>
+  </div>
+
+  <div class="desktop-nav__session">
+    <span class="desktop-nav__session-icon">
+      <pulso-icon name="sparkles" [size]="16" [strokeWidth]="1.7" />
+    </span>
+    <div class="min-w-0">
+      <p class="desktop-nav__eyebrow">SESIÓN ACTIVA</p>
+      <p class="mt-1 truncate text-xs text-white/55">{{ totalSaved }} señales guardadas</p>
+    </div>
+  </div>
+</aside>
+
+<header class="mobile-topbar">
+  <pulso-brand-mark />
 </header>
 
-<nav class="mobile-nav fixed inset-x-4 bottom-4 z-40 flex items-center justify-around rounded-[1.35rem] border border-white/12 bg-[#131917]/85 p-1.5 shadow-2xl shadow-black/30 backdrop-blur-2xl md:hidden">
+<nav class="mobile-nav fixed inset-x-4 bottom-4 z-40 items-center justify-around rounded-[1.35rem] border border-white/12 bg-[#131917]/85 p-1.5 shadow-2xl shadow-black/30 backdrop-blur-2xl">
   <button
     *ngFor="let item of navigationItems"
     type="button"

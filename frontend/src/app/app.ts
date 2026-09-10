@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common'
 import { Component, inject, OnInit, signal } from '@angular/core'
-import { AuthPanelComponent } from './core/auth/auth-panel'
 import { DiscoveryViewComponent } from './features/discovery/ui/discovery-view'
 import { NavigationBarComponent } from './features/discovery/ui/navigation-bar'
 import { OnboardingComponent } from './features/discovery/ui/onboarding'
@@ -15,7 +14,6 @@ import type { AppView, Startup } from './features/discovery/domain/startup'
   standalone: true,
   imports: [
     CommonModule,
-    AuthPanelComponent,
     DiscoveryViewComponent,
     NavigationBarComponent,
     OnboardingComponent,

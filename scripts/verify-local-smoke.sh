@@ -9,6 +9,9 @@ temporary_dir=$(mktemp -d)
 backend_pid=
 frontend_pid=
 chrome_pid=
+python_command=
+browser_command=${PULSO_SMOKE_BROWSER:-}
+process_launcher=
 
 fail() {
   printf '%s\n' "$1" >&2
@@ -53,17 +56,50 @@ read_status_value() {
 }
 
 command -v curl >/dev/null 2>&1 || fail 'Se necesita curl para ejecutar el smoke test.'
-command -v google-chrome >/dev/null 2>&1 || fail 'Se necesita Google Chrome para verificar el flujo desde el navegador.'
 command -v docker >/dev/null 2>&1 || fail 'Se necesita Docker para reiniciar el gateway de Supabase local.'
 command -v node >/dev/null 2>&1 || fail 'Se necesita Node.js para automatizar el navegador.'
 command -v pnpm >/dev/null 2>&1 || fail 'Se necesita pnpm para instalar y verificar el monorepo.'
-command -v python3 >/dev/null 2>&1 || fail 'Se necesita python3 para servir el artefacto frontend temporal.'
-command -v setsid >/dev/null 2>&1 || fail 'Se necesita setsid para aislar procesos del smoke test.'
-command -v ss >/dev/null 2>&1 || fail 'Se necesita ss para comprobar puertos del smoke test.'
+
+for candidate in python3 python; do
+  if command -v "$candidate" >/dev/null 2>&1 \
+    && "$candidate" --version >/dev/null 2>&1; then
+    python_command=$candidate
+    break
+  fi
+done
+[ -n "$python_command" ] || fail 'Se necesita Python 3 para servir el artefacto frontend temporal.'
+
+if command -v setsid >/dev/null 2>&1; then
+  process_launcher=setsid
+fi
+
+if [ -z "$browser_command" ]; then
+  for candidate in google-chrome google-chrome-stable chrome chromium chromium-browser; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      browser_command=$(command -v "$candidate")
+      break
+    fi
+  done
+fi
+
+if [ -z "$browser_command" ]; then
+  for candidate in \
+    '/c/Program Files/Google/Chrome/Application/chrome.exe' \
+    '/c/Program Files (x86)/Google/Chrome/Application/chrome.exe' \
+    "/c/Users/${USERNAME:-}/AppData/Local/Google/Chrome/Application/chrome.exe"; do
+    if [ -x "$candidate" ]; then
+      browser_command=$candidate
+      break
+    fi
+  done
+fi
+
+[ -n "$browser_command" ] \
+  || fail 'Se necesita Google Chrome (o define PULSO_SMOKE_BROWSER) para verificar el flujo desde el navegador.'
 
 assert_port_free() {
   candidate_port=$1
-  if ss -H -ltn "sport = :$candidate_port" 2>/dev/null | grep -q .; then
+  if ! node scripts/check-port-free.mjs "$candidate_port"; then
     fail "El puerto $candidate_port ya está ocupado; define PULSO_SMOKE_*_PORT o detén el proceso antes de continuar."
   fi
 }
@@ -173,7 +209,7 @@ SUPABASE_JWT_JWK_SET_URI='http://127.0.0.1:54321/auth/v1/.well-known/jwks.json' 
 SUPABASE_JWT_SECRET='' \
 CORS_ALLOWED_ORIGINS="http://localhost:$frontend_port,http://127.0.0.1:$frontend_port" \
 SERVER_PORT="$backend_port" \
-setsid ./scripts/run-backend.sh >"$temporary_dir/backend.log" 2>&1 &
+$process_launcher ./scripts/run-backend.sh >"$temporary_dir/backend.log" 2>&1 &
 backend_pid=$!
 backend_base_url="http://localhost:$backend_port"
 wait_for_code "$backend_base_url/api/health" '200' "$temporary_dir/backend-health.json"
@@ -182,13 +218,13 @@ wait_for_code "$backend_base_url/api/v1/startups?offset=0&limit=2" '200' "$tempo
 assert_body_contains 'EcoPack Bolivia' "$temporary_dir/startups.json" 'Catálogo seed'
 assert_body_contains 'AndeSolar' "$temporary_dir/startups.json" 'Catálogo seed'
 
-setsid python3 -m http.server "$frontend_port" --bind 127.0.0.1 \
+$process_launcher "$python_command" -m http.server "$frontend_port" --bind 127.0.0.1 \
   --directory frontend/dist/pulso-frontend/browser >"$temporary_dir/frontend.log" 2>&1 &
 frontend_pid=$!
 frontend_base_url="http://127.0.0.1:$frontend_port"
 wait_for_code "$frontend_base_url" '200' "$temporary_dir/frontend.html"
 
-setsid google-chrome \
+$process_launcher "$browser_command" \
   --headless=new \
   --no-sandbox \
   --disable-gpu \

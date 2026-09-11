@@ -153,7 +153,10 @@ printf '%s\n' 'Instalando dependencias con el lockfile del checkout...'
 pnpm install --frozen-lockfile
 
 printf '%s\n' 'Levantando Supabase local y recreando migraciones/seed...'
-pnpm db:up >"$temporary_dir/db-up.log" 2>&1
+if ! pnpm db:up >"$temporary_dir/db-up.log" 2>&1; then
+  cat "$temporary_dir/db-up.log" >&2
+  fail 'No se pudo levantar Supabase local; revisa el log anterior.'
+fi
 pnpm db:reset
 # db reset recrea Auth y puede dejar al Kong ya iniciado apuntando a su IP anterior.
 docker restart supabase_kong_pulso >/dev/null

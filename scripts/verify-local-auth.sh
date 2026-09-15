@@ -5,6 +5,7 @@ set -eu
 backend_port=${PULSO_VERIFY_AUTH_PORT:-18082}
 temporary_dir=$(mktemp -d)
 backend_pid=
+process_launcher=
 
 fail() {
   printf '%s\n' "$1" >&2
@@ -42,8 +43,9 @@ read_status_value() {
 
 command -v curl >/dev/null 2>&1 || fail 'Se necesita curl para verificar Supabase Auth local.'
 command -v node >/dev/null 2>&1 || fail 'Se necesita Node.js para validar las respuestas JSON de Auth.'
-command -v setsid >/dev/null 2>&1 || fail 'Se necesita setsid para aislar el proceso temporal del backend.'
-command -v ss >/dev/null 2>&1 || fail 'Se necesita ss para comprobar que el puerto temporal esté libre.'
+if command -v setsid >/dev/null 2>&1; then
+  process_launcher=setsid
+fi
 
 status_file="$temporary_dir/supabase-status.env"
 if ! pnpm exec supabase --workdir database status -o env >"$status_file" 2>/dev/null; then
@@ -63,7 +65,7 @@ service_role_key=$(read_status_value SERVICE_ROLE_KEY)
 
 assert_port_free() {
   candidate_port=$1
-  if ss -H -ltn "sport = :$candidate_port" 2>/dev/null | grep -q .; then
+  if ! node scripts/check-port-free.mjs "$candidate_port"; then
     fail "El puerto $candidate_port ya está ocupado; define PULSO_VERIFY_AUTH_PORT para continuar."
   fi
 }
@@ -171,7 +173,7 @@ SUPABASE_JWT_AUDIENCE='authenticated' \
 SUPABASE_JWT_JWK_SET_URI='http://127.0.0.1:54321/auth/v1/.well-known/jwks.json' \
 SUPABASE_JWT_SECRET='' \
 SERVER_PORT="$backend_port" \
-setsid ./scripts/run-backend.sh >"$temporary_dir/backend.log" 2>&1 &
+$process_launcher ./scripts/run-backend.sh >"$temporary_dir/backend.log" 2>&1 &
 backend_pid=$!
 wait_for_backend
 

@@ -8,6 +8,7 @@ unavailable_db_port=${PULSO_VERIFY_UNAVAILABLE_DB_PORT:-55432}
 backend_env_file=${PULSO_VERIFY_BACKEND_ENV_FILE:-}
 temporary_dir=$(mktemp -d)
 backend_pid=
+process_launcher=
 
 fail() {
   printf '%s\n' "$1" >&2
@@ -32,8 +33,10 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 command -v curl >/dev/null 2>&1 || fail 'Se necesita curl para verificar el backend local.'
-command -v setsid >/dev/null 2>&1 || fail 'Se necesita setsid para aislar el proceso temporal del backend.'
-command -v ss >/dev/null 2>&1 || fail 'Se necesita ss para comprobar que los puertos de verificación estén libres.'
+command -v node >/dev/null 2>&1 || fail 'Se necesita Node.js para comprobar los puertos de verificación.'
+if command -v setsid >/dev/null 2>&1; then
+  process_launcher=setsid
+fi
 
 if [ ! -f .env ] && [ -z "${SPRING_DATASOURCE_PASSWORD:-}" ]; then
   fail 'Crea .env desde .env.example o define SPRING_DATASOURCE_PASSWORD antes de verificar el backend.'
@@ -49,7 +52,7 @@ fi
 
 assert_port_free() {
   candidate_port=$1
-  if ss -H -ltn "sport = :$candidate_port" 2>/dev/null | grep -q .; then
+  if ! node scripts/check-port-free.mjs "$candidate_port"; then
     fail "El puerto $candidate_port ya está ocupado; define otra variable PULSO_VERIFY_* para continuar."
   fi
 }
@@ -93,7 +96,7 @@ assert_body_contains() {
 
 start_available_backend() {
   PULSO_BACKEND_ENV_FILE="$backend_env_file" \
-    SERVER_PORT="$available_port" setsid ./scripts/run-backend.sh \
+    SERVER_PORT="$available_port" $process_launcher ./scripts/run-backend.sh \
     >"$temporary_dir/backend-available.log" 2>&1 &
   backend_pid=$!
 }
@@ -102,7 +105,7 @@ start_unavailable_backend() {
   SPRING_DATASOURCE_URL="jdbc:postgresql://127.0.0.1:$unavailable_db_port/postgres" \
     SERVER_PORT="$unavailable_backend_port" \
     PULSO_BACKEND_ENV_FILE="$backend_env_file" \
-    setsid ./scripts/run-backend.sh \
+    $process_launcher ./scripts/run-backend.sh \
     >"$temporary_dir/backend-unavailable.log" 2>&1 &
   backend_pid=$!
 }

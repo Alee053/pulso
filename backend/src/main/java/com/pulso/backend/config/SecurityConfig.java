@@ -56,6 +56,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/startups").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/catalogs").authenticated()
                         .requestMatchers("/api/v1/me").authenticated()
+                        .requestMatchers("/api/v1/me/preferences").authenticated()
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {
                 }));

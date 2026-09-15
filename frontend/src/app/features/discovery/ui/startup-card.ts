@@ -3,6 +3,18 @@ import { Component, EventEmitter, Input, Output } from '@angular/core'
 import { IconComponent } from '../../../shared/icon/icon'
 import type { Decision, Startup } from '../domain/startup'
 
+/** Por encima de este ancho el descubrimiento se controla solo con botones y teclado. */
+const GESTURE_MAX_WIDTH = 1023
+const DRAG_LIMIT = 135
+const AXIS_LOCK_THRESHOLD = 10
+const DECISION_THRESHOLD = 92
+
+type DragAxis = 'x' | 'y'
+
+function clampOffset(value: number): number {
+  return Math.max(-DRAG_LIMIT, Math.min(DRAG_LIMIT, value))
+}
+
 @Component({
   selector: 'pulso-startup-card',
   standalone: true,
@@ -26,6 +38,7 @@ export class StartupCardComponent {
   private pointerId: number | null = null
   private startX = 0
   private startY = 0
+  private lockedAxis: DragAxis | null = null
   private suppressClick = false
 
   get cardTransform(): string {
@@ -34,14 +47,19 @@ export class StartupCardComponent {
     return `translate(${this.dragX}px, ${this.dragY}px) rotate(${rotation}deg) scale(${scale})`
   }
 
+  private get supportsGestures(): boolean {
+    return typeof window !== 'undefined' && window.innerWidth <= GESTURE_MAX_WIDTH
+  }
+
   onPointerDown(event: PointerEvent): void {
-    if (this.disabled || event.button !== 0) {
+    if (this.disabled || event.button !== 0 || !this.supportsGestures) {
       return
     }
 
     this.pointerId = event.pointerId
     this.startX = event.clientX
     this.startY = event.clientY
+    this.lockedAxis = null
     this.dragX = 0
     this.dragY = 0
     this.isDragging = false
@@ -53,17 +71,22 @@ export class StartupCardComponent {
       return
     }
 
-    const nextX = Math.max(-135, Math.min(135, event.clientX - this.startX))
-    const nextY = Math.max(-135, Math.min(135, event.clientY - this.startY))
-    this.dragX = nextX
-    this.dragY = nextY
-    this.isDragging = Math.abs(nextX) > 6 || Math.abs(nextY) > 6
+    const deltaX = event.clientX - this.startX
+    const deltaY = event.clientY - this.startY
 
-    if (this.isDragging) {
+    if (this.lockedAxis === null) {
+      if (Math.abs(deltaX) < AXIS_LOCK_THRESHOLD && Math.abs(deltaY) < AXIS_LOCK_THRESHOLD) {
+        return
+      }
+
+      this.lockedAxis = Math.abs(deltaX) >= Math.abs(deltaY) ? 'x' : 'y'
+      this.isDragging = true
       this.suppressClick = true
     }
 
-    this.dragChanged.emit({ x: nextX, y: nextY })
+    this.dragX = this.lockedAxis === 'x' ? clampOffset(deltaX) : 0
+    this.dragY = this.lockedAxis === 'y' ? clampOffset(deltaY) : 0
+    this.dragChanged.emit({ x: this.dragX, y: this.dragY })
   }
 
   onPointerUp(event: PointerEvent): void {
@@ -71,23 +94,20 @@ export class StartupCardComponent {
       return
     }
 
-    const x = this.dragX
-    const y = this.dragY
-    const isVertical = Math.abs(y) > Math.abs(x)
+    const axis = this.lockedAxis
+    const offset = axis === 'y' ? this.dragY : this.dragX
+    const target = event.currentTarget as HTMLElement
 
-    this.pointerId = null
-    this.isDragging = false
-    this.dragX = 0
-    this.dragY = 0
+    this.resetDrag()
     this.dragChanged.emit({ x: 0, y: 0 })
 
-    if (isVertical && y < -92) {
+    if (axis === 'y' && offset <= -DECISION_THRESHOLD) {
       this.selected.emit(this.startup)
-    } else if (isVertical && y > 92) {
+    } else if (axis === 'y' && offset >= DECISION_THRESHOLD) {
       this.saved.emit()
-    } else if (x > 92) {
+    } else if (axis === 'x' && offset >= DECISION_THRESHOLD) {
       this.dragDecision.emit('interested')
-    } else if (x < -92) {
+    } else if (axis === 'x' && offset <= -DECISION_THRESHOLD) {
       this.dragDecision.emit('skip')
     }
 
@@ -97,7 +117,6 @@ export class StartupCardComponent {
       }, 0)
     }
 
-    const target = event.currentTarget as HTMLElement
     if (target.hasPointerCapture(event.pointerId)) {
       target.releasePointerCapture(event.pointerId)
     }
@@ -108,12 +127,17 @@ export class StartupCardComponent {
       return
     }
 
+    this.resetDrag()
+    this.suppressClick = false
+    this.dragChanged.emit({ x: 0, y: 0 })
+  }
+
+  private resetDrag(): void {
     this.pointerId = null
+    this.lockedAxis = null
     this.isDragging = false
     this.dragX = 0
     this.dragY = 0
-    this.suppressClick = false
-    this.dragChanged.emit({ x: 0, y: 0 })
   }
 
   onCardClick(event: MouseEvent): void {

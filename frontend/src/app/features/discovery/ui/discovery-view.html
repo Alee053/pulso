@@ -1,30 +1,8 @@
-<main class="discovery-view mx-auto flex w-full max-w-7xl flex-1 flex-col px-5 pb-32 sm:px-8 lg:px-10 lg:pb-16">
-  <div class="discovery-view__heading mb-7 flex flex-col justify-between gap-5 sm:mb-9 sm:flex-row sm:items-end">
-    <div>
-      <span class="eyebrow">PARA TI / SELECCIÓN LOCAL</span>
-      <h1 class="mt-4 text-3xl font-medium tracking-[-0.06em] text-white sm:text-5xl">Ideas con pulso.</h1>
-      <p class="mt-3 max-w-xl text-sm leading-6 text-white/45 sm:text-base">Una buena idea no siempre hace ruido. A veces solo necesita que alguien la vea.</p>
-    </div>
-    <div class="discovery-view__meta flex items-center gap-3 self-start sm:self-auto">
-      <span class="flex size-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] text-[#a9e1ff]"><pulso-icon name="sparkles" [size]="16" [strokeWidth]="1.7" /></span>
-      <div><p class="text-[0.64rem] font-semibold uppercase tracking-[0.15em] text-white/30">Hecho para descubrir</p><p class="mt-1 text-xs text-white/55">Curado en Bolivia</p></div>
-    </div>
-  </div>
-
-  <div class="discovery-view__grid grid flex-1 gap-8 lg:grid-cols-[minmax(9rem,0.55fr)_minmax(22rem,35rem)_minmax(9rem,0.55fr)] lg:items-center lg:gap-10">
-    <aside class="discovery-view__side hidden self-stretch py-3 lg:flex lg:flex-col lg:justify-between">
-      <div>
-        <p class="side-label">SEÑALES ACTIVAS</p>
-        <div class="mt-4 flex flex-wrap gap-2 lg:flex-col lg:items-start">
-          <span *ngFor="let signal of activeSignals" class="side-chip">{{ signal }}</span>
-        </div>
-      </div>
-      <div class="space-y-3 text-xs leading-5 text-white/30"><p>El orden cambia con cada decisión.</p><p>Tu selección se queda en esta sesión.</p></div>
-    </aside>
-
-    <section class="discovery-view__stage flex min-w-0 flex-col items-center">
+<main class="discovery-view mx-auto flex w-full max-w-[96rem] flex-1 flex-col px-4 pb-28 pt-4 sm:px-8 lg:px-10 lg:py-7 lg:pb-7">
+  <div class="discovery-view__workspace flex min-h-0 flex-1 gap-6 lg:gap-8">
+    <section class="discovery-view__stage flex min-w-0 flex-1 flex-col items-center">
       <ng-container *ngIf="isLoading; else resolvedFeed">
-        <div class="glass-panel flex w-full max-w-[35rem] flex-col items-center px-7 py-16 text-center sm:px-12 sm:py-24" role="status" aria-live="polite">
+        <div class="discovery-view__state-panel glass-panel flex w-full max-w-[42rem] flex-col items-center justify-center px-7 py-16 text-center sm:px-12 sm:py-24" role="status" aria-live="polite">
           <span class="flex size-14 items-center justify-center rounded-2xl border border-[#a9e1ff]/20 bg-[#a9e1ff]/10 text-[#a9e1ff]"><pulso-icon name="sparkles" [size]="25" [strokeWidth]="1.6" /></span>
           <span class="eyebrow mt-7">CARGANDO DISCOVERY</span>
           <h2 class="mt-5 text-3xl font-medium tracking-[-0.055em] text-white sm:text-4xl">Buscando proyectos publicados.</h2>
@@ -34,7 +12,7 @@
 
       <ng-template #resolvedFeed>
         <ng-container *ngIf="errorMessage; else loadedFeed">
-          <div class="glass-panel flex w-full max-w-[35rem] flex-col items-center px-7 py-16 text-center sm:px-12 sm:py-24" role="alert">
+          <div class="discovery-view__state-panel glass-panel flex w-full max-w-[42rem] flex-col items-center justify-center px-7 py-16 text-center sm:px-12 sm:py-24" role="alert">
             <span class="flex size-14 items-center justify-center rounded-2xl border border-[#efb4c6]/20 bg-[#efb4c6]/10 text-[#efb4c6]"><pulso-icon name="x" [size]="25" [strokeWidth]="1.6" /></span>
             <span class="eyebrow mt-7">NO SE PUDO CARGAR</span>
             <h2 class="mt-5 text-3xl font-medium tracking-[-0.055em] text-white sm:text-4xl">El catálogo no está disponible.</h2>
@@ -45,42 +23,42 @@
       </ng-template>
 
       <ng-template #loadedFeed>
-      <ng-container *ngIf="currentStartup as startup; else emptyFeed">
-        <div class="discovery-view__progress-meta mb-2 flex w-full max-w-[35rem] items-center justify-between text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-white/30">
-          <span>Exploración {{ activeNumber | number:'2.0-0' }} / {{ totalStartups | number:'2.0-0' }}</span>
-          <span>{{ feedRemaining }} por ver</span>
-        </div>
-        <div class="discovery-view__progress mb-6 h-1 w-full max-w-[35rem] overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-[#a9e1ff] transition-[width] duration-500" [style.width.%]="progress"></div></div>
+        <ng-container *ngIf="currentStartup as startup; else emptyFeed">
+          <div class="discovery-view__progress-meta mb-2 flex w-full max-w-[42rem] items-center justify-between text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-white/30">
+            <span>Exploración {{ activeNumber | number:'2.0-0' }} / {{ totalStartups | number:'2.0-0' }}</span>
+            <span>{{ feedRemaining }} por ver</span>
+          </div>
+          <div class="discovery-view__progress mb-5 h-1 w-full max-w-[42rem] overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-[#a9e1ff] transition-[width] duration-500" [style.width.%]="progress"></div></div>
 
-        <div class="relative flex w-full max-w-[35rem] justify-center">
-          <div *ngIf="isDraggingLeft" class="drag-intent drag-intent--skip" [style.opacity]="horizontalIntensity"><span class="drag-intent__icon"><pulso-icon name="arrow-left" [size]="17" /></span>Pasar</div>
-          <div *ngIf="isDraggingRight" class="drag-intent drag-intent--interested" [style.opacity]="horizontalIntensity"><span class="drag-intent__icon"><pulso-icon name="heart" [size]="17" /></span>Me interesa</div>
-          <div *ngIf="isDraggingUp" class="drag-intent drag-intent--detail" [style.opacity]="verticalIntensity"><span class="drag-intent__icon"><pulso-icon name="arrow-up" [size]="17" /></span>Ver perfil</div>
-          <div *ngIf="isDraggingDown" class="drag-intent drag-intent--save" [style.opacity]="verticalIntensity"><span class="drag-intent__icon"><pulso-icon name="bookmark" [size]="17" /></span>Guardar</div>
+          <div class="discovery-view__card-wrap relative flex min-h-0 w-full max-w-[42rem] flex-1 justify-center">
+            <div *ngIf="isDraggingLeft" class="drag-intent drag-intent--skip" [style.opacity]="horizontalIntensity"><span class="drag-intent__icon"><pulso-icon name="arrow-left" [size]="17" /></span>Pasar</div>
+            <div *ngIf="isDraggingRight" class="drag-intent drag-intent--interested" [style.opacity]="horizontalIntensity"><span class="drag-intent__icon"><pulso-icon name="heart" [size]="17" /></span>Me interesa</div>
+            <div *ngIf="isDraggingUp" class="drag-intent drag-intent--detail" [style.opacity]="verticalIntensity"><span class="drag-intent__icon"><pulso-icon name="arrow-up" [size]="17" /></span>Ver perfil</div>
+            <div *ngIf="isDraggingDown" class="drag-intent drag-intent--save" [style.opacity]="verticalIntensity"><span class="drag-intent__icon"><pulso-icon name="bookmark" [size]="17" /></span>Guardar</div>
 
-          <pulso-startup-card
-            [startup]="startup"
-            [direction]="direction"
-            [disabled]="isTransitioning"
-            [isSaved]="isSaved"
-            (saved)="handleSave()"
-            (dragChanged)="updateDragOffset($event)"
-            (selected)="startupSelected.emit($event)"
-            (dragDecision)="handleDecision($event)"
-          />
-        </div>
+            <pulso-startup-card
+              [startup]="startup"
+              [direction]="direction"
+              [disabled]="isTransitioning"
+              [isSaved]="isSaved"
+              (saved)="handleSave()"
+              (dragChanged)="updateDragOffset($event)"
+              (selected)="startupSelected.emit($event)"
+              (dragDecision)="handleDecision($event)"
+            />
+          </div>
 
-        <div class="discovery-view__actions mt-7 flex w-full max-w-[25rem] items-start justify-center gap-3 sm:mt-8">
-          <button type="button" class="discovery-action" [disabled]="isTransitioning" aria-label="Pasar (←)" (click)="handleDecision('skip')"><span class="discovery-action__icon"><pulso-icon name="arrow-left" [size]="19" /></span><span class="discovery-action__label">Pasar</span><span class="discovery-action__shortcut">←</span></button>
-          <button type="button" class="discovery-action discovery-action--save" [disabled]="isTransitioning" aria-label="Guardar (S)" (click)="handleSave()"><span class="discovery-action__icon"><pulso-icon name="bookmark" [size]="19" [filled]="isSaved" /></span><span class="discovery-action__label">{{ isSaved ? 'Guardado' : 'Guardar' }}</span><span class="discovery-action__shortcut">S</span></button>
-          <button type="button" class="discovery-action discovery-action--interested" [disabled]="isTransitioning" aria-label="Me interesa (→)" (click)="handleDecision('interested')"><span class="discovery-action__icon"><pulso-icon name="heart" [size]="19" /></span><span class="discovery-action__label">Me interesa</span><span class="discovery-action__shortcut">→</span></button>
-        </div>
-      </ng-container>
+          <div class="discovery-view__actions mt-6 flex w-full max-w-[25rem] items-start justify-center gap-3 sm:mt-7">
+            <button type="button" class="discovery-action" [disabled]="isTransitioning" aria-label="Pasar (←)" (click)="handleDecision('skip')"><span class="discovery-action__icon"><pulso-icon name="arrow-left" [size]="19" /></span><span class="discovery-action__label">Pasar</span><span class="discovery-action__shortcut">←</span></button>
+            <button type="button" class="discovery-action discovery-action--save" [disabled]="isTransitioning" aria-label="Guardar (S)" (click)="handleSave()"><span class="discovery-action__icon"><pulso-icon name="bookmark" [size]="19" [filled]="isSaved" /></span><span class="discovery-action__label">{{ isSaved ? 'Guardado' : 'Guardar' }}</span><span class="discovery-action__shortcut">S</span></button>
+            <button type="button" class="discovery-action discovery-action--interested" [disabled]="isTransitioning" aria-label="Me interesa (→)" (click)="handleDecision('interested')"><span class="discovery-action__icon"><pulso-icon name="heart" [size]="19" /></span><span class="discovery-action__label">Me interesa</span><span class="discovery-action__shortcut">→</span></button>
+          </div>
+        </ng-container>
       </ng-template>
 
       <ng-template #emptyFeed>
         <ng-container *ngIf="totalStartups === 0; else completedFeed">
-          <div class="glass-panel flex w-full max-w-[35rem] flex-col items-center px-7 py-16 text-center sm:px-12 sm:py-24 fade-in-up">
+          <div class="discovery-view__state-panel glass-panel flex w-full max-w-[42rem] flex-col items-center justify-center px-7 py-16 text-center sm:px-12 sm:py-24 fade-in-up">
             <span class="flex size-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-white/45"><pulso-icon name="compass" [size]="25" [strokeWidth]="1.6" /></span>
             <span class="eyebrow mt-7">CATÁLOGO VACÍO</span>
             <h2 class="mt-5 text-3xl font-medium tracking-[-0.055em] text-white sm:text-4xl">Todavía no hay proyectos publicados.</h2>
@@ -90,7 +68,7 @@
       </ng-template>
 
       <ng-template #completedFeed>
-        <div class="glass-panel flex w-full max-w-[35rem] flex-col items-center px-7 py-16 text-center sm:px-12 sm:py-24 fade-in-up">
+        <div class="discovery-view__state-panel glass-panel flex w-full max-w-[42rem] flex-col items-center justify-center px-7 py-16 text-center sm:px-12 sm:py-24 fade-in-up">
           <span class="flex size-14 items-center justify-center rounded-2xl border border-[#a9e1ff]/20 bg-[#a9e1ff]/10 text-[#a9e1ff]"><pulso-icon name="check" [size]="25" [strokeWidth]="1.6" /></span>
           <span class="eyebrow mt-7">PRIMERA VUELTA COMPLETA</span>
           <h2 class="mt-5 text-3xl font-medium tracking-[-0.055em] text-white sm:text-4xl">Ya viste todo el pulso.</h2>
@@ -100,10 +78,6 @@
       </ng-template>
     </section>
 
-    <aside class="discovery-view__side hidden self-stretch py-3 lg:flex lg:flex-col lg:items-end lg:justify-between lg:text-right">
-      <div><p class="side-label">CÓMO FUNCIONA</p><div class="mt-4 space-y-3 text-xs leading-5 text-white/38"><p class="inline-flex items-center gap-2"><pulso-icon name="arrow-left" [size]="14" /> Pasar</p><p class="inline-flex items-center gap-2"><pulso-icon name="heart" [size]="14" /> Me interesa</p><p class="inline-flex items-center gap-2"><pulso-icon name="arrow-up" [size]="14" /> Ver perfil</p><p class="inline-flex items-center gap-2"><pulso-icon name="bookmark" [size]="14" /> Guardar</p></div></div>
-      <div class="inline-flex items-center gap-2 text-xs text-white/25"><pulso-icon name="keyboard" [size]="14" /> Usa el teclado para ir más rápido</div>
-    </aside>
   </div>
 
   <div *ngIf="toast" class="toast"><span class="flex size-7 items-center justify-center rounded-full bg-[#a9e1ff]/15 text-[#a9e1ff]"><pulso-icon name="check" [size]="14" /></span>{{ toast }}</div>

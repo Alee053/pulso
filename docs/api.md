@@ -150,10 +150,81 @@ gap using the existing DBML fields (`id`, `slug`, `name`, `tag_type`/`category`,
 `is_active`, and timestamps); it does not create profile/project relationship
 tables, which belong to the stories that persist those relationships.
 
+## `GET /api/v1/me/preferences`
+
+Returns the onboarding preferences of the authenticated profile. The profile
+ID is always derived from the validated JWT subject; there is no profile ID
+parameter that a client can use to read another person's preferences. If the
+profile has not saved preferences yet, the endpoint returns three empty arrays.
+
+```sh
+curl \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  http://localhost:8080/api/v1/me/preferences
+```
+
+Response `200 OK`:
+
+```json
+{
+  "profileId": "11111111-1111-1111-1111-111111111111",
+  "intentions": ["DISCOVER", "COLLABORATE"],
+  "preferredSectors": ["sostenibilidad"],
+  "preferredStages": ["MVP"]
+}
+```
+
+## `PUT /api/v1/me/preferences`
+
+Replaces all onboarding preferences for the authenticated profile. Repeating
+the same request is safe and keeps one row in
+`public.profile_preferences` because `profile_id` is the primary key and the
+repository uses an upsert.
+
+The request does not accept `profileId`; the server takes it from the JWT.
+`preferredSectors` is optional and defaults to `[]`; the other preference
+properties must be arrays, although an empty array is valid.
+
+```sh
+curl -X PUT \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "intentions": ["discover", "collaborate"],
+    "preferredSectors": ["sostenibilidad"],
+    "preferredStages": ["mvp"]
+  }' \
+  http://localhost:8080/api/v1/me/preferences
+```
+
+The backend normalizes intention and stage codes to uppercase. A preferred
+sector is accepted as an active catalog UUID or slug, using the active-sector
+lookup from `GET /api/v1/catalogs` (PUL-44), and is normalized to lowercase.
+The supported intention codes are `DISCOVER`, `BUY`, `COLLABORATE`, `WORK`,
+`INVEST`, `FIND_PARTNERS`, `FIND_CUSTOMERS`, `FIND_PROVIDERS`,
+and `EXPLORE_ECOSYSTEM`. Supported project stage codes are `IDEA`,
+`PROTOTYPE`, `MVP`, `EARLY_STAGE`, `GROWING`, and `ESTABLISHED`.
+
+Each preference array accepts at most 10 items. Blank, malformed, unknown or
+inactive values, and duplicates after normalization or active-sector resolution
+return `400 Bad Request`:
+
+```json
+{
+  "type": "about:blank",
+  "title": "Invalid preferences",
+  "status": 400,
+  "detail": "preferredSectors contains unknown or inactive sector 'desconocido'."
+}
+```
+
+Database failures return the sanitized `503 Service Unavailable` response
+documented above. Missing or invalid bearer tokens return `401 Unauthorized`.
+
 ## `GET /api/v1/me`
 
-Returns claims extracted from the validated Supabase JWT. It is an example of a
-protected endpoint, not yet a complete profile endpoint.
+Returns the authenticated product profile. The profile lookup always uses the
+validated JWT subject; the client cannot choose a different profile ID.
 
 ```sh
 curl \
@@ -168,7 +239,23 @@ Response `200 OK`:
   "subject": "user-uuid",
   "email": "person@example.com",
   "role": "authenticated",
-  "audience": ["authenticated"]
+  "audience": ["authenticated"],
+  "profile": {
+    "id": "user-uuid",
+    "profileKind": "PERSON",
+    "displayName": "Persona Uno",
+    "avatarStoragePath": null,
+    "shortBio": "Una biografía breve.",
+    "city": "Cochabamba",
+    "department": "Cochabamba",
+    "profileVisibility": "PUBLIC",
+    "verificationStatus": "UNVERIFIED",
+    "accountStatus": "ACTIVE",
+    "platformRole": "USER",
+    "onboardingCompletedAt": null,
+    "createdAt": "2026-09-08T12:00:00Z",
+    "updatedAt": "2026-09-08T12:00:00Z"
+  }
 }
 ```
 
@@ -177,6 +264,27 @@ does not accept a browser Supabase service-role key as an access token.
 
 Clients should treat `401` as an expired, missing, or invalid user session and
 must not retry it with a service-role key.
+
+## `PATCH /api/v1/me`
+
+Updates only the authenticated user's product-content fields and returns the
+same response as `GET /api/v1/me`. The request uses camelCase fields:
+
+```sh
+curl -X PATCH \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"displayName":"Persona actualizada","profileVisibility":"MEMBERS_ONLY"}' \
+  http://localhost:8080/api/v1/me
+```
+
+Editable fields are `profileKind`, `displayName`, `avatarStoragePath`,
+`shortBio`, `city`, `department`, `profileVisibility`, and
+`onboardingCompletedAt`. Fields that are absent or `null` remain unchanged.
+Unknown fields and invalid lengths or enum values return `400 Bad Request`.
+Identity, credentials, verification, account status, platform role, deletion
+state, and timestamps are server-managed and cannot be changed through this
+endpoint.
 
 ## Profile persistence contract for PUL-54
 

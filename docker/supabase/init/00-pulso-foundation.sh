@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# This script runs inside Linux containers; keep its line endings as LF.
 
 set -Eeuo pipefail
 

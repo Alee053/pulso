@@ -1,5 +1,7 @@
 import { CommonModule } from '@angular/common'
-import { Component, inject, OnInit, signal } from '@angular/core'
+import { Component, effect, inject, OnInit, signal } from '@angular/core'
+import { AuthPageComponent } from './core/auth/auth-page'
+import { SupabaseAuthGateway } from './core/auth/supabase-auth.gateway'
 import { DiscoveryViewComponent } from './features/discovery/ui/discovery-view'
 import { NavigationBarComponent } from './features/discovery/ui/navigation-bar'
 import { OnboardingComponent } from './features/discovery/ui/onboarding'
@@ -14,6 +16,7 @@ import type { AppView, Startup } from './features/discovery/domain/startup'
   standalone: true,
   imports: [
     CommonModule,
+    AuthPageComponent,
     DiscoveryViewComponent,
     NavigationBarComponent,
     OnboardingComponent,
@@ -25,11 +28,36 @@ import type { AppView, Startup } from './features/discovery/domain/startup'
   styleUrl: './app.css',
 })
 export class AppComponent implements OnInit {
+  readonly auth = inject(SupabaseAuthGateway)
   readonly session = inject(PulsoSession)
   readonly selectedStartup = signal<Startup | null>(null)
+  private activeUserId: string | null = null
+
+  private readonly authSessionEffect = effect(() => {
+    const authenticatedUser = this.auth.session()
+
+    if (!authenticatedUser) {
+      if (this.activeUserId !== null) {
+        this.activeUserId = null
+        this.session.resetForUserChange()
+      }
+      return
+    }
+
+    if (this.activeUserId === authenticatedUser.id) {
+      return
+    }
+
+    if (this.activeUserId !== null) {
+      this.session.resetForUserChange()
+    }
+
+    this.activeUserId = authenticatedUser.id
+    void this.session.loadReferenceCatalogs()
+  })
 
   ngOnInit(): void {
-    void this.session.loadReferenceCatalogs()
+    void this.auth.initialize().catch(() => undefined)
   }
 
   selectStartup(startup: Startup): void {

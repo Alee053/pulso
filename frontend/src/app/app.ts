@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common'
-import { Component, effect, inject, signal } from '@angular/core'
-import { AuthPanelComponent } from './core/auth/auth-panel'
+import { Component, effect, inject, OnInit, signal } from '@angular/core'
+import { AuthPageComponent } from './core/auth/auth-page'
 import { SupabaseAuthGateway } from './core/auth/supabase-auth.gateway'
 import { DiscoveryViewComponent } from './features/discovery/ui/discovery-view'
 import { NavigationBarComponent } from './features/discovery/ui/navigation-bar'
@@ -16,7 +16,7 @@ import type { AppView, Startup } from './features/discovery/domain/startup'
   standalone: true,
   imports: [
     CommonModule,
-    AuthPanelComponent,
+    AuthPageComponent,
     DiscoveryViewComponent,
     NavigationBarComponent,
     OnboardingComponent,
@@ -27,9 +27,9 @@ import type { AppView, Startup } from './features/discovery/domain/startup'
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
-export class AppComponent {
-  readonly session = inject(PulsoSession)
+export class AppComponent implements OnInit {
   readonly auth = inject(SupabaseAuthGateway)
+  readonly session = inject(PulsoSession)
   readonly selectedStartup = signal<Startup | null>(null)
   private activeUserId: string | null = null
 
@@ -55,6 +55,10 @@ export class AppComponent {
     this.activeUserId = authenticatedUser.id
     void this.session.loadReferenceCatalogs()
   })
+
+  ngOnInit(): void {
+    void this.auth.initialize().catch(() => undefined)
+  }
 
   selectStartup(startup: Startup): void {
     this.selectedStartup.set(startup)

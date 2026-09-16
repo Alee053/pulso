@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Per-boot reconciliation for the Pulso Cloud Agent environment.
 # Starts the Docker daemon (nested-container friendly), applies the bridge
-# networking fix, and brings up the local Supabase Compose stack. Idempotent:
-# safe to run on every boot and tolerant of an already-running daemon/stack.
+# networking fix, brings up the local Supabase Compose stack, and launches the
+# backend and frontend dev servers in the background. Idempotent: safe to run
+# on every boot and tolerant of an already-running daemon/stack/servers.
 set -euo pipefail
 
 export PATH="/opt/pulso/bin:${PATH}"
@@ -44,5 +45,27 @@ for _ in $(seq 1 60); do
   fi
   sleep 2
 done
+
+# 5. Launch the application tiers in the background so a booted agent has the
+# full stack running. Both are non-fatal: infrastructure (above) is what a
+# successful start guarantees, and each tier is guarded so re-runs do not
+# spawn duplicates. Logs are written to /tmp for inspection.
+port_in_use() { ss -ltnH 2>/dev/null | grep -qE "[:.]$1[[:space:]]"; }
+
+if port_in_use 8080; then
+  log "backend already running on :8080"
+else
+  log "starting backend (logs: /tmp/pulso-backend.log)"
+  setsid bash -lc 'export PATH=/opt/pulso/bin:$PATH; cd "'"$PWD"'" && pnpm backend:run' \
+    >/tmp/pulso-backend.log 2>&1 < /dev/null &
+fi
+
+if port_in_use 4200; then
+  log "frontend already running on :4200"
+else
+  log "starting frontend (logs: /tmp/pulso-frontend.log)"
+  setsid bash -lc 'export PATH=/opt/pulso/bin:$PATH; cd "'"$PWD"'" && pnpm dev' \
+    >/tmp/pulso-frontend.log 2>&1 < /dev/null &
+fi
 
 log "done"

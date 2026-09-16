@@ -1,13 +1,6 @@
-<ng-container *ngIf="auth.isLoading(); else resolvedSession">
-  <pulso-auth-page />
-</ng-container>
+<pulso-auth-panel />
 
-<ng-template #resolvedSession>
-  <pulso-auth-page *ngIf="!auth.session(); else authenticatedApplication" />
-</ng-template>
-
-<ng-template #authenticatedApplication>
-  <ng-container *ngIf="!session.hasStarted(); else applicationShell">
+<ng-container *ngIf="!session.hasStarted(); else applicationShell">
   <pulso-onboarding
     [interestOptions]="session.interestOptions"
     [selectedInterests]="session.selectedInterests()"
@@ -28,7 +21,6 @@
     (started)="session.startDiscovery()"
   />
 </ng-container>
-</ng-template>
 
 <ng-template #applicationShell>
   <div class="app-shell relative flex min-h-screen flex-col overflow-hidden text-white">

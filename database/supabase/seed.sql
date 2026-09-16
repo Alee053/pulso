@@ -19,11 +19,139 @@ values
     'Energía limpia',
     'Tecnologías y servicios para una transición energética responsable.',
     2
+  ),
+  (
+    'agroindustria',
+    'Agroindustria',
+    'Tecnologías y servicios para mejorar la producción y transformación de alimentos locales.',
+    3
+  ),
+  (
+    'educacion',
+    'Educación',
+    'Herramientas para ampliar el acceso y la calidad del aprendizaje.',
+    4
+  ),
+  (
+    'salud',
+    'Salud',
+    'Servicios y soluciones para el cuidado de la salud en comunidades bolivianas.',
+    5
+  ),
+  (
+    'tecnologia',
+    'Tecnología',
+    'Productos digitales e infraestructura para resolver problemas cotidianos.',
+    6
   )
 on conflict (slug) do update set
   name = excluded.name,
   description = excluded.description,
   sort_order = excluded.sort_order,
+  is_active = true,
+  updated_at = timezone('utc', now());
+
+insert into public.tags (
+  slug,
+  name,
+  tag_type
+)
+values
+  (
+    'innovacion',
+    'Innovación',
+    'TOPIC'
+  ),
+  (
+    'impacto-social',
+    'Impacto social',
+    'TOPIC'
+  ),
+  (
+    'economia-circular',
+    'Economía circular',
+    'TOPIC'
+  ),
+  (
+    'inteligencia-artificial',
+    'Inteligencia artificial',
+    'TOPIC'
+  ),
+  (
+    'comercio-electronico',
+    'Comercio electrónico',
+    'INDUSTRY'
+  ),
+  (
+    'inclusion-financiera',
+    'Inclusión financiera',
+    'INDUSTRY'
+  ),
+  (
+    'agricultura',
+    'Agricultura',
+    'INDUSTRY'
+  ),
+  (
+    'talento-local',
+    'Talento local',
+    'OTHER'
+  )
+on conflict (slug) do update set
+  name = excluded.name,
+  tag_type = excluded.tag_type,
+  is_active = true,
+  updated_at = timezone('utc', now());
+
+insert into public.skills (
+  slug,
+  name,
+  category
+)
+values
+  (
+    'desarrollo-web',
+    'Desarrollo web',
+    'DESARROLLO'
+  ),
+  (
+    'desarrollo-movil',
+    'Desarrollo móvil',
+    'DESARROLLO'
+  ),
+  (
+    'analisis-de-datos',
+    'Análisis de datos',
+    'DATOS'
+  ),
+  (
+    'marketing-digital',
+    'Marketing digital',
+    'NEGOCIOS'
+  ),
+  (
+    'ventas',
+    'Ventas',
+    'NEGOCIOS'
+  ),
+  (
+    'gestion-de-proyectos',
+    'Gestión de proyectos',
+    'GESTION'
+  ),
+  (
+    'diseno-ux',
+    'Diseño UX',
+    'DISENO'
+  ),
+  (
+    'agricultura-sostenible',
+    'Agricultura sostenible',
+    'AGRO'
+  )
+on conflict (slug) do update set
+  name = excluded.name,
+  category = excluded.category,
   is_active = true,
   updated_at = timezone('utc', now());
 

@@ -54,6 +54,27 @@ export class PulsoSession {
     getActiveSignals(this.selectedInterests()),
   )
 
+  resetForUserChange(): void {
+    this.referenceCatalogs.set(emptyReferenceCatalogs())
+    this.areCatalogsLoading.set(false)
+    this.catalogsErrorMessage.set(null)
+    this.hasLoadedReferenceCatalogs.set(false)
+    this.selectedSectorIds.set([])
+    this.selectedTagIds.set([])
+    this.selectedSkillIds.set([])
+    this.selectedInterests.set([])
+    this.hasStarted.set(false)
+    this.activeView.set('discover')
+    this.feed.set([])
+    this.catalog.set([])
+    this.isLoading.set(false)
+    this.errorMessage.set(null)
+    this.hasLoadedCatalog.set(false)
+    this.savedIds.set([])
+    this.interestedIds.set([])
+    this.preferenceWeights.set({})
+  }
+
   toggleSector(sectorId: string): void {
     this.selectedSectorIds.update((current) => toggleId(current, sectorId))
   }
@@ -83,7 +104,7 @@ export class PulsoSession {
       this.referenceCatalogs.set(emptyReferenceCatalogs())
       this.hasLoadedReferenceCatalogs.set(false)
       this.catalogsErrorMessage.set(
-        'No pudimos cargar sectores, temas y habilidades. Comprueba tu sesión y que el backend esté disponible.',
+        'No pudimos cargar sectores, temas y habilidades. Inténtalo de nuevo.',
       )
     } finally {
       this.areCatalogsLoading.set(false)
@@ -224,7 +245,7 @@ export class PulsoSession {
       this.hasLoadedCatalog.set(true)
     } catch {
       this.errorMessage.set(
-        'No pudimos cargar los proyectos publicados. Comprueba que el backend esté disponible e inténtalo de nuevo.',
+        'No pudimos cargar los proyectos publicados. Inténtalo de nuevo.',
       )
     } finally {
       this.isLoading.set(false)

@@ -9,7 +9,7 @@ import { emptyReferenceCatalogs } from './features/discovery/domain/catalog'
 import { interestOptions } from './features/discovery/data-access/interests'
 
 describe('AppComponent', () => {
-  it('keeps the Auth panel available for the protected reference catalogs flow', () => {
+  it('shows the standalone Auth page before the authenticated application', () => {
     const session = createSessionStub()
     const auth = createAuthStub()
 
@@ -24,11 +24,9 @@ describe('AppComponent', () => {
     const fixture = TestBed.createComponent(AppComponent)
     fixture.detectChanges()
 
-    expect(fixture.nativeElement.textContent).toContain(
-      'Conecta tu cuenta para probar Auth',
-    )
+    expect(fixture.nativeElement.querySelector('pulso-auth-page')).not.toBeNull()
     expect(session.loadReferenceCatalogs).not.toHaveBeenCalled()
-    expect(auth.initialize).toHaveBeenCalledOnce()
+    expect(auth.initialize).toHaveBeenCalled()
   })
 
   it('loads reference catalogs when authentication becomes available', () => {

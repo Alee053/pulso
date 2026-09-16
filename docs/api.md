@@ -150,6 +150,64 @@ gap using the existing DBML fields (`id`, `slug`, `name`, `tag_type`/`category`,
 `is_active`, and timestamps); it does not create profile/project relationship
 tables, which belong to the stories that persist those relationships.
 
+## `POST /api/v1/projects`
+
+Creates a project in `DRAFT` for the authenticated user and creates that same
+user's active `OWNER` membership in the same transaction. The profile ID is
+read from the validated JWT subject; the request cannot provide
+`createdByProfileId` or an owner identity.
+
+```sh
+curl -X POST \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "slug": "eco-pack",
+    "name": "EcoPack Bolivia",
+    "tagline": "Envases sostenibles",
+    "description": "Proyecto de prueba.",
+    "sectorId": "11111111-1111-1111-1111-111111111111",
+    "city": "Cochabamba",
+    "stage": "MVP"
+  }' \
+  http://localhost:8080/api/v1/projects
+```
+
+The request validates required text, the active `sectorId`, and the supported
+project stages (`IDEA`, `PROTOTYPE`, `MVP`, `EARLY_STAGE`, `GROWING`, and
+`ESTABLISHED`). `description` is optional. A successful request returns
+`201 Created` with the project and its owner relation:
+
+```json
+{
+  "project": {
+    "id": "33333333-3333-3333-3333-333333333333",
+    "slug": "eco-pack",
+    "name": "EcoPack Bolivia",
+    "tagline": "Envases sostenibles",
+    "description": "Proyecto de prueba.",
+    "sectorId": "11111111-1111-1111-1111-111111111111",
+    "city": "Cochabamba",
+    "stage": "MVP",
+    "status": "DRAFT",
+    "createdByProfileId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+  },
+  "owner": {
+    "id": "44444444-4444-4444-4444-444444444444",
+    "projectId": "33333333-3333-3333-3333-333333333333",
+    "profileId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "role": "OWNER",
+    "membershipStatus": "ACTIVE"
+  }
+}
+```
+
+Invalid input, unknown or inactive sectors, and client-provided identity
+fields return `400 Bad Request`. A duplicate project slug returns `409
+Conflict`; other PostgreSQL failures return the sanitized `503 Service
+Unavailable` response. Missing, invalid, or `service_role` bearer tokens
+return `401 Unauthorized`.
+
 ## `GET /api/v1/me/preferences`
 
 Returns the onboarding preferences of the authenticated profile. The profile

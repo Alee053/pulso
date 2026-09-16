@@ -60,7 +60,7 @@ describe('PulsoSession', () => {
     expect(session.catalog()).toEqual([])
     expect(session.feed()).toEqual([])
     expect(session.hasLoadedCatalog()).toBe(false)
-    expect(session.errorMessage()).toContain('backend esté disponible')
+    expect(session.errorMessage()).toContain('Inténtalo de nuevo')
     expect(session.isLoading()).toBe(false)
   })
 

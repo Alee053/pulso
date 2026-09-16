@@ -12,6 +12,8 @@ import com.pulso.backend.preference.domain.OnboardingPreferencesValidationExcept
 import com.pulso.backend.profile.application.InvalidAuthenticatedSubjectException;
 import com.pulso.backend.profile.application.ProfileNotFoundException;
 import com.pulso.backend.profile.domain.ProfileValidationException;
+import com.pulso.backend.project.application.ProjectConflictException;
+import com.pulso.backend.project.domain.ProjectValidationException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -58,6 +60,24 @@ public class ApiExceptionHandler {
                 HttpStatus.BAD_REQUEST,
                 exception.getMessage());
         problem.setTitle("Invalid preferences");
+        return problem;
+    }
+
+    @ExceptionHandler(ProjectValidationException.class)
+    ProblemDetail invalidProject(ProjectValidationException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                exception.getMessage());
+        problem.setTitle("Invalid project");
+        return problem;
+    }
+
+    @ExceptionHandler(ProjectConflictException.class)
+    ProblemDetail projectConflict(ProjectConflictException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                exception.getMessage());
+        problem.setTitle("Project conflict");
         return problem;
     }
 

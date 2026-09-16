@@ -18,6 +18,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.pulso.backend.project.application.CreateDraftProject;
+import com.pulso.backend.project.application.ProjectConflictException;
 import com.pulso.backend.project.domain.ProjectDraft;
 
 @Testcontainers(disabledWithoutDocker = true)
@@ -113,6 +114,20 @@ class JdbcProjectRepositoryTest {
         assertThat(result.owner().profileId()).isEqualTo(PROFILE_ID);
         assertThat(result.owner().role()).isEqualTo("OWNER");
         assertThat(result.owner().membershipStatus()).isEqualTo("ACTIVE");
+        assertThat(count("public.projects")).isEqualTo(1);
+        assertThat(count("public.project_members")).isEqualTo(1);
+    }
+
+    @Test
+    void translatesDuplicateSlugIntoAProjectConflict() {
+        new CreateDraftProject(repository).execute(PROFILE_ID, draft());
+
+        assertThatThrownBy(() -> new CreateDraftProject(repository).execute(
+                PROFILE_ID,
+                draft()))
+                .isInstanceOf(ProjectConflictException.class)
+                .hasMessage("A project with the same slug already exists.");
+
         assertThat(count("public.projects")).isEqualTo(1);
         assertThat(count("public.project_members")).isEqualTo(1);
     }

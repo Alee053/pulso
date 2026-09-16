@@ -73,6 +73,21 @@ class CreateDraftProjectTest {
     }
 
     @Test
+    void propagatesProjectPersistenceConflictWithoutCreatingAnOwner() {
+        CapturingRepository repository = new CapturingRepository();
+        repository.draftFailure = new ProjectConflictException();
+
+        assertThatThrownBy(() -> new CreateDraftProject(repository).execute(
+                PROFILE_ID,
+                draft()))
+                .isSameAs(repository.draftFailure);
+
+        assertThat(repository.calls).containsExactly(
+                "hasActiveSector",
+                "createDraft");
+    }
+
+    @Test
     void rejectsMissingAuthenticatedProfile() {
         assertThatThrownBy(() -> new CreateDraftProject(new CapturingRepository()).execute(
                 null,
@@ -96,6 +111,7 @@ class CreateDraftProjectTest {
 
         private final List<String> calls = new ArrayList<>();
         private boolean activeSector = true;
+        private RuntimeException draftFailure;
         private RuntimeException ownerFailure;
         private UUID createdByProfileId;
         private UUID ownerProfileId;
@@ -110,6 +126,9 @@ class CreateDraftProjectTest {
         public Project createDraft(ProjectDraft draft, UUID createdByProfileId) {
             calls.add("createDraft");
             this.createdByProfileId = createdByProfileId;
+            if (draftFailure != null) {
+                throw draftFailure;
+            }
             return new Project(
                     PROJECT_ID,
                     draft.slug(),

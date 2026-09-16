@@ -4,9 +4,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.UUID;
 
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
+import com.pulso.backend.project.application.ProjectConflictException;
 import com.pulso.backend.project.application.ProjectRepository;
 import com.pulso.backend.project.domain.Project;
 import com.pulso.backend.project.domain.ProjectDraft;
@@ -41,50 +43,54 @@ public class JdbcProjectRepository implements ProjectRepository {
 
     @Override
     public Project createDraft(ProjectDraft draft, UUID createdByProfileId) {
-        return jdbcClient.sql("""
-                insert into public.projects (
-                    slug,
-                    name,
-                    tagline,
-                    description,
-                    sector_id,
-                    city,
-                    stage,
-                    status,
-                    created_by_profile_id
-                ) values (
-                    :slug,
-                    :name,
-                    :tagline,
-                    :description,
-                    :sectorId,
-                    :city,
-                    :stage,
-                    'DRAFT',
-                    :createdByProfileId
-                )
-                returning
-                    id,
-                    slug,
-                    name,
-                    tagline,
-                    description,
-                    sector_id,
-                    city,
-                    stage,
-                    status,
-                    created_by_profile_id
-                """)
-                .param("slug", draft.slug())
-                .param("name", draft.name())
-                .param("tagline", draft.tagline())
-                .param("description", draft.description())
-                .param("sectorId", draft.sectorId())
-                .param("city", draft.city())
-                .param("stage", draft.stage())
-                .param("createdByProfileId", createdByProfileId)
-                .query(JdbcProjectRepository::mapProject)
-                .single();
+        try {
+            return jdbcClient.sql("""
+                    insert into public.projects (
+                        slug,
+                        name,
+                        tagline,
+                        description,
+                        sector_id,
+                        city,
+                        stage,
+                        status,
+                        created_by_profile_id
+                    ) values (
+                        :slug,
+                        :name,
+                        :tagline,
+                        :description,
+                        :sectorId,
+                        :city,
+                        :stage,
+                        'DRAFT',
+                        :createdByProfileId
+                    )
+                    returning
+                        id,
+                        slug,
+                        name,
+                        tagline,
+                        description,
+                        sector_id,
+                        city,
+                        stage,
+                        status,
+                        created_by_profile_id
+                    """)
+                    .param("slug", draft.slug())
+                    .param("name", draft.name())
+                    .param("tagline", draft.tagline())
+                    .param("description", draft.description())
+                    .param("sectorId", draft.sectorId())
+                    .param("city", draft.city())
+                    .param("stage", draft.stage())
+                    .param("createdByProfileId", createdByProfileId)
+                    .query(JdbcProjectRepository::mapProject)
+                    .single();
+        } catch (DuplicateKeyException exception) {
+            throw new ProjectConflictException();
+        }
     }
 
     @Override

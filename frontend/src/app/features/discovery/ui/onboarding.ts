@@ -7,6 +7,7 @@ import type {
   SkillCatalogItem,
   TagCatalogItem,
 } from '../domain/catalog'
+import type { ProjectStage, ProjectStageOption } from '../domain/preferences'
 import type { InterestId, InterestOption } from '../domain/startup'
 
 @Component({
@@ -25,15 +26,25 @@ export class OnboardingComponent {
   @Input() selectedSectorIds: string[] = []
   @Input() selectedTagIds: string[] = []
   @Input() selectedSkillIds: string[] = []
+  @Input() stages: readonly ProjectStageOption[] = []
+  @Input() selectedStageIds: ProjectStage[] = []
   @Input() catalogsLoading = false
   @Input() catalogsLoaded = false
   @Input() catalogsErrorMessage: string | null = null
+  @Input() preferencesLoading = false
+  @Input() preferencesLoaded = false
+  @Input() preferencesErrorMessage: string | null = null
+  @Input() preferencesSaving = false
+  @Input() preferencesSaveErrorMessage: string | null = null
 
   @Output() interestToggled = new EventEmitter<InterestId>()
   @Output() sectorToggled = new EventEmitter<string>()
   @Output() tagToggled = new EventEmitter<string>()
   @Output() skillToggled = new EventEmitter<string>()
+  @Output() stageToggled = new EventEmitter<ProjectStage>()
   @Output() catalogsRetryRequested = new EventEmitter<void>()
+  @Output() preferencesRetryRequested = new EventEmitter<void>()
+  @Output() preferencesSaveRetryRequested = new EventEmitter<void>()
   @Output() started = new EventEmitter<void>()
 
   isSelected(interest: InterestOption): boolean {
@@ -50,5 +61,9 @@ export class OnboardingComponent {
 
   isSkillSelected(skill: SkillCatalogItem): boolean {
     return this.selectedSkillIds.includes(skill.id)
+  }
+
+  isStageSelected(stage: ProjectStageOption): boolean {
+    return this.selectedStageIds.includes(stage.id)
   }
 }

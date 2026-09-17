@@ -1,0 +1,320 @@
+<main class="mx-auto w-full max-w-5xl px-5 py-10 sm:px-8 lg:py-14">
+  <header class="mb-8">
+    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-white/35">
+      Nuevo proyecto
+    </p>
+
+    <h1 class="mt-3 text-3xl font-medium tracking-[-0.04em] text-white sm:text-4xl">
+      Crea tu proyecto
+    </h1>
+
+    <p class="mt-3 max-w-2xl text-sm leading-6 text-white/45">
+      Completa la información inicial. El proyecto será creado como borrador
+      y podrás continuar trabajando en él después.
+    </p>
+  </header>
+
+  <div
+    *ngIf="catalogsLoading"
+    class="glass-panel p-6"
+    role="status"
+    aria-live="polite"
+  >
+    <p class="text-sm text-white/55">
+      Cargando opciones del proyecto...
+    </p>
+  </div>
+
+  <div
+    *ngIf="!catalogsLoading && catalogsErrorMessage"
+    class="glass-panel p-6"
+    role="alert"
+  >
+    <p class="text-sm text-white/60">
+      {{ catalogsErrorMessage }}
+    </p>
+  </div>
+
+  <form
+    *ngIf="!catalogsLoading && !catalogsErrorMessage"
+    class="glass-panel p-6 sm:p-8"
+    [formGroup]="form"
+    (ngSubmit)="submit()"
+    novalidate
+  >
+    <div class="grid gap-6 sm:grid-cols-2">
+      <div class="sm:col-span-2">
+        <label
+          for="project-name"
+          class="text-sm font-medium text-white/85"
+        >
+          Nombre del proyecto
+        </label>
+
+        <input
+          id="project-name"
+          type="text"
+          formControlName="name"
+          maxlength="160"
+          class="mt-2 w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-white outline-none"
+          aria-describedby="project-name-error"
+        />
+
+        <p
+          *ngIf="hasError('name', 'required')"
+          id="project-name-error"
+          class="mt-2 text-xs text-red-300"
+          role="alert"
+        >
+          El nombre del proyecto es obligatorio.
+        </p>
+      </div>
+
+      <div>
+        <label
+          for="project-slug"
+          class="text-sm font-medium text-white/85"
+        >
+          Identificador
+        </label>
+
+        <input
+          id="project-slug"
+          type="text"
+          formControlName="slug"
+          maxlength="120"
+          class="mt-2 w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-white outline-none"
+          aria-describedby="project-slug-error"
+        />
+
+        <p class="mt-2 text-xs text-white/35">
+          Ejemplo: eco-pack-bolivia
+        </p>
+
+        <p
+          *ngIf="hasError('slug', 'required')"
+          id="project-slug-error"
+          class="mt-2 text-xs text-red-300"
+          role="alert"
+        >
+          El identificador es obligatorio.
+        </p>
+
+        <p
+          *ngIf="hasError('slug', 'minlength')"
+          class="mt-2 text-xs text-red-300"
+          role="alert"
+        >
+          Debe tener al menos 2 caracteres.
+        </p>
+      </div>
+
+      <div>
+        <label
+          for="project-city"
+          class="text-sm font-medium text-white/85"
+        >
+          Ciudad
+        </label>
+
+        <input
+          id="project-city"
+          type="text"
+          formControlName="city"
+          maxlength="120"
+          class="mt-2 w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-white outline-none"
+          aria-describedby="project-city-error"
+        />
+
+        <p
+          *ngIf="hasError('city', 'required')"
+          id="project-city-error"
+          class="mt-2 text-xs text-red-300"
+          role="alert"
+        >
+          La ciudad es obligatoria.
+        </p>
+      </div>
+
+      <div class="sm:col-span-2">
+        <label
+          for="project-tagline"
+          class="text-sm font-medium text-white/85"
+        >
+          Descripción corta
+        </label>
+
+        <input
+          id="project-tagline"
+          type="text"
+          formControlName="tagline"
+          maxlength="240"
+          class="mt-2 w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-white outline-none"
+          aria-describedby="project-tagline-error"
+        />
+
+        <p
+          *ngIf="hasError('tagline', 'required')"
+          id="project-tagline-error"
+          class="mt-2 text-xs text-red-300"
+          role="alert"
+        >
+          La descripción corta es obligatoria.
+        </p>
+      </div>
+
+      <div>
+        <label
+          for="project-sector"
+          class="text-sm font-medium text-white/85"
+        >
+          Sector
+        </label>
+
+        <select
+          id="project-sector"
+          formControlName="sectorId"
+          class="mt-2 w-full rounded-xl border border-white/10 bg-[#101820] px-4 py-3 text-white outline-none"
+          aria-describedby="project-sector-error"
+        >
+          <option value="">
+            Selecciona un sector
+          </option>
+
+          <option
+            *ngFor="let sector of sectors"
+            [value]="sector.id"
+          >
+            {{ sector.name }}
+          </option>
+        </select>
+
+        <p
+          *ngIf="catalogsLoaded && sectors.length === 0"
+          class="mt-2 text-xs text-white/40"
+          role="status"
+        >
+          No hay sectores activos disponibles.
+        </p>
+
+        <p
+          *ngIf="hasError('sectorId', 'required')"
+          id="project-sector-error"
+          class="mt-2 text-xs text-red-300"
+          role="alert"
+        >
+          Debes seleccionar un sector.
+        </p>
+
+        <p
+          *ngIf="hasError('sectorId', 'invalidSector')"
+          class="mt-2 text-xs text-red-300"
+          role="alert"
+        >
+          El sector seleccionado ya no está disponible.
+        </p>
+      </div>
+
+      <div>
+        <label
+          for="project-stage"
+          class="text-sm font-medium text-white/85"
+        >
+          Etapa
+        </label>
+
+        <select
+          id="project-stage"
+          formControlName="stage"
+          class="mt-2 w-full rounded-xl border border-white/10 bg-[#101820] px-4 py-3 text-white outline-none"
+          aria-describedby="project-stage-error"
+        >
+          <option value="">
+            Selecciona una etapa
+          </option>
+
+          <option
+            *ngFor="let stage of stages"
+            [value]="stage.value"
+          >
+            {{ stage.label }}
+          </option>
+        </select>
+
+        <p
+          *ngIf="hasError('stage', 'required')"
+          id="project-stage-error"
+          class="mt-2 text-xs text-red-300"
+          role="alert"
+        >
+          Debes seleccionar una etapa.
+        </p>
+      </div>
+
+      <div class="sm:col-span-2">
+        <label
+          for="project-description"
+          class="text-sm font-medium text-white/85"
+        >
+          Descripción
+          <span class="text-white/35">(opcional)</span>
+        </label>
+
+        <textarea
+          id="project-description"
+          formControlName="description"
+          maxlength="5000"
+          rows="6"
+          class="mt-2 w-full resize-y rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-white outline-none"
+        ></textarea>
+      </div>
+    </div>
+
+    <div
+      *ngIf="submitErrorMessage()"
+      class="mt-6 rounded-xl border border-red-300/20 bg-red-300/5 p-4"
+      role="alert"
+      aria-live="assertive"
+    >
+      <p class="text-sm text-red-200">
+        {{ submitErrorMessage() }}
+      </p>
+    </div>
+
+    <div
+      *ngIf="createdProject() as created"
+      class="mt-6 rounded-xl border border-white/10 bg-white/[0.05] p-5"
+      role="status"
+      aria-live="polite"
+    >
+      <p class="text-sm font-medium text-white">
+        Proyecto creado correctamente.
+      </p>
+
+      <p class="mt-2 text-sm text-white/50">
+        {{ created.project.name }} fue creado como borrador.
+      </p>
+    </div>
+
+    <div class="mt-8 flex justify-end">
+      <button
+        type="submit"
+        class="solid-button"
+        [disabled]="
+          form.invalid ||
+          isSubmitting() ||
+          catalogsLoading ||
+          sectors.length === 0
+        "
+      >
+        <ng-container *ngIf="!isSubmitting(); else submitting">
+          Crear proyecto
+        </ng-container>
+
+        <ng-template #submitting>
+          Creando proyecto...
+        </ng-template>
+      </button>
+    </div>
+  </form>
+</main>

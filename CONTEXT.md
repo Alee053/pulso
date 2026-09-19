@@ -14,7 +14,7 @@ _Avoid_: using startup as the general name for all Pulso projects
 
 **Founder**:
 A person identified as part of a project's founding team.
-_Avoid_: owner, user
+_Avoid_: using owner for the public founding-team person; user
 
 **Interest**:
 A signal selected by a person to describe what they want to discover or support.
@@ -37,6 +37,28 @@ _Avoid_: favorite, bookmark
 **Interested project**:
 A project for which a person has explicitly expressed interest.
 _Avoid_: liked startup, match
+
+## Projects
+
+**Publication request**:
+The team action that moves a draft project into administrative review without making it publicly discoverable.
+_Avoid_: publish, go live, submit as a synonym for becoming public
+
+**Administrative review**:
+The platform decision that approves or rejects a project for public discovery.
+_Avoid_: team publish, owner publish
+
+**Archived project**:
+A project the team has withdrawn; it is no longer publicly discoverable and is not reopened by requesting publication.
+_Avoid_: deleted project, unpublished draft, hidden project
+
+**Project owner**:
+The active membership role with full control of a project's team actions, including publication request and archive.
+_Avoid_: founder when referring to the membership role, user
+
+**Project admin**:
+The active membership role that can administer a project and perform the same publication-request and archive actions as a project owner.
+_Avoid_: moderator, platform admin
 
 ## Team
 

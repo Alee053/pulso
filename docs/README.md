@@ -12,9 +12,9 @@ This directory is the durable reference for the codebase: what is deployed in th
 6. [API examples](./api.md) — current endpoint contracts, authentication, and curl examples.
 7. [Frontend architecture](./architecture/frontend.md) — Angular feature modules, state ownership, and UI boundaries.
 8. [Backend architecture](./architecture/backend.md) — Spring package structure, HTTP seams, persistence, and testing.
-9. [Scalability](./architecture/scalability.md) — default decisions and triggers for adding complexity.
-10. [Working agreements](./engineering/working-agreements.md) — team workflow, review standards, and definition of done.
-11. [Configurable values inventory](./engineering/configurable-values-inventory.md) — presentation strings, environment names, API rules, and the destination convention. Do not put secrets in that inventory.
+9. [Project lifecycle](./architecture/project-lifecycle.md) — team publication-request and archive matrix, audit timestamps, and explicit errors.
+10. [Scalability](./architecture/scalability.md) — default decisions and triggers for adding complexity.
+11. [Working agreements](./engineering/working-agreements.md) — team workflow, review standards, and definition of done.
 12. [Architecture decisions](./adr/0001-monorepo-project-seams.md) — decisions that are costly or surprising to reverse.
 13. [Supabase decision](./adr/0003-supabase-database-and-auth.md) — database, migrations, RLS, and Auth boundaries.
 14. [Project/startup compatibility](./adr/0004-project-startup-compatibility.md) — canonical domain naming, current baseline, and migration order.

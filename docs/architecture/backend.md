@@ -24,7 +24,7 @@ com.pulso.backend/
 │   └── infrastructure/                # JSONB JDBC adapter
 ├── project/
 │   ├── application/                   # draft-project use case and output port
-│   ├── domain/                        # project and membership values
+│   ├── domain/                        # project values and team lifecycle policy
 │   └── infrastructure/                # project JDBC adapter
 └── profile/
     ├── api/                           # profile request/response DTOs
@@ -157,7 +157,9 @@ enabled.
 ## Testing strategy
 
 - Domain tests: fast unit tests for policies and invariants with no Spring or
-  database.
+  database. Project publication-request and archive rules live in
+  [`ProjectLifecycle`](../../backend/src/main/java/com/pulso/backend/project/domain/ProjectLifecycle.java);
+  the documented matrix is [project lifecycle](./project-lifecycle.md).
 - Application tests: use-case tests with fake adapters at the seam.
 - API tests: MVC tests for status, validation, security, and response contracts.
 - Infrastructure tests: PostgreSQL-backed integration tests when repository

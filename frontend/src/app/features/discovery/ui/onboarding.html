@@ -75,8 +75,23 @@
             Afina lo que quieres encontrar
           </h2>
           <p class="mt-2 max-w-2xl text-sm leading-6 text-white/40">
-            Estas selecciones nos ayudan a acercarte proyectos que encajen contigo. Puedes cambiarlas después.
+            Los sectores y las etapas se guardan en tu perfil. Temas y habilidades afinan esta sesión y podrán persistirse después.
           </p>
+        </div>
+
+        <div *ngIf="preferencesLoading" class="glass-panel mb-5 px-5 py-4" role="status" aria-live="polite">
+          <p class="text-sm text-white/55">Cargando tus preferencias guardadas...</p>
+        </div>
+
+        <div *ngIf="!preferencesLoading && preferencesErrorMessage" class="glass-panel mb-5 px-5 py-5" role="alert">
+          <p class="text-sm leading-6 text-white/60">{{ preferencesErrorMessage }}</p>
+          <button
+            type="button"
+            class="contact-button mt-4"
+            (click)="preferencesRetryRequested.emit()"
+          >
+            Reintentar
+          </button>
         </div>
 
         <div *ngIf="catalogsLoading" class="glass-panel px-5 py-6" role="status" aria-live="polite">
@@ -94,7 +109,7 @@
           </button>
         </div>
 
-        <div *ngIf="!catalogsLoading && !catalogsErrorMessage && catalogsLoaded" class="grid gap-5 lg:grid-cols-3">
+        <div *ngIf="!catalogsLoading && !catalogsErrorMessage && catalogsLoaded" class="grid gap-5 lg:grid-cols-2">
           <section class="glass-panel p-5" aria-labelledby="sector-options-title">
             <h3 id="sector-options-title" class="text-sm font-medium text-white/85">Sectores preferidos</h3>
             <p class="mt-1 text-xs leading-5 text-white/35">Elige los sectores que quieres seguir.</p>
@@ -112,6 +127,26 @@
             </div>
             <ng-template #emptySectors>
               <p class="mt-4 text-xs leading-5 text-white/40" role="status">No hay sectores activos disponibles.</p>
+            </ng-template>
+          </section>
+
+          <section class="glass-panel p-5" aria-labelledby="stage-options-title">
+            <h3 id="stage-options-title" class="text-sm font-medium text-white/85">Etapas de proyecto</h3>
+            <p class="mt-1 text-xs leading-5 text-white/35">Elige las etapas que quieres conocer.</p>
+
+            <div *ngIf="stages.length > 0; else emptyStages" class="mt-4 flex flex-wrap gap-2">
+              <button
+                *ngFor="let stage of stages"
+                type="button"
+                [class]="isStageSelected(stage) ? 'contact-button border-white text-white' : 'contact-button'"
+                [attr.aria-pressed]="isStageSelected(stage)"
+                (click)="stageToggled.emit(stage.id)"
+              >
+                {{ stage.label }}
+              </button>
+            </div>
+            <ng-template #emptyStages>
+              <p class="mt-4 text-xs leading-5 text-white/40" role="status">No hay etapas disponibles.</p>
             </ng-template>
           </section>
 
@@ -165,15 +200,29 @@
             <span *ngSwitchDefault>{{ selectedInterests.length }} intereses seleccionados.</span>
           </ng-container>
         </p>
-        <button
-          type="button"
-          class="solid-button w-full sm:w-auto"
-          [disabled]="selectedInterests.length === 0"
-          (click)="started.emit()"
-        >
-          Entrar a Pulso
-          <pulso-icon name="arrow-right" [size]="17" />
-        </button>
+        <div class="flex w-full flex-col items-start gap-3 sm:w-auto sm:items-end">
+          <div *ngIf="preferencesSaveErrorMessage" class="flex flex-wrap items-center gap-3" role="alert">
+            <p class="text-xs leading-5 text-[#efb4c6]">{{ preferencesSaveErrorMessage }}</p>
+            <button
+              type="button"
+              class="contact-button"
+              [disabled]="preferencesSaving"
+              (click)="preferencesSaveRetryRequested.emit()"
+            >
+              Reintentar guardado
+            </button>
+          </div>
+          <button
+            type="button"
+            class="solid-button w-full sm:w-auto"
+            [disabled]="selectedInterests.length === 0 || preferencesLoading || !preferencesLoaded || preferencesSaving"
+            [attr.aria-busy]="preferencesSaving"
+            (click)="started.emit()"
+          >
+            <ng-container *ngIf="preferencesSaving; else readyToStart">Guardando preferencias...</ng-container>
+            <ng-template #readyToStart>Entrar a Pulso <pulso-icon name="arrow-right" [size]="17" /></ng-template>
+          </button>
+        </div>
       </div>
     </div>
 

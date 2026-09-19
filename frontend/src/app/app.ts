@@ -9,7 +9,9 @@ import { ProfileViewComponent } from './features/discovery/ui/profile-view'
 import { SavedViewComponent } from './features/discovery/ui/saved-view'
 import { StartupDetailModalComponent } from './features/discovery/ui/startup-detail-modal'
 import { PulsoSession } from './features/discovery/application/pulso-session'
+import { IconComponent } from './shared/icon/icon'
 import type { AppView, Startup } from './features/discovery/domain/startup'
+import { ProjectCreateFormComponent } from './features/discovery/ui/project-create-form'
 
 @Component({
   selector: 'pulso-root',
@@ -21,8 +23,10 @@ import type { AppView, Startup } from './features/discovery/domain/startup'
     NavigationBarComponent,
     OnboardingComponent,
     ProfileViewComponent,
+    ProjectCreateFormComponent,
     SavedViewComponent,
     StartupDetailModalComponent,
+    IconComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',
@@ -54,6 +58,7 @@ export class AppComponent implements OnInit {
 
     this.activeUserId = authenticatedUser.id
     void this.session.loadReferenceCatalogs()
+    void this.session.loadOnboardingPreferences()
   })
 
   ngOnInit(): void {

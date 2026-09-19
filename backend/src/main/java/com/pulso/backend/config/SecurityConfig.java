@@ -54,6 +54,7 @@ public class SecurityConfig {
                                 "/actuator/info")
                         .permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/startups").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/projects/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/catalogs").authenticated()
                         .requestMatchers("/api/v1/me").authenticated()
                         .requestMatchers("/api/v1/me/preferences").authenticated()

@@ -208,6 +208,96 @@ Conflict`; other PostgreSQL failures return the sanitized `503 Service
 Unavailable` response. Missing, invalid, or `service_role` bearer tokens
 return `401 Unauthorized`.
 
+## `PATCH /api/v1/projects/{projectId}` — edit project information (PUL-62)
+
+Updates the editable product information of one canonical `Project`. The route
+requires a valid user access token. `projectId` is the immutable UUID from
+`projects.id`; the slug is not accepted as a replacement identifier because
+`projects.slug` is server-managed and cannot be changed by this operation.
+
+The authenticated subject must have an `ACTIVE` `project_members` row for the
+project with role `OWNER` or `ADMIN`. The server derives the profile ID from
+the JWT and never accepts a caller-supplied owner, member, or profile ID. A
+`MEMBER`, an invited/left/removed member, or an external authenticated user
+cannot edit the project.
+
+The request is a partial update. The only accepted JSON properties are:
+
+```json
+{
+  "name": "EcoPack Bolivia actualizado",
+  "tagline": "Envases compostables para productores locales.",
+  "description": "Descripción pública del proyecto.",
+  "valueProposition": "Reduce residuos y mejora el valor de los desechos agrícolas.",
+  "stage": "MVP",
+  "sectorId": "11111111-1111-1111-1111-111111111111",
+  "city": "Cochabamba",
+  "department": "Cochabamba"
+}
+```
+
+Omitted properties preserve their current database values. Explicit `null` is
+allowed only for the nullable product fields `description`,
+`valueProposition`, `city`, and `department`, and clears that value. An empty
+object is invalid because it does not describe an update. Blank strings are
+invalid, including for optional fields; clients must use `null` to clear an
+optional value.
+
+Validation uses the merged final state (stored values plus the supplied
+patch), not only the fields present in the request:
+
+| Field | Rule | Nullability |
+| --- | --- | --- |
+| `name` | Required after the merge; trim and keep between 1 and 160 characters. | Never `null`. |
+| `tagline` | Required after the merge; trim and keep between 1 and 240 characters. | Never `null`. |
+| `description` | Trim when present; maximum 5,000 characters. | Nullable; `null` clears it. |
+| `valueProposition` | Trim when present; maximum 5,000 characters. | Nullable; `null` clears it. |
+| `stage` | Normalize to uppercase and accept only `IDEA`, `PROTOTYPE`, `MVP`, `EARLY_STAGE`, `GROWING`, or `ESTABLISHED`. | Never `null`. |
+| `sectorId` | Must be a UUID referencing a row in `sectors` with `is_active = true`. | Never `null`. |
+| `city` | Trim when present; maximum 120 characters. | Nullable; `null` clears it. |
+| `department` | Trim when present; maximum 120 characters and the location semantics of the canonical model. | Nullable; `null` clears it. |
+
+The request rejects every other property, including `id`, `slug`,
+`createdByProfileId`, `status`, `verificationStatus`,
+`reviewedByProfileId`, `reviewNote`, `reviewedAt`, `publishedAt`,
+`createdAt`, `updatedAt`, `archivedAt`, membership data, tags, links, media,
+and any persistence-only or audit field. A successful update never changes
+the project UUID, creator, publication/review state, or other protected data;
+it updates `updated_at` and returns the resulting project.
+
+Response `200 OK`:
+
+```json
+{
+  "data": {
+    "id": "33333333-3333-3333-3333-333333333333",
+    "slug": "eco-pack",
+    "name": "EcoPack Bolivia actualizado",
+    "tagline": "Envases compostables para productores locales.",
+    "description": "Descripción pública del proyecto.",
+    "valueProposition": "Reduce residuos y mejora el valor de los desechos agrícolas.",
+    "sectorId": "11111111-1111-1111-1111-111111111111",
+    "stage": "MVP",
+    "city": "Cochabamba",
+    "department": "Cochabamba"
+  }
+}
+```
+
+Errors use the API problem format:
+
+| Situation | Status | Contract |
+| --- | --- | --- |
+| Missing, malformed, unknown, or protected request field; invalid final state; unknown/inactive `sectorId`; invalid stage; or empty patch | `400 Bad Request` | `title: "Invalid project update"` with a field-specific `detail`. |
+| Missing or invalid user access token, including a `service_role` token | `401 Unauthorized` | The request is not treated as an authenticated user update. |
+| Authenticated subject is not an active `OWNER` or `ADMIN` of the project | `403 Forbidden` | `title: "Project access denied"`; do not disclose membership or project-edit details. |
+| No project exists for `projectId` | `404 Not Found` | `title: "Project not found"`. |
+| PostgreSQL cannot complete the read or update | `503 Service Unavailable` | Use the sanitized data-store error used by the other API writes. |
+
+The backend DTO, domain validator, Angular request type, and tests must use
+this same allowlist and null/omission behavior when the endpoint is
+implemented.
+
 ## `GET /api/v1/me/preferences`
 
 Returns the onboarding preferences of the authenticated profile. The profile

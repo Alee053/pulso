@@ -517,6 +517,15 @@ No hay rate limit por IP ni por token en este módulo.
 | presentation | `api.project.draft-required` | `CreateDraftProject` | `project draft is required.` | `400` | `messages.properties` | all |
 | presentation | `api.project.inactive-sector` | `CreateDraftProject` | `sectorId must reference an active sector.` | `400` | `messages.properties` | all |
 | presentation | `api.project.unknown-field` | `ProjectCreateRequest` | `Field '{{name}}' is not accepted.` | `400` | `messages.properties` | all |
+| domain-data | `project.member.role` | `MembershipAdministration` | `OWNER`, `ADMIN`, `MEMBER` | validación | dominio | all |
+| domain-data | `project.member.status` | `MembershipAdministration` | `INVITED`, `ACTIVE`, `LEFT`, `REMOVED` | validación | dominio | all |
+| presentation | `membership.admin.permission` | `membership-administration.ts` | `Solo un integrante activo con rol owner o admin puede administrar membresías.` | UI de administración | `frontend/src/app/features/discovery/strings/project.strings.ts` | all |
+| presentation | `membership.admin.selfElevation` | `membership-administration.ts` | `No puedes elevar tu propio rol.` | UI de administración | `frontend/src/app/features/discovery/strings/project.strings.ts` | all |
+| presentation | `membership.admin.invalidTransition` | `membership-administration.ts` | `Esa membresía no admite esta acción.` | UI de administración | `frontend/src/app/features/discovery/strings/project.strings.ts` | all |
+| presentation | `membership.admin.ownerRequired` | `membership-administration.ts` | `El proyecto debe conservar al menos un owner activo.` | UI de administración | `frontend/src/app/features/discovery/strings/project.strings.ts` | all |
+| presentation | `api.membership.permission` | `MembershipPermissionException` | `active OWNER or ADMIN membership is required.` / `cannot elevate own role.` | `403` Target | `messages.properties` | all |
+| presentation | `api.membership.invalid-transition` | `MembershipInvalidTransitionException` | `cannot {action} a membership with status {status}.` | `409` Target | `messages.properties` | all |
+| presentation | `api.membership.owner-required` | `MembershipOwnerInvariantException` | `project must keep at least one active OWNER.` | `409` Target | `messages.properties` | all |
 
 ## Qué no entra en una extracción posterior
 

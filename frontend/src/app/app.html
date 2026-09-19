@@ -17,14 +17,24 @@
     [selectedSectorIds]="session.selectedSectorIds()"
     [selectedTagIds]="session.selectedTagIds()"
     [selectedSkillIds]="session.selectedSkillIds()"
+    [stages]="session.stageOptions"
+    [selectedStageIds]="session.selectedStageIds()"
     [catalogsLoading]="session.areCatalogsLoading()"
     [catalogsLoaded]="session.hasLoadedReferenceCatalogs()"
     [catalogsErrorMessage]="session.catalogsErrorMessage()"
+    [preferencesLoading]="session.arePreferencesLoading()"
+    [preferencesLoaded]="session.hasLoadedPreferences()"
+    [preferencesErrorMessage]="session.preferencesErrorMessage()"
+    [preferencesSaving]="session.arePreferencesSaving()"
+    [preferencesSaveErrorMessage]="session.preferencesSaveErrorMessage()"
     (interestToggled)="session.toggleInterest($event)"
     (sectorToggled)="session.toggleSector($event)"
     (tagToggled)="session.toggleTag($event)"
     (skillToggled)="session.toggleSkill($event)"
+    (stageToggled)="session.toggleStage($event)"
     (catalogsRetryRequested)="session.retryReferenceCatalogs()"
+    (preferencesRetryRequested)="session.retryOnboardingPreferences()"
+    (preferencesSaveRetryRequested)="session.retryPreferencesSave()"
     (started)="session.startDiscovery()"
   />
 </ng-container>
@@ -34,6 +44,11 @@
   <div class="app-shell relative flex min-h-screen flex-col overflow-hidden text-white">
     <div class="ambient-orb ambient-orb--sky" aria-hidden="true"></div>
     <div class="ambient-orb ambient-orb--blue" aria-hidden="true"></div>
+
+    <div *ngIf="session.preferencesSavedMessage() as message" class="toast" role="status" aria-live="polite">
+      <span class="flex size-7 items-center justify-center rounded-full bg-[#a9e1ff]/15 text-[#a9e1ff]"><pulso-icon name="check" [size]="14" /></span>
+      {{ message }}
+    </div>
 
     <pulso-navigation-bar
       [activeView]="session.activeView()"

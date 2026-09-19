@@ -2,6 +2,7 @@ import { computed, inject, Injectable, signal } from '@angular/core'
 import { firstValueFrom } from 'rxjs'
 import { CatalogsApi } from '../data-access/catalogs-api'
 import { interestOptions } from '../data-access/interests'
+import { PreferencesApi } from '../data-access/preferences-api'
 import { StartupsApi } from '../data-access/startups-api'
 import { toStartupViewModel } from '../data-access/startup-view-model'
 import {
@@ -12,14 +13,24 @@ import {
   type PreferenceWeights,
 } from '../domain/recommendations'
 import { emptyReferenceCatalogs } from '../domain/catalog'
+import {
+  projectStageOptions,
+  toInterestIds,
+  toOnboardingPreferencesPayload,
+  toProjectStages,
+  type OnboardingPreferences,
+  type ProjectStage,
+} from '../domain/preferences'
 import type { AppView, Decision, InterestId, Startup } from '../domain/startup'
 
 @Injectable({ providedIn: 'root' })
 export class PulsoSession {
   private readonly startupsApi = inject(StartupsApi)
   private readonly catalogsApi = inject(CatalogsApi)
+  private readonly preferencesApi = inject(PreferencesApi)
 
   readonly interestOptions = interestOptions
+  readonly stageOptions = projectStageOptions
 
   readonly referenceCatalogs = signal(emptyReferenceCatalogs())
   readonly areCatalogsLoading = signal(false)
@@ -28,6 +39,13 @@ export class PulsoSession {
   readonly selectedSectorIds = signal<string[]>([])
   readonly selectedTagIds = signal<string[]>([])
   readonly selectedSkillIds = signal<string[]>([])
+  readonly selectedStageIds = signal<ProjectStage[]>([])
+  readonly arePreferencesLoading = signal(false)
+  readonly preferencesErrorMessage = signal<string | null>(null)
+  readonly hasLoadedPreferences = signal(false)
+  readonly arePreferencesSaving = signal(false)
+  readonly preferencesSaveErrorMessage = signal<string | null>(null)
+  readonly preferencesSavedMessage = signal<string | null>(null)
 
   readonly selectedInterests = signal<InterestId[]>([])
   readonly hasStarted = signal(false)
@@ -40,6 +58,7 @@ export class PulsoSession {
   readonly savedIds = signal<string[]>([])
   readonly interestedIds = signal<string[]>([])
   readonly preferenceWeights = signal<PreferenceWeights>({})
+  private preferencesSavedMessageTimeout: number | undefined
 
   readonly currentStartup = computed(() => this.feed()[0])
   readonly savedStartups = computed(() =>
@@ -62,6 +81,13 @@ export class PulsoSession {
     this.selectedSectorIds.set([])
     this.selectedTagIds.set([])
     this.selectedSkillIds.set([])
+    this.selectedStageIds.set([])
+    this.arePreferencesLoading.set(false)
+    this.preferencesErrorMessage.set(null)
+    this.hasLoadedPreferences.set(false)
+    this.arePreferencesSaving.set(false)
+    this.preferencesSaveErrorMessage.set(null)
+    this.clearPreferencesSavedMessage()
     this.selectedInterests.set([])
     this.hasStarted.set(false)
     this.activeView.set('discover')
@@ -85,6 +111,10 @@ export class PulsoSession {
 
   toggleSkill(skillId: string): void {
     this.selectedSkillIds.update((current) => toggleId(current, skillId))
+  }
+
+  toggleStage(stageId: ProjectStage): void {
+    this.selectedStageIds.update((current) => toggleId(current, stageId))
   }
 
   async loadReferenceCatalogs(): Promise<void> {
@@ -119,6 +149,36 @@ export class PulsoSession {
     void this.loadReferenceCatalogs()
   }
 
+  async loadOnboardingPreferences(): Promise<void> {
+    if (this.arePreferencesLoading()) {
+      return
+    }
+
+    this.arePreferencesLoading.set(true)
+    this.preferencesErrorMessage.set(null)
+
+    try {
+      const preferences = await firstValueFrom(this.preferencesApi.load())
+      this.applyPreferences(preferences)
+      this.hasLoadedPreferences.set(true)
+    } catch {
+      this.hasLoadedPreferences.set(false)
+      this.preferencesErrorMessage.set(
+        'No pudimos cargar tus preferencias. Inténtalo de nuevo.',
+      )
+    } finally {
+      this.arePreferencesLoading.set(false)
+    }
+  }
+
+  retryOnboardingPreferences(): void {
+    if (this.arePreferencesLoading()) {
+      return
+    }
+
+    void this.loadOnboardingPreferences()
+  }
+
   toggleInterest(interest: InterestId): void {
     this.selectedInterests.update((current) =>
       current.includes(interest)
@@ -128,13 +188,50 @@ export class PulsoSession {
   }
 
   async startDiscovery(): Promise<void> {
-    if (this.isLoading()) {
+    if (
+      this.isLoading() ||
+      this.arePreferencesLoading() ||
+      this.arePreferencesSaving() ||
+      !this.hasLoadedPreferences() ||
+      this.selectedInterests().length === 0
+    ) {
       return
     }
 
-    this.hasStarted.set(true)
-    this.activeView.set('discover')
-    await this.loadCatalog()
+    this.arePreferencesSaving.set(true)
+    this.preferencesSaveErrorMessage.set(null)
+    this.clearPreferencesSavedMessage()
+
+    try {
+      const savedPreferences = await firstValueFrom(
+        this.preferencesApi.save(
+          toOnboardingPreferencesPayload(
+            this.selectedInterests(),
+            this.selectedSectorIds(),
+            this.selectedStageIds(),
+          ),
+        ),
+      )
+      this.applyPreferences(savedPreferences)
+      this.showPreferencesSavedMessage()
+      this.hasStarted.set(true)
+      this.activeView.set('discover')
+      await this.loadCatalog()
+    } catch {
+      this.preferencesSaveErrorMessage.set(
+        'No pudimos guardar tus preferencias. Inténtalo de nuevo.',
+      )
+    } finally {
+      this.arePreferencesSaving.set(false)
+    }
+  }
+
+  retryPreferencesSave(): void {
+    if (this.arePreferencesSaving()) {
+      return
+    }
+
+    void this.startDiscovery()
   }
 
   restartDiscovery(): void {
@@ -213,12 +310,20 @@ export class PulsoSession {
 
   private retainAvailableCatalogSelections(): void {
     const catalogs = this.referenceCatalogs()
-    const sectorIds = new Set(catalogs.sectors.map((item) => item.id))
+    const sectorIdsByReference = new Map<string, string>()
+    for (const sector of catalogs.sectors) {
+      sectorIdsByReference.set(sector.id.toLowerCase(), sector.id)
+      sectorIdsByReference.set(sector.slug.toLowerCase(), sector.id)
+    }
     const tagIds = new Set(catalogs.tags.map((item) => item.id))
     const skillIds = new Set(catalogs.skills.map((item) => item.id))
 
     this.selectedSectorIds.update((current) =>
-      current.filter((id) => sectorIds.has(id)),
+      unique(
+        current
+          .map((id) => sectorIdsByReference.get(id.toLowerCase()))
+          .filter((id): id is string => id !== undefined),
+      ),
     )
     this.selectedTagIds.update((current) =>
       current.filter((id) => tagIds.has(id)),
@@ -226,6 +331,35 @@ export class PulsoSession {
     this.selectedSkillIds.update((current) =>
       current.filter((id) => skillIds.has(id)),
     )
+  }
+
+  private applyPreferences(preferences: OnboardingPreferences): void {
+    this.selectedInterests.set(toInterestIds(preferences.intentions))
+    this.selectedSectorIds.set([...preferences.preferredSectors])
+    this.selectedStageIds.set(toProjectStages(preferences.preferredStages))
+
+    if (this.hasLoadedReferenceCatalogs()) {
+      this.retainAvailableCatalogSelections()
+    }
+  }
+
+  private showPreferencesSavedMessage(): void {
+    this.preferencesSavedMessage.set('Preferencias guardadas.')
+    if (this.preferencesSavedMessageTimeout !== undefined) {
+      window.clearTimeout(this.preferencesSavedMessageTimeout)
+    }
+    this.preferencesSavedMessageTimeout = window.setTimeout(() => {
+      this.preferencesSavedMessage.set(null)
+      this.preferencesSavedMessageTimeout = undefined
+    }, 3000)
+  }
+
+  private clearPreferencesSavedMessage(): void {
+    this.preferencesSavedMessage.set(null)
+    if (this.preferencesSavedMessageTimeout !== undefined) {
+      window.clearTimeout(this.preferencesSavedMessageTimeout)
+      this.preferencesSavedMessageTimeout = undefined
+    }
   }
 
   private async loadCatalog(): Promise<void> {
@@ -253,8 +387,12 @@ export class PulsoSession {
   }
 }
 
-function toggleId(current: string[], id: string): string[] {
+function toggleId<T>(current: T[], id: T): T[] {
   return current.includes(id)
     ? current.filter((item) => item !== id)
     : [...current, id]
+}
+
+function unique<T>(values: T[]): T[] {
+  return [...new Set(values)]
 }

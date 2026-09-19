@@ -7,6 +7,7 @@ import { AppComponent } from './app'
 import { PulsoSession } from './features/discovery/application/pulso-session'
 import { emptyReferenceCatalogs } from './features/discovery/domain/catalog'
 import { interestOptions } from './features/discovery/data-access/interests'
+import { projectStageOptions, type ProjectStage } from './features/discovery/domain/preferences'
 
 describe('AppComponent', () => {
   it('shows the standalone Auth page before the authenticated application', () => {
@@ -48,6 +49,7 @@ describe('AppComponent', () => {
     fixture.detectChanges()
 
     expect(session.loadReferenceCatalogs).toHaveBeenCalledOnce()
+    expect(session.loadOnboardingPreferences).toHaveBeenCalledOnce()
   })
 })
 
@@ -62,16 +64,28 @@ function createSessionStub() {
     selectedSectorIds: signal<string[]>([]),
     selectedTagIds: signal<string[]>([]),
     selectedSkillIds: signal<string[]>([]),
+    stageOptions: projectStageOptions,
+    selectedStageIds: signal<ProjectStage[]>([]),
+    arePreferencesLoading: signal(false),
+    hasLoadedPreferences: signal(false),
+    preferencesErrorMessage: signal<string | null>(null),
+    arePreferencesSaving: signal(false),
+    preferencesSaveErrorMessage: signal<string | null>(null),
+    preferencesSavedMessage: signal<string | null>(null),
     hasStarted: signal(false),
     activeView: signal('discover'),
     savedIds: signal<string[]>([]),
     interestedIds: signal<string[]>([]),
     loadReferenceCatalogs: vi.fn().mockResolvedValue(undefined),
+    loadOnboardingPreferences: vi.fn().mockResolvedValue(undefined),
     toggleInterest: vi.fn(),
     toggleSector: vi.fn(),
     toggleTag: vi.fn(),
     toggleSkill: vi.fn(),
+    toggleStage: vi.fn(),
     retryReferenceCatalogs: vi.fn(),
+    retryOnboardingPreferences: vi.fn(),
+    retryPreferencesSave: vi.fn(),
     startDiscovery: vi.fn(),
   }
 }

@@ -14,9 +14,10 @@ This directory is the durable reference for the codebase: what is deployed in th
 8. [Backend architecture](./architecture/backend.md) — Spring package structure, HTTP seams, persistence, and testing.
 9. [Scalability](./architecture/scalability.md) — default decisions and triggers for adding complexity.
 10. [Working agreements](./engineering/working-agreements.md) — team workflow, review standards, and definition of done.
-11. [Architecture decisions](./adr/0001-monorepo-project-seams.md) — decisions that are costly or surprising to reverse.
-12. [Supabase decision](./adr/0003-supabase-database-and-auth.md) — database, migrations, RLS, and Auth boundaries.
-13. [Project/startup compatibility](./adr/0004-project-startup-compatibility.md) — canonical domain naming, current baseline, and migration order.
+11. [Configurable values inventory](./engineering/configurable-values-inventory.md) — presentation strings, environment names, API rules, and the destination convention. Do not put secrets in that inventory.
+12. [Architecture decisions](./adr/0001-monorepo-project-seams.md) — decisions that are costly or surprising to reverse.
+13. [Supabase decision](./adr/0003-supabase-database-and-auth.md) — database, migrations, RLS, and Auth boundaries.
+14. [Project/startup compatibility](./adr/0004-project-startup-compatibility.md) — canonical domain naming, current baseline, and migration order.
 
 The database-specific workflow starts at [`database/README.md`](../database/README.md).
 

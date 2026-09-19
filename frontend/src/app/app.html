@@ -75,6 +75,13 @@
           (startupSaved)="session.toggleSaved($event)"
           (startupSelected)="selectStartup($event)"
         />
+        <pulso-project-create-form
+          *ngSwitchCase="'create-project'"
+          [sectors]="session.referenceCatalogs().sectors"
+          [catalogsLoading]="session.areCatalogsLoading()"
+          [catalogsLoaded]="session.hasLoadedReferenceCatalogs()"
+          [catalogsErrorMessage]="session.catalogsErrorMessage()"
+        />
 
         <pulso-saved-view
           *ngSwitchCase="'saved'"

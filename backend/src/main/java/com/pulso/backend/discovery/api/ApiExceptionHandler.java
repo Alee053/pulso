@@ -13,6 +13,7 @@ import com.pulso.backend.profile.application.InvalidAuthenticatedSubjectExceptio
 import com.pulso.backend.profile.application.ProfileNotFoundException;
 import com.pulso.backend.profile.domain.ProfileValidationException;
 import com.pulso.backend.project.application.ProjectConflictException;
+import com.pulso.backend.project.application.PublicProjectNotFoundException;
 import com.pulso.backend.project.domain.ProjectValidationException;
 
 @RestControllerAdvice
@@ -78,6 +79,15 @@ public class ApiExceptionHandler {
                 HttpStatus.CONFLICT,
                 exception.getMessage());
         problem.setTitle("Project conflict");
+        return problem;
+    }
+
+    @ExceptionHandler(PublicProjectNotFoundException.class)
+    ProblemDetail publicProjectNotFound(PublicProjectNotFoundException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND,
+                exception.getMessage());
+        problem.setTitle("Public project not found");
         return problem;
     }
 

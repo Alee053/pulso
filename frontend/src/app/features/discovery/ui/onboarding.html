@@ -84,14 +84,12 @@
         </div>
 
         <div *ngIf="!catalogsLoading && catalogsErrorMessage" class="glass-panel px-5 py-6" role="alert">
-          <p class="text-sm leading-6 text-white/60">{{ catalogsErrorMessage }}</p>
-          <button
-            type="button"
-            class="contact-button mt-4"
-            (click)="catalogsRetryRequested.emit()"
-          >
-            Reintentar
-          </button>
+            <p class="text-sm leading-6 text-white/60">{{ catalogsErrorMessage }}</p>
+            <!-- <button type="button"
+              class="contact-button mt-4"
+              (click)="catalogsRetryRequested.emit()">
+        Reintentar
+    </button>-->
         </div>
 
         <div *ngIf="!catalogsLoading && !catalogsErrorMessage && catalogsLoaded" class="grid gap-5 lg:grid-cols-3">

@@ -195,11 +195,12 @@ Table project_members {
 
   indexes {
     (project_id, profile_id) [unique]
+    (project_id, invitee_email) [unique, note: "Parcial para membership_status = INVITED; el correo se guarda ya normalizado"]
     (project_id, membership_status, is_public)
     profile_id
   }
 
-  Note: "Fusiona membresía e invitación para mantener el MVP pequeño. Debe existir profile_id o invitee_email, pero no ambos vacíos."
+  Note: "Fusiona membresía e invitación para mantener el MVP pequeño. Debe existir profile_id o invitee_email, pero no ambos vacíos. Una invitación activa duplicada es la misma pareja proyecto + invitee_email normalizado con membership_status INVITED. profile_id permanece vacío hasta aceptar. El token de aceptación solo se persiste como invite_token_digest."
 }
 
 // -----------------------------------------------------------------------------

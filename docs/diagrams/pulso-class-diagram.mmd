@@ -93,15 +93,20 @@ classDiagram
     +timestamp createdAt
   }
 
+  %% invite_token_digest is persistence-only on project_members and is omitted
+  %% from this conceptual class so the accept token never appears as a domain
+  %% attribute. The DBML and migrations remain the storage source of truth.
   class ProjectMember {
     +UUID id
     +UUID projectId
     +UUID profileId
+    +text inviteeEmail
     +text role
     +text membershipStatus
     +text displayTitle
     +boolean isFeatured
     +boolean isPublic
+    +UUID createdByProfileId
   }
 
   %% ---------------------------------------------------------------------------
@@ -248,7 +253,8 @@ classDiagram
   Project "1" --> "*" ProjectTag : usa
   Tag "1" --> "*" ProjectTag : etiqueta
   Project "1" --> "*" ProjectMember : contiene
-  Profile "1" --> "*" ProjectMember : participa
+  Profile "0..1" --> "*" ProjectMember : participa
+  Profile "1" --> "*" ProjectMember : invita
 
   Project "1" --> "*" ProjectOpportunity : declara
   Profile "1" --> "*" ProjectOpportunity : publica

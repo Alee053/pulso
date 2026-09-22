@@ -66,6 +66,18 @@ _Avoid_: user, teammate as the canonical role name
 
 ## Team
 
+**Member invitation**:
+A project team row that offers a person a place on the project before they belong to it, identified by the project and invitee email until acceptance.
+_Avoid_: invitation as a separate entity, pending member, invite record
+
+**Invitee email**:
+The normalized email that identifies the invited person while the membership still has no profile.
+_Avoid_: user email, username, account email
+
+**Active invitation**:
+A member invitation whose membership status is INVITED. A second active invitation for the same project and normalized invitee email is a duplicate.
+_Avoid_: open invite, pending invite as a second status
+
 **Membership administration**:
 The team actions that activate, change the role of, or withdraw existing project members.
 _Avoid_: user management, delete member, kick

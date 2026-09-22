@@ -9,4 +9,14 @@ public record ProjectMember(
         String role,
         String membershipStatus,
         UUID createdByProfileId) {
+
+    public ProjectMember withRoleAndStatus(String role, String membershipStatus) {
+        return new ProjectMember(
+                id,
+                projectId,
+                profileId,
+                role,
+                membershipStatus,
+                createdByProfileId);
+    }
 }

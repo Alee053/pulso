@@ -53,12 +53,16 @@ A project the team has withdrawn; it is no longer publicly discoverable and is n
 _Avoid_: deleted project, unpublished draft, hidden project
 
 **Project owner**:
-The active membership role with full control of a project's team actions, including publication request and archive.
+The active membership role with full control of a project's team actions, including publication request, archive, and membership administration.
 _Avoid_: founder when referring to the membership role, user
 
 **Project admin**:
-The active membership role that can administer a project and perform the same publication-request and archive actions as a project owner.
+The active membership role that can administer a project, including membership administration, and perform the same publication-request and archive actions as a project owner.
 _Avoid_: moderator, platform admin
+
+**Project member**:
+The active membership role with limited project permissions; it cannot administer other memberships.
+_Avoid_: user, teammate as the canonical role name
 
 ## Team
 
@@ -73,3 +77,23 @@ _Avoid_: user email, username, account email
 **Active invitation**:
 A member invitation whose membership status is INVITED. A second active invitation for the same project and normalized invitee email is a duplicate.
 _Avoid_: open invite, pending invite as a second status
+
+**Membership administration**:
+The team actions that activate, change the role of, or withdraw existing project members.
+_Avoid_: user management, delete member, kick
+
+**Active membership**:
+A current place on the project team, able to act in its role.
+_Avoid_: enrolled member, current user
+
+**Invited membership**:
+A project team place offered to a person who does not yet belong to the project.
+_Avoid_: pending member, open invite as a second status
+
+**Left membership**:
+A retained place on the project team after the person left.
+_Avoid_: deleted member, inactive user
+
+**Removed membership**:
+A retained place on the project team after an owner or admin withdrew that person.
+_Avoid_: deleted member, kicked user

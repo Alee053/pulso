@@ -24,7 +24,7 @@ com.pulso.backend/
 │   └── infrastructure/                # JSONB JDBC adapter
 ├── project/
 │   ├── application/                   # draft-project use case and output port
-│   ├── domain/                        # project values, team lifecycle, and invitation policy
+│   ├── domain/                        # project values, team lifecycle, invitation, and membership policy
 │   └── infrastructure/                # project JDBC adapter
 └── profile/
     ├── api/                           # profile request/response DTOs
@@ -163,6 +163,10 @@ enabled.
   Member invitation rules live in
   [`MemberInvitation`](../../backend/src/main/java/com/pulso/backend/project/domain/MemberInvitation.java);
   the documented contract is [member invitation](./member-invitation.md).
+  Membership activate, change-role, and withdraw rules live in
+  [`MembershipAdministration`](../../backend/src/main/java/com/pulso/backend/project/domain/MembershipAdministration.java);
+  the documented matrix is
+  [membership administration](./membership-administration.md).
 - Application tests: use-case tests with fake adapters at the seam.
 - API tests: MVC tests for status, validation, security, and response contracts.
 - Infrastructure tests: PostgreSQL-backed integration tests when repository

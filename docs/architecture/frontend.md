@@ -19,7 +19,7 @@ frontend/src/
     │   └── discovery/
     │       ├── application/             # session state and orchestration
     │       ├── data-access/             # mock fixture, HTTP adapter, and view-model mapper
-    │       ├── domain/                  # startup types and pure recommendation policy
+    │       ├── domain/                  # startup types, recommendation and membership policy
     │       └── ui/                      # onboarding, feed, saved, profile, and modal UI
     └── shared/
         ├── brand-mark/                  # stable Pulso brand primitive
@@ -27,6 +27,8 @@ frontend/src/
 ```
 
 [`PulsoSession`](../../frontend/src/app/features/discovery/application/pulso-session.ts) is the application-facing session module: it owns onboarding completion, the active view, the API-backed discovery feed, saved items, interested items, and learned preference weights. [`recommendations.ts`](../../frontend/src/app/features/discovery/domain/recommendations.ts) is a pure policy module and has no Angular or browser dependency. [`mock-startups.ts`](../../frontend/src/app/features/discovery/data-access/mock-startups.ts) remains a fixture for domain tests, not the runtime catalog source.
+
+[`membership-administration.ts`](../../frontend/src/app/features/discovery/domain/membership-administration.ts) is the interface seam for membership administration: which actions an owner, admin, or member may be offered, and the permission, invalid-transition, and owner-invariant copy. The backend remains the source of truth for transitions.
 
 The first server-backed seam is [`StartupsApi`](../../frontend/src/app/features/discovery/data-access/startups-api.ts), a typed Angular `HttpClient` adapter for `GET /api/v1/startups`. It maps transport DTOs to a small discovery summary type and validates bounded pagination inputs. [`SupabaseAuthGateway`](../../frontend/src/app/core/auth/supabase-auth.gateway.ts) hides the provider client, owns the current session, exposes sign-up/sign-in/sign-out operations, and returns only the current access token to data-access code. [`AuthPanelComponent`](../../frontend/src/app/core/auth/auth-panel.ts) is the small UI surface for local Auth. The global [`authInterceptor`](../../frontend/src/app/core/auth/auth.interceptor.ts) adds that token only to backend API requests without placing Auth or raw URLs in discovery UI components.
 

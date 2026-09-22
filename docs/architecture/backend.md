@@ -24,7 +24,7 @@ com.pulso.backend/
 │   └── infrastructure/                # JSONB JDBC adapter
 ├── project/
 │   ├── application/                   # draft-project use case and output port
-│   ├── domain/                        # project values and team lifecycle policy
+│   ├── domain/                        # project values, team lifecycle, and invitation policy
 │   └── infrastructure/                # project JDBC adapter
 └── profile/
     ├── api/                           # profile request/response DTOs
@@ -160,6 +160,9 @@ enabled.
   database. Project publication-request and archive rules live in
   [`ProjectLifecycle`](../../backend/src/main/java/com/pulso/backend/project/domain/ProjectLifecycle.java);
   the documented matrix is [project lifecycle](./project-lifecycle.md).
+  Member invitation rules live in
+  [`MemberInvitation`](../../backend/src/main/java/com/pulso/backend/project/domain/MemberInvitation.java);
+  the documented contract is [member invitation](./member-invitation.md).
 - Application tests: use-case tests with fake adapters at the seam.
 - API tests: MVC tests for status, validation, security, and response contracts.
 - Infrastructure tests: PostgreSQL-backed integration tests when repository

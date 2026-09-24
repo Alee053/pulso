@@ -163,92 +163,130 @@
         </p>
       </div>
 
-      <div>
-        <label
-          for="project-sector"
-          class="text-sm font-medium text-white/85"
-        >
-          {{ strings.sectorLabel }}
-        </label>
-
-        <select
-          id="project-sector"
-          formControlName="sectorId"
-          class="mt-2 w-full rounded-xl border border-white/10 bg-[#101820] px-4 py-3 text-white outline-none"
-          aria-describedby="project-sector-error"
-        >
-          <option value="">
-            {{ strings.sectorPlaceholder }}
-          </option>
-
-          <option
-            *ngFor="let sector of sectors"
-            [value]="sector.id"
+      <div class="sm:col-span-2 grid gap-6 sm:grid-cols-3">
+        <div>
+          <label
+            for="project-sector"
+            class="text-sm font-medium text-white/85"
           >
-            {{ sector.name }}
-          </option>
-        </select>
+            {{ strings.sectorLabel }}
+          </label>
 
-        <p
-          *ngIf="catalogsLoaded && sectors.length === 0"
-          class="mt-2 text-xs text-white/40"
-          role="status"
-        >
-          {{ strings.sectorEmpty }}
-        </p>
-
-        <p
-          *ngIf="hasError('sectorId', 'required')"
-          id="project-sector-error"
-          class="mt-2 text-xs text-red-300"
-          role="alert"
-        >
-          {{ strings.sectorRequired }}
-        </p>
-
-        <p
-          *ngIf="hasError('sectorId', 'invalidSector')"
-          class="mt-2 text-xs text-red-300"
-          role="alert"
-        >
-          {{ strings.sectorUnavailable }}
-        </p>
-      </div>
-
-      <div>
-        <label
-          for="project-stage"
-          class="text-sm font-medium text-white/85"
-        >
-          {{ strings.stageLabel }}
-        </label>
-
-        <select
-          id="project-stage"
-          formControlName="stage"
-          class="mt-2 w-full rounded-xl border border-white/10 bg-[#101820] px-4 py-3 text-white outline-none"
-          aria-describedby="project-stage-error"
-        >
-          <option value="">
-            {{ strings.stagePlaceholder }}
-          </option>
-
-          <option
-            *ngFor="let stage of stages"
-            [value]="stage.value"
+          <select
+            id="project-sector"
+            formControlName="sectorId"
+            class="mt-2 w-full rounded-xl border border-white/10 bg-[#101820] px-4 py-3 text-white outline-none"
+            aria-describedby="project-sector-error"
           >
-            {{ stage.label }}
-          </option>
-        </select>
+            <option value="">
+              {{ strings.sectorPlaceholder }}
+            </option>
 
-        <p
-          *ngIf="hasError('stage', 'required')"
-          id="project-stage-error"
-          class="mt-2 text-xs text-red-300"
-          role="alert"
-        >
-          {{ strings.stageRequired }}
-        </p>
+            <option
+              *ngFor="let sector of sectors"
+              [value]="sector.id"
+            >
+              {{ sector.name }}
+            </option>
+          </select>
+
+          <p
+            *ngIf="catalogsLoaded && sectors.length === 0"
+            class="mt-2 text-xs text-white/40"
+            role="status"
+          >
+            {{ strings.sectorEmpty }}
+          </p>
+
+          <p
+            *ngIf="hasError('sectorId', 'required')"
+            id="project-sector-error"
+            class="mt-2 text-xs text-red-300"
+            role="alert"
+          >
+            {{ strings.sectorRequired }}
+          </p>
+
+          <p
+            *ngIf="hasError('sectorId', 'invalidSector')"
+            class="mt-2 text-xs text-red-300"
+            role="alert"
+          >
+            {{ strings.sectorUnavailable }}
+          </p>
+        </div>
+
+        <div>
+          <label
+            for="project-stage"
+            class="text-sm font-medium text-white/85"
+          >
+            {{ strings.stageLabel }}
+          </label>
+
+          <select
+            id="project-stage"
+            formControlName="stage"
+            class="mt-2 w-full rounded-xl border border-white/10 bg-[#101820] px-4 py-3 text-white outline-none"
+            aria-describedby="project-stage-error"
+          >
+            <option value="">
+              {{ strings.stagePlaceholder }}
+            </option>
+
+            <option
+              *ngFor="let stage of stages"
+              [value]="stage.value"
+            >
+              {{ stage.label }}
+            </option>
+          </select>
+
+          <p
+            *ngIf="hasError('stage', 'required')"
+            id="project-stage-error"
+            class="mt-2 text-xs text-red-300"
+            role="alert"
+          >
+            {{ strings.stageRequired }}
+          </p>
+        </div>
+
+        <div>
+          <label
+            for="project-customer-range"
+            class="text-sm font-medium text-white/85"
+          >
+            {{ strings.customerRangeLabel }}
+          </label>
+
+          <select
+            id="project-customer-range"
+            formControlName="customerRange"
+            class="mt-2 w-full rounded-xl border border-white/10 bg-[#101820] px-4 py-3 text-white outline-none"
+            aria-describedby="project-customer-range-error"
+          >
+            <option value="">
+              {{ strings.customerRangePlaceholder }}
+            </option>
+
+            <option
+              *ngFor="let range of customerRanges"
+              [value]="range.value"
+            >
+              {{ range.label }}
+            </option>
+          </select>
+
+          <p
+            *ngIf="hasError('customerRange', 'required')"
+            id="project-customer-range-error"
+            class="mt-2 text-xs text-red-300"
+            role="alert"
+          >
+            {{ strings.customerRangeRequired }}
+          </p>
+        </div>
       </div>
 
       <div class="sm:col-span-2">

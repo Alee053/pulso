@@ -52,6 +52,13 @@ describe('ProjectCreateFormComponent', () => {
     expect(text).toContain('Etapa temprana')
     expect(text).toContain('En crecimiento')
     expect(text).toContain('Establecido')
+    expect(text).toContain('Clientes actuales o potenciales')
+    expect(text).toContain('0 a 100')
+    expect(text).toContain('100 a 300')
+    expect(text).toContain('300 a 600')
+    expect(text).toContain('600 a 1.000')
+    expect(text).toContain('1.000 a 3.000')
+    expect(text).toContain('Más de 3.000')
   })
 
   it('shows validation messages for required fields', async () => {
@@ -80,6 +87,7 @@ describe('ProjectCreateFormComponent', () => {
     expect(text).toContain('La descripción corta es obligatoria.')
     expect(text).toContain('Debes seleccionar un sector.')
     expect(text).toContain('Debes seleccionar una etapa.')
+    expect(text).toContain('Debes seleccionar un rango de clientes.')
   })
 
   it('creates a project only after a successful backend response', async () => {
@@ -105,6 +113,7 @@ describe('ProjectCreateFormComponent', () => {
       sectorId: 'sector-1',
       city: 'Cochabamba',
       stage: 'MVP',
+      customerRange: '0_100',
     })
 
     await component.submit()
@@ -152,6 +161,7 @@ describe('ProjectCreateFormComponent', () => {
       sectorId: 'sector-1',
       city: 'Cochabamba',
       stage: 'IDEA',
+      customerRange: '0_100',
     })
 
     await component.submit()
@@ -190,6 +200,7 @@ describe('ProjectCreateFormComponent', () => {
       sectorId: 'sector-1',
       city: 'Cochabamba',
       stage: 'MVP',
+      customerRange: '0_100',
     })
 
     const firstSubmission = component.submit()
@@ -231,6 +242,7 @@ describe('ProjectCreateFormComponent', () => {
       sectorId: 'sector-1',
       city: 'Cochabamba',
       stage: 'MVP',
+      customerRange: '0_100',
     })
 
     await component.submit()

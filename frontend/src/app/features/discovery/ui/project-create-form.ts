@@ -22,6 +22,8 @@ import { ProjectsApi } from '../data-access/projects-api'
 import {
   projectStageOptions,
   type CreatedDraftProject,
+  customerRangeOptions,
+  type CustomerRange,
   type ProjectCreateFormValue,
   type ProjectStage,
 } from '../domain/project'
@@ -46,6 +48,7 @@ export class ProjectCreateFormComponent {
   @Input() catalogsErrorMessage: string | null = null
 
   readonly stages = projectStageOptions
+  readonly customerRanges = customerRangeOptions
 
   readonly isSubmitting = signal(false)
   readonly submitErrorMessage = signal<string | null>(null)
@@ -105,6 +108,13 @@ export class ProjectCreateFormComponent {
         Validators.required,
       ],
     }),
+
+    customerRange: new FormControl<CustomerRange | ''>('', {
+      nonNullable: true,
+      validators: [
+        Validators.required,
+      ],
+    }),
   })
 
   async submit(): Promise<void> {
@@ -139,6 +149,10 @@ export class ProjectCreateFormComponent {
     }
 
     if (!value.stage) {
+      return
+    }
+
+    if (!value.customerRange) {
       return
     }
 

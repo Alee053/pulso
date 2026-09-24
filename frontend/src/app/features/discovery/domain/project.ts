@@ -11,6 +11,17 @@ export const projectStages = [
 
 export type ProjectStage = (typeof projectStages)[number]
 
+export const customerRangeOptions = [
+  { value: '0_100', label: '0 a 100' },
+  { value: '100_300', label: '100 a 300' },
+  { value: '300_600', label: '300 a 600' },
+  { value: '600_1000', label: '600 a 1.000' },
+  { value: '1000_3000', label: '1.000 a 3.000' },
+  { value: '3000_PLUS', label: 'Más de 3.000' },
+] as const
+
+export type CustomerRange = (typeof customerRangeOptions)[number]['value']
+
 export interface ProjectCreateFormValue {
   slug: string
   name: string

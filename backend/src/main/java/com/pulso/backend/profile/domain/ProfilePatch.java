@@ -3,6 +3,8 @@ package com.pulso.backend.profile.domain;
 import java.time.OffsetDateTime;
 import java.util.Locale;
 
+import com.pulso.backend.config.ApiMessages;
+
 public record ProfilePatch(
         String profileKind,
         String displayName,
@@ -11,19 +13,27 @@ public record ProfilePatch(
         String city,
         String department,
         String profileVisibility,
-        OffsetDateTime onboardingCompletedAt) {
+        OffsetDateTime onboardingCompletedAt,
+        Limits limits) {
+
+    public record Limits(
+            int displayNameMaxLength,
+            int avatarPathMaxLength,
+            int shortBioMaxLength,
+            int cityMaxLength,
+            int departmentMaxLength) {
+    }
 
     public ProfilePatch {
-        profileKind = optionalEnum(
-                profileKind,
-                "profileKind",
-                "PERSON",
-                "ORGANIZATION");
-        displayName = optionalText(displayName, "displayName", 120);
-        avatarStoragePath = optionalText(avatarStoragePath, "avatarStoragePath", 500);
-        shortBio = optionalText(shortBio, "shortBio", 500);
-        city = optionalText(city, "city", 120);
-        department = optionalText(department, "department", 120);
+        profileKind = optionalEnum(profileKind, "profileKind", "PERSON", "ORGANIZATION");
+        displayName = optionalText(displayName, "displayName", limits.displayNameMaxLength());
+        avatarStoragePath = optionalText(
+                avatarStoragePath,
+                "avatarStoragePath",
+                limits.avatarPathMaxLength());
+        shortBio = optionalText(shortBio, "shortBio", limits.shortBioMaxLength());
+        city = optionalText(city, "city", limits.cityMaxLength());
+        department = optionalText(department, "department", limits.departmentMaxLength());
         profileVisibility = optionalEnum(
                 profileVisibility,
                 "profileVisibility",
@@ -39,11 +49,12 @@ public record ProfilePatch(
 
         String normalized = value.trim();
         if (normalized.isEmpty()) {
-            throw new ProfileValidationException(field + " must not be blank.");
+            throw new ProfileValidationException(
+                    String.format(ApiMessages.PROFILE_BLANK, field));
         }
         if (normalized.length() > maxLength) {
             throw new ProfileValidationException(
-                    field + " must not exceed " + maxLength + " characters.");
+                    String.format(ApiMessages.PROFILE_MAX_LENGTH, field, maxLength));
         }
         return normalized;
     }
@@ -61,6 +72,6 @@ public record ProfilePatch(
         }
 
         throw new ProfileValidationException(
-                field + " must be one of " + String.join(", ", allowedValues) + ".");
+                String.format(ApiMessages.PROFILE_ENUM, field, String.join(", ", allowedValues)));
     }
 }

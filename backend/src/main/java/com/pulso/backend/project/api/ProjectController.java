@@ -32,7 +32,7 @@ public class ProjectController {
             @RequestBody(required = false) ProjectCreateRequest request) {
         CreatedDraftProject createdProject = createDraftProject.execute(
                 authenticatedProfileId(jwt),
-                request == null ? null : request.toDraft());
+                request == null ? null : request.toDraft(createDraftProject.limits()));
         return ProjectResponse.from(createdProject);
     }
 

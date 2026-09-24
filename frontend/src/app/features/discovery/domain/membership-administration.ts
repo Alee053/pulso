@@ -1,3 +1,5 @@
+import { membershipStrings } from '../strings/membership.strings'
+
 export type MembershipAdminErrorKind =
   | 'permission'
   | 'invalidTransition'
@@ -25,29 +27,29 @@ export interface MembershipAdministrationError {
 const permissionError = {
   kind: 'permission',
   code: 'membership_permission',
-  title: 'Membership permission',
-  message: 'Solo un integrante activo con rol owner o admin puede administrar membresías.',
+  title: membershipStrings.permissionTitle,
+  message: membershipStrings.permissionDetail,
 } as const satisfies MembershipAdministrationError
 
 const selfElevationError = {
   kind: 'permission',
   code: 'membership_permission',
-  title: 'Membership permission',
-  message: 'No puedes elevar tu propio rol.',
+  title: membershipStrings.selfElevationTitle,
+  message: membershipStrings.selfElevationDetail,
 } as const satisfies MembershipAdministrationError
 
 const invalidTransitionError = {
   kind: 'invalidTransition',
   code: 'membership_invalid_transition',
-  title: 'Invalid membership transition',
-  message: 'Esa membresía no admite esta acción.',
+  title: membershipStrings.invalidTransitionTitle,
+  message: membershipStrings.invalidTransitionDetail,
 } as const satisfies MembershipAdministrationError
 
 const ownerInvariantError = {
   kind: 'ownerInvariant',
   code: 'membership_owner_required',
-  title: 'Membership owner required',
-  message: 'El proyecto debe conservar al menos un owner activo.',
+  title: membershipStrings.ownerRequiredTitle,
+  message: membershipStrings.ownerRequiredDetail,
 } as const satisfies MembershipAdministrationError
 
 export const membershipAdministrationErrors = {

@@ -1,8 +1,10 @@
 package com.pulso.backend.project.domain;
 
+import com.pulso.backend.config.ApiMessages;
+
 public class DuplicateMemberInvitationException extends RuntimeException {
 
     public DuplicateMemberInvitationException() {
-        super("an active invitation already exists for this project and email.");
+        super(ApiMessages.DUPLICATE_INVITATION);
     }
 }

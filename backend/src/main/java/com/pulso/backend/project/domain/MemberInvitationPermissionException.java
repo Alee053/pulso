@@ -1,8 +1,10 @@
 package com.pulso.backend.project.domain;
 
+import com.pulso.backend.config.ApiMessages;
+
 public class MemberInvitationPermissionException extends RuntimeException {
 
     public MemberInvitationPermissionException() {
-        super("active OWNER or ADMIN membership is required.");
+        super(ApiMessages.MEMBERSHIP_PERMISSION_DETAIL);
     }
 }

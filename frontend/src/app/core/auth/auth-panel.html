@@ -7,29 +7,29 @@
     <section class="glass-panel w-full max-w-md p-6 sm:p-8" aria-labelledby="auth-panel-title">
   <div class="min-w-0">
         <span class="eyebrow">
-          {{ auth.session() ? 'TU CUENTA' : mode() === 'sign-in' ? 'HOLA DE NUEVO' : 'ÚNETE A PULSO' }}
+          {{ auth.session() ? strings.eyebrowSession : mode() === 'sign-in' ? strings.eyebrowSignIn : strings.eyebrowSignUp }}
         </span>
         <h2 id="auth-panel-title" class="mt-3 text-2xl font-medium tracking-[-0.04em] text-white/90">
-          {{ auth.session() ? 'Sesión conectada' : mode() === 'sign-in' ? 'Vuelve a Pulso' : 'Crea tu cuenta' }}
+          {{ auth.session() ? strings.titleSession : mode() === 'sign-in' ? strings.titleSignIn : strings.titleSignUp }}
         </h2>
         <p class="mt-3 text-sm leading-6 text-white/45">
-          {{ auth.session() ? 'Tu espacio está listo para seguir descubriendo.' : mode() === 'sign-in' ? 'Retoma tus descubrimientos y continúa guardando lo que te inspira.' : 'Empieza a descubrir proyectos y encuentra nuevas ideas para seguir.' }}
+          {{ auth.session() ? strings.leadSession : mode() === 'sign-in' ? strings.leadSignIn : strings.leadSignUp }}
     </p>
   </div>
 
   <ng-container *ngIf="auth.isLoading(); else loadedAuth">
-    <p class="mt-8 text-xs text-white/45" role="status">Comprobando tu acceso...</p>
+    <p class="mt-8 text-xs text-white/45" role="status">{{ strings.checkingAccess }}</p>
   </ng-container>
 
   <ng-template #loadedAuth>
     <ng-container *ngIf="auth.session() as session; else signedOut">
       <div class="mt-8 flex flex-col gap-4">
         <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-          <p class="text-xs font-semibold uppercase tracking-[0.13em] text-white/35">Sesión activa</p>
+          <p class="text-xs font-semibold uppercase tracking-[0.13em] text-white/35">{{ strings.activeSession }}</p>
           <p class="mt-2 truncate text-sm text-white/70">{{ session.email || session.id }}</p>
         </div>
         <button type="button" class="contact-button self-start" [disabled]="isBusy()" (click)="signOut()">
-          Cerrar sesión
+          {{ common.signOut }}
         </button>
       </div>
     </ng-container>
@@ -39,37 +39,37 @@
     <ng-container *ngIf="auth.isConfigured; else missingConfiguration">
       <form class="mt-8 flex w-full flex-col gap-4" (submit)="submit($event)">
         <label class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-white/35">
-          Correo
+          {{ strings.emailLabel }}
           <input
             class="mt-2 block h-11 w-full rounded-xl border border-white/10 bg-black/15 px-3 text-sm font-normal normal-case tracking-normal text-white outline-none transition placeholder:text-white/25 focus:border-[#a9e1ff]/60"
             type="email"
             name="email"
             autocomplete="email"
-            placeholder="tu@correo.com"
+            [placeholder]="strings.emailPlaceholder"
             [value]="email"
             (input)="email = $any($event.target).value"
             required
           />
         </label>
         <label class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-white/35">
-          Contraseña
+          {{ strings.passwordLabel }}
           <input
             class="mt-2 block h-11 w-full rounded-xl border border-white/10 bg-black/15 px-3 text-sm font-normal normal-case tracking-normal text-white outline-none transition placeholder:text-white/25 focus:border-[#a9e1ff]/60"
             type="password"
             name="password"
             autocomplete="current-password"
-            placeholder="Mínimo 6 caracteres"
+            [placeholder]="strings.passwordPlaceholder"
             [value]="password"
             (input)="password = $any($event.target).value"
             required
-            minlength="6"
+            [attr.minlength]="strings.passwordMinLength"
           />
         </label>
         <button type="submit" class="solid-button mt-2 w-full" [disabled]="isBusy()">
-          {{ mode() === 'sign-in' ? 'Iniciar sesión' : 'Crear mi cuenta' }}
+          {{ mode() === 'sign-in' ? strings.submitSignIn : strings.submitSignUp }}
         </button>
         <button type="button" class="contact-button w-full justify-center" [disabled]="isBusy()" (click)="toggleMode()">
-          {{ mode() === 'sign-in' ? 'Crear cuenta' : 'Ya tengo cuenta' }}
+          {{ mode() === 'sign-in' ? strings.toggleToSignUp : strings.toggleToSignIn }}
         </button>
       </form>
     </ng-container>
@@ -77,7 +77,7 @@
 
   <ng-template #missingConfiguration>
     <p class="mt-8 text-xs leading-5 text-white/40" role="status">
-      El acceso no está disponible en este momento. Inténtalo de nuevo más tarde.
+      {{ strings.missingConfig }}
     </p>
   </ng-template>
 

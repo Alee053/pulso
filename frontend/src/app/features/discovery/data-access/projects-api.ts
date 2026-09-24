@@ -11,6 +11,7 @@ import type {
   ProjectCreateRequestDto,
   ProjectCreateResponseDto,
 } from './projects-dto'
+import { apiPaths } from './discovery.catalog.contract'
 
 @Injectable({ providedIn: 'root' })
 export class ProjectsApi {
@@ -21,7 +22,7 @@ export class ProjectsApi {
 
     return this.http
       .post<ProjectCreateResponseDto>(
-        `${appConfig.apiBaseUrl}/api/v1/projects`,
+        `${appConfig.apiBaseUrl}${apiPaths.projects}`,
         request,
       )
       .pipe(map(toCreatedDraftProject))

@@ -9,6 +9,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import com.pulso.backend.config.ProjectProperties;
 import com.pulso.backend.project.domain.CreatedDraftProject;
 import com.pulso.backend.project.domain.Project;
 import com.pulso.backend.project.domain.ProjectDraft;
@@ -21,12 +22,16 @@ class CreateDraftProjectTest {
     private static final UUID SECTOR_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
     private static final UUID PROJECT_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
     private static final UUID MEMBER_ID = UUID.fromString("44444444-4444-4444-4444-444444444444");
+    private static final ProjectProperties PROPERTIES =
+            new ProjectProperties(2, 120, 160, 240, 5000, 120, 40, 254);
+    private static final ProjectDraft.Limits LIMITS =
+            new ProjectDraft.Limits(2, 120, 160, 240, 5000, 120, 40);
 
     @Test
     void createsADraftAndItsActiveOwnerForTheAuthenticatedProfile() {
         CapturingRepository repository = new CapturingRepository();
 
-        CreatedDraftProject result = new CreateDraftProject(repository).execute(
+        CreatedDraftProject result = new CreateDraftProject(repository, PROPERTIES).execute(
                 PROFILE_ID,
                 draft());
 
@@ -47,7 +52,7 @@ class CreateDraftProjectTest {
         CapturingRepository repository = new CapturingRepository();
         repository.activeSector = false;
 
-        assertThatThrownBy(() -> new CreateDraftProject(repository).execute(
+        assertThatThrownBy(() -> new CreateDraftProject(repository, PROPERTIES).execute(
                 PROFILE_ID,
                 draft()))
                 .isInstanceOf(ProjectValidationException.class)
@@ -61,7 +66,7 @@ class CreateDraftProjectTest {
         CapturingRepository repository = new CapturingRepository();
         repository.ownerFailure = new IllegalStateException("owner insert failed");
 
-        assertThatThrownBy(() -> new CreateDraftProject(repository).execute(
+        assertThatThrownBy(() -> new CreateDraftProject(repository, PROPERTIES).execute(
                 PROFILE_ID,
                 draft()))
                 .isSameAs(repository.ownerFailure);
@@ -77,7 +82,7 @@ class CreateDraftProjectTest {
         CapturingRepository repository = new CapturingRepository();
         repository.draftFailure = new ProjectConflictException();
 
-        assertThatThrownBy(() -> new CreateDraftProject(repository).execute(
+        assertThatThrownBy(() -> new CreateDraftProject(repository, PROPERTIES).execute(
                 PROFILE_ID,
                 draft()))
                 .isSameAs(repository.draftFailure);
@@ -89,7 +94,7 @@ class CreateDraftProjectTest {
 
     @Test
     void rejectsMissingAuthenticatedProfile() {
-        assertThatThrownBy(() -> new CreateDraftProject(new CapturingRepository()).execute(
+        assertThatThrownBy(() -> new CreateDraftProject(new CapturingRepository(), PROPERTIES).execute(
                 null,
                 draft()))
                 .isInstanceOf(ProjectValidationException.class)
@@ -104,7 +109,8 @@ class CreateDraftProjectTest {
                 "Proyecto de prueba.",
                 SECTOR_ID,
                 "Cochabamba",
-                "mvp");
+                "mvp",
+                LIMITS);
     }
 
     private static final class CapturingRepository implements ProjectRepository {

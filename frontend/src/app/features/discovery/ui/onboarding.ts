@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common'
 import { Component, EventEmitter, Input, Output } from '@angular/core'
 import { BrandMarkComponent } from '../../../shared/brand-mark/brand-mark'
 import { IconComponent } from '../../../shared/icon/icon'
+import { commonStrings } from '../../../shared/strings/common.strings'
 import type {
   SectorCatalogItem,
   SkillCatalogItem,
@@ -9,6 +10,7 @@ import type {
 } from '../domain/catalog'
 import type { ProjectStage, ProjectStageOption } from '../domain/preferences'
 import type { InterestId, InterestOption } from '../domain/startup'
+import { onboardingStrings } from '../strings/onboarding.strings'
 
 @Component({
   selector: 'pulso-onboarding',
@@ -46,6 +48,9 @@ export class OnboardingComponent {
   @Output() preferencesRetryRequested = new EventEmitter<void>()
   @Output() preferencesSaveRetryRequested = new EventEmitter<void>()
   @Output() started = new EventEmitter<void>()
+
+  readonly strings = onboardingStrings
+  readonly common = commonStrings
 
   isSelected(interest: InterestOption): boolean {
     return this.selectedInterests.includes(interest.id)

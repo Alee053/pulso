@@ -44,7 +44,9 @@ public class OnboardingPreferencesController {
         UUID profileId = authenticatedProfileId(jwt);
         OnboardingPreferences preferences = saveOnboardingPreferences.execute(
                 profileId,
-                request == null ? null : request.toPreferences(profileId));
+                request == null ? null : request.toPreferences(
+                        profileId,
+                        saveOnboardingPreferences.limits()));
         return OnboardingPreferencesResponse.from(preferences);
     }
 

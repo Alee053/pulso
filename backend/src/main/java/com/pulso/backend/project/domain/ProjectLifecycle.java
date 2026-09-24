@@ -3,6 +3,8 @@ package com.pulso.backend.project.domain;
 import java.time.Instant;
 import java.util.Set;
 
+import com.pulso.backend.config.ApiMessages;
+
 public final class ProjectLifecycle {
 
     private static final Set<String> PUBLICATION_REQUEST_SOURCES = Set.of("DRAFT");
@@ -24,7 +26,7 @@ public final class ProjectLifecycle {
         requireAllowedSource(
                 current.status(),
                 PUBLICATION_REQUEST_SOURCES,
-                "cannot request publication from ");
+                ApiMessages.CANNOT_REQUEST_PUBLICATION_FROM);
         return new ProjectLifecycleState(
                 "PENDING_REVIEW",
                 current.publishedAt(),
@@ -38,36 +40,36 @@ public final class ProjectLifecycle {
         requireCurrent(current);
         requireTeamActor(actor);
         if (archivedAt == null) {
-            throw new ProjectValidationException("archivedAt is required.");
+            throw new ProjectValidationException(ApiMessages.ARCHIVED_AT_REQUIRED);
         }
-        requireAllowedSource(current.status(), ARCHIVE_SOURCES, "cannot archive from ");
+        requireAllowedSource(current.status(), ARCHIVE_SOURCES, ApiMessages.CANNOT_ARCHIVE_FROM);
         return new ProjectLifecycleState("ARCHIVED", current.publishedAt(), archivedAt);
     }
 
     private static void requireCurrent(ProjectLifecycleState current) {
         if (current == null) {
-            throw new ProjectValidationException("project lifecycle state is required.");
+            throw new ProjectValidationException(ApiMessages.LIFECYCLE_STATE_REQUIRED);
         }
     }
 
     private static void requireTeamActor(ProjectLifecycleActor actor) {
         if (actor == null) {
-            throw new ProjectValidationException("active OWNER or ADMIN membership is required.");
+            throw new ProjectValidationException(ApiMessages.MEMBERSHIP_PERMISSION_DETAIL);
         }
         if (!"ACTIVE".equals(actor.membershipStatus())) {
-            throw new ProjectValidationException("membershipStatus must be ACTIVE.");
+            throw new ProjectValidationException(ApiMessages.MEMBERSHIP_STATUS_MUST_BE_ACTIVE);
         }
         if (!TEAM_ROLES.contains(actor.role())) {
-            throw new ProjectValidationException("role must be OWNER or ADMIN.");
+            throw new ProjectValidationException(ApiMessages.ROLE_MUST_BE_OWNER_OR_ADMIN);
         }
     }
 
     private static void requireAllowedSource(
             String status,
             Set<String> allowedSources,
-            String messagePrefix) {
+            String messageFormat) {
         if (!allowedSources.contains(status)) {
-            throw new ProjectValidationException(messagePrefix + status + ".");
+            throw new ProjectValidationException(String.format(messageFormat, status));
         }
     }
 }

@@ -18,6 +18,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import tools.jackson.databind.ObjectMapper;
+import com.pulso.backend.config.PreferenceProperties;
 import com.pulso.backend.preference.domain.OnboardingPreferences;
 
 @Testcontainers(disabledWithoutDocker = true)
@@ -27,6 +28,10 @@ class JdbcOnboardingPreferencesRepositoryTest {
             "11111111-1111-1111-1111-111111111111");
     private static final UUID SECTOR_ID = UUID.fromString(
             "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+    private static final PreferenceProperties PROPERTIES =
+            new PreferenceProperties(10, 40, 120);
+    private static final OnboardingPreferences.Limits LIMITS =
+            new OnboardingPreferences.Limits(10, 40, 120);
 
     @Container
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:17-alpine");
@@ -41,7 +46,7 @@ class JdbcOnboardingPreferencesRepositoryTest {
                 POSTGRES.getUsername(),
                 POSTGRES.getPassword());
         jdbcClient = JdbcClient.create(dataSource);
-        repository = new JdbcOnboardingPreferencesRepository(jdbcClient, new ObjectMapper());
+        repository = new JdbcOnboardingPreferencesRepository(jdbcClient, new ObjectMapper(), PROPERTIES);
 
         jdbcClient.sql("drop table if exists public.profile_preferences, public.sectors, public.profiles cascade")
                 .update();
@@ -108,7 +113,8 @@ class JdbcOnboardingPreferencesRepositoryTest {
         JdbcOnboardingPreferencesRepository unavailableRepository =
                 new JdbcOnboardingPreferencesRepository(
                         JdbcClient.create(unavailableDataSource),
-                        new ObjectMapper());
+                        new ObjectMapper(),
+                        PROPERTIES);
 
         assertThatThrownBy(() -> unavailableRepository.findByProfileId(PROFILE_ID))
                 .isInstanceOf(DataAccessException.class);
@@ -127,6 +133,6 @@ class JdbcOnboardingPreferencesRepositoryTest {
             List<String> intentions,
             List<String> sectors,
             List<String> stages) {
-        return new OnboardingPreferences(PROFILE_ID, intentions, sectors, stages);
+        return new OnboardingPreferences(PROFILE_ID, intentions, sectors, stages, LIMITS);
     }
 }

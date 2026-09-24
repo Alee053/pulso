@@ -21,6 +21,7 @@ import com.pulso.backend.profile.domain.ProfilePatch;
 class JdbcProfileRepositoryTest {
 
     private static final UUID PROFILE_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
+    private static final ProfilePatch.Limits LIMITS = new ProfilePatch.Limits(120, 500, 500, 120, 120);
 
     @Container
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:17-alpine");
@@ -113,7 +114,8 @@ class JdbcProfileRepositoryTest {
                 null,
                 "La Paz",
                 "PRIVATE",
-                null);
+                null,
+                LIMITS);
 
         Profile updated = repository.update(PROFILE_ID, patch).orElseThrow();
 

@@ -1,4 +1,5 @@
 import type { InterestId } from './startup'
+import { projectStageStrings } from '../strings/project.strings'
 
 export type OnboardingIntention =
   | 'DISCOVER'
@@ -38,12 +39,12 @@ export interface OnboardingPreferencesPayload {
 }
 
 export const projectStageOptions: readonly ProjectStageOption[] = [
-  { id: 'IDEA', label: 'Idea' },
-  { id: 'PROTOTYPE', label: 'Prototipo' },
-  { id: 'MVP', label: 'MVP' },
-  { id: 'EARLY_STAGE', label: 'Etapa temprana' },
-  { id: 'GROWING', label: 'En crecimiento' },
-  { id: 'ESTABLISHED', label: 'Consolidado' },
+  { id: 'IDEA', label: projectStageStrings.IDEA },
+  { id: 'PROTOTYPE', label: projectStageStrings.PROTOTYPE },
+  { id: 'MVP', label: projectStageStrings.MVP },
+  { id: 'EARLY_STAGE', label: projectStageStrings.EARLY_STAGE },
+  { id: 'GROWING', label: projectStageStrings.GROWING },
+  { id: 'ESTABLISHED', label: projectStageStrings.ESTABLISHED },
 ]
 
 const intentionByInterest: Readonly<Record<InterestId, OnboardingIntention>> = {

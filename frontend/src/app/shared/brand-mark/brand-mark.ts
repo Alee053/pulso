@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common'
 import { Component, Input } from '@angular/core'
+import { commonStrings } from '../strings/common.strings'
 
 @Component({
   selector: 'pulso-brand-mark',
@@ -16,10 +17,11 @@ import { Component, Input } from '@angular/core'
       <span
         *ngIf="!compact"
         class="text-[0.72rem] font-semibold tracking-[0.2em] text-white/90"
-      >PULSO</span>
+      >{{ brandName }}</span>
     </div>
   `,
 })
 export class BrandMarkComponent {
   @Input() compact = false
+  readonly brandName = commonStrings.brandName
 }

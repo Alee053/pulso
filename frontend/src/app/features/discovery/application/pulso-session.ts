@@ -22,6 +22,8 @@ import {
   type ProjectStage,
 } from '../domain/preferences'
 import type { AppView, Decision, InterestId, Startup } from '../domain/startup'
+import { feedStrings } from '../strings/feed.strings'
+import { onboardingStrings } from '../strings/onboarding.strings'
 
 @Injectable({ providedIn: 'root' })
 export class PulsoSession {
@@ -133,9 +135,7 @@ export class PulsoSession {
     } catch {
       this.referenceCatalogs.set(emptyReferenceCatalogs())
       this.hasLoadedReferenceCatalogs.set(false)
-      this.catalogsErrorMessage.set(
-        'No pudimos cargar sectores, temas y habilidades. Inténtalo de nuevo.',
-      )
+      this.catalogsErrorMessage.set(onboardingStrings.catalogsFailed)
     } finally {
       this.areCatalogsLoading.set(false)
     }
@@ -163,9 +163,7 @@ export class PulsoSession {
       this.hasLoadedPreferences.set(true)
     } catch {
       this.hasLoadedPreferences.set(false)
-      this.preferencesErrorMessage.set(
-        'No pudimos cargar tus preferencias. Inténtalo de nuevo.',
-      )
+      this.preferencesErrorMessage.set(onboardingStrings.preferencesLoadFailed)
     } finally {
       this.arePreferencesLoading.set(false)
     }
@@ -218,9 +216,7 @@ export class PulsoSession {
       this.activeView.set('discover')
       await this.loadCatalog()
     } catch {
-      this.preferencesSaveErrorMessage.set(
-        'No pudimos guardar tus preferencias. Inténtalo de nuevo.',
-      )
+      this.preferencesSaveErrorMessage.set(onboardingStrings.preferencesSaveFailed)
     } finally {
       this.arePreferencesSaving.set(false)
     }
@@ -344,7 +340,7 @@ export class PulsoSession {
   }
 
   private showPreferencesSavedMessage(): void {
-    this.preferencesSavedMessage.set('Preferencias guardadas.')
+    this.preferencesSavedMessage.set(onboardingStrings.preferencesSaved)
     if (this.preferencesSavedMessageTimeout !== undefined) {
       window.clearTimeout(this.preferencesSavedMessageTimeout)
     }
@@ -378,9 +374,7 @@ export class PulsoSession {
       )
       this.hasLoadedCatalog.set(true)
     } catch {
-      this.errorMessage.set(
-        'No pudimos cargar los proyectos publicados. Inténtalo de nuevo.',
-      )
+      this.errorMessage.set(feedStrings.catalogFailed)
     } finally {
       this.isLoading.set(false)
     }

@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http'
 import { inject, Injectable } from '@angular/core'
 import { type Observable } from 'rxjs'
 import { appConfig } from '../../../core/config/app-config'
+import { apiPaths } from './discovery.catalog.contract'
 
 export interface ProfileDto {
   id: string
@@ -40,12 +41,12 @@ export class ProfileApi {
   private readonly http = inject(HttpClient)
 
   getCurrent(): Observable<CurrentUserDto> {
-    return this.http.get<CurrentUserDto>(`${appConfig.apiBaseUrl}/api/v1/me`)
+    return this.http.get<CurrentUserDto>(`${appConfig.apiBaseUrl}${apiPaths.profile}`)
   }
 
   update(patch: ProfilePatchRequest): Observable<CurrentUserDto> {
     return this.http.patch<CurrentUserDto>(
-      `${appConfig.apiBaseUrl}/api/v1/me`,
+      `${appConfig.apiBaseUrl}${apiPaths.profile}`,
       patch,
     )
   }

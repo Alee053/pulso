@@ -13,8 +13,11 @@ import com.pulso.backend.catalog.domain.ActiveCatalogs;
 import com.pulso.backend.catalog.domain.SectorCatalogItem;
 import com.pulso.backend.catalog.domain.SkillCatalogItem;
 import com.pulso.backend.catalog.domain.TagCatalogItem;
+import com.pulso.backend.config.CatalogProperties;
 
 class ListActiveCatalogsTest {
+
+    private static final CatalogProperties PROPERTIES = new CatalogProperties(500);
 
     @Test
     void returnsAllCatalogsUsingTheBoundedRepositoryQueries() {
@@ -36,22 +39,23 @@ class ListActiveCatalogsTest {
         CapturingRepository repository = new CapturingRepository(
                 List.of(sector), List.of(tag), List.of(skill));
 
-        ActiveCatalogs result = new ListActiveCatalogs(repository).execute();
+        ActiveCatalogs result = new ListActiveCatalogs(repository, PROPERTIES).execute();
 
         assertThat(result.sectors()).containsExactly(sector);
         assertThat(result.tags()).containsExactly(tag);
         assertThat(result.skills()).containsExactly(skill);
         assertThat(repository.requestedLimits)
                 .containsExactly(
-                        ListActiveCatalogs.MAX_ITEMS_PER_CATALOG,
-                        ListActiveCatalogs.MAX_ITEMS_PER_CATALOG,
-                        ListActiveCatalogs.MAX_ITEMS_PER_CATALOG);
+                        PROPERTIES.maxItemsPerCatalog(),
+                        PROPERTIES.maxItemsPerCatalog(),
+                        PROPERTIES.maxItemsPerCatalog());
     }
 
     @Test
     void returnsEmptyListsWhenThereAreNoActiveCatalogEntries() {
         ActiveCatalogs result = new ListActiveCatalogs(
-                new CapturingRepository(List.of(), List.of(), List.of()))
+                new CapturingRepository(List.of(), List.of(), List.of()),
+                PROPERTIES)
                 .execute();
 
         assertThat(result.sectors()).isEmpty();
@@ -78,7 +82,7 @@ class ListActiveCatalogsTest {
             }
         };
 
-        assertThatThrownBy(() -> new ListActiveCatalogs(repository).execute())
+        assertThatThrownBy(() -> new ListActiveCatalogs(repository, PROPERTIES).execute())
                 .isInstanceOf(DataAccessResourceFailureException.class)
                 .hasMessageContaining("database unavailable");
     }

@@ -1,3 +1,5 @@
+import { projectStageStrings } from '../strings/project.strings'
+
 export const projectStages = [
   'IDEA',
   'PROTOTYPE',
@@ -50,10 +52,10 @@ export interface ProjectStageOption {
 }
 
 export const projectStageOptions: readonly ProjectStageOption[] = [
-  { value: 'IDEA', label: 'Idea' },
-  { value: 'PROTOTYPE', label: 'Prototipo' },
-  { value: 'MVP', label: 'MVP' },
-  { value: 'EARLY_STAGE', label: 'Etapa temprana' },
-  { value: 'GROWING', label: 'En crecimiento' },
-  { value: 'ESTABLISHED', label: 'Establecido' },
+  { value: 'IDEA', label: projectStageStrings.IDEA },
+  { value: 'PROTOTYPE', label: projectStageStrings.PROTOTYPE },
+  { value: 'MVP', label: projectStageStrings.MVP },
+  { value: 'EARLY_STAGE', label: projectStageStrings.EARLY_STAGE },
+  { value: 'GROWING', label: projectStageStrings.GROWING },
+  { value: 'ESTABLISHED', label: projectStageStrings.ESTABLISHED },
 ]

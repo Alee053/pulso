@@ -26,6 +26,7 @@ import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import com.pulso.backend.config.ProjectProperties;
 import com.pulso.backend.config.SecurityConfig;
 import com.pulso.backend.project.application.CreateDraftProject;
 import com.pulso.backend.project.application.ProjectRepository;
@@ -153,7 +154,9 @@ class ProjectSecurityTest {
 
         @Bean
         CreateDraftProject createDraftProject(ProjectRepository repository) {
-            return new CreateDraftProject(repository);
+            return new CreateDraftProject(
+                    repository,
+                    new ProjectProperties(2, 120, 160, 240, 5000, 120, 40, 254));
         }
     }
 }

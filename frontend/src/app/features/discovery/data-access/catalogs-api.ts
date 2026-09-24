@@ -14,6 +14,7 @@ import type {
   SkillCatalogItemDto,
   TagCatalogItemDto,
 } from './catalogs-dto'
+import { apiPaths } from './discovery.catalog.contract'
 
 @Injectable({ providedIn: 'root' })
 export class CatalogsApi {
@@ -21,7 +22,7 @@ export class CatalogsApi {
 
   load(): Observable<ReferenceCatalogs> {
     return this.http.get<CatalogsResponseDto>(
-      `${appConfig.apiBaseUrl}/api/v1/catalogs`,
+      `${appConfig.apiBaseUrl}${apiPaths.catalogs}`,
     ).pipe(
       map((response) => ({
         sectors: response.data.sectors.map(toSectorCatalogItem),

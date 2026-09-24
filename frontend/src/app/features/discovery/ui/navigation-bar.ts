@@ -3,6 +3,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core'
 import { BrandMarkComponent } from '../../../shared/brand-mark/brand-mark'
 import { IconComponent, type IconName } from '../../../shared/icon/icon'
 import type { AppView } from '../domain/startup'
+import { navigationStrings } from '../strings/navigation.strings'
 
 interface NavigationItem {
   id: AppView
@@ -22,11 +23,13 @@ export class NavigationBarComponent {
   @Input() interestedCount = 0
   @Output() navigated = new EventEmitter<AppView>()
 
+  readonly strings = navigationStrings
+
   readonly navigationItems: readonly NavigationItem[] = [
-    { id: 'discover', label: 'Descubrir', icon: 'compass' },
-    { id: 'create-project', label: 'Crear proyecto', icon: 'sparkles' },
-    { id: 'saved', label: 'Guardados', icon: 'bookmark' },
-    { id: 'profile', label: 'Perfil', icon: 'user-round' },
+    { id: 'discover', label: navigationStrings.discover, icon: 'compass' },
+    { id: 'create-project', label: navigationStrings.createProject, icon: 'sparkles' },
+    { id: 'saved', label: navigationStrings.saved, icon: 'bookmark' },
+    { id: 'profile', label: navigationStrings.profile, icon: 'user-round' },
   ]
 
   get totalSaved(): number {

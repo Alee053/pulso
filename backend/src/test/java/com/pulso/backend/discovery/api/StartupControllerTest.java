@@ -35,6 +35,24 @@ class StartupControllerTest {
     }
 
     @Test
+    void appliesConfiguredDefaultsWhenPaginationParametersAreOmitted() throws Exception {
+        mockMvc(catalog(), new DiscoveryProperties(3, 1, 1, 10))
+                .perform(get("/api/v1/startups"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.meta.offset").value(3))
+                .andExpect(jsonPath("$.meta.limit").value(1))
+                .andExpect(jsonPath("$.meta.hasMore").value(true));
+    }
+
+    @Test
+    void appliesConfiguredMaximumPageSize() throws Exception {
+        mockMvc(catalog(), new DiscoveryProperties(0, 1, 1, 100_000))
+                .perform(get("/api/v1/startups").param("limit", "2"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Invalid request"));
+    }
+
+    @Test
     void rejectsAnUnboundedPageSize() throws Exception {
         mockMvc.perform(get("/api/v1/startups").param("limit", "51"))
                 .andExpect(status().isBadRequest())
@@ -68,10 +86,16 @@ class StartupControllerTest {
     }
 
     private static MockMvc mockMvc(StartupCatalog catalog) {
+        return mockMvc(catalog, PROPERTIES);
+    }
+
+    private static MockMvc mockMvc(
+            StartupCatalog catalog,
+            DiscoveryProperties properties) {
         return MockMvcBuilders
                 .standaloneSetup(new StartupController(
                         new ListPublishedStartups(catalog),
-                        PROPERTIES))
+                        properties))
                 .setControllerAdvice(new ApiExceptionHandler())
                 .build();
     }

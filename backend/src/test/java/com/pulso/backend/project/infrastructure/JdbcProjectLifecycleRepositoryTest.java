@@ -163,6 +163,21 @@ class JdbcProjectLifecycleRepositoryTest {
     }
 
     @Test
+    void refusesATeamRepositoryWriteDirectlyToPublished() {
+        int updated = repository.updateLifecycle(
+                PROJECT_ID,
+                OWNER_ID,
+                "DRAFT",
+                new ProjectLifecycleState(
+                        "PUBLISHED",
+                        Instant.parse("2026-09-20T12:00:00Z"),
+                        null));
+
+        assertThat(updated).isZero();
+        assertThat(statusOf(PROJECT_ID)).isEqualTo("DRAFT");
+    }
+
+    @Test
     void archivesWithoutChangingPublishedAt() {
         jdbcClient.sql("""
                 update public.projects

@@ -40,8 +40,11 @@ class JdbcProjectLifecycleRepositoryTest {
             "99999999-9999-9999-9999-999999999999");
     private static final UUID EXTERNAL_ID = UUID.fromString(
             "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+    private static final UUID REVIEWER_ID = UUID.fromString(
+            "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
     private static final Instant PUBLISHED_AT = Instant.parse("2026-08-01T12:00:00Z");
     private static final Instant ARCHIVED_AT = Instant.parse("2026-09-20T12:00:00Z");
+    private static final Instant REVIEWED_AT = Instant.parse("2026-09-19T12:00:00Z");
 
     @Container
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:17-alpine");
@@ -65,7 +68,10 @@ class JdbcProjectLifecycleRepositoryTest {
                   id uuid primary key,
                   status text not null,
                   published_at timestamptz,
-                  archived_at timestamptz
+                  archived_at timestamptz,
+                  reviewed_by_profile_id uuid,
+                  review_note text,
+                  reviewed_at timestamptz
                 )
                 """).update();
         jdbcClient.sql("""
@@ -175,6 +181,47 @@ class JdbcProjectLifecycleRepositoryTest {
 
         assertThat(updated).isZero();
         assertThat(statusOf(PROJECT_ID)).isEqualTo("DRAFT");
+    }
+
+    @Test
+    void leavesReviewDataUntouchedDuringTeamLifecycleUpdates() {
+        jdbcClient.sql("""
+                update public.projects
+                set reviewed_by_profile_id = :reviewerId,
+                    review_note = 'keep this note',
+                    reviewed_at = :reviewedAt
+                where id = :projectId
+                """)
+                .param("reviewerId", REVIEWER_ID)
+                .param("reviewedAt", REVIEWED_AT)
+                .param("projectId", PROJECT_ID)
+                .update();
+
+        int updated = repository.updateLifecycle(
+                PROJECT_ID,
+                OWNER_ID,
+                "DRAFT",
+                new ProjectLifecycleState("PENDING_REVIEW", null, null));
+
+        assertThat(updated).isEqualTo(1);
+        var row = jdbcClient.sql("""
+                select status, reviewed_by_profile_id, review_note, reviewed_at
+                from public.projects
+                where id = :projectId
+                """)
+                .param("projectId", PROJECT_ID)
+                .query((resultSet, rowNumber) -> new Object[] {
+                        resultSet.getString("status"),
+                        resultSet.getObject("reviewed_by_profile_id", UUID.class),
+                        resultSet.getString("review_note"),
+                        resultSet.getObject("reviewed_at", Instant.class)
+                })
+                .single();
+
+        assertThat(row[0]).isEqualTo("PENDING_REVIEW");
+        assertThat(row[1]).isEqualTo(REVIEWER_ID);
+        assertThat(row[2]).isEqualTo("keep this note");
+        assertThat(row[3]).isEqualTo(REVIEWED_AT);
     }
 
     @Test

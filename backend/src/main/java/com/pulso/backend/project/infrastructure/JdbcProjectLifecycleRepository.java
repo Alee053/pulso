@@ -2,6 +2,9 @@ package com.pulso.backend.project.infrastructure;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -75,7 +78,7 @@ public class JdbcProjectLifecycleRepository implements ProjectLifecycleRepositor
                 .param("profileId", profileId)
                 .param("expectedStatus", expectedStatus)
                 .param("nextStatus", nextState.status())
-                .param("nextArchivedAt", nextState.archivedAt())
+                .param("nextArchivedAt", asOffsetDateTime(nextState.archivedAt()))
                 .update();
     }
 
@@ -86,10 +89,19 @@ public class JdbcProjectLifecycleRepository implements ProjectLifecycleRepositor
                 resultSet.getObject("profile_id", UUID.class),
                 new ProjectLifecycleState(
                         resultSet.getString("status"),
-                        resultSet.getObject("published_at", java.time.Instant.class),
-                        resultSet.getObject("archived_at", java.time.Instant.class)),
+                        asInstant(resultSet, "published_at"),
+                        asInstant(resultSet, "archived_at")),
                 new ProjectLifecycleActor(
                         resultSet.getString("role"),
                         resultSet.getString("membership_status")));
+    }
+
+    private static Instant asInstant(ResultSet resultSet, String column) throws SQLException {
+        OffsetDateTime value = resultSet.getObject(column, OffsetDateTime.class);
+        return value == null ? null : value.toInstant();
+    }
+
+    private static OffsetDateTime asOffsetDateTime(Instant value) {
+        return value == null ? null : value.atOffset(ZoneOffset.UTC);
     }
 }

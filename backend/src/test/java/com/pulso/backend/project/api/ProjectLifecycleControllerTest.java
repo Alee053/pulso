@@ -171,6 +171,18 @@ class ProjectLifecycleControllerTest {
         assertThat(repository.requestedProfileId).isNull();
     }
 
+    @Test
+    void sanitizesAConcurrentLifecycleUpdateFailure() throws Exception {
+        CapturingRepository repository = repository("OWNER", "ACTIVE", "DRAFT");
+        repository.updateResult = 0;
+
+        mockMvc(repository).perform(post(path("publication-request")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.title").value("Project state conflict"))
+                .andExpect(jsonPath("$.detail")
+                        .value("The project state changed before the action completed."));
+    }
+
     private static MockMvc mockMvc(CapturingRepository repository) {
         return MockMvcBuilders
                 .standaloneSetup(new ProjectLifecycleController(
@@ -257,6 +269,7 @@ class ProjectLifecycleControllerTest {
         private UUID requestedProjectId;
         private UUID requestedProfileId;
         private ProjectLifecycleState updatedState;
+        private int updateResult = 1;
 
         private CapturingRepository(ProjectLifecycleSnapshot snapshot) {
             this.snapshot = snapshot;
@@ -276,7 +289,7 @@ class ProjectLifecycleControllerTest {
                 String expectedStatus,
                 ProjectLifecycleState nextState) {
             updatedState = nextState;
-            return 1;
+            return updateResult;
         }
     }
 }

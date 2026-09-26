@@ -61,6 +61,7 @@ public class JdbcProjectLifecycleRepository implements ProjectLifecycleRepositor
                     archived_at = :nextArchivedAt
                 where id = :projectId
                   and status = :expectedStatus
+                  and :nextStatus <> 'PUBLISHED'
                   and exists (
                       select 1
                       from public.project_members member

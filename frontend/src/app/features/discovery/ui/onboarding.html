@@ -6,19 +6,18 @@
     <header class="flex items-center justify-between">
       <pulso-brand-mark />
       <span class="text-[0.68rem] font-medium uppercase tracking-[0.18em] text-white/35">
-        01 / 01
+        {{ strings.stepMark }}
       </span>
     </header>
 
     <div class="mx-auto flex w-full max-w-4xl flex-1 flex-col justify-center py-12 sm:py-16">
       <div class="fade-in-up">
-        <span class="eyebrow">UN MAPA DE LO QUE VIENE</span>
+        <span class="eyebrow">{{ common.eyebrowComingMap }}</span>
         <h1 class="mt-6 max-w-3xl text-4xl font-medium tracking-[-0.065em] text-white text-balance sm:text-6xl lg:text-[5.25rem] lg:leading-[0.98]">
-          Descubre lo que está creciendo en Bolivia.
+          {{ strings.title }}
         </h1>
         <p class="mt-6 max-w-xl text-base leading-7 text-white/55 sm:text-lg">
-          Pulso reúne proyectos con intención, talento y algo nuevo que aportar.
-          Tú decides qué merece tu atención.
+          {{ strings.lead }}
         </p>
       </div>
 
@@ -26,14 +25,14 @@
         <div class="mb-4 flex items-end justify-between gap-4">
           <div>
             <p class="text-xs font-semibold uppercase tracking-[0.16em] text-white/35">
-              Para empezar
+              {{ strings.startEyebrow }}
             </p>
             <h2 class="mt-2 text-xl font-medium tracking-[-0.03em] text-white sm:text-2xl">
-              ¿Qué estás buscando?
+              {{ strings.startTitle }}
             </h2>
           </div>
           <p class="hidden text-right text-xs leading-5 text-white/35 sm:block">
-            Elige todo lo que te mueva.<br />Puedes cambiarlo después.
+            {{ strings.startHintLine1 }}<br />{{ strings.startHintLine2 }}
           </p>
         </div>
 
@@ -58,7 +57,7 @@
             <span
               *ngIf="isSelected(interest)"
               class="absolute right-4 top-4 flex size-6 items-center justify-center rounded-full bg-[#a9e1ff] text-[#071521]"
-              aria-label="Seleccionado"
+              [attr.aria-label]="strings.selectedAria"
             >
               <pulso-icon name="check" [size]="14" [strokeWidth]="3" />
             </span>
@@ -69,18 +68,18 @@
       <section class="mt-10 fade-in-up fade-in-up--more-delayed" aria-labelledby="catalog-preferences-title">
         <div class="mb-5">
           <p class="text-xs font-semibold uppercase tracking-[0.16em] text-white/35">
-            Opcional
+            {{ strings.optionalEyebrow }}
           </p>
           <h2 id="catalog-preferences-title" class="mt-2 text-xl font-medium tracking-[-0.03em] text-white sm:text-2xl">
-            Afina lo que quieres encontrar
+            {{ strings.catalogTitle }}
           </h2>
           <p class="mt-2 max-w-2xl text-sm leading-6 text-white/40">
-            Los sectores y las etapas se guardan en tu perfil. Temas y habilidades afinan esta sesión y podrán persistirse después.
+            {{ strings.catalogLead }}
           </p>
         </div>
 
         <div *ngIf="preferencesLoading" class="glass-panel mb-5 px-5 py-4" role="status" aria-live="polite">
-          <p class="text-sm text-white/55">Cargando tus preferencias guardadas...</p>
+          <p class="text-sm text-white/55">{{ strings.preferencesLoading }}</p>
         </div>
 
         <div *ngIf="!preferencesLoading && preferencesErrorMessage" class="glass-panel mb-5 px-5 py-5" role="alert">
@@ -90,12 +89,12 @@
             class="contact-button mt-4"
             (click)="preferencesRetryRequested.emit()"
           >
-            Reintentar
+            {{ common.retry }}
           </button>
         </div>
 
         <div *ngIf="catalogsLoading" class="glass-panel px-5 py-6" role="status" aria-live="polite">
-          <p class="text-sm text-white/55">Cargando sectores, temas y habilidades...</p>
+          <p class="text-sm text-white/55">{{ strings.catalogsLoading }}</p>
         </div>
 
         <div *ngIf="!catalogsLoading && catalogsErrorMessage" class="glass-panel px-5 py-6" role="alert">
@@ -105,14 +104,14 @@
             class="contact-button mt-4"
             (click)="catalogsRetryRequested.emit()"
           >
-            Reintentar
+            {{ common.retry }}
           </button>
         </div>
 
         <div *ngIf="!catalogsLoading && !catalogsErrorMessage && catalogsLoaded" class="grid gap-5 lg:grid-cols-2">
           <section class="glass-panel p-5" aria-labelledby="sector-options-title">
-            <h3 id="sector-options-title" class="text-sm font-medium text-white/85">Sectores preferidos</h3>
-            <p class="mt-1 text-xs leading-5 text-white/35">Elige los sectores que quieres seguir.</p>
+            <h3 id="sector-options-title" class="text-sm font-medium text-white/85">{{ strings.sectorsTitle }}</h3>
+            <p class="mt-1 text-xs leading-5 text-white/35">{{ strings.sectorsHint }}</p>
 
             <div *ngIf="sectors.length > 0; else emptySectors" class="mt-4 flex flex-wrap gap-2">
               <button
@@ -126,13 +125,13 @@
               </button>
             </div>
             <ng-template #emptySectors>
-              <p class="mt-4 text-xs leading-5 text-white/40" role="status">No hay sectores activos disponibles.</p>
+              <p class="mt-4 text-xs leading-5 text-white/40" role="status">{{ strings.sectorsEmpty }}</p>
             </ng-template>
           </section>
 
           <section class="glass-panel p-5" aria-labelledby="stage-options-title">
-            <h3 id="stage-options-title" class="text-sm font-medium text-white/85">Etapas de proyecto</h3>
-            <p class="mt-1 text-xs leading-5 text-white/35">Elige las etapas que quieres conocer.</p>
+            <h3 id="stage-options-title" class="text-sm font-medium text-white/85">{{ strings.stagesTitle }}</h3>
+            <p class="mt-1 text-xs leading-5 text-white/35">{{ strings.stagesHint }}</p>
 
             <div *ngIf="stages.length > 0; else emptyStages" class="mt-4 flex flex-wrap gap-2">
               <button
@@ -146,13 +145,13 @@
               </button>
             </div>
             <ng-template #emptyStages>
-              <p class="mt-4 text-xs leading-5 text-white/40" role="status">No hay etapas disponibles.</p>
+              <p class="mt-4 text-xs leading-5 text-white/40" role="status">{{ strings.stagesEmpty }}</p>
             </ng-template>
           </section>
 
           <section class="glass-panel p-5" aria-labelledby="tag-options-title">
-            <h3 id="tag-options-title" class="text-sm font-medium text-white/85">Temas de interés</h3>
-            <p class="mt-1 text-xs leading-5 text-white/35">Usa los tags activos del catálogo de Pulso.</p>
+            <h3 id="tag-options-title" class="text-sm font-medium text-white/85">{{ strings.tagsTitle }}</h3>
+            <p class="mt-1 text-xs leading-5 text-white/35">{{ strings.tagsHint }}</p>
 
             <div *ngIf="tags.length > 0; else emptyTags" class="mt-4 flex flex-wrap gap-2">
               <button
@@ -166,13 +165,13 @@
               </button>
             </div>
             <ng-template #emptyTags>
-              <p class="mt-4 text-xs leading-5 text-white/40" role="status">No hay tags activos disponibles.</p>
+              <p class="mt-4 text-xs leading-5 text-white/40" role="status">{{ strings.tagsEmpty }}</p>
             </ng-template>
           </section>
 
           <section class="glass-panel p-5" aria-labelledby="skill-options-title">
-            <h3 id="skill-options-title" class="text-sm font-medium text-white/85">Habilidades</h3>
-            <p class="mt-1 text-xs leading-5 text-white/35">Selecciona capacidades que puedes aportar.</p>
+            <h3 id="skill-options-title" class="text-sm font-medium text-white/85">{{ strings.skillsTitle }}</h3>
+            <p class="mt-1 text-xs leading-5 text-white/35">{{ strings.skillsHint }}</p>
 
             <div *ngIf="skills.length > 0; else emptySkills" class="mt-4 flex flex-wrap gap-2">
               <button
@@ -186,7 +185,7 @@
               </button>
             </div>
             <ng-template #emptySkills>
-              <p class="mt-4 text-xs leading-5 text-white/40" role="status">No hay habilidades activas disponibles.</p>
+              <p class="mt-4 text-xs leading-5 text-white/40" role="status">{{ strings.skillsEmpty }}</p>
             </ng-template>
           </section>
         </div>
@@ -195,9 +194,9 @@
       <div class="mt-8 flex flex-col items-start gap-4 sm:mt-10 sm:flex-row sm:items-center sm:justify-between fade-in-up fade-in-up--more-delayed">
         <p class="text-xs leading-5 text-white/35">
           <ng-container [ngSwitch]="selectedInterests.length">
-            <span *ngSwitchCase="0">Selecciona al menos un interés para personalizar tu pulso.</span>
-            <span *ngSwitchCase="1">1 interés seleccionado.</span>
-            <span *ngSwitchDefault>{{ selectedInterests.length }} intereses seleccionados.</span>
+            <span *ngSwitchCase="0">{{ strings.needInterest }}</span>
+            <span *ngSwitchCase="1">{{ strings.oneInterest }}</span>
+            <span *ngSwitchDefault>{{ strings.nInterests(selectedInterests.length) }}</span>
           </ng-container>
         </p>
         <div class="flex w-full flex-col items-start gap-3 sm:w-auto sm:items-end">
@@ -209,7 +208,7 @@
               [disabled]="preferencesSaving"
               (click)="preferencesSaveRetryRequested.emit()"
             >
-              Reintentar guardado
+              {{ strings.saveRetry }}
             </button>
           </div>
           <button
@@ -219,16 +218,16 @@
             [attr.aria-busy]="preferencesSaving"
             (click)="started.emit()"
           >
-            <ng-container *ngIf="preferencesSaving; else readyToStart">Guardando preferencias...</ng-container>
-            <ng-template #readyToStart>Entrar a Pulso <pulso-icon name="arrow-right" [size]="17" /></ng-template>
+            <ng-container *ngIf="preferencesSaving; else readyToStart">{{ strings.savingPreferences }}</ng-container>
+            <ng-template #readyToStart>{{ strings.enter }} <pulso-icon name="arrow-right" [size]="17" /></ng-template>
           </button>
         </div>
       </div>
     </div>
 
     <footer class="flex items-center justify-between border-t border-white/10 pt-5 text-[0.65rem] uppercase tracking-[0.14em] text-white/25">
-      <span>Hecho con curiosidad</span>
-      <span>Bolivia / 2026</span>
+      <span>{{ common.madeWithCuriosity }}</span>
+      <span>{{ common.localeLine }}</span>
     </footer>
   </div>
 </main>

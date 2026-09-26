@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.pulso.backend.config.ApiMessages;
 import com.pulso.backend.preference.domain.OnboardingPreferences;
 
 @JsonIgnoreProperties(ignoreUnknown = false)
@@ -15,14 +16,18 @@ public record OnboardingPreferencesRequest(
 
     @JsonAnySetter
     public void rejectUnknownField(String fieldName, Object value) {
-        throw new IllegalArgumentException("Field '" + fieldName + "' is not accepted.");
+        throw new IllegalArgumentException(
+                String.format(ApiMessages.FIELD_NOT_ACCEPTED, fieldName));
     }
 
-    public OnboardingPreferences toPreferences(UUID profileId) {
+    public OnboardingPreferences toPreferences(
+            UUID profileId,
+            OnboardingPreferences.Limits limits) {
         return new OnboardingPreferences(
                 profileId,
                 intentions,
                 preferredSectors == null ? List.of() : preferredSectors,
-                preferredStages);
+                preferredStages,
+                limits);
     }
 }

@@ -1,7 +1,9 @@
 import { CommonModule } from '@angular/common'
 import { Component, EventEmitter, HostListener, Input, OnDestroy, Output } from '@angular/core'
 import { IconComponent } from '../../../shared/icon/icon'
+import { commonStrings } from '../../../shared/strings/common.strings'
 import type { Decision, Startup } from '../domain/startup'
+import { feedStrings } from '../strings/feed.strings'
 import { StartupCardComponent } from './startup-card'
 
 @Component({
@@ -24,6 +26,9 @@ export class DiscoveryViewComponent implements OnDestroy {
   @Output() retryRequested = new EventEmitter<void>()
   @Output() startupSaved = new EventEmitter<string>()
   @Output() startupSelected = new EventEmitter<Startup>()
+
+  readonly strings = feedStrings
+  readonly common = commonStrings
 
   direction = 1
   isTransitioning = false
@@ -122,7 +127,7 @@ export class DiscoveryViewComponent implements OnDestroy {
 
     const wasSaved = this.isSaved
     this.startupSaved.emit(this.currentStartup.id)
-    this.showToast(wasSaved ? 'Quitado de tus guardados' : 'Guardado en tu selección')
+    this.showToast(wasSaved ? this.strings.toastRemoved : this.strings.toastSaved)
   }
 
   updateDragOffset(offset: { x: number; y: number }): void {

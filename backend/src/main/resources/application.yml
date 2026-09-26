@@ -41,3 +41,29 @@ pulso:
       audience: ${SUPABASE_JWT_AUDIENCE:authenticated}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+  discovery:
+    default-offset: ${PULSO_DISCOVERY_DEFAULT_OFFSET:0}
+    default-limit: ${PULSO_DISCOVERY_DEFAULT_LIMIT:20}
+    max-limit: ${PULSO_DISCOVERY_MAX_LIMIT:50}
+    max-offset: ${PULSO_DISCOVERY_MAX_OFFSET:100000}
+  catalogs:
+    max-items-per-catalog: ${PULSO_CATALOGS_MAX_ITEMS_PER_CATALOG:500}
+  preferences:
+    max-items-per-field: ${PULSO_PREFERENCES_MAX_ITEMS_PER_FIELD:10}
+    max-token-length: ${PULSO_PREFERENCES_MAX_TOKEN_LENGTH:40}
+    sector-id-max-length: ${PULSO_PREFERENCES_SECTOR_ID_MAX_LENGTH:120}
+  profile:
+    display-name-max-length: ${PULSO_PROFILE_DISPLAY_NAME_MAX_LENGTH:120}
+    avatar-path-max-length: ${PULSO_PROFILE_AVATAR_PATH_MAX_LENGTH:500}
+    short-bio-max-length: ${PULSO_PROFILE_SHORT_BIO_MAX_LENGTH:500}
+    city-max-length: ${PULSO_PROFILE_CITY_MAX_LENGTH:120}
+    department-max-length: ${PULSO_PROFILE_DEPARTMENT_MAX_LENGTH:120}
+  project:
+    slug-min-length: ${PULSO_PROJECT_SLUG_MIN_LENGTH:2}
+    slug-max-length: ${PULSO_PROJECT_SLUG_MAX_LENGTH:120}
+    name-max-length: ${PULSO_PROJECT_NAME_MAX_LENGTH:160}
+    tagline-max-length: ${PULSO_PROJECT_TAGLINE_MAX_LENGTH:240}
+    description-max-length: ${PULSO_PROJECT_DESCRIPTION_MAX_LENGTH:5000}
+    city-max-length: ${PULSO_PROJECT_CITY_MAX_LENGTH:120}
+    stage-token-max-length: ${PULSO_PROJECT_STAGE_TOKEN_MAX_LENGTH:40}
+    invitee-email-max-length: ${PULSO_PROJECT_INVITEE_EMAIL_MAX_LENGTH:254}

@@ -10,6 +10,7 @@ import { SavedViewComponent } from './features/discovery/ui/saved-view'
 import { StartupDetailModalComponent } from './features/discovery/ui/startup-detail-modal'
 import { PulsoSession } from './features/discovery/application/pulso-session'
 import { IconComponent } from './shared/icon/icon'
+import { commonStrings } from './shared/strings/common.strings'
 import type { AppView, Startup } from './features/discovery/domain/startup'
 import { ProjectCreateFormComponent } from './features/discovery/ui/project-create-form'
 
@@ -62,6 +63,7 @@ export class AppComponent implements OnInit {
   })
 
   ngOnInit(): void {
+    document.title = commonStrings.documentTitle
     void this.auth.initialize().catch(() => undefined)
   }
 

@@ -1,4 +1,4 @@
-<aside class="desktop-nav" aria-label="Navegación principal">
+<aside class="desktop-nav" [attr.aria-label]="strings.aria">
   <div class="desktop-nav__brand">
     <pulso-brand-mark />
   </div>
@@ -27,8 +27,8 @@
       <pulso-icon name="sparkles" [size]="16" [strokeWidth]="1.7" />
     </span>
     <div class="min-w-0">
-      <p class="desktop-nav__eyebrow">SESIÓN ACTIVA</p>
-      <p class="mt-1 truncate text-xs text-white/55">{{ totalSaved }} señales guardadas</p>
+      <p class="desktop-nav__eyebrow">{{ strings.sessionEyebrow }}</p>
+      <p class="mt-1 truncate text-xs text-white/55">{{ strings.savedSignals(totalSaved) }}</p>
     </div>
   </div>
 </aside>

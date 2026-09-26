@@ -29,6 +29,7 @@ import com.pulso.backend.catalog.application.ListActiveCatalogs;
 import com.pulso.backend.catalog.domain.SectorCatalogItem;
 import com.pulso.backend.catalog.domain.SkillCatalogItem;
 import com.pulso.backend.catalog.domain.TagCatalogItem;
+import com.pulso.backend.config.CatalogProperties;
 import com.pulso.backend.config.SecurityConfig;
 
 @WebMvcTest(CatalogController.class)
@@ -110,7 +111,7 @@ class CatalogSecurityTest {
 
         @Bean
         ListActiveCatalogs listActiveCatalogs(ActiveCatalogRepository repository) {
-            return new ListActiveCatalogs(repository);
+            return new ListActiveCatalogs(repository, new CatalogProperties(500));
         }
     }
 }

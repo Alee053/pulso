@@ -3,6 +3,8 @@ package com.pulso.backend.project.domain;
 import java.util.Set;
 import java.util.UUID;
 
+import com.pulso.backend.config.ApiMessages;
+
 public record MemberInvitationActor(
         UUID projectId,
         UUID profileId,
@@ -18,10 +20,10 @@ public record MemberInvitationActor(
 
     public MemberInvitationActor {
         if (projectId == null) {
-            throw new ProjectValidationException("projectId is required.");
+            throw new ProjectValidationException(ApiMessages.PROJECT_ID_REQUIRED);
         }
         if (profileId == null) {
-            throw new ProjectValidationException("profileId is required.");
+            throw new ProjectValidationException(ApiMessages.PROFILE_ID_REQUIRED);
         }
         role = MemberInvitationValues.requireKnown(role, "role", KNOWN_ROLES);
         membershipStatus = MemberInvitationValues.requireKnown(

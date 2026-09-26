@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core'
 import { map, type Observable } from 'rxjs'
 import { appConfig } from '../../../core/config/app-config'
 import type { StartupSummary } from '../domain/startup'
+import { apiPaths, discoveryCatalogContract } from './discovery.catalog.contract'
 
 export interface StartupSummaryDto {
   id: string
@@ -36,19 +37,19 @@ export interface StartupListResponse {
 export class StartupsApi {
   private readonly http = inject(HttpClient)
 
-  list(limit = 20, offset = 0): Observable<StartupListResponse> {
-    if (!Number.isInteger(limit) || limit < 1 || limit > 50) {
-      throw new RangeError('limit must be an integer between 1 and 50')
+  list(limit: number = discoveryCatalogContract.defaultLimit, offset: number = discoveryCatalogContract.defaultOffset): Observable<StartupListResponse> {
+    if (!Number.isInteger(limit) || limit < discoveryCatalogContract.minLimit || limit > discoveryCatalogContract.maxLimit) {
+      throw new RangeError(discoveryCatalogContract.invalidLimitMessage(discoveryCatalogContract.maxLimit))
     }
-    if (!Number.isInteger(offset) || offset < 0 || offset > 100_000) {
-      throw new RangeError('offset must be an integer between 0 and 100000')
+    if (!Number.isInteger(offset) || offset < discoveryCatalogContract.minOffset || offset > discoveryCatalogContract.maxOffset) {
+      throw new RangeError(discoveryCatalogContract.invalidOffsetMessage(discoveryCatalogContract.maxOffset))
     }
 
     const params = new HttpParams()
       .set('offset', offset)
       .set('limit', limit)
     return this.http.get<StartupListResponseDto>(
-      `${appConfig.apiBaseUrl}/api/v1/startups`,
+      `${appConfig.apiBaseUrl}${apiPaths.startups}`,
       { params },
     ).pipe(
       map((response) => ({

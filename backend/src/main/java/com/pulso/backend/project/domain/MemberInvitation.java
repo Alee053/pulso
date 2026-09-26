@@ -7,13 +7,16 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
+import com.pulso.backend.config.ApiMessages;
+
 public record MemberInvitation(
         UUID projectId,
         String inviteeEmail,
         UUID profileId,
         String role,
         String membershipStatus,
-        UUID createdByProfileId) {
+        UUID createdByProfileId,
+        Limits limits) {
 
     private static final Set<String> INVITE_ROLES = Set.of("OWNER", "ADMIN");
     private static final Set<String> KNOWN_ROLES = Set.of("OWNER", "ADMIN", "MEMBER");
@@ -23,37 +26,35 @@ public record MemberInvitation(
             "LEFT",
             "REMOVED");
     private static final Pattern INVITEE_EMAIL = Pattern.compile("[^@\\s]+@[^@\\s]+\\.[^@\\s]+");
-    private static final int INVITEE_EMAIL_MAX_LENGTH = 254;
+
+    public record Limits(int inviteeEmailMaxLength) {
+    }
 
     public MemberInvitation {
-        if (projectId == null) {
-            throw new ProjectValidationException("projectId is required.");
-        }
-        if (createdByProfileId == null) {
-            throw new ProjectValidationException("createdByProfileId is required.");
-        }
+        requireProjectId(projectId);
+        requireCreatedByProfileId(createdByProfileId);
+        inviteeEmail = normalizeOptionalEmail(inviteeEmail, limits.inviteeEmailMaxLength());
         role = MemberInvitationValues.requireKnown(role, "role", KNOWN_ROLES);
         membershipStatus = MemberInvitationValues.requireKnown(
                 membershipStatus,
                 "membershipStatus",
                 KNOWN_MEMBERSHIP_STATUSES);
-        inviteeEmail = normalizeOptionalEmail(inviteeEmail);
         if (inviteeEmail == null && profileId == null) {
-            throw new ProjectValidationException("profileId or inviteeEmail is required.");
+            throw new ProjectValidationException(ApiMessages.PROFILE_OR_EMAIL_REQUIRED);
         }
         if ("INVITED".equals(membershipStatus)) {
             if (profileId != null) {
-                throw new ProjectValidationException("profileId must be empty until the invitation is accepted.");
+                throw new ProjectValidationException(ApiMessages.PROFILE_MUST_BE_EMPTY);
             }
             if (inviteeEmail == null) {
-                throw new ProjectValidationException("inviteeEmail is required.");
+                throw new ProjectValidationException(ApiMessages.INVITEE_EMAIL_REQUIRED);
             }
             if (!"MEMBER".equals(role)) {
-                throw new ProjectValidationException("role must be MEMBER.");
+                throw new ProjectValidationException(ApiMessages.ROLE_MUST_BE_MEMBER);
             }
         }
         if ("ACTIVE".equals(membershipStatus) && profileId == null) {
-            throw new ProjectValidationException("profileId is required.");
+            throw new ProjectValidationException(ApiMessages.PROFILE_ID_REQUIRED);
         }
     }
 
@@ -63,7 +64,8 @@ public record MemberInvitation(
             MemberInvitationActor actor,
             String inviteeEmail,
             String acceptToken,
-            Collection<MemberInvitation> existingMembers) {
+            Collection<MemberInvitation> existingMembers,
+            Limits limits) {
         if (!projectExists) {
             throw new MemberInvitationProjectNotFoundException();
         }
@@ -75,7 +77,8 @@ public record MemberInvitation(
                 null,
                 "MEMBER",
                 "INVITED",
-                actor.profileId());
+                actor.profileId(),
+                limits);
         if (hasActiveDuplicate(existingMembers, invitation)) {
             throw new DuplicateMemberInvitationException();
         }
@@ -92,7 +95,9 @@ public record MemberInvitation(
                 || !"INVITED".equals(existing.membershipStatus())) {
             return false;
         }
-        String normalizedCandidate = normalizeOptionalEmail(candidateEmail);
+        String normalizedCandidate = normalizeOptionalEmail(
+                candidateEmail,
+                existing.limits().inviteeEmailMaxLength());
         return existing.inviteeEmail() != null
                 && existing.inviteeEmail().equals(normalizedCandidate);
     }
@@ -100,10 +105,10 @@ public record MemberInvitation(
     public MemberInvitation accept(UUID acceptingProfileId) {
         if (!"INVITED".equals(membershipStatus)) {
             throw new ProjectValidationException(
-                    "cannot accept a membership with status " + membershipStatus + ".");
+                    String.format(ApiMessages.CANNOT_ACCEPT_STATUS, membershipStatus));
         }
         if (acceptingProfileId == null) {
-            throw new ProjectValidationException("profileId is required.");
+            throw new ProjectValidationException(ApiMessages.PROFILE_ID_REQUIRED);
         }
         return new MemberInvitation(
                 projectId,
@@ -111,7 +116,20 @@ public record MemberInvitation(
                 acceptingProfileId,
                 role,
                 "ACTIVE",
-                createdByProfileId);
+                createdByProfileId,
+                limits);
+    }
+
+    private static void requireProjectId(UUID projectId) {
+        if (projectId == null) {
+            throw new ProjectValidationException(ApiMessages.PROJECT_ID_REQUIRED);
+        }
+    }
+
+    private static void requireCreatedByProfileId(UUID createdByProfileId) {
+        if (createdByProfileId == null) {
+            throw new ProjectValidationException(ApiMessages.CREATED_BY_REQUIRED);
+        }
     }
 
     private static void requireCanInvite(UUID projectId, MemberInvitationActor actor) {
@@ -134,20 +152,20 @@ public record MemberInvitation(
                         invitation.inviteeEmail()));
     }
 
-    private static String normalizeOptionalEmail(String value) {
+    private static String normalizeOptionalEmail(String value, int inviteeEmailMaxLength) {
         if (value == null) {
             return null;
         }
         String normalized = value.trim().toLowerCase(Locale.ROOT);
         if (normalized.isEmpty()) {
-            throw new ProjectValidationException("inviteeEmail is required.");
+            throw new ProjectValidationException(ApiMessages.INVITEE_EMAIL_REQUIRED);
         }
-        if (normalized.length() > INVITEE_EMAIL_MAX_LENGTH) {
+        if (normalized.length() > inviteeEmailMaxLength) {
             throw new ProjectValidationException(
-                    "inviteeEmail must not exceed " + INVITEE_EMAIL_MAX_LENGTH + " characters.");
+                    String.format(ApiMessages.INVITEE_EMAIL_MAX_LENGTH, inviteeEmailMaxLength));
         }
         if (!INVITEE_EMAIL.matcher(normalized).matches()) {
-            throw new ProjectValidationException("inviteeEmail is invalid.");
+            throw new ProjectValidationException(ApiMessages.INVITEE_EMAIL_INVALID);
         }
         return normalized;
     }

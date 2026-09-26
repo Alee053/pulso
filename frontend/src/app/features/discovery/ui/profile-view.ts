@@ -3,12 +3,15 @@ import { Component, inject, Input, OnInit, signal } from '@angular/core'
 import { firstValueFrom } from 'rxjs'
 import { SupabaseAuthGateway } from '../../../core/auth/supabase-auth.gateway'
 import { IconComponent } from '../../../shared/icon/icon'
-import type { InterestId, InterestOption } from '../domain/startup'
+import { commonStrings } from '../../../shared/strings/common.strings'
 import {
   ProfileApi,
   type CurrentUserDto,
   type ProfilePatchRequest,
 } from '../data-access/profile-api'
+import { profileContract } from '../data-access/project.contract'
+import type { InterestId, InterestOption } from '../domain/startup'
+import { profileStrings } from '../strings/profile.strings'
 
 @Component({
   selector: 'pulso-profile-view',
@@ -17,6 +20,10 @@ import {
   templateUrl: './profile-view.html',
 })
 export class ProfileViewComponent implements OnInit {
+  readonly strings = profileStrings
+  readonly common = commonStrings
+  readonly profileContract = profileContract
+
   @Input() interestOptions: readonly InterestOption[] = []
   @Input() selectedInterests: InterestId[] = []
 
@@ -63,9 +70,7 @@ export class ProfileViewComponent implements OnInit {
       this.hydrateForm(currentUser)
     } catch {
       this.profile.set(null)
-      this.errorMessage.set(
-        'No pudimos cargar tu perfil. Inténtalo de nuevo.',
-      )
+      this.errorMessage.set(this.strings.loadFailed)
     } finally {
       this.isLoading.set(false)
     }
@@ -79,7 +84,7 @@ export class ProfileViewComponent implements OnInit {
 
     const normalizedDisplayName = this.displayName.trim()
     if (!normalizedDisplayName) {
-      this.validationMessage.set('El nombre visible es obligatorio.')
+      this.validationMessage.set(this.strings.displayNameRequired)
       return
     }
 
@@ -98,11 +103,9 @@ export class ProfileViewComponent implements OnInit {
       const currentUser = await firstValueFrom(this.profileApi.update(patch))
       this.profile.set(currentUser)
       this.hydrateForm(currentUser)
-      this.feedbackMessage.set('Perfil guardado correctamente.')
+      this.feedbackMessage.set(this.strings.saved)
     } catch {
-      this.feedbackMessage.set(
-        'No se pudo guardar el perfil. Revisa los campos e inténtalo de nuevo.',
-      )
+      this.feedbackMessage.set(this.strings.saveFailed)
     } finally {
       this.isSaving.set(false)
     }
@@ -118,7 +121,7 @@ export class ProfileViewComponent implements OnInit {
     try {
       await this.auth.signOut()
     } catch {
-      this.feedbackMessage.set('No se pudo cerrar la sesión. Inténtalo de nuevo.')
+      this.feedbackMessage.set(this.common.sessionCloseFailed)
     } finally {
       this.isSaving.set(false)
     }

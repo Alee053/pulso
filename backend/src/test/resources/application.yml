@@ -7,3 +7,29 @@ pulso:
       audience: authenticated
   cors:
     allowed-origins: http://localhost:4200
+  discovery:
+    default-offset: 0
+    default-limit: 20
+    max-limit: 50
+    max-offset: 100000
+  catalogs:
+    max-items-per-catalog: 500
+  preferences:
+    max-items-per-field: 10
+    max-token-length: 40
+    sector-id-max-length: 120
+  profile:
+    display-name-max-length: 120
+    avatar-path-max-length: 500
+    short-bio-max-length: 500
+    city-max-length: 120
+    department-max-length: 120
+  project:
+    slug-min-length: 2
+    slug-max-length: 120
+    name-max-length: 160
+    tagline-max-length: 240
+    description-max-length: 5000
+    city-max-length: 120
+    stage-token-max-length: 40
+    invitee-email-max-length: 254

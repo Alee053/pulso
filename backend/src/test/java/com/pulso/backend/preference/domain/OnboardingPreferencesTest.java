@@ -12,6 +12,8 @@ class OnboardingPreferencesTest {
 
     private static final UUID PROFILE_ID = UUID.fromString(
             "11111111-1111-1111-1111-111111111111");
+    private static final OnboardingPreferences.Limits LIMITS =
+            new OnboardingPreferences.Limits(10, 40, 120);
 
     @Test
     void normalizesSupportedValuesAndKeepsTheSelectionsImmutable() {
@@ -21,7 +23,8 @@ class OnboardingPreferencesTest {
                 List.of(
                         " SOSTENIBILIDAD ",
                         "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA"),
-                List.of("mvp", " early_stage "));
+                List.of("mvp", " early_stage "),
+                LIMITS);
 
         assertThat(preferences.intentions())
                 .containsExactly("DISCOVER", "COLLABORATE");
@@ -39,7 +42,8 @@ class OnboardingPreferencesTest {
                 PROFILE_ID,
                 List.of("UNKNOWN_INTENTION"),
                 List.of(),
-                List.of()))
+                List.of(),
+                LIMITS))
                 .isInstanceOf(OnboardingPreferencesValidationException.class)
                 .hasMessage("intentions contains unknown value 'UNKNOWN_INTENTION'.");
     }
@@ -50,7 +54,8 @@ class OnboardingPreferencesTest {
                 PROFILE_ID,
                 List.of(),
                 List.of(),
-                List.of("LAUNCHED")))
+                List.of("LAUNCHED"),
+                LIMITS))
                 .isInstanceOf(OnboardingPreferencesValidationException.class)
                 .hasMessage("preferredStages contains unknown value 'LAUNCHED'.");
     }
@@ -61,7 +66,8 @@ class OnboardingPreferencesTest {
                 PROFILE_ID,
                 List.of("discover", "DISCOVER"),
                 List.of(),
-                List.of()))
+                List.of(),
+                LIMITS))
                 .isInstanceOf(OnboardingPreferencesValidationException.class)
                 .hasMessage("intentions must not contain duplicates: 'DISCOVER'.");
     }
@@ -83,7 +89,8 @@ class OnboardingPreferencesTest {
                         "alimentacion",
                         "movilidad",
                         "manufactura"),
-                List.of()))
+                List.of(),
+                LIMITS))
                 .isInstanceOf(OnboardingPreferencesValidationException.class)
                 .hasMessage("preferredSectors must not contain more than 10 items.");
     }
@@ -94,7 +101,8 @@ class OnboardingPreferencesTest {
                 PROFILE_ID,
                 List.of(),
                 List.of("sector with spaces"),
-                List.of()))
+                List.of(),
+                LIMITS))
                 .isInstanceOf(OnboardingPreferencesValidationException.class)
                 .hasMessage("preferredSectors contains an invalid identifier 'sector with spaces'.");
     }

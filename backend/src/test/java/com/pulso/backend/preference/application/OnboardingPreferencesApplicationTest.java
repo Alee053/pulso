@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataAccessResourceFailureException;
 
 import com.pulso.backend.catalog.application.ActiveSectorLookup;
+import com.pulso.backend.config.PreferenceProperties;
 import com.pulso.backend.preference.domain.OnboardingPreferences;
 import com.pulso.backend.preference.domain.OnboardingPreferencesValidationException;
 
@@ -22,6 +23,10 @@ class OnboardingPreferencesApplicationTest {
             "22222222-2222-2222-2222-222222222222");
     private static final UUID SECTOR_ID = UUID.fromString(
             "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+    private static final PreferenceProperties PROPERTIES =
+            new PreferenceProperties(10, 40, 120);
+    private static final OnboardingPreferences.Limits LIMITS =
+            new OnboardingPreferences.Limits(10, 40, 120);
 
     @Test
     void savesPreferencesForTheAuthenticatedProfile() {
@@ -33,7 +38,8 @@ class OnboardingPreferencesApplicationTest {
 
         OnboardingPreferences result = new SaveOnboardingPreferences(
                 repository,
-                activeSectorLookup)
+                activeSectorLookup,
+                PROPERTIES)
                 .execute(PROFILE_ID, preferences);
 
         assertThat(repository.saved).isSameAs(preferences);
@@ -53,7 +59,8 @@ class OnboardingPreferencesApplicationTest {
                     public OnboardingPreferences upsert(OnboardingPreferences preferences) {
                         throw new UnsupportedOperationException();
                     }
-                })
+                },
+                PROPERTIES)
                 .execute(PROFILE_ID);
 
         assertThat(result.profileId()).isEqualTo(PROFILE_ID);
@@ -69,11 +76,13 @@ class OnboardingPreferencesApplicationTest {
                 PROFILE_ID,
                 List.of(),
                 List.of("desconocido"),
-                List.of());
+                List.of(),
+                LIMITS);
 
         assertThatThrownBy(() -> new SaveOnboardingPreferences(
                 repository,
-                identifier -> Optional.empty())
+                identifier -> Optional.empty(),
+                PROPERTIES)
                 .execute(PROFILE_ID, preferences))
                 .isInstanceOf(OnboardingPreferencesValidationException.class)
                 .hasMessage("preferredSectors contains unknown or inactive sector 'desconocido'.");
@@ -84,7 +93,8 @@ class OnboardingPreferencesApplicationTest {
     void rejectsAMissingAuthenticatedProfileIdBeforeWriting() {
         assertThatThrownBy(() -> new SaveOnboardingPreferences(
                 new CapturingRepository(),
-                identifier -> Optional.of(SECTOR_ID))
+                identifier -> Optional.of(SECTOR_ID),
+                PROPERTIES)
                 .execute(null, preferences(PROFILE_ID)))
                 .isInstanceOf(OnboardingPreferencesValidationException.class)
                 .hasMessage("authenticatedProfileId is required.");
@@ -106,7 +116,8 @@ class OnboardingPreferencesApplicationTest {
 
         assertThatThrownBy(() -> new SaveOnboardingPreferences(
                 unavailableRepository,
-                identifier -> Optional.of(SECTOR_ID))
+                identifier -> Optional.of(SECTOR_ID),
+                PROPERTIES)
                 .execute(PROFILE_ID, preferences(PROFILE_ID)))
                 .isInstanceOf(DataAccessResourceFailureException.class)
                 .hasMessage("database unavailable");
@@ -118,11 +129,13 @@ class OnboardingPreferencesApplicationTest {
                 PROFILE_ID,
                 List.of(),
                 List.of("sostenibilidad", SECTOR_ID.toString()),
-                List.of());
+                List.of(),
+                LIMITS);
 
         assertThatThrownBy(() -> new SaveOnboardingPreferences(
                 new CapturingRepository(),
-                identifier -> Optional.of(SECTOR_ID))
+                identifier -> Optional.of(SECTOR_ID),
+                PROPERTIES)
                 .execute(PROFILE_ID, preferences))
                 .isInstanceOf(OnboardingPreferencesValidationException.class)
                 .hasMessage("preferredSectors must not contain duplicates: '" + SECTOR_ID + "'.");
@@ -134,7 +147,8 @@ class OnboardingPreferencesApplicationTest {
 
         assertThatThrownBy(() -> new SaveOnboardingPreferences(
                 new CapturingRepository(),
-                identifier -> Optional.of(SECTOR_ID))
+                identifier -> Optional.of(SECTOR_ID),
+                PROPERTIES)
                 .execute(PROFILE_ID, preferences))
                 .isInstanceOf(OnboardingPreferencesValidationException.class)
                 .hasMessage("preferences do not belong to the authenticated profile.");
@@ -145,7 +159,8 @@ class OnboardingPreferencesApplicationTest {
                 profileId,
                 List.of("discover", "collaborate"),
                 List.of("sostenibilidad"),
-                List.of("mvp"));
+                List.of("mvp"),
+                LIMITS);
     }
 
     private static final class CapturingRepository implements OnboardingPreferencesRepository {

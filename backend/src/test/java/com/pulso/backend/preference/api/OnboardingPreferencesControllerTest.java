@@ -23,6 +23,7 @@ import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
 import com.pulso.backend.catalog.application.ActiveSectorLookup;
+import com.pulso.backend.config.PreferenceProperties;
 import com.pulso.backend.discovery.api.ApiExceptionHandler;
 import com.pulso.backend.preference.application.GetOnboardingPreferences;
 import com.pulso.backend.preference.application.OnboardingPreferencesRepository;
@@ -35,6 +36,10 @@ class OnboardingPreferencesControllerTest {
             "11111111-1111-1111-1111-111111111111");
     private static final UUID SECTOR_ID = UUID.fromString(
             "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+    private static final PreferenceProperties PROPERTIES =
+            new PreferenceProperties(10, 40, 120);
+    private static final OnboardingPreferences.Limits LIMITS =
+            new OnboardingPreferences.Limits(10, 40, 120);
 
     @Test
     void returnsTheAuthenticatedPreferencesContract() throws Exception {
@@ -209,8 +214,8 @@ class OnboardingPreferencesControllerTest {
             ActiveSectorLookup activeSectorLookup) {
         return MockMvcBuilders
                 .standaloneSetup(new OnboardingPreferencesController(
-                        new GetOnboardingPreferences(repository),
-                        new SaveOnboardingPreferences(repository, activeSectorLookup)))
+                        new GetOnboardingPreferences(repository, PROPERTIES),
+                        new SaveOnboardingPreferences(repository, activeSectorLookup, PROPERTIES)))
                 .setControllerAdvice(new ApiExceptionHandler())
                 .setCustomArgumentResolvers(new JwtArgumentResolver())
                 .build();
@@ -220,7 +225,7 @@ class OnboardingPreferencesControllerTest {
             List<String> intentions,
             List<String> sectors,
             List<String> stages) {
-        return new OnboardingPreferences(PROFILE_ID, intentions, sectors, stages);
+        return new OnboardingPreferences(PROFILE_ID, intentions, sectors, stages, LIMITS);
     }
 
     private static Jwt authenticatedJwt() {

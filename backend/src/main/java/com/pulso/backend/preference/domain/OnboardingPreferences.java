@@ -9,14 +9,15 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
+import com.pulso.backend.config.ApiMessages;
+
 public record OnboardingPreferences(
         UUID profileId,
         List<String> intentions,
         List<String> preferredSectors,
-        List<String> preferredStages) {
+        List<String> preferredStages,
+        Limits limits) {
 
-    private static final int MAX_ITEMS_PER_FIELD = 10;
-    private static final int MAX_TOKEN_LENGTH = 40;
     private static final Pattern UUID_PATTERN = Pattern.compile(
             "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
     private static final Pattern SLUG_PATTERN = Pattern.compile("[a-z0-9]+(?:-[a-z0-9]+)*");
@@ -38,38 +39,58 @@ public record OnboardingPreferences(
             "GROWING",
             "ESTABLISHED");
 
+    public record Limits(
+            int maxItemsPerField,
+            int maxTokenLength,
+            int sectorIdMaxLength) {
+    }
+
     public OnboardingPreferences {
         if (profileId == null) {
-            throw new OnboardingPreferencesValidationException("profileId is required.");
+            throw new OnboardingPreferencesValidationException(
+                    ApiMessages.PREFERENCES_REQUIRED_PROFILE);
         }
         intentions = normalizeList(
                 intentions,
                 "intentions",
-                value -> normalizeKnownToken(value, "intentions", ALLOWED_INTENTION_SET));
+                limits.maxItemsPerField(),
+                value -> normalizeKnownToken(
+                        value,
+                        "intentions",
+                        ALLOWED_INTENTION_SET,
+                        limits.maxTokenLength()));
         preferredSectors = normalizeList(
                 preferredSectors,
                 "preferredSectors",
-                OnboardingPreferences::normalizeSectorReference);
+                limits.maxItemsPerField(),
+                value -> normalizeSectorReference(value, limits.sectorIdMaxLength()));
         preferredStages = normalizeList(
                 preferredStages,
                 "preferredStages",
-                value -> normalizeKnownToken(value, "preferredStages", ALLOWED_STAGE_SET));
+                limits.maxItemsPerField(),
+                value -> normalizeKnownToken(
+                        value,
+                        "preferredStages",
+                        ALLOWED_STAGE_SET,
+                        limits.maxTokenLength()));
     }
 
-    public static OnboardingPreferences empty(UUID profileId) {
-        return new OnboardingPreferences(profileId, List.of(), List.of(), List.of());
+    public static OnboardingPreferences empty(UUID profileId, Limits limits) {
+        return new OnboardingPreferences(profileId, List.of(), List.of(), List.of(), limits);
     }
 
     private static List<String> normalizeList(
             List<String> values,
             String field,
+            int maxItemsPerField,
             Function<String, String> normalizer) {
         if (values == null) {
-            throw new OnboardingPreferencesValidationException(field + " must be an array.");
-        }
-        if (values.size() > MAX_ITEMS_PER_FIELD) {
             throw new OnboardingPreferencesValidationException(
-                    field + " must not contain more than " + MAX_ITEMS_PER_FIELD + " items.");
+                    String.format(ApiMessages.PREFERENCES_MUST_BE_ARRAY, field));
+        }
+        if (values.size() > maxItemsPerField) {
+            throw new OnboardingPreferencesValidationException(
+                    String.format(ApiMessages.PREFERENCES_MAX_ITEMS, field, maxItemsPerField));
         }
 
         List<String> normalizedValues = new ArrayList<>(values.size());
@@ -77,13 +98,13 @@ public record OnboardingPreferences(
         for (String value : values) {
             if (value == null) {
                 throw new OnboardingPreferencesValidationException(
-                        field + " must contain strings only.");
+                        String.format(ApiMessages.PREFERENCES_STRINGS_ONLY, field));
             }
 
             String normalized = normalizer.apply(value);
             if (!seen.add(normalized)) {
                 throw new OnboardingPreferencesValidationException(
-                        field + " must not contain duplicates: '" + normalized + "'.");
+                        String.format(ApiMessages.PREFERENCES_DUPLICATE, field, normalized));
             }
             normalizedValues.add(normalized);
         }
@@ -93,40 +114,43 @@ public record OnboardingPreferences(
     private static String normalizeKnownToken(
             String value,
             String field,
-            Set<String> allowedValues) {
+            Set<String> allowedValues,
+            int maxTokenLength) {
         String trimmed = value.trim();
         if (trimmed.isEmpty()) {
             throw new OnboardingPreferencesValidationException(
-                    field + " must not contain blank values.");
+                    String.format(ApiMessages.PREFERENCES_BLANK_VALUES, field));
         }
-        if (trimmed.length() > MAX_TOKEN_LENGTH) {
+        if (trimmed.length() > maxTokenLength) {
             throw new OnboardingPreferencesValidationException(
-                    field + " contains an invalid value.");
+                    String.format(ApiMessages.PREFERENCES_INVALID_VALUE, field));
         }
         String normalized = trimmed.toUpperCase(Locale.ROOT);
         if (!allowedValues.contains(normalized)) {
             throw new OnboardingPreferencesValidationException(
-                    field + " contains unknown value '" + normalized + "'.");
+                    String.format(ApiMessages.PREFERENCES_UNKNOWN_VALUE, field, normalized));
         }
         return normalized;
     }
 
-    private static String normalizeSectorReference(String value) {
+    private static String normalizeSectorReference(String value, int sectorIdMaxLength) {
         String normalized = value.trim().toLowerCase(Locale.ROOT);
         if (normalized.isEmpty()) {
             throw new OnboardingPreferencesValidationException(
-                    "preferredSectors must not contain blank values.");
+                    ApiMessages.PREFERENCES_SECTORS_BLANK);
         }
-        if (normalized.length() > 120) {
+        if (normalized.length() > sectorIdMaxLength) {
             throw new OnboardingPreferencesValidationException(
-                    "preferredSectors contains an invalid identifier.");
+                    ApiMessages.PREFERENCES_SECTORS_INVALID);
         }
         if (UUID_PATTERN.matcher(normalized).matches()) {
             return UUID.fromString(normalized).toString();
         }
         if (!SLUG_PATTERN.matcher(normalized).matches()) {
             throw new OnboardingPreferencesValidationException(
-                    "preferredSectors contains an invalid identifier '" + value.trim() + "'.");
+                    String.format(
+                            ApiMessages.PREFERENCES_SECTORS_INVALID_VALUE,
+                            value.trim()));
         }
         return normalized;
     }

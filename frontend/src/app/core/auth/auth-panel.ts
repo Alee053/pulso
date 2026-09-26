@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common'
 import { Component, inject, OnInit, signal } from '@angular/core'
+import { commonStrings } from '../../shared/strings/common.strings'
 import { SupabaseAuthGateway } from './supabase-auth.gateway'
+import { authStrings } from './strings/auth.strings'
 
 type AuthMode = 'sign-in' | 'sign-up'
 type FlipDirection = 'forward' | 'backward' | null
@@ -12,6 +14,8 @@ type FlipDirection = 'forward' | 'backward' | null
   templateUrl: './auth-panel.html',
 })
 export class AuthPanelComponent implements OnInit {
+  readonly strings = authStrings
+  readonly common = commonStrings
   readonly auth = inject(SupabaseAuthGateway)
   readonly mode = signal<AuthMode>('sign-in')
   readonly flipDirection = signal<FlipDirection>(null)
@@ -23,7 +27,7 @@ export class AuthPanelComponent implements OnInit {
 
   ngOnInit(): void {
     void this.auth.initialize().catch(() => {
-      this.message.set('No se pudo comprobar tu acceso. Inténtalo de nuevo.')
+      this.message.set(this.strings.initFailed)
     })
   }
 
@@ -34,7 +38,7 @@ export class AuthPanelComponent implements OnInit {
       return
     }
     if (!email || !this.password) {
-      this.message.set('Escribe tu correo y contraseña para continuar.')
+      this.message.set(this.strings.missingCredentials)
       return
     }
 
@@ -47,16 +51,16 @@ export class AuthPanelComponent implements OnInit {
       this.password = ''
       this.message.set(
         result.requiresEmailConfirmation
-          ? 'Revisa tu correo para confirmar la cuenta.'
+          ? this.strings.confirmEmail
           : this.mode() === 'sign-up'
-            ? 'Cuenta creada. Ya puedes explorar Pulso.'
-            : 'Sesión iniciada. Ya puedes explorar Pulso.',
+            ? this.strings.signUpSuccess
+            : this.strings.signInSuccess,
       )
     } catch {
       this.message.set(
         this.mode() === 'sign-up'
-          ? 'No se pudo crear la cuenta con esos datos.'
-          : 'No se pudo iniciar sesión con esos datos.',
+          ? this.strings.signUpFailed
+          : this.strings.signInFailed,
       )
     } finally {
       this.isBusy.set(false)
@@ -72,9 +76,9 @@ export class AuthPanelComponent implements OnInit {
     this.message.set(null)
     try {
       await this.auth.signOut()
-      this.message.set('Sesión cerrada.')
+      this.message.set(this.strings.signedOut)
     } catch {
-      this.message.set('No se pudo cerrar la sesión. Inténtalo de nuevo.')
+      this.message.set(this.common.sessionCloseFailed)
     } finally {
       this.isBusy.set(false)
     }

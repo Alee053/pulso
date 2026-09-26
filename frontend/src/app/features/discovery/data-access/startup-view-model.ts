@@ -1,3 +1,4 @@
+import { cardStrings } from '../strings/feed.strings'
 import type { Startup, StartupSummary } from '../domain/startup'
 
 const sectorSignals: Record<string, string[]> = {
@@ -21,7 +22,7 @@ export function toStartupViewModel(summary: StartupSummary): Startup {
     city: summary.city,
     sector: summary.sector,
     pitch: summary.tagline,
-    description: `Proyecto publicado en ${summary.city}, dentro del sector ${summary.sector}.`,
+    description: cardStrings.descriptionFallback(summary.city, summary.sector),
     stage: summary.stage,
     tags,
     badges: [summary.stage, summary.sector],

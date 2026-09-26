@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.pulso.backend.config.ApiMessages;
+import com.pulso.backend.config.DiscoveryProperties;
 import com.pulso.backend.discovery.application.ListPublishedStartups;
 import com.pulso.backend.discovery.domain.StartupSummary;
 
@@ -14,19 +16,20 @@ import com.pulso.backend.discovery.domain.StartupSummary;
 @RequestMapping("/api/v1/startups")
 public class StartupController {
 
-    private static final int MAX_LIMIT = 50;
-    private static final int MAX_OFFSET = 100_000;
-
     private final ListPublishedStartups listPublishedStartups;
+    private final DiscoveryProperties properties;
 
-    public StartupController(ListPublishedStartups listPublishedStartups) {
+    public StartupController(
+            ListPublishedStartups listPublishedStartups,
+            DiscoveryProperties properties) {
         this.listPublishedStartups = listPublishedStartups;
+        this.properties = properties;
     }
 
     @GetMapping
     public StartupListResponse list(
-            @RequestParam(defaultValue = "0") int offset,
-            @RequestParam(defaultValue = "20") int limit) {
+            @RequestParam(defaultValue = "${pulso.discovery.default-offset}") int offset,
+            @RequestParam(defaultValue = "${pulso.discovery.default-limit}") int limit) {
         validateOffset(offset);
         validateLimit(limit);
 
@@ -42,15 +45,17 @@ public class StartupController {
                 new StartupListResponse.PageMetadata(offset, limit, hasMore));
     }
 
-    private static void validateOffset(int offset) {
-        if (offset < 0 || offset > MAX_OFFSET) {
-            throw new InvalidRequestException("offset must be between 0 and " + MAX_OFFSET + ".");
+    private void validateOffset(int offset) {
+        if (offset < 0 || offset > properties.maxOffset()) {
+            throw new InvalidRequestException(
+                    String.format(ApiMessages.INVALID_OFFSET_DETAIL, properties.maxOffset()));
         }
     }
 
-    private static void validateLimit(int limit) {
-        if (limit < 1 || limit > MAX_LIMIT) {
-            throw new InvalidRequestException("limit must be between 1 and " + MAX_LIMIT + ".");
+    private void validateLimit(int limit) {
+        if (limit < 1 || limit > properties.maxLimit()) {
+            throw new InvalidRequestException(
+                    String.format(ApiMessages.INVALID_LIMIT_DETAIL, properties.maxLimit()));
         }
     }
 }

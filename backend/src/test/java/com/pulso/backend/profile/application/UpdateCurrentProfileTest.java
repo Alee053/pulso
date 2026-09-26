@@ -16,6 +16,7 @@ import com.pulso.backend.profile.domain.ProfileValidationException;
 class UpdateCurrentProfileTest {
 
     private static final UUID PROFILE_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
+    private static final ProfilePatch.Limits LIMITS = new ProfilePatch.Limits(120, 500, 500, 120, 120);
 
     @Test
     void updatesTheProfileIdentifiedByTheAuthenticatedSubject() {
@@ -28,9 +29,11 @@ class UpdateCurrentProfileTest {
                 null,
                 null,
                 "private",
-                null);
+                null,
+                LIMITS);
 
-        Profile result = new UpdateCurrentProfile(repository).execute(PROFILE_ID, patch);
+        Profile result = new UpdateCurrentProfile(repository, profileProperties())
+                .execute(PROFILE_ID, patch);
 
         assertThat(repository.profileId).isEqualTo(PROFILE_ID);
         assertThat(repository.patch).isSameAs(patch);
@@ -51,11 +54,12 @@ class UpdateCurrentProfileTest {
             }
         };
 
-        assertThatThrownBy(() -> new UpdateCurrentProfile(repository).execute(
-                PROFILE_ID,
-                new ProfilePatch(null, "Perfil", null, null, null, null, null, null)))
+        assertThatThrownBy(() -> new UpdateCurrentProfile(repository, profileProperties())
+                .execute(
+                        PROFILE_ID,
+                        new ProfilePatch(null, "Perfil", null, null, null, null, null, null, LIMITS)))
                 .isInstanceOf(ProfileNotFoundException.class)
-                .hasMessage("Authenticated profile was not found.");
+                .hasMessage("The authenticated profile was not found.");
     }
 
     @Test
@@ -68,9 +72,14 @@ class UpdateCurrentProfileTest {
                 null,
                 null,
                 "HIDDEN",
-                null))
+                null,
+                LIMITS))
                 .isInstanceOf(ProfileValidationException.class)
                 .hasMessage("profileVisibility must be one of PUBLIC, MEMBERS_ONLY, PRIVATE.");
+    }
+
+    private static com.pulso.backend.config.ProfileProperties profileProperties() {
+        return new com.pulso.backend.config.ProfileProperties(120, 500, 500, 120, 120);
     }
 
     private static Profile profile() {

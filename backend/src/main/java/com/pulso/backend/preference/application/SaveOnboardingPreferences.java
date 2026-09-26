@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.pulso.backend.catalog.application.ActiveSectorLookup;
+import com.pulso.backend.config.ApiMessages;
+import com.pulso.backend.config.PreferenceProperties;
 import com.pulso.backend.preference.domain.OnboardingPreferences;
 import com.pulso.backend.preference.domain.OnboardingPreferencesValidationException;
 
@@ -17,12 +19,22 @@ public class SaveOnboardingPreferences {
 
     private final OnboardingPreferencesRepository repository;
     private final ActiveSectorLookup activeSectorLookup;
+    private final PreferenceProperties properties;
 
     public SaveOnboardingPreferences(
             OnboardingPreferencesRepository repository,
-            ActiveSectorLookup activeSectorLookup) {
+            ActiveSectorLookup activeSectorLookup,
+            PreferenceProperties properties) {
         this.repository = repository;
         this.activeSectorLookup = activeSectorLookup;
+        this.properties = properties;
+    }
+
+    public OnboardingPreferences.Limits limits() {
+        return new OnboardingPreferences.Limits(
+                properties.maxItemsPerField(),
+                properties.maxTokenLength(),
+                properties.sectorIdMaxLength());
     }
 
     @Transactional
@@ -31,25 +43,25 @@ public class SaveOnboardingPreferences {
             OnboardingPreferences preferences) {
         if (authenticatedProfileId == null) {
             throw new OnboardingPreferencesValidationException(
-                    "authenticatedProfileId is required.");
+                    ApiMessages.AUTHENTICATED_PROFILE_REQUIRED);
         }
         if (preferences == null) {
-            throw new OnboardingPreferencesValidationException("preferences are required.");
+            throw new OnboardingPreferencesValidationException(ApiMessages.PREFERENCES_REQUIRED);
         }
         if (!authenticatedProfileId.equals(preferences.profileId())) {
             throw new OnboardingPreferencesValidationException(
-                    "preferences do not belong to the authenticated profile.");
+                    ApiMessages.PREFERENCES_WRONG_PROFILE);
         }
         Set<UUID> selectedSectorIds = new HashSet<>();
         for (String sector : preferences.preferredSectors()) {
             Optional<UUID> activeSectorId = activeSectorLookup.findActiveSectorId(sector);
             if (activeSectorId.isEmpty()) {
                 throw new OnboardingPreferencesValidationException(
-                        "preferredSectors contains unknown or inactive sector '" + sector + "'.");
+                        String.format(ApiMessages.SECTOR_UNKNOWN, sector));
             }
             if (!selectedSectorIds.add(activeSectorId.get())) {
                 throw new OnboardingPreferencesValidationException(
-                        "preferredSectors must not contain duplicates: '" + sector + "'.");
+                        String.format(ApiMessages.SECTOR_DUPLICATE, sector));
             }
         }
         return repository.upsert(preferences);

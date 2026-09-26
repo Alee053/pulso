@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import com.pulso.backend.config.ApiMessages;
+
 public final class MembershipAdministration {
 
     private static final Set<String> ADMIN_ROLES = Set.of("OWNER", "ADMIN");
@@ -25,11 +27,11 @@ public final class MembershipAdministration {
         requireTarget(target);
         if (target.profileId() == null) {
             throw new MembershipInvalidTransitionException(
-                    "cannot activate a membership without a profile.");
+                    ApiMessages.CANNOT_ACTIVATE_NO_PROFILE);
         }
         if (!ACTIVATABLE_STATUSES.contains(target.membershipStatus())) {
             throw new MembershipInvalidTransitionException(
-                    "cannot activate a membership with status " + target.membershipStatus() + ".");
+                    String.format(ApiMessages.CANNOT_ACTIVATE_STATUS, target.membershipStatus()));
         }
         return replace(
                 target,
@@ -48,10 +50,10 @@ public final class MembershipAdministration {
         String normalizedRole = MembershipAdministrationValues.requireKnown(newRole, "role", KNOWN_ROLES);
         if (!"ACTIVE".equals(target.membershipStatus())) {
             throw new MembershipInvalidTransitionException(
-                    "cannot change role of a membership with status " + target.membershipStatus() + ".");
+                    String.format(ApiMessages.CANNOT_CHANGE_ROLE_STATUS, target.membershipStatus()));
         }
         if (isSelf(actor, target) && rank(normalizedRole) > rank(target.role())) {
-            throw new MembershipPermissionException("cannot elevate own role.");
+            throw new MembershipPermissionException(ApiMessages.MEMBERSHIP_SELF_ELEVATION);
         }
         return replace(target, normalizedRole, target.membershipStatus(), members);
     }
@@ -69,7 +71,7 @@ public final class MembershipAdministration {
         }
         if (!WITHDRAWABLE_STATUSES.contains(target.membershipStatus())) {
             throw new MembershipInvalidTransitionException(
-                    "cannot withdraw a membership with status " + target.membershipStatus() + ".");
+                    String.format(ApiMessages.CANNOT_WITHDRAW_STATUS, target.membershipStatus()));
         }
         return replace(
                 target,
@@ -118,7 +120,7 @@ public final class MembershipAdministration {
 
     private static void requireTarget(ProjectMember target) {
         if (target == null) {
-            throw new ProjectValidationException("membership is required.");
+            throw new ProjectValidationException(ApiMessages.MEMBERSHIP_REQUIRED);
         }
     }
 

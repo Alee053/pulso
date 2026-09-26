@@ -1,8 +1,10 @@
 package com.pulso.backend.project.application;
 
+import com.pulso.backend.config.ApiMessages;
+
 public class ProjectConflictException extends RuntimeException {
 
     public ProjectConflictException() {
-        super("A project with the same slug already exists.");
+        super(ApiMessages.PROJECT_CONFLICT_DETAIL);
     }
 }

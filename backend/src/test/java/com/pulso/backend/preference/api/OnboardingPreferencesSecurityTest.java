@@ -20,6 +20,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.pulso.backend.catalog.application.ActiveSectorLookup;
+import com.pulso.backend.config.PreferenceProperties;
 import com.pulso.backend.config.SecurityConfig;
 import com.pulso.backend.discovery.api.ApiExceptionHandler;
 import com.pulso.backend.preference.application.GetOnboardingPreferences;
@@ -91,14 +92,19 @@ class OnboardingPreferencesSecurityTest {
         @Bean
         GetOnboardingPreferences getOnboardingPreferences(
                 OnboardingPreferencesRepository repository) {
-            return new GetOnboardingPreferences(repository);
+            return new GetOnboardingPreferences(
+                    repository,
+                    new PreferenceProperties(10, 40, 120));
         }
 
         @Bean
         SaveOnboardingPreferences saveOnboardingPreferences(
                 OnboardingPreferencesRepository repository,
                 ActiveSectorLookup activeSectorLookup) {
-            return new SaveOnboardingPreferences(repository, activeSectorLookup);
+            return new SaveOnboardingPreferences(
+                    repository,
+                    activeSectorLookup,
+                    new PreferenceProperties(10, 40, 120));
         }
     }
 }

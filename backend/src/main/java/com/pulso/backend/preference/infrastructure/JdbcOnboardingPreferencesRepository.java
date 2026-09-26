@@ -13,6 +13,8 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
+import com.pulso.backend.config.ApiMessages;
+import com.pulso.backend.config.PreferenceProperties;
 import com.pulso.backend.preference.application.OnboardingPreferencesRepository;
 import com.pulso.backend.preference.domain.OnboardingPreferences;
 
@@ -30,12 +32,15 @@ public class JdbcOnboardingPreferencesRepository implements OnboardingPreference
 
     private final JdbcClient jdbcClient;
     private final ObjectMapper objectMapper;
+    private final PreferenceProperties properties;
 
     public JdbcOnboardingPreferencesRepository(
             JdbcClient jdbcClient,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            PreferenceProperties properties) {
         this.jdbcClient = jdbcClient;
         this.objectMapper = objectMapper;
+        this.properties = properties;
     }
 
     @Override
@@ -86,7 +91,11 @@ public class JdbcOnboardingPreferencesRepository implements OnboardingPreference
                 resultSet.getObject("profile_id", UUID.class),
                 fromJson(resultSet, "intentions"),
                 fromJson(resultSet, "preferred_sectors"),
-                fromJson(resultSet, "preferred_stages"));
+                fromJson(resultSet, "preferred_stages"),
+                new OnboardingPreferences.Limits(
+                        properties.maxItemsPerField(),
+                        properties.maxTokenLength(),
+                        properties.sectorIdMaxLength()));
     }
 
     private List<String> fromJson(ResultSet resultSet, String column) throws SQLException {
@@ -96,7 +105,7 @@ public class JdbcOnboardingPreferencesRepository implements OnboardingPreference
                     STRING_LIST_TYPE);
         } catch (JacksonException exception) {
             throw new SQLException(
-                    "Stored onboarding preferences contain invalid JSON.",
+                    ApiMessages.STORED_PREFERENCES_INVALID_JSON,
                     exception);
         }
     }
@@ -106,7 +115,7 @@ public class JdbcOnboardingPreferencesRepository implements OnboardingPreference
             return objectMapper.writeValueAsString(values);
         } catch (JacksonException exception) {
             throw new IllegalStateException(
-                    "Onboarding preferences could not be serialized.",
+                    ApiMessages.PREFERENCES_SERIALIZE_FAILED,
                     exception);
         }
     }

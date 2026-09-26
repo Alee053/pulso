@@ -6,6 +6,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.Locale;
 
+import com.pulso.backend.config.ApiMessages;
+
 public final class InviteTokenDigest {
 
     private InviteTokenDigest() {
@@ -13,24 +15,24 @@ public final class InviteTokenDigest {
 
     public static String fromPlaintext(String plaintextToken) {
         if (plaintextToken == null || plaintextToken.isBlank()) {
-            throw new ProjectValidationException("invite token is required.");
+            throw new ProjectValidationException(ApiMessages.INVITE_TOKEN_REQUIRED);
         }
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             return HexFormat.of().formatHex(
                     digest.digest(plaintextToken.getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException exception) {
-            throw new IllegalStateException("SHA-256 is required to digest invite tokens.", exception);
+            throw new IllegalStateException(ApiMessages.SHA256_REQUIRED, exception);
         }
     }
 
     public static String require(String digest) {
         if (digest == null || digest.isBlank()) {
-            throw new ProjectValidationException("inviteTokenDigest is required.");
+            throw new ProjectValidationException(ApiMessages.INVITE_TOKEN_DIGEST_REQUIRED);
         }
         String normalized = digest.trim().toLowerCase(Locale.ROOT);
         if (normalized.length() != 64 || !normalized.chars().allMatch(InviteTokenDigest::isHex)) {
-            throw new ProjectValidationException("inviteTokenDigest must be a SHA-256 hex digest.");
+            throw new ProjectValidationException(ApiMessages.INVITE_TOKEN_DIGEST_INVALID);
         }
         return normalized;
     }

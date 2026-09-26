@@ -44,7 +44,7 @@ public class MeController {
             @RequestBody ProfilePatchRequest request) {
         Profile profile = updateCurrentProfile.execute(
                 authenticatedProfileId(jwt),
-                request.toPatch());
+                request.toPatch(updateCurrentProfile.limits()));
         return MeResponse.from(jwt, profile);
     }
 

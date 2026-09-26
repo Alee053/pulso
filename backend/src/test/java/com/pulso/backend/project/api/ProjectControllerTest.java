@@ -20,6 +20,7 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
+import com.pulso.backend.config.ProjectProperties;
 import com.pulso.backend.discovery.api.ApiExceptionHandler;
 import com.pulso.backend.project.application.CreateDraftProject;
 import com.pulso.backend.project.application.ProjectConflictException;
@@ -142,7 +143,9 @@ class ProjectControllerTest {
 
     private static MockMvc mockMvc(ProjectRepository repository) {
         return MockMvcBuilders
-                .standaloneSetup(new ProjectController(new CreateDraftProject(repository)))
+                .standaloneSetup(new ProjectController(new CreateDraftProject(
+                        repository,
+                        new ProjectProperties(2, 120, 160, 240, 5000, 120, 40, 254))))
                 .setControllerAdvice(new ApiExceptionHandler())
                 .setCustomArgumentResolvers(new JwtArgumentResolver())
                 .build();

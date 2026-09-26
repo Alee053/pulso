@@ -22,6 +22,9 @@ class MemberInvitationTest {
     private static final String PLAINTEXT_TOKEN = "accept-me";
     private static final String TOKEN_DIGEST =
             "69a24810112e8f3e257dfd85e240bcc8e8a60155787eaa0ec9526f584f0deb7d";
+    private static final int INVITEE_EMAIL_MAX_LENGTH = 254;
+    private static final MemberInvitation.Limits LIMITS =
+            new MemberInvitation.Limits(INVITEE_EMAIL_MAX_LENGTH);
 
     @Test
     void inviteNormalizesEmailAndStartsInvitedAsMemberWithoutAProfile() {
@@ -57,7 +60,8 @@ class MemberInvitationTest {
                 owner(),
                 "ada@example.com",
                 PLAINTEXT_TOKEN,
-                List.of()))
+                List.of(),
+                LIMITS))
                 .isInstanceOf(MemberInvitationProjectNotFoundException.class)
                 .hasMessage("project does not exist.");
     }
@@ -70,7 +74,8 @@ class MemberInvitationTest {
                 null,
                 "ada@example.com",
                 PLAINTEXT_TOKEN,
-                List.of()))
+                List.of(),
+                LIMITS))
                 .isInstanceOf(MemberInvitationPermissionException.class)
                 .hasMessage("active OWNER or ADMIN membership is required.");
         assertThatThrownBy(() -> inviteWith(member("ACTIVE"), List.of()))
@@ -100,7 +105,8 @@ class MemberInvitationTest {
                 new MemberInvitationActor(PROJECT_ID, OWNER_ID, "ADMIN", "ACTIVE"),
                 "ada@example.com",
                 PLAINTEXT_TOKEN,
-                List.of());
+                List.of(),
+                LIMITS);
 
         assertThat(created.invitation().membershipStatus()).isEqualTo("INVITED");
         assertThat(created.invitation().createdByProfileId()).isEqualTo(OWNER_ID);
@@ -177,7 +183,8 @@ class MemberInvitationTest {
         assertThatThrownBy(() -> invitation.accept(null))
                 .isInstanceOf(ProjectValidationException.class)
                 .hasMessage("profileId is required.");
-        assertThatThrownBy(() -> invitation.accept(ACCEPTING_PROFILE_ID).accept(ACCEPTING_PROFILE_ID))
+        assertThatThrownBy(() -> invitation.accept(ACCEPTING_PROFILE_ID)
+                .accept(ACCEPTING_PROFILE_ID))
                 .isInstanceOf(ProjectValidationException.class)
                 .hasMessage("cannot accept a membership with status ACTIVE.");
     }
@@ -200,7 +207,8 @@ class MemberInvitationTest {
                 owner(),
                 "ada@example.com",
                 acceptToken,
-                List.of()))
+                List.of(),
+                LIMITS))
                 .isInstanceOf(ProjectValidationException.class)
                 .hasMessage("invite token is required.");
     }
@@ -235,7 +243,8 @@ class MemberInvitationTest {
                 actor,
                 inviteeEmail,
                 PLAINTEXT_TOKEN,
-                existingMembers);
+                existingMembers,
+                LIMITS);
     }
 
     private static MemberInvitationActor owner() {
@@ -253,7 +262,8 @@ class MemberInvitationTest {
                 null,
                 "MEMBER",
                 "INVITED",
-                OWNER_ID);
+                OWNER_ID,
+                LIMITS);
     }
 
     private static MemberInvitation left(String inviteeEmail) {
@@ -263,7 +273,8 @@ class MemberInvitationTest {
                 null,
                 "MEMBER",
                 "LEFT",
-                OWNER_ID);
+                OWNER_ID,
+                LIMITS);
     }
 
     private static MemberInvitation removed(String inviteeEmail) {
@@ -273,7 +284,8 @@ class MemberInvitationTest {
                 null,
                 "MEMBER",
                 "REMOVED",
-                OWNER_ID);
+                OWNER_ID,
+                LIMITS);
     }
 
     private static MemberInvitation activeMember() {
@@ -283,6 +295,7 @@ class MemberInvitationTest {
                 ACCEPTING_PROFILE_ID,
                 "MEMBER",
                 "ACTIVE",
-                OWNER_ID);
+                OWNER_ID,
+                LIMITS);
     }
 }

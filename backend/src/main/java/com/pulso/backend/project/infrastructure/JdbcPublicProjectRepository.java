@@ -46,6 +46,7 @@ public class JdbcPublicProjectRepository implements PublicProjectRepository {
                     from public.project_tags pt
                     join public.tags t on t.id = pt.tag_id
                     where pt.project_id = p.id
+                      and t.is_active = true
                 ), '[]'::jsonb)::text as tags,
                 (
                     case
@@ -74,6 +75,7 @@ public class JdbcPublicProjectRepository implements PublicProjectRepository {
                 ), '[]'::jsonb)::text as members
             from public.projects p
             join public.sectors s on s.id = p.sector_id
+                and s.is_active = true
             where p.status = 'PUBLISHED'
             """;
 

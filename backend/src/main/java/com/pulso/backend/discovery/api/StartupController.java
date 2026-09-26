@@ -28,21 +28,25 @@ public class StartupController {
 
     @GetMapping
     public StartupListResponse list(
-            @RequestParam(defaultValue = "${pulso.discovery.default-offset}") int offset,
-            @RequestParam(defaultValue = "${pulso.discovery.default-limit}") int limit) {
-        validateOffset(offset);
-        validateLimit(limit);
+            @RequestParam(required = false) Integer offset,
+            @RequestParam(required = false) Integer limit) {
+        int effectiveOffset = offset == null ? properties.defaultOffset() : offset;
+        int effectiveLimit = limit == null ? properties.defaultLimit() : limit;
+        validateOffset(effectiveOffset);
+        validateLimit(effectiveLimit);
 
-        List<StartupSummary> results = listPublishedStartups.execute(offset, limit + 1);
-        boolean hasMore = results.size() > limit;
+        List<StartupSummary> results = listPublishedStartups.execute(
+                effectiveOffset,
+                effectiveLimit + 1);
+        boolean hasMore = results.size() > effectiveLimit;
         List<StartupResponse> data = results.stream()
-                .limit(limit)
+                .limit(effectiveLimit)
                 .map(StartupResponse::from)
                 .toList();
 
         return new StartupListResponse(
                 data,
-                new StartupListResponse.PageMetadata(offset, limit, hasMore));
+                new StartupListResponse.PageMetadata(effectiveOffset, effectiveLimit, hasMore));
     }
 
     private void validateOffset(int offset) {

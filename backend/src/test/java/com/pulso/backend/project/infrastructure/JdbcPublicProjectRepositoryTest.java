@@ -41,6 +41,8 @@ class JdbcPublicProjectRepositoryTest {
             "22222222-2222-2222-2222-222222222222");
     private static final UUID INACTIVE_TAG_ID = UUID.fromString(
             "14141414-1414-1414-1414-141414141414");
+    private static final UUID SECOND_TAG_ID = UUID.fromString(
+            "15151515-1515-1515-1515-151515151515");
     private static final UUID PUBLIC_PROFILE_ID = UUID.fromString(
             "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private static final UUID PRIVATE_PROFILE_ID = UUID.fromString(
@@ -49,6 +51,8 @@ class JdbcPublicProjectRepositoryTest {
             "cccccccc-cccc-cccc-cccc-cccccccccccc");
     private static final UUID LEFT_PROFILE_ID = UUID.fromString(
             "dddddddd-dddd-dddd-dddd-dddddddddddd");
+    private static final UUID SECOND_PUBLIC_PROFILE_ID = UUID.fromString(
+            "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
 
     @Container
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:17-alpine");
@@ -139,11 +143,13 @@ class JdbcPublicProjectRepositoryTest {
                 insert into public.tags (id, slug, name, is_active)
                 values
                   (:id, :slug, :name, true),
-                  (:inactiveId, 'tag-inactivo', 'Tag inactivo', false)
+                  (:inactiveId, 'tag-inactivo', 'Tag inactivo', false),
+                  (:secondId, 'impacto', 'Impacto', true)
                 """)
                 .param("id", TAG_ID)
                 .param("slug", "economia-circular")
                 .param("inactiveId", INACTIVE_TAG_ID)
+                .param("secondId", SECOND_TAG_ID)
                 .param("name", "Economía circular")
                 .update();
         jdbcClient.sql("""
@@ -152,12 +158,14 @@ class JdbcPublicProjectRepositoryTest {
                   (:publicId, 'Persona Uno', 'avatars/persona-uno.webp', 'ACTIVE'),
                   (:privateId, 'Persona Privada', null, 'ACTIVE'),
                   (:inactiveId, 'Persona Inactiva', null, 'SUSPENDED'),
-                  (:leftId, 'Persona que salio', null, 'ACTIVE')
+                  (:leftId, 'Persona que salio', null, 'ACTIVE'),
+                  (:secondPublicId, 'Persona Dos', null, 'ACTIVE')
                 """)
                 .param("publicId", PUBLIC_PROFILE_ID)
                 .param("privateId", PRIVATE_PROFILE_ID)
                 .param("inactiveId", INACTIVE_PROFILE_ID)
                 .param("leftId", LEFT_PROFILE_ID)
+                .param("secondPublicId", SECOND_PUBLIC_PROFILE_ID)
                 .update();
         jdbcClient.sql("""
                 insert into public.projects (
@@ -216,11 +224,13 @@ class JdbcPublicProjectRepositoryTest {
                 insert into public.project_tags (project_id, tag_id)
                 values
                   (:projectId, :activeTagId),
-                  (:projectId, :inactiveTagId)
+                  (:projectId, :inactiveTagId),
+                  (:projectId, :secondTagId)
                 """)
                 .param("projectId", PROJECT_ID)
                 .param("activeTagId", TAG_ID)
                 .param("inactiveTagId", INACTIVE_TAG_ID)
+                .param("secondTagId", SECOND_TAG_ID)
                 .update();
         jdbcClient.sql("""
                 insert into public.project_members (
@@ -229,17 +239,20 @@ class JdbcPublicProjectRepositoryTest {
                   (:publicMemberId, :projectId, :publicProfileId, 'ACTIVE', true, 'Co-fundadora', true),
                   (:privateMemberId, :projectId, :privateProfileId, 'ACTIVE', false, 'Invitado', false),
                   (:inactiveMemberId, :projectId, :inactiveProfileId, 'ACTIVE', true, 'Ex miembro', false),
-                  (:leftMemberId, :projectId, :leftProfileId, 'LEFT', true, 'Former member', false)
+                  (:leftMemberId, :projectId, :leftProfileId, 'LEFT', true, 'Former member', false),
+                  (:secondPublicMemberId, :projectId, :secondPublicProfileId, 'ACTIVE', true, 'Member', false)
                 """)
                 .param("publicMemberId", UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd"))
                 .param("privateMemberId", UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"))
                 .param("inactiveMemberId", UUID.fromString("ffffffff-ffff-ffff-ffff-ffffffffffff"))
                 .param("leftMemberId", UUID.fromString("12121212-3434-5656-7878-909090909090"))
+                .param("secondPublicMemberId", UUID.fromString("23232323-2323-2323-2323-232323232323"))
                 .param("projectId", PROJECT_ID)
                 .param("publicProfileId", PUBLIC_PROFILE_ID)
                 .param("privateProfileId", PRIVATE_PROFILE_ID)
                 .param("inactiveProfileId", INACTIVE_PROFILE_ID)
                 .param("leftProfileId", LEFT_PROFILE_ID)
+                .param("secondPublicProfileId", SECOND_PUBLIC_PROFILE_ID)
                 .update();
     }
 
@@ -253,7 +266,8 @@ class JdbcPublicProjectRepositoryTest {
         assertThat(bySlug.sector()).isEqualTo(
                 new PublicProjectDetail.Sector(SECTOR_ID, "sostenibilidad", "Sostenibilidad"));
         assertThat(bySlug.tags()).containsExactly(
-                new PublicProjectDetail.Tag(TAG_ID, "economia-circular", "Economía circular"));
+                new PublicProjectDetail.Tag(TAG_ID, "economia-circular", "Economía circular"),
+                new PublicProjectDetail.Tag(SECOND_TAG_ID, "impacto", "Impacto"));
         assertThat(bySlug.externalLinks()).containsExactly(
                 new PublicProjectDetail.ExternalLink(
                         "WEBSITE", "https://ecopack.example", "Sitio web"));
@@ -263,7 +277,13 @@ class JdbcPublicProjectRepositoryTest {
                         "Persona Uno",
                         "avatars/persona-uno.webp",
                         "Co-fundadora",
-                        true));
+                        true),
+                new PublicProjectDetail.Member(
+                        SECOND_PUBLIC_PROFILE_ID,
+                        "Persona Dos",
+                        null,
+                        "Member",
+                        false));
     }
 
     @Test

@@ -80,6 +80,27 @@ class ApiRulePropertiesTest {
                 });
     }
 
+    @Test
+    void rejectsNonPositiveApiRuleValues() {
+        assertConfigurationRejected("pulso.catalogs.max-items-per-catalog=0");
+        assertConfigurationRejected("pulso.preferences.max-items-per-field=0");
+        assertConfigurationRejected("pulso.profile.short-bio-max-length=-1");
+        assertConfigurationRejected("pulso.project.description-max-length=0");
+    }
+
+    @Test
+    void rejectsInconsistentPaginationAndSlugRanges() {
+        assertConfigurationRejected("pulso.discovery.default-limit=51");
+        assertConfigurationRejected("pulso.discovery.default-offset=100001");
+        assertConfigurationRejected("pulso.project.slug-min-length=121");
+    }
+
+    private void assertConfigurationRejected(String propertyValue) {
+        contextRunner
+                .withPropertyValues(propertyValue)
+                .run(context -> assertThat(context).hasFailed());
+    }
+
     @Configuration(proxyBeanMethods = false)
     @EnableConfigurationProperties({
             DiscoveryProperties.class,

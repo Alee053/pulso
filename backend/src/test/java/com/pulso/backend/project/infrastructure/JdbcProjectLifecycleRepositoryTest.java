@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 import javax.sql.DataSource;
@@ -196,7 +197,7 @@ class JdbcProjectLifecycleRepositoryTest {
                 where id = :projectId
                 """)
                 .param("reviewerId", REVIEWER_ID)
-                .param("reviewedAt", REVIEWED_AT)
+                .param("reviewedAt", REVIEWED_AT.atOffset(ZoneOffset.UTC))
                 .param("projectId", PROJECT_ID)
                 .update();
 
@@ -235,7 +236,7 @@ class JdbcProjectLifecycleRepositoryTest {
                 where id = :projectId
                 """)
                 .param("projectId", PROJECT_ID)
-                .param("publishedAt", PUBLISHED_AT)
+                .param("publishedAt", PUBLISHED_AT.atOffset(ZoneOffset.UTC))
                 .update();
 
         int updated = repository.updateLifecycle(

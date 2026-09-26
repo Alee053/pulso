@@ -87,6 +87,9 @@ class ChangeProjectLifecycleTest {
         assertThatThrownBy(() -> useCase.requestPublication(PROJECT_ID, PROFILE_ID))
                 .isInstanceOf(ProjectLifecycleAuthorizationException.class)
                 .hasMessage("active OWNER or ADMIN membership is required.");
+        assertThatThrownBy(() -> useCase.archive(PROJECT_ID, PROFILE_ID))
+                .isInstanceOf(ProjectLifecycleAuthorizationException.class)
+                .hasMessage("active OWNER or ADMIN membership is required.");
         assertThat(repository.updatedState).isNull();
     }
 

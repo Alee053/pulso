@@ -303,6 +303,47 @@ Conflict`; other PostgreSQL failures return the sanitized `503 Service
 Unavailable` response. Missing, invalid, or `service_role` bearer tokens
 return `401 Unauthorized`.
 
+## `POST /api/v1/projects/{projectId}/publication-request`
+
+Requests publication review for a project in `DRAFT`. The profile identity is
+always read from the validated JWT subject. The backend authorizes the action
+only when the matching `project_members` row for that exact project and profile
+has `role = OWNER` or `ADMIN` and `membership_status = ACTIVE`.
+
+The request body is empty (or `{}`). It cannot provide `profileId`, `owner`,
+`role`, `status`, `publishedAt`, `reviewedAt`, `reviewedByProfileId`, or
+`reviewNote`. The endpoint changes only `projects.status` to `PENDING_REVIEW`;
+it never publishes the project or changes review data.
+
+Response `200 OK`:
+
+```json
+{
+  "projectId": "33333333-3333-3333-3333-333333333333",
+  "status": "PENDING_REVIEW"
+}
+```
+
+## `POST /api/v1/projects/{projectId}/archive`
+
+Archives a project from `DRAFT`, `PENDING_REVIEW`, `PUBLISHED`, or `REJECTED`
+under the same persisted-membership authorization rule. The server sets
+`archived_at`, preserves `published_at`, and returns only the project reference
+and new status:
+
+```json
+{
+  "projectId": "33333333-3333-3333-3333-333333333333",
+  "status": "ARCHIVED"
+}
+```
+
+`MEMBER`, invited, left, removed, missing, external, or wrong-project
+memberships return the same `403 Membership permission` problem. Invalid
+action fields return `400`; invalid lifecycle sources return `400`; a concurrent
+state change returns the sanitized `409 Project state conflict`. There is no
+team endpoint that accepts a direct `PUBLISHED` transition.
+
 ## `GET /api/v1/me/preferences`
 
 Returns the onboarding preferences of the authenticated profile. The profile

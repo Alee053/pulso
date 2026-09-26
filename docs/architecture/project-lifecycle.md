@@ -1,8 +1,9 @@
 # Project lifecycle
 
 **Status: Current** for the team-action policy in
-`com.pulso.backend.project.domain.ProjectLifecycle`. **Target** for HTTP
-publication-request and archive endpoints, and for administrative review.
+`com.pulso.backend.project.domain.ProjectLifecycle` and its protected HTTP
+publication-request and archive endpoints. Administrative review remains a
+separate target outside S2.2.
 
 S2.2 splits **team actions** from **administrative review**. The team can ask
 for publication and can archive. Only administrative review may move a project
@@ -42,6 +43,13 @@ There is no team unarchive action in this flow.
 
 The team has no action whose result is `PUBLISHED`. Moving `PENDING_REVIEW` to
 `PUBLISHED` or `REJECTED` belongs to administrative review and is out of S2.2.
+
+The HTTP actions resolve the profile exclusively from the validated JWT subject
+and join it to `project_members` using the requested `project_id`. The role and
+membership status are read from that persisted row; request bodies do not accept
+identity, role, target status, or review fields. Missing memberships and all
+non-active/non-authorized memberships share the same `403` response so the API
+does not disclose private project state.
 
 ## Administrative review (out of S2.2)
 

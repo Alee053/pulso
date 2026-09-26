@@ -2,7 +2,10 @@ package com.pulso.backend.project.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import javax.sql.DataSource;
@@ -214,7 +217,7 @@ class JdbcProjectLifecycleRepositoryTest {
                         resultSet.getString("status"),
                         resultSet.getObject("reviewed_by_profile_id", UUID.class),
                         resultSet.getString("review_note"),
-                        resultSet.getObject("reviewed_at", Instant.class)
+                        asInstant(resultSet, "reviewed_at")
                 })
                 .single();
 
@@ -250,8 +253,8 @@ class JdbcProjectLifecycleRepositoryTest {
                 .param("projectId", PROJECT_ID)
                 .query((resultSet, rowNumber) -> new Object[] {
                         resultSet.getString("status"),
-                        resultSet.getObject("published_at", Instant.class),
-                        resultSet.getObject("archived_at", Instant.class)
+                        asInstant(resultSet, "published_at"),
+                        asInstant(resultSet, "archived_at")
                 })
                 .single();
 
@@ -265,5 +268,12 @@ class JdbcProjectLifecycleRepositoryTest {
                 .param("projectId", projectId)
                 .query(String.class)
                 .single();
+    }
+
+    private static Instant asInstant(
+            ResultSet resultSet,
+            String column) throws SQLException {
+        OffsetDateTime value = resultSet.getObject(column, OffsetDateTime.class);
+        return value == null ? null : value.toInstant();
     }
 }

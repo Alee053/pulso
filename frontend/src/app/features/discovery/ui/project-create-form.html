@@ -1,16 +1,16 @@
 <main class="mx-auto w-full max-w-5xl px-5 py-10 sm:px-8 lg:py-14">
   <header class="mb-8">
     <p class="text-xs font-semibold uppercase tracking-[0.16em] text-white/35">
-      {{ strings.eyebrow }}
+      Nuevo proyecto
     </p>
 
     <h1 class="mt-3 text-3xl font-medium tracking-[-0.04em] text-white sm:text-4xl">
-      {{ strings.title }}
+      Crea tu proyecto
     </h1>
 
     <p class="mt-3 max-w-2xl text-sm leading-6 text-white/45">
-      {{ strings.leadLine1 }}
-      {{ strings.leadLine2 }}
+      Completa la información inicial. El proyecto será creado como borrador
+      y podrás continuar trabajando en él después.
     </p>
   </header>
 
@@ -21,7 +21,7 @@
     aria-live="polite"
   >
     <p class="text-sm text-white/55">
-      {{ strings.loading }}
+      Cargando opciones del proyecto...
     </p>
   </div>
 
@@ -48,14 +48,14 @@
           for="project-name"
           class="text-sm font-medium text-white/85"
         >
-          {{ strings.nameLabel }}
+          Nombre del proyecto
         </label>
 
         <input
           id="project-name"
           type="text"
           formControlName="name"
-          [maxlength]="projectContract.nameMaxLength"
+          maxlength="160"
           class="mt-2 w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-white outline-none"
           aria-describedby="project-name-error"
         />
@@ -66,7 +66,7 @@
           class="mt-2 text-xs text-red-300"
           role="alert"
         >
-          {{ strings.nameRequired }}
+          El nombre del proyecto es obligatorio.
         </p>
       </div>
 
@@ -75,20 +75,20 @@
           for="project-slug"
           class="text-sm font-medium text-white/85"
         >
-          {{ strings.slugLabel }}
+          Identificador
         </label>
 
         <input
           id="project-slug"
           type="text"
           formControlName="slug"
-          [maxlength]="projectContract.slugMaxLength"
+          maxlength="120"
           class="mt-2 w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-white outline-none"
           aria-describedby="project-slug-error"
         />
 
         <p class="mt-2 text-xs text-white/35">
-          {{ strings.slugHint }}
+          Ejemplo: eco-pack-bolivia
         </p>
 
         <p
@@ -97,7 +97,7 @@
           class="mt-2 text-xs text-red-300"
           role="alert"
         >
-          {{ strings.slugRequired }}
+          El identificador es obligatorio.
         </p>
 
         <p
@@ -105,7 +105,7 @@
           class="mt-2 text-xs text-red-300"
           role="alert"
         >
-          {{ strings.slugMinLength(projectContract.slugMinLength) }}
+          Debe tener al menos 2 caracteres.
         </p>
       </div>
 
@@ -114,14 +114,14 @@
           for="project-city"
           class="text-sm font-medium text-white/85"
         >
-          {{ strings.cityLabel }}
+          Ciudad
         </label>
 
         <input
           id="project-city"
           type="text"
           formControlName="city"
-          [maxlength]="projectContract.cityMaxLength"
+          maxlength="120"
           class="mt-2 w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-white outline-none"
           aria-describedby="project-city-error"
         />
@@ -132,7 +132,7 @@
           class="mt-2 text-xs text-red-300"
           role="alert"
         >
-          {{ strings.cityRequired }}
+          La ciudad es obligatoria.
         </p>
       </div>
 
@@ -141,14 +141,14 @@
           for="project-tagline"
           class="text-sm font-medium text-white/85"
         >
-          {{ strings.taglineLabel }}
+          Descripción corta
         </label>
 
         <input
           id="project-tagline"
           type="text"
           formControlName="tagline"
-          [maxlength]="projectContract.taglineMaxLength"
+          maxlength="240"
           class="mt-2 w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-white outline-none"
           aria-describedby="project-tagline-error"
         />
@@ -159,7 +159,7 @@
           class="mt-2 text-xs text-red-300"
           role="alert"
         >
-          {{ strings.taglineRequired }}
+          La descripción corta es obligatoria.
         </p>
       </div>
 
@@ -168,7 +168,7 @@
           for="project-sector"
           class="text-sm font-medium text-white/85"
         >
-          {{ strings.sectorLabel }}
+          Sector
         </label>
 
         <select
@@ -178,7 +178,7 @@
           aria-describedby="project-sector-error"
         >
           <option value="">
-            {{ strings.sectorPlaceholder }}
+            Selecciona un sector
           </option>
 
           <option
@@ -194,7 +194,7 @@
           class="mt-2 text-xs text-white/40"
           role="status"
         >
-          {{ strings.sectorEmpty }}
+          No hay sectores activos disponibles.
         </p>
 
         <p
@@ -203,7 +203,7 @@
           class="mt-2 text-xs text-red-300"
           role="alert"
         >
-          {{ strings.sectorRequired }}
+          Debes seleccionar un sector.
         </p>
 
         <p
@@ -211,7 +211,7 @@
           class="mt-2 text-xs text-red-300"
           role="alert"
         >
-          {{ strings.sectorUnavailable }}
+          El sector seleccionado ya no está disponible.
         </p>
       </div>
 
@@ -220,7 +220,7 @@
           for="project-stage"
           class="text-sm font-medium text-white/85"
         >
-          {{ strings.stageLabel }}
+          Etapa
         </label>
 
         <select
@@ -230,7 +230,7 @@
           aria-describedby="project-stage-error"
         >
           <option value="">
-            {{ strings.stagePlaceholder }}
+            Selecciona una etapa
           </option>
 
           <option
@@ -247,7 +247,7 @@
           class="mt-2 text-xs text-red-300"
           role="alert"
         >
-          {{ strings.stageRequired }}
+          Debes seleccionar una etapa.
         </p>
       </div>
 
@@ -256,14 +256,14 @@
           for="project-description"
           class="text-sm font-medium text-white/85"
         >
-          {{ strings.descriptionLabel }}
-          <span class="text-white/35">{{ strings.descriptionOptional }}</span>
+          Descripción
+          <span class="text-white/35">(opcional)</span>
         </label>
 
         <textarea
           id="project-description"
           formControlName="description"
-          [maxlength]="projectContract.descriptionMaxLength"
+          maxlength="5000"
           rows="6"
           class="mt-2 w-full resize-y rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-white outline-none"
         ></textarea>
@@ -288,11 +288,11 @@
       aria-live="polite"
     >
       <p class="text-sm font-medium text-white">
-        {{ strings.createdTitle }}
+        Proyecto creado correctamente.
       </p>
 
       <p class="mt-2 text-sm text-white/50">
-        {{ strings.createdDetail(created.project.name) }}
+        {{ created.project.name }} fue creado como borrador.
       </p>
     </div>
 
@@ -308,13 +308,14 @@
         "
       >
         <ng-container *ngIf="!isSubmitting(); else submitting">
-          {{ strings.create }}
+          Crear proyecto
         </ng-container>
 
         <ng-template #submitting>
-          {{ strings.creating }}
+          Creando proyecto...
         </ng-template>
       </button>
     </div>
   </form>
 </main>
+<pulso-member-invitation-panel *ngIf="createdProject() as result" [projectId]="result.project.id" />

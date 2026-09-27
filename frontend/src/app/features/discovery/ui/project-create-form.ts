@@ -17,26 +17,22 @@ import {
 import { firstValueFrom } from 'rxjs'
 import { SupabaseAuthGateway } from '../../../core/auth/supabase-auth.gateway'
 import type { SectorCatalogItem } from '../../discovery/domain/catalog'
-import { projectContract } from '../data-access/project.contract'
 import { ProjectsApi } from '../data-access/projects-api'
+import { MemberInvitationPanelComponent } from './member-invitation-panel'
 import {
   projectStageOptions,
   type CreatedDraftProject,
   type ProjectCreateFormValue,
   type ProjectStage,
 } from '../domain/project'
-import { projectStrings } from '../strings/project.strings'
 
 @Component({
   selector: 'pulso-project-create-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, MemberInvitationPanelComponent],
   templateUrl: './project-create-form.html',
 })
 export class ProjectCreateFormComponent {
-  readonly strings = projectStrings
-  readonly projectContract = projectContract
-
   private readonly projectsApi = inject(ProjectsApi)
   private readonly auth = inject(SupabaseAuthGateway)
 
@@ -56,8 +52,8 @@ export class ProjectCreateFormComponent {
       nonNullable: true,
       validators: [
         Validators.required,
-        Validators.minLength(projectContract.slugMinLength),
-        Validators.maxLength(projectContract.slugMaxLength),
+        Validators.minLength(2),
+        Validators.maxLength(120),
       ],
     }),
 
@@ -65,7 +61,7 @@ export class ProjectCreateFormComponent {
       nonNullable: true,
       validators: [
         Validators.required,
-        Validators.maxLength(projectContract.nameMaxLength),
+        Validators.maxLength(160),
       ],
     }),
 
@@ -73,14 +69,14 @@ export class ProjectCreateFormComponent {
       nonNullable: true,
       validators: [
         Validators.required,
-        Validators.maxLength(projectContract.taglineMaxLength),
+        Validators.maxLength(240),
       ],
     }),
 
     description: new FormControl('', {
       nonNullable: true,
       validators: [
-        Validators.maxLength(projectContract.descriptionMaxLength),
+        Validators.maxLength(5000),
       ],
     }),
 
@@ -95,7 +91,7 @@ export class ProjectCreateFormComponent {
       nonNullable: true,
       validators: [
         Validators.required,
-        Validators.maxLength(projectContract.cityMaxLength),
+        Validators.maxLength(120),
       ],
     }),
 
@@ -116,7 +112,9 @@ export class ProjectCreateFormComponent {
     this.createdProject.set(null)
 
     if (!this.auth.session()) {
-      this.submitErrorMessage.set(this.strings.authRequired)
+      this.submitErrorMessage.set(
+        'Debes iniciar sesión para crear un proyecto.',
+      )
       return
     }
 
@@ -161,7 +159,9 @@ export class ProjectCreateFormComponent {
 
       this.createdProject.set(created)
     } catch {
-      this.submitErrorMessage.set(this.strings.createFailed)
+      this.submitErrorMessage.set(
+        'No pudimos crear el proyecto. Revisa los datos e inténtalo nuevamente.',
+      )
     } finally {
       this.isSubmitting.set(false)
     }

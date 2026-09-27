@@ -7,7 +7,9 @@
 </ng-template>
 
 <ng-template #authenticatedApplication>
-  <ng-container *ngIf="!session.hasStarted(); else applicationShell">
+  <pulso-member-invitation-accept *ngIf="invitationToken() as token; else normalApp" [token]="token" />
+<ng-template #normalApp>
+<ng-container *ngIf="!session.hasStarted(); else applicationShell">
   <pulso-onboarding
     [interestOptions]="session.interestOptions"
     [selectedInterests]="session.selectedInterests()"
@@ -38,6 +40,7 @@
     (started)="session.startDiscovery()"
   />
 </ng-container>
+</ng-template>
 </ng-template>
 
 <ng-template #applicationShell>

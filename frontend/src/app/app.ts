@@ -14,6 +14,8 @@ import { commonStrings } from './shared/strings/common.strings'
 import type { AppView, Startup } from './features/discovery/domain/startup'
 import { ProjectCreateFormComponent } from './features/discovery/ui/project-create-form'
 
+import { MemberInvitationPanelComponent } from './features/discovery/ui/member-invitation-panel'
+import { MemberInvitationAcceptComponent } from './features/discovery/ui/member-invitation-accept'
 @Component({
   selector: 'pulso-root',
   standalone: true,
@@ -25,6 +27,8 @@ import { ProjectCreateFormComponent } from './features/discovery/ui/project-crea
     OnboardingComponent,
     ProfileViewComponent,
     ProjectCreateFormComponent,
+    MemberInvitationPanelComponent,
+    MemberInvitationAcceptComponent,
     SavedViewComponent,
     StartupDetailModalComponent,
     IconComponent,
@@ -36,7 +40,10 @@ export class AppComponent implements OnInit {
   readonly auth = inject(SupabaseAuthGateway)
   readonly session = inject(PulsoSession)
   readonly selectedStartup = signal<Startup | null>(null)
-  private activeUserId: string | null = null
+  private activeUserId: string | null = null    
+  readonly invitationToken = signal<string | null>(null)
+  readonly createdProjectId = signal<string | null>(null)
+
 
   private readonly authSessionEffect = effect(() => {
     const authenticatedUser = this.auth.session()
@@ -63,7 +70,14 @@ export class AppComponent implements OnInit {
   })
 
   ngOnInit(): void {
-    document.title = commonStrings.documentTitle
+    const match = /^#invite=([A-Za-z0-9_-]{20,200})$/.exec(
+      location.hash
+    )
+
+    if (match) {
+      this.invitationToken.set(match[1])
+    }
+
     void this.auth.initialize().catch(() => undefined)
   }
 

@@ -29,3 +29,12 @@ export interface ProjectCreateResponseDto {
     membershipStatus: string
   }
 }
+export interface MemberInvitationDto {
+  id: string
+  projectId: string
+  inviteeEmail: string
+  profileId: string | null
+  role: string
+  membershipStatus: 'INVITED' | 'ACTIVE'
+  createdByProfileId: string
+}

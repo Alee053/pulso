@@ -4,17 +4,22 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-import com.pulso.backend.config.ApiMessages;
 import com.pulso.backend.preference.domain.OnboardingPreferencesValidationException;
 import com.pulso.backend.profile.application.InvalidAuthenticatedSubjectException;
 import com.pulso.backend.profile.application.ProfileNotFoundException;
 import com.pulso.backend.profile.domain.ProfileValidationException;
+import com.pulso.backend.project.application.MemberInvitationConflictException;
+import com.pulso.backend.project.application.MemberInvitationIdentityException;
+import com.pulso.backend.project.application.MemberInvitationNotFoundException;
 import com.pulso.backend.project.application.ProjectConflictException;
 import com.pulso.backend.project.application.PublicProjectNotFoundException;
+import com.pulso.backend.project.domain.DuplicateMemberInvitationException;
+import com.pulso.backend.project.domain.MemberInvitationPermissionException;
+import com.pulso.backend.project.domain.MemberInvitationProjectNotFoundException;
 import com.pulso.backend.project.domain.ProjectValidationException;
 
 @RestControllerAdvice
@@ -25,7 +30,7 @@ public class ApiExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.BAD_REQUEST,
                 exception.getMessage());
-        problem.setTitle(ApiMessages.INVALID_REQUEST_TITLE);
+        problem.setTitle("Invalid request");
         return problem;
     }
 
@@ -33,8 +38,8 @@ public class ApiExceptionHandler {
     ProblemDetail invalidParameter(MethodArgumentTypeMismatchException exception) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.BAD_REQUEST,
-                String.format(ApiMessages.INVALID_PARAMETER_DETAIL, exception.getName()));
-        problem.setTitle(ApiMessages.INVALID_REQUEST_TITLE);
+                "Parameter '" + exception.getName() + "' has an invalid value.");
+        problem.setTitle("Invalid request");
         return problem;
     }
 
@@ -42,8 +47,8 @@ public class ApiExceptionHandler {
     ProblemDetail unreadableRequest() {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.BAD_REQUEST,
-                ApiMessages.UNREADABLE_BODY_DETAIL);
-        problem.setTitle(ApiMessages.INVALID_REQUEST_TITLE);
+                "The request body is invalid.");
+        problem.setTitle("Invalid request");
         return problem;
     }
 
@@ -52,7 +57,7 @@ public class ApiExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.BAD_REQUEST,
                 exception.getMessage());
-        problem.setTitle(ApiMessages.INVALID_PROFILE_TITLE);
+        problem.setTitle("Invalid profile");
         return problem;
     }
 
@@ -61,7 +66,7 @@ public class ApiExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.BAD_REQUEST,
                 exception.getMessage());
-        problem.setTitle(ApiMessages.INVALID_PREFERENCES_TITLE);
+        problem.setTitle("Invalid preferences");
         return problem;
     }
 
@@ -70,7 +75,7 @@ public class ApiExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.BAD_REQUEST,
                 exception.getMessage());
-        problem.setTitle(ApiMessages.INVALID_PROJECT_TITLE);
+        problem.setTitle("Invalid project");
         return problem;
     }
 
@@ -79,7 +84,7 @@ public class ApiExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.CONFLICT,
                 exception.getMessage());
-        problem.setTitle(ApiMessages.PROJECT_CONFLICT_TITLE);
+        problem.setTitle("Project conflict");
         return problem;
     }
 
@@ -88,7 +93,7 @@ public class ApiExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.NOT_FOUND,
                 exception.getMessage());
-        problem.setTitle(ApiMessages.PUBLIC_PROJECT_NOT_FOUND_TITLE);
+        problem.setTitle("Public project not found");
         return problem;
     }
 
@@ -96,8 +101,8 @@ public class ApiExceptionHandler {
     ProblemDetail profileNotFound() {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.NOT_FOUND,
-                ApiMessages.PROFILE_NOT_FOUND_DETAIL);
-        problem.setTitle(ApiMessages.PROFILE_NOT_FOUND_TITLE);
+                "The authenticated profile was not found.");
+        problem.setTitle("Profile not found");
         return problem;
     }
 
@@ -105,8 +110,8 @@ public class ApiExceptionHandler {
     ProblemDetail invalidAuthenticatedSubject() {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.UNAUTHORIZED,
-                ApiMessages.UNAUTHORIZED_DETAIL);
-        problem.setTitle(ApiMessages.UNAUTHORIZED_TITLE);
+                "The authenticated subject is invalid.");
+        problem.setTitle("Unauthorized");
         return problem;
     }
 
@@ -114,8 +119,33 @@ public class ApiExceptionHandler {
     ProblemDetail dataStoreUnavailable() {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.SERVICE_UNAVAILABLE,
-                ApiMessages.DATASTORE_UNAVAILABLE_DETAIL);
-        problem.setTitle(ApiMessages.DATASTORE_UNAVAILABLE_TITLE);
+                "The data store is temporarily unavailable.");
+        problem.setTitle("Data store unavailable");
+        return problem;
+    }
+    @ExceptionHandler(MemberInvitationPermissionException.class)
+    ProblemDetail invitationPermission(MemberInvitationPermissionException ex) {
+        return invitationProblem(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+    @ExceptionHandler(MemberInvitationProjectNotFoundException.class)
+    ProblemDetail invitationProjectMissing(MemberInvitationProjectNotFoundException ex) {
+        return invitationProblem(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+    @ExceptionHandler(MemberInvitationNotFoundException.class)
+    ProblemDetail invitationMissing(MemberInvitationNotFoundException ex) {
+        return invitationProblem(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+    @ExceptionHandler(MemberInvitationIdentityException.class)
+    ProblemDetail invitationIdentity(MemberInvitationIdentityException ex) {
+        return invitationProblem(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+    @ExceptionHandler({DuplicateMemberInvitationException.class, MemberInvitationConflictException.class})
+    ProblemDetail invitationConflict(RuntimeException ex) {
+        return invitationProblem(HttpStatus.CONFLICT, ex.getMessage());
+    }
+    private static ProblemDetail invitationProblem(HttpStatus status, String detail) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
+        problem.setTitle("Member invitation");
         return problem;
     }
 }

@@ -32,14 +32,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
-@EnableConfigurationProperties({
-        SupabaseJwtProperties.class,
-        DiscoveryProperties.class,
-        CatalogProperties.class,
-        PreferenceProperties.class,
-        ProfileProperties.class,
-        ProjectProperties.class
-})
+@EnableConfigurationProperties(SupabaseJwtProperties.class)
 public class SecurityConfig {
 
     private static final String AUTHENTICATED_ROLE = "authenticated";
@@ -66,6 +59,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/me").authenticated()
                         .requestMatchers("/api/v1/me/preferences").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/projects").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/projects/*/members").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/project-members/accept").authenticated()
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {
                 }));
@@ -137,7 +132,7 @@ public class SecurityConfig {
                 ? OAuth2TokenValidatorResult.success()
                 : OAuth2TokenValidatorResult.failure(new OAuth2Error(
                         "invalid_token",
-                        ApiMessages.JWT_AUDIENCE_REJECTED,
+                        "The JWT audience is not accepted.",
                         null));
     }
 
@@ -146,7 +141,7 @@ public class SecurityConfig {
                 ? OAuth2TokenValidatorResult.success()
                 : OAuth2TokenValidatorResult.failure(new OAuth2Error(
                         "invalid_token",
-                        ApiMessages.JWT_ROLE_REJECTED,
+                        "The JWT role is not accepted for user API access.",
                         null));
     }
 

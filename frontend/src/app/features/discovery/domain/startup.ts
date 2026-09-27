@@ -5,7 +5,7 @@ export type InterestId =
   | 'opportunities'
   | 'inspiration'
 
-export type AppView = 'discover' | 'saved' | 'profile'
+export type AppView = 'discover' | 'saved' | 'profile' | 'detail'
 
 export type Decision = 'skip' | 'interested'
 
@@ -65,3 +65,55 @@ export interface StartupSummary {
   city: string
   stage: string
 }
+
+
+
+export interface PublicSector {
+    id: string
+    slug: string
+    name: string
+}
+
+export interface PublicTag {
+    id: string
+    slug: string
+    name: string
+}
+
+export interface PublicExternalLink {
+    type: string
+    url: string
+    label: string
+}
+
+export interface PublicMember {
+    profileId: string
+    displayName: string
+    avatarStoragePath: string | null
+    displayTitle: string | null
+    isFeatured: boolean
+}
+
+
+
+export interface PublicProjectDetail {
+    id: string
+    slug: string
+    name: string
+    tagline: string
+    description: string | null
+    valueProposition: string | null
+    sector: PublicSector
+    stage: string
+    city: string | null
+    department: string | null
+    tags: PublicTag[]
+    externalLinks: PublicExternalLink[]
+    members: PublicMember[]
+}
+
+export type PublicProjectState =
+    | { status: 'loading' }
+    | { status: 'loaded'; project: PublicProjectDetail }
+    | { status: 'empty' }
+    | { status: 'error'; message: string; retryable: boolean }

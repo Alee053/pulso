@@ -7,6 +7,7 @@ import { ProfileViewComponent } from './features/discovery/ui/profile-view'
 import { SavedViewComponent } from './features/discovery/ui/saved-view'
 import { StartupDetailModalComponent } from './features/discovery/ui/startup-detail-modal'
 import { PulsoSession } from './features/discovery/application/pulso-session'
+import { PublicProjectDetailComponent } from './features/discovery/ui/public-project-detail'
 import type { AppView, Startup } from './features/discovery/domain/startup'
 
 @Component({
@@ -19,7 +20,8 @@ import type { AppView, Startup } from './features/discovery/domain/startup'
     OnboardingComponent,
     ProfileViewComponent,
     SavedViewComponent,
-    StartupDetailModalComponent,
+      StartupDetailModalComponent,
+      PublicProjectDetailComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',

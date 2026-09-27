@@ -48,6 +48,7 @@ export class PulsoSession {
   readonly savedIds = signal<string[]>([])
   readonly interestedIds = signal<string[]>([])
   readonly preferenceWeights = signal<PreferenceWeights>({})
+  readonly selectedProjectId = signal<string | null>(null)
 
     // Profile
     readonly profile = signal<Profile | null>(null);
@@ -198,6 +199,15 @@ export class PulsoSession {
   goToView(view: AppView): void {
     this.activeView.set(view)
   }
+
+    openProjectDetail(projectId: string): void {
+        this.selectedProjectId.set(projectId)
+        this.activeView.set('detail')
+    }
+    closeProjectDetail(): void {
+        this.selectedProjectId.set(null)
+        this.activeView.set('discover')
+    }
 
   getReason(startup: Startup): string {
     return getRecommendationReason(

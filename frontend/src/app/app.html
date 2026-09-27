@@ -21,56 +21,55 @@
 </ng-container>
 
 <ng-template #applicationShell>
-  <div class="app-shell relative flex min-h-screen flex-col overflow-hidden text-white">
-    <div class="ambient-orb ambient-orb--sky" aria-hidden="true"></div>
-    <div class="ambient-orb ambient-orb--blue" aria-hidden="true"></div>
+    <div class="app-shell relative flex min-h-screen flex-col overflow-hidden text-white">
+        <button (click)="session.openProjectDetail('eco-pack')"
+                style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; padding: 12px 20px; background: #a9e1ff; color: #17201c; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+            Ver detalle (temporal)
+        </button>
+        <div class="ambient-orb ambient-orb--sky" aria-hidden="true"></div>
+        <div class="ambient-orb ambient-orb--blue" aria-hidden="true"></div>
 
-    <pulso-navigation-bar
-      [activeView]="session.activeView()"
-      [savedCount]="session.savedIds().length"
-      [interestedCount]="session.interestedIds().length"
-      (navigated)="navigateTo($event)"
-    />
+        <pulso-navigation-bar [activeView]="session.activeView()"
+                              [savedCount]="session.savedIds().length"
+                              [interestedCount]="session.interestedIds().length"
+                              (navigated)="navigateTo($event)" />
 
-    <div class="app-shell__content">
-      <ng-container [ngSwitch]="session.activeView()">
-        <pulso-discovery-view
-          *ngSwitchCase="'discover'"
-          [activeSignals]="session.activeSignals()"
-          [currentStartup]="session.currentStartup()"
-          [errorMessage]="session.errorMessage()"
-          [feedRemaining]="session.feed().length"
-          [isLoading]="session.isLoading()"
-          [isModalOpen]="selectedStartup() !== null"
-          [totalStartups]="session.catalog().length"
-          [savedIds]="session.savedIds()"
-          (decisionMade)="session.makeDecision($event)"
-          (restarted)="session.restartDiscovery()"
-          (retryRequested)="session.retryDiscovery()"
-          (startupSaved)="session.toggleSaved($event)"
-          (startupSelected)="selectStartup($event)"
-        />
+        <div class="app-shell__content">
+            <ng-container [ngSwitch]="session.activeView()">
+                <pulso-discovery-view *ngSwitchCase="'discover'"
+                                      [activeSignals]="session.activeSignals()"
+                                      [currentStartup]="session.currentStartup()"
+                                      [errorMessage]="session.errorMessage()"
+                                      [feedRemaining]="session.feed().length"
+                                      [isLoading]="session.isLoading()"
+                                      [isModalOpen]="selectedStartup() !== null"
+                                      [totalStartups]="session.catalog().length"
+                                      [savedIds]="session.savedIds()"
+                                      (decisionMade)="session.makeDecision($event)"
+                                      (restarted)="session.restartDiscovery()"
+                                      (retryRequested)="session.retryDiscovery()"
+                                      (startupSaved)="session.toggleSaved($event)"
+                                      (startupSelected)="selectStartup($event)" />
 
-        <pulso-saved-view
-          *ngSwitchCase="'saved'"
-          [savedStartups]="session.savedStartups()"
-          [interestedStartups]="session.interestedStartups()"
-          (startupSelected)="selectStartup($event)"
-        />
+                <pulso-saved-view *ngSwitchCase="'saved'"
+                                  [savedStartups]="session.savedStartups()"
+                                  [interestedStartups]="session.interestedStartups()"
+                                  (startupSelected)="selectStartup($event)" />
 
-        <pulso-profile-view
-          *ngSwitchCase="'profile'"
-          [interestOptions]="session.interestOptions"
-          [selectedInterests]="session.selectedInterests()"
-        />
-      </ng-container>
+                <pulso-profile-view *ngSwitchCase="'profile'"
+                                    [interestOptions]="session.interestOptions"
+                                    [selectedInterests]="session.selectedInterests()" />
+                <pulso-public-project-detail *ngSwitchCase="'detail'"
+                                             [projectId]="session.selectedProjectId() || 'eco-pack'"
+                                             (closed)="session.closeProjectDetail()" />
+
+
+            </ng-container>
+        </div>
+
+        <pulso-startup-detail-modal *ngIf="selectedStartup() as startup"
+                                    [startup]="startup"
+                                    [recommendation]="session.getReason(startup)"
+                                    (closed)="closeStartup()" />
     </div>
-
-    <pulso-startup-detail-modal
-      *ngIf="selectedStartup() as startup"
-      [startup]="startup"
-      [recommendation]="session.getReason(startup)"
-      (closed)="closeStartup()"
-    />
-  </div>
 </ng-template>

@@ -303,6 +303,54 @@ Conflict`; other PostgreSQL failures return the sanitized `503 Service
 Unavailable` response. Missing, invalid, or `service_role` bearer tokens
 return `401 Unauthorized`.
 
+## `PATCH /api/v1/projects/{projectId}/members/{memberId}` — administer membership (PUL-83)
+
+Updates an existing project membership for an authenticated active `OWNER` or
+`ADMIN`. An active `MEMBER` may only use `withdraw` on their own membership.
+The authenticated profile is always taken from the JWT subject; the request
+cannot change `profileId`, `membershipStatus`, or `createdByProfileId`.
+
+Supported request bodies are:
+
+```json
+{ "action": "activate" }
+```
+
+```json
+{ "action": "changeRole", "role": "ADMIN" }
+```
+
+```json
+{ "action": "withdraw" }
+```
+
+`activate` changes a `LEFT` or `REMOVED` membership with a bound profile to
+`ACTIVE`. `changeRole` changes the role of an `ACTIVE` membership. `withdraw`
+changes an `INVITED` or `ACTIVE` membership to `REMOVED`, except that an
+active member withdrawing their own membership becomes `LEFT`. The project
+must retain at least one active `OWNER`.
+
+Response `200 OK` returns the updated membership:
+
+```json
+{
+  "id": "44444444-4444-4444-4444-444444444444",
+  "projectId": "33333333-3333-3333-3333-333333333333",
+  "profileId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+  "role": "ADMIN",
+  "membershipStatus": "ACTIVE",
+  "createdByProfileId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+}
+```
+
+Missing or insufficient membership returns `403` with code
+`membership_permission`. Invalid transitions and attempts to remove or demote
+the last active owner return `409` with codes
+`membership_invalid_transition` or `membership_owner_required`, respectively.
+Unknown action, role, or membership status returns `400`. A concurrent change
+that makes the expected membership state stale returns `409` with code
+`membership_conflict`.
+
 ## `GET /api/v1/me/preferences`
 
 Returns the onboarding preferences of the authenticated profile. The profile

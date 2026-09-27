@@ -9,6 +9,8 @@ import com.pulso.backend.project.domain.ProjectMember;
 
 public interface MembershipAdministrationRepository {
 
+    void lockProject(UUID projectId);
+
     Optional<MembershipActor> findActor(UUID projectId, UUID profileId);
 
     Optional<ProjectMember> findMember(UUID projectId, UUID memberId);

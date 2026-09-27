@@ -73,6 +73,10 @@ class ProjectMembershipSecurityTest {
         MembershipAdministrationRepository membershipAdministrationRepository() {
             return new MembershipAdministrationRepository() {
                 @Override
+                public void lockProject(UUID projectId) {
+                }
+
+                @Override
                 public Optional<MembershipActor> findActor(UUID projectId, UUID profileId) {
                     return Optional.of(new MembershipActor(
                             PROJECT_ID,

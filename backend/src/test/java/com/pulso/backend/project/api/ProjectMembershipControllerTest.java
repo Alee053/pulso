@@ -173,6 +173,10 @@ class ProjectMembershipControllerTest {
         private List<ProjectMember> members = List.of();
 
         @Override
+        public void lockProject(UUID projectId) {
+        }
+
+        @Override
         public Optional<MembershipActor> findActor(UUID projectId, UUID profileId) {
             return Optional.ofNullable(actor);
         }

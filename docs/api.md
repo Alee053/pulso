@@ -328,7 +328,8 @@ Supported request bodies are:
 `ACTIVE`. `changeRole` changes the role of an `ACTIVE` membership. `withdraw`
 changes an `INVITED` or `ACTIVE` membership to `REMOVED`, except that an
 active member withdrawing their own membership becomes `LEFT`. The project
-must retain at least one active `OWNER`.
+must retain at least one active `OWNER`. Administration requests for the same
+project are serialized while this invariant is checked.
 
 Response `200 OK` returns the updated membership:
 

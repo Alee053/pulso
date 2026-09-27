@@ -48,6 +48,8 @@ class JdbcMembershipAdministrationRepositoryTest {
 
         jdbcClient.sql("drop table if exists public.project_members cascade")
                 .update();
+        jdbcClient.sql("create table public.projects (id uuid primary key)")
+                .update();
         jdbcClient.sql("""
                 create table public.project_members (
                   id uuid primary key,
@@ -59,6 +61,9 @@ class JdbcMembershipAdministrationRepositoryTest {
                   updated_at timestamptz not null default timezone('utc', now())
                 )
                 """).update();
+        jdbcClient.sql("insert into public.projects (id) values (:projectId)")
+                .param("projectId", PROJECT_ID)
+                .update();
         jdbcClient.sql("""
                 insert into public.project_members (
                     id, project_id, profile_id, role, membership_status, created_by_profile_id
@@ -76,6 +81,8 @@ class JdbcMembershipAdministrationRepositoryTest {
 
     @Test
     void loadsActorTargetAndProjectMembers() {
+        repository.lockProject(PROJECT_ID);
+
         assertThat(repository.findActor(PROJECT_ID, OWNER_ID)).isPresent()
                 .get()
                 .satisfies(actor -> {

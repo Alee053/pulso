@@ -1,6 +1,7 @@
 package com.pulso.backend.project.application;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -15,6 +16,11 @@ import com.pulso.backend.project.domain.ProjectValidationException;
 
 @Service
 public class AdministerProjectMembership {
+
+    private static final Set<String> KNOWN_ACTIONS = Set.of(
+            "activate",
+            "changeRole",
+            "withdraw");
 
     private final MembershipAdministrationRepository repository;
 
@@ -32,6 +38,7 @@ public class AdministerProjectMembership {
         requireIdentifiers(projectId, memberId, authenticatedProfileId);
         String normalizedAction = requireAction(action);
 
+        repository.lockProject(projectId);
         MembershipActor actor = repository.findActor(projectId, authenticatedProfileId)
                 .orElseThrow(MembershipPermissionException::new);
         ProjectMember target = repository.findMember(projectId, memberId)
@@ -76,7 +83,12 @@ public class AdministerProjectMembership {
             throw new ProjectValidationException(
                     String.format(ApiMessages.KNOWN_VALUE_REQUIRED, "action"));
         }
-        return action.trim();
+        String normalized = action.trim();
+        if (!KNOWN_ACTIONS.contains(normalized)) {
+            throw new ProjectValidationException(
+                    String.format(ApiMessages.KNOWN_VALUE_UNKNOWN, "action", normalized));
+        }
+        return normalized;
     }
 
     private static void requireIdentifiers(

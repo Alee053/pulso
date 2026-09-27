@@ -45,6 +45,7 @@ class AdministerProjectMembershipTest {
                 "ADMIN");
 
         assertThat(next).isEqualTo(target.withRoleAndStatus("ADMIN", "ACTIVE"));
+        assertThat(repository.projectLocked).isTrue();
         assertThat(repository.updated).isTrue();
         assertThat(repository.nextRole).isEqualTo("ADMIN");
         assertThat(repository.nextStatus).isEqualTo("ACTIVE");
@@ -169,9 +170,15 @@ class AdministerProjectMembershipTest {
         private MembershipActor actor;
         private ProjectMember target;
         private List<ProjectMember> members = List.of();
+        private boolean projectLocked;
         private boolean updated;
         private String nextRole;
         private String nextStatus;
+
+        @Override
+        public void lockProject(UUID projectId) {
+            projectLocked = true;
+        }
 
         @Override
         public Optional<MembershipActor> findActor(UUID projectId, UUID profileId) {

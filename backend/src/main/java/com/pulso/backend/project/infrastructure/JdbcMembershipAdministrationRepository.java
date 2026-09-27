@@ -23,6 +23,19 @@ public class JdbcMembershipAdministrationRepository implements MembershipAdminis
     }
 
     @Override
+    public void lockProject(UUID projectId) {
+        jdbcClient.sql("""
+                select id
+                from public.projects
+                where id = :projectId
+                for update
+                """)
+                .param("projectId", projectId)
+                .query((resultSet, rowNumber) -> resultSet.getObject("id", UUID.class))
+                .list();
+    }
+
+    @Override
     public Optional<MembershipActor> findActor(UUID projectId, UUID profileId) {
         return jdbcClient.sql("""
                 select role, membership_status

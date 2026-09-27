@@ -64,7 +64,9 @@ Withdraw requires `INVITED` or `ACTIVE`.
 
 A project must keep at least one **active** `OWNER`. Withdrawing or demoting
 the last active owner is rejected, whether the actor is that owner or another
-admin.
+admin. The application locks the project row while it reads the actor,
+target, and current memberships, so concurrent administration requests for the
+same project cannot both approve a stale owner state.
 
 ## HTTP contract
 

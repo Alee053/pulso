@@ -106,6 +106,10 @@ public final class ApiMessages {
     public static final String INVITATION_PROJECT_NOT_FOUND = "project does not exist.";
     public static final String DUPLICATE_INVITATION =
             "an active invitation already exists for this project and email.";
+    public static final String INVITATION_PROJECT_NOT_FOUND_TITLE = "Project not found";
+    public static final String INVITATION_PERMISSION_TITLE = "Membership permission";
+    public static final String INVITATION_CONFLICT_TITLE = "Invitation conflict";
+    public static final String INVITATION_CONFLICT_CODE = "invitation_duplicate";
 
     public static final String MEMBERSHIP_PERMISSION_TITLE = "Membership permission";
     public static final String MEMBERSHIP_PERMISSION_DETAIL =

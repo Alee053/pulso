@@ -1,8 +1,9 @@
 # Member invitation
 
 **Status: Current** for the invitation policy in
-`com.pulso.backend.project.domain.MemberInvitation`. **Target** for HTTP create
-and accept endpoints, email delivery, and token lookup by digest.
+`com.pulso.backend.project.domain.MemberInvitation` and the protected HTTP
+create endpoint. **Target** for acceptance, email delivery, and token lookup by
+digest.
 
 S2.4 uses the canonical `project_members` row as both membership and
 invitation. There is no separate invitation table. An invitation identifies a
@@ -60,10 +61,10 @@ Acceptance is performed by the invitee, not by the inviter. This slice binds
 presented token against `invite_token_digest` belongs to the later accept
 adapter.
 
-## Target HTTP contract
+## HTTP contract
 
-These routes are not implemented here. They are the contract later S2.4 slices
-must keep.
+The backend implements the protected create endpoint. Acceptance, email
+delivery, and token lookup remain later slices.
 
 ### Create
 

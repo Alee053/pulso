@@ -526,3 +526,43 @@ must be used with an empty JWKS URI. The API accepts only JWTs with the
 
 The browser gets only a publishable/anon key. Database passwords, JWT secrets,
 and service-role keys remain server-side.
+
+## `POST /api/v1/projects/{projectId}/members` — create member invitation (PUL-79)
+
+Creates an invitation for an existing project. The authenticated profile is
+resolved from the JWT and must have an active `OWNER` or `ADMIN` membership in
+that project. The request cannot provide the role, membership status, profile,
+creator, token, or token digest.
+
+```sh
+curl -X POST \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"inviteeEmail":"Ada@Example.com"}' \
+  http://localhost:8080/api/v1/projects/33333333-3333-3333-3333-333333333333/members
+```
+
+The email is trimmed and lowercased before duplicate detection and
+persistence. The server generates an acceptance token and stores only its
+SHA-256 digest; the token and digest are never returned in the HTTP response
+or written to logs.
+
+Response `201 Created`:
+
+```json
+{
+  "id": "55555555-5555-5555-5555-555555555555",
+  "projectId": "33333333-3333-3333-3333-333333333333",
+  "inviteeEmail": "ada@example.com",
+  "profileId": null,
+  "role": "MEMBER",
+  "membershipStatus": "INVITED",
+  "createdByProfileId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+}
+```
+
+An unknown project returns `404` with `project does not exist.`. A missing or
+insufficient project membership returns `403` with `active OWNER or ADMIN
+membership is required.`. A second active invitation for the same project and
+normalized email returns `409` with code `invitation_duplicate`. Invalid email
+input and client-controlled fields return `400`.

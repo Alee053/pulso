@@ -15,6 +15,9 @@ import com.pulso.backend.profile.application.ProfileNotFoundException;
 import com.pulso.backend.profile.domain.ProfileValidationException;
 import com.pulso.backend.project.application.ProjectConflictException;
 import com.pulso.backend.project.application.PublicProjectNotFoundException;
+import com.pulso.backend.project.domain.DuplicateMemberInvitationException;
+import com.pulso.backend.project.domain.MemberInvitationPermissionException;
+import com.pulso.backend.project.domain.MemberInvitationProjectNotFoundException;
 import com.pulso.backend.project.domain.ProjectValidationException;
 
 @RestControllerAdvice
@@ -80,6 +83,35 @@ public class ApiExceptionHandler {
                 HttpStatus.CONFLICT,
                 exception.getMessage());
         problem.setTitle(ApiMessages.PROJECT_CONFLICT_TITLE);
+        return problem;
+    }
+
+    @ExceptionHandler(MemberInvitationProjectNotFoundException.class)
+    ProblemDetail memberInvitationProjectNotFound(
+            MemberInvitationProjectNotFoundException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND,
+                exception.getMessage());
+        problem.setTitle(ApiMessages.INVITATION_PROJECT_NOT_FOUND_TITLE);
+        return problem;
+    }
+
+    @ExceptionHandler(MemberInvitationPermissionException.class)
+    ProblemDetail memberInvitationPermission(MemberInvitationPermissionException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.FORBIDDEN,
+                exception.getMessage());
+        problem.setTitle(ApiMessages.INVITATION_PERMISSION_TITLE);
+        return problem;
+    }
+
+    @ExceptionHandler(DuplicateMemberInvitationException.class)
+    ProblemDetail duplicateMemberInvitation(DuplicateMemberInvitationException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                exception.getMessage());
+        problem.setTitle(ApiMessages.INVITATION_CONFLICT_TITLE);
+        problem.setProperty("code", ApiMessages.INVITATION_CONFLICT_CODE);
         return problem;
     }
 

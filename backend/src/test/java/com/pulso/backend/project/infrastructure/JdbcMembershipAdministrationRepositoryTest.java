@@ -46,7 +46,7 @@ class JdbcMembershipAdministrationRepositoryTest {
         jdbcClient = JdbcClient.create(dataSource);
         repository = new JdbcMembershipAdministrationRepository(jdbcClient);
 
-        jdbcClient.sql("drop table if exists public.project_members cascade")
+        jdbcClient.sql("drop table if exists public.project_members, public.projects cascade")
                 .update();
         jdbcClient.sql("create table public.projects (id uuid primary key)")
                 .update();

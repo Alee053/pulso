@@ -38,8 +38,10 @@ public class AdministerProjectMembership {
         requireIdentifiers(projectId, memberId, authenticatedProfileId);
         String normalizedAction = requireAction(action);
 
-        repository.lockProject(projectId);
         MembershipActor actor = repository.findActor(projectId, authenticatedProfileId)
+                .orElseThrow(MembershipPermissionException::new);
+        repository.lockProject(projectId);
+        actor = repository.findActor(projectId, authenticatedProfileId)
                 .orElseThrow(MembershipPermissionException::new);
         ProjectMember target = repository.findMember(projectId, memberId)
                 .orElseThrow(MembershipPermissionException::new);

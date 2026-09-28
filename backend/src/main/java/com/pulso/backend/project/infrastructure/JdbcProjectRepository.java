@@ -2,6 +2,7 @@ package com.pulso.backend.project.infrastructure;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.dao.DuplicateKeyException;
@@ -10,12 +11,15 @@ import org.springframework.stereotype.Repository;
 
 import com.pulso.backend.project.application.ProjectConflictException;
 import com.pulso.backend.project.application.ProjectRepository;
+import com.pulso.backend.project.application.ProjectUpdateRepository;
 import com.pulso.backend.project.domain.Project;
 import com.pulso.backend.project.domain.ProjectDraft;
 import com.pulso.backend.project.domain.ProjectMember;
+import com.pulso.backend.project.domain.ProjectUpdatePatch;
+import com.pulso.backend.project.domain.UpdatedProject;
 
 @Repository
-public class JdbcProjectRepository implements ProjectRepository {
+public class JdbcProjectRepository implements ProjectRepository, ProjectUpdateRepository {
 
     private final JdbcClient jdbcClient;
 
@@ -94,6 +98,79 @@ public class JdbcProjectRepository implements ProjectRepository {
     }
 
     @Override
+    public Optional<UpdatedProject> updateInformation(
+            UUID projectId,
+            UUID authenticatedProfileId,
+            ProjectUpdatePatch patch) {
+        return jdbcClient.sql("""
+                update public.projects
+                set name = coalesce(cast(:name as text), name),
+                    tagline = coalesce(cast(:tagline as text), tagline),
+                    description = coalesce(cast(:description as text), description),
+                    value_proposition = coalesce(
+                        cast(:valueProposition as text),
+                        value_proposition),
+                    stage = coalesce(cast(:stage as text), stage),
+                    sector_id = coalesce(cast(:sectorId as uuid), sector_id),
+                    city = coalesce(cast(:city as text), city),
+                    department = coalesce(cast(:department as text), department)
+                where id = :projectId
+                  and exists (
+                      select 1
+                      from public.project_members member
+                      where member.project_id = public.projects.id
+                        and member.profile_id = :authenticatedProfileId
+                        and member.role in ('OWNER', 'ADMIN')
+                        and member.membership_status = 'ACTIVE'
+                  )
+                  and (
+                      :sectorId is null
+                      or exists (
+                          select 1
+                          from public.sectors sector
+                          where sector.id = cast(:sectorId as uuid)
+                            and sector.is_active = true
+                      )
+                  )
+                returning
+                    id,
+                    slug,
+                    name,
+                    tagline,
+                    description,
+                    value_proposition,
+                    sector_id,
+                    stage,
+                    city,
+                    department,
+                    status,
+                    verification_status,
+                    created_by_profile_id,
+                    reviewed_by_profile_id,
+                    review_note,
+                    reviewed_at,
+                    published_at,
+                    created_at,
+                    updated_at,
+                    archived_at
+                """)
+                .param("name", patch.name())
+                .param("tagline", patch.tagline())
+                .param("description", patch.description())
+                .param("valueProposition", patch.valueProposition())
+                .param("stage", patch.stage())
+                .param("sectorId", patch.sectorId())
+                .param("city", patch.city())
+                .param("department", patch.department())
+                .param("projectId", projectId)
+                .param("authenticatedProfileId", authenticatedProfileId)
+                .query(JdbcProjectRepository::mapUpdatedProject)
+                .list()
+                .stream()
+                .findFirst();
+    }
+
+    @Override
     public ProjectMember createOwner(UUID projectId, UUID profileId) {
         return jdbcClient.sql("""
                 insert into public.project_members (
@@ -138,6 +215,31 @@ public class JdbcProjectRepository implements ProjectRepository {
                 resultSet.getString("stage"),
                 resultSet.getString("status"),
                 resultSet.getObject("created_by_profile_id", UUID.class));
+    }
+
+    private static UpdatedProject mapUpdatedProject(ResultSet resultSet, int rowNumber)
+            throws SQLException {
+        return new UpdatedProject(
+                resultSet.getObject("id", UUID.class),
+                resultSet.getString("slug"),
+                resultSet.getString("name"),
+                resultSet.getString("tagline"),
+                resultSet.getString("description"),
+                resultSet.getString("value_proposition"),
+                resultSet.getObject("sector_id", UUID.class),
+                resultSet.getString("stage"),
+                resultSet.getString("city"),
+                resultSet.getString("department"),
+                resultSet.getString("status"),
+                resultSet.getString("verification_status"),
+                resultSet.getObject("created_by_profile_id", UUID.class),
+                resultSet.getObject("reviewed_by_profile_id", UUID.class),
+                resultSet.getString("review_note"),
+                resultSet.getObject("reviewed_at", java.time.OffsetDateTime.class),
+                resultSet.getObject("published_at", java.time.OffsetDateTime.class),
+                resultSet.getObject("created_at", java.time.OffsetDateTime.class),
+                resultSet.getObject("updated_at", java.time.OffsetDateTime.class),
+                resultSet.getObject("archived_at", java.time.OffsetDateTime.class));
     }
 
     private static ProjectMember mapProjectMember(ResultSet resultSet, int rowNumber)

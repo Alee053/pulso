@@ -124,7 +124,7 @@ public class JdbcProjectRepository implements ProjectRepository, ProjectUpdateRe
                         and member.membership_status = 'ACTIVE'
                   )
                   and (
-                      :sectorId is null
+                      cast(:sectorId as uuid) is null
                       or exists (
                           select 1
                           from public.sectors sector

@@ -177,6 +177,16 @@ class MemberInvitationTest {
     }
 
     @Test
+    void matchesTheAuthenticatedEmailUsingTheInvitationNormalizationRules() {
+        MemberInvitation invitation = invite("ada@example.com").invitation();
+
+        assertThat(invitation.matchesInviteeEmail(" Ada@Example.COM ")).isTrue();
+        assertThat(invitation.matchesInviteeEmail("other@example.com")).isFalse();
+        assertThat(invitation.matchesInviteeEmail("not-an-email")).isFalse();
+        assertThat(invitation.matchesInviteeEmail(null)).isFalse();
+    }
+
+    @Test
     void acceptRequiresAnInvitedMembershipAndAProfile() {
         MemberInvitation invitation = invite("ada@example.com").invitation();
 

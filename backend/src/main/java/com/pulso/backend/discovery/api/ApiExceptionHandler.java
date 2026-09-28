@@ -14,6 +14,7 @@ import com.pulso.backend.profile.application.InvalidAuthenticatedSubjectExceptio
 import com.pulso.backend.profile.application.ProfileNotFoundException;
 import com.pulso.backend.profile.domain.ProfileValidationException;
 import com.pulso.backend.project.application.MembershipConflictException;
+import com.pulso.backend.project.application.MemberInvitationNotFoundException;
 import com.pulso.backend.project.application.ProjectConflictException;
 import com.pulso.backend.project.application.ProjectLifecycleAuthorizationException;
 import com.pulso.backend.project.application.ProjectLifecycleConflictException;
@@ -136,6 +137,15 @@ public class ApiExceptionHandler {
                 HttpStatus.NOT_FOUND,
                 exception.getMessage());
         problem.setTitle(ApiMessages.INVITATION_PROJECT_NOT_FOUND_TITLE);
+        return problem;
+    }
+
+    @ExceptionHandler(MemberInvitationNotFoundException.class)
+    ProblemDetail memberInvitationNotFound(MemberInvitationNotFoundException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND,
+                exception.getMessage());
+        problem.setTitle(ApiMessages.INVITATION_NOT_FOUND_TITLE);
         return problem;
     }
 

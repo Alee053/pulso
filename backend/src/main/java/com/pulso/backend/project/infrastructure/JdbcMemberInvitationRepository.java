@@ -11,6 +11,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 import com.pulso.backend.config.ProjectProperties;
+import com.pulso.backend.project.application.MemberInvitationAcceptanceRepository;
 import com.pulso.backend.project.application.MemberInvitationRepository;
 import com.pulso.backend.project.application.PersistedMemberInvitation;
 import com.pulso.backend.project.domain.CreatedMemberInvitation;
@@ -19,7 +20,8 @@ import com.pulso.backend.project.domain.MemberInvitation;
 import com.pulso.backend.project.domain.MemberInvitationActor;
 
 @Repository
-public class JdbcMemberInvitationRepository implements MemberInvitationRepository {
+public class JdbcMemberInvitationRepository
+        implements MemberInvitationRepository, MemberInvitationAcceptanceRepository {
 
     private final JdbcClient jdbcClient;
     private final MemberInvitation.Limits limits;
@@ -116,6 +118,76 @@ public class JdbcMemberInvitationRepository implements MemberInvitationRepositor
                     .single();
         } catch (DuplicateKeyException exception) {
             throw new DuplicateMemberInvitationException();
+        }
+    }
+
+    @Override
+    public Optional<PersistedMemberInvitation> findByInviteTokenDigest(String inviteTokenDigest) {
+        return jdbcClient.sql("""
+                select id, project_id, invitee_email, profile_id, role,
+                       membership_status, created_by_profile_id
+                from public.project_members
+                where invite_token_digest = :inviteTokenDigest
+                for update
+                """)
+                .param("inviteTokenDigest", inviteTokenDigest)
+                .query((resultSet, rowNumber) -> mapPersistedInvitation(resultSet, limits))
+                .list()
+                .stream()
+                .findFirst();
+    }
+
+    @Override
+    public boolean hasMembership(UUID projectId, UUID profileId) {
+        return jdbcClient.sql("""
+                select exists(
+                    select 1
+                    from public.project_members
+                    where project_id = :projectId
+                      and profile_id = :profileId
+                )
+                """)
+                .param("projectId", projectId)
+                .param("profileId", profileId)
+                .query((resultSet, rowNumber) -> resultSet.getBoolean(1))
+                .single();
+    }
+
+    @Override
+    public Optional<PersistedMemberInvitation> acceptInvitation(
+            UUID invitationId,
+            String inviteTokenDigest,
+            UUID profileId) {
+        try {
+            return jdbcClient.sql("""
+                    update public.project_members
+                    set profile_id = :profileId,
+                        membership_status = 'ACTIVE',
+                        joined_at = timezone('utc', now()),
+                        invite_token_digest = null,
+                        updated_at = timezone('utc', now())
+                    where id = :invitationId
+                      and invite_token_digest = :inviteTokenDigest
+                      and membership_status = 'INVITED'
+                      and profile_id is null
+                    returning
+                        id,
+                        project_id,
+                        invitee_email,
+                        profile_id,
+                        role,
+                        membership_status,
+                        created_by_profile_id
+                    """)
+                    .param("invitationId", invitationId)
+                    .param("inviteTokenDigest", inviteTokenDigest)
+                    .param("profileId", profileId)
+                    .query((resultSet, rowNumber) -> mapPersistedInvitation(resultSet, limits))
+                    .list()
+                    .stream()
+                    .findFirst();
+        } catch (DuplicateKeyException exception) {
+            return Optional.empty();
         }
     }
 

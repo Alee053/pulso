@@ -120,6 +120,17 @@ public record MemberInvitation(
                 limits);
     }
 
+    public boolean matchesInviteeEmail(String authenticatedEmail) {
+        try {
+            return inviteeEmail != null
+                    && inviteeEmail.equals(normalizeOptionalEmail(
+                            authenticatedEmail,
+                            limits.inviteeEmailMaxLength()));
+        } catch (ProjectValidationException exception) {
+            return false;
+        }
+    }
+
     private static void requireProjectId(UUID projectId) {
         if (projectId == null) {
             throw new ProjectValidationException(ApiMessages.PROJECT_ID_REQUIRED);

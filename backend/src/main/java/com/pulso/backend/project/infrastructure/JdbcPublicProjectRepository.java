@@ -4,6 +4,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -46,6 +47,7 @@ public class JdbcPublicProjectRepository implements PublicProjectRepository {
                     from public.project_tags pt
                     join public.tags t on t.id = pt.tag_id
                     where pt.project_id = p.id
+                      and t.is_active = true
                 ), '[]'::jsonb)::text as tags,
                 (
                     case
@@ -74,6 +76,7 @@ public class JdbcPublicProjectRepository implements PublicProjectRepository {
                 ), '[]'::jsonb)::text as members
             from public.projects p
             join public.sectors s on s.id = p.sector_id
+                and s.is_active = true
             where p.status = 'PUBLISHED'
             """;
 
@@ -148,11 +151,60 @@ public class JdbcPublicProjectRepository implements PublicProjectRepository {
 
     private List<PublicProjectDetail.ExternalLink> parseExternalLinks(String json) {
         List<PublicProjectDetail.ExternalLink> links = new ArrayList<>();
-        forEachObject(json, node -> links.add(new PublicProjectDetail.ExternalLink(
-                text(node, "type"),
-                text(node, "url"),
-                text(node, "label"))));
+        forEachObject(json, node -> {
+            if (!isPublicExternalLink(node)) {
+                return;
+            }
+
+            String url = text(node, "url");
+            if (url == null || url.isBlank()) {
+                return;
+            }
+
+            links.add(new PublicProjectDetail.ExternalLink(
+                    text(node, "type"),
+                    url,
+                    text(node, "label")));
+        });
         return links;
+    }
+
+    private static boolean isPublicExternalLink(JsonNode node) {
+        return !hasAnyValue(node, "is_public", "false", "0", "no")
+                && !hasAnyValue(node, "isPublic", "false", "0", "no")
+                && !hasAnyValue(node, "public", "false", "0", "no")
+                && !hasAnyValue(node, "private", "true", "1", "yes", "private")
+                && !hasAnyValue(
+                        node,
+                        "visibility",
+                        "private",
+                        "members_only",
+                        "members-only",
+                        "internal",
+                        "restricted")
+                && !hasAnyValue(
+                        node,
+                        "access",
+                        "private",
+                        "members_only",
+                        "members-only",
+                        "internal",
+                        "restricted");
+    }
+
+    private static boolean hasAnyValue(JsonNode node, String fieldName, String... expectedValues) {
+        String actualValue = text(node, fieldName);
+        if (actualValue == null) {
+            return false;
+        }
+
+        String normalizedValue = actualValue.trim().toLowerCase(Locale.ROOT);
+        for (String expectedValue : expectedValues) {
+            if (expectedValue.equals(normalizedValue)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private List<PublicProjectDetail.Member> parseMembers(String json) {

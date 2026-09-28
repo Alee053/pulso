@@ -148,8 +148,8 @@ The response maps only public product data from the canonical model:
 | Response field | Canonical source | Contract rule |
 | --- | --- | --- |
 | `id`, `slug`, `name`, `tagline`, `description`, `valueProposition`, `stage`, `city`, `department` | `projects` | `valueProposition` maps `value_proposition`; nullable descriptive and location fields remain `null`. |
-| `sector` | `projects.sector_id` → `sectors` | Includes only `id`, `slug`, and `name`; catalog administration fields are omitted. |
-| `tags` | `project_tags` → `tags` | Includes only `id`, `slug`, and `name`; an empty relation is returned as `[]`. |
+| `sector` | `projects.sector_id` → `sectors` | Includes only an active sector's `id`, `slug`, and `name`; catalog administration fields are omitted. |
+| `tags` | `project_tags` → `tags` | Includes only active tags' `id`, `slug`, and `name`; an empty relation is returned as `[]`. |
 | `externalLinks` | `projects.external_links` | Includes only public `{type, url, label}` entries; absent links are returned as `[]`. |
 | `members` | `project_members` → `profiles` | Includes only members with `membership_status = ACTIVE`, `is_public = true`, and a linked active profile. |
 
@@ -159,7 +159,10 @@ returns `inviteeEmail`, `inviteTokenDigest`, membership identifiers, audit
 fields, or other invitation/private data. It also excludes project
 `status`, `verificationStatus`, `createdByProfileId`, review notes and review
 timestamps, publication/audit timestamps, and any other internal workflow
-field.
+field. The backend applies the `PUBLISHED` predicate before joining the
+sector or assembling any related public data. A project whose sector is not
+active is therefore unavailable, while inactive tags, private external links,
+private memberships, and non-active members are omitted from the response.
 
 Missing projects and projects that are not `PUBLISHED` return the same
 response to avoid revealing whether a private project exists:

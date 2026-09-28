@@ -153,6 +153,7 @@ public final class ApiMessages {
     public static final String SECTOR_DUPLICATE =
             "preferredSectors must not contain duplicates: '%s'.";
     public static final String PROJECT_DRAFT_REQUIRED = "project draft is required.";
+    public static final String PROJECT_UPDATE_REQUIRED = "project update is required.";
     public static final String SECTOR_MUST_BE_ACTIVE =
             "sectorId must reference an active sector.";
     public static final String FIELD_NOT_ACCEPTED = "Field '%s' is not accepted.";

@@ -66,6 +66,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/me").authenticated()
                         .requestMatchers("/api/v1/me/preferences").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/projects").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/projects/*").authenticated()
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/v1/projects/*/publication-request",

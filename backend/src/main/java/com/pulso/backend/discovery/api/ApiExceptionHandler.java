@@ -16,6 +16,7 @@ import com.pulso.backend.profile.domain.ProfileValidationException;
 import com.pulso.backend.project.application.ProjectConflictException;
 import com.pulso.backend.project.application.ProjectLifecycleAuthorizationException;
 import com.pulso.backend.project.application.ProjectLifecycleConflictException;
+import com.pulso.backend.project.application.ProjectUpdateAuthorizationException;
 import com.pulso.backend.project.application.PublicProjectNotFoundException;
 import com.pulso.backend.project.domain.ProjectValidationException;
 
@@ -87,6 +88,15 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(ProjectLifecycleAuthorizationException.class)
     ProblemDetail projectLifecycleAuthorization(ProjectLifecycleAuthorizationException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.FORBIDDEN,
+                exception.getMessage());
+        problem.setTitle(ApiMessages.MEMBERSHIP_PERMISSION_TITLE);
+        return problem;
+    }
+
+    @ExceptionHandler(ProjectUpdateAuthorizationException.class)
+    ProblemDetail projectUpdateAuthorization(ProjectUpdateAuthorizationException exception) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.FORBIDDEN,
                 exception.getMessage());

@@ -151,4 +151,84 @@ describe('ProjectsApi', () => {
     await responsePromise
     controller.verify()
   })
+
+  it('updates project information through the protected HTTP adapter', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
+    })
+
+    const api = TestBed.inject(ProjectsApi)
+    const controller = TestBed.inject(HttpTestingController)
+    const responsePromise = firstValueFrom(
+      api.update('project-1', {
+        name: '  EcoPack actualizado  ',
+        tagline: '  Envases nuevos  ',
+        description: '  Descripción nueva  ',
+        valueProposition: '  Menos residuos  ',
+        stage: 'MVP',
+        sectorId: 'sector-1',
+        city: '  Santa Cruz  ',
+        department: '  Santa Cruz  ',
+      }),
+    )
+
+    const request = controller.expectOne(
+      'http://localhost:8080/api/v1/projects/project-1',
+    )
+
+    expect(request.request.method).toBe('PATCH')
+    expect(request.request.body).toEqual({
+      name: 'EcoPack actualizado',
+      tagline: 'Envases nuevos',
+      description: 'Descripción nueva',
+      valueProposition: 'Menos residuos',
+      stage: 'MVP',
+      sectorId: 'sector-1',
+      city: 'Santa Cruz',
+      department: 'Santa Cruz',
+    })
+
+    request.flush({
+      project: {
+        id: 'project-1',
+        slug: 'eco-pack',
+        name: 'EcoPack actualizado',
+        tagline: 'Envases nuevos',
+        description: 'Descripción nueva',
+        valueProposition: 'Menos residuos',
+        sectorId: 'sector-1',
+        stage: 'MVP',
+        city: 'Santa Cruz',
+        department: 'Santa Cruz',
+        status: 'DRAFT',
+        verificationStatus: 'UNVERIFIED',
+        createdByProfileId: 'profile-1',
+        createdAt: '2026-09-01T00:00:00Z',
+        updatedAt: '2026-09-02T00:00:00Z',
+      },
+    })
+
+    await expect(responsePromise).resolves.toEqual({
+      id: 'project-1',
+      slug: 'eco-pack',
+      name: 'EcoPack actualizado',
+      tagline: 'Envases nuevos',
+      description: 'Descripción nueva',
+      valueProposition: 'Menos residuos',
+      sectorId: 'sector-1',
+      stage: 'MVP',
+      city: 'Santa Cruz',
+      department: 'Santa Cruz',
+      status: 'DRAFT',
+      verificationStatus: 'UNVERIFIED',
+      createdByProfileId: 'profile-1',
+      createdAt: '2026-09-01T00:00:00Z',
+      updatedAt: '2026-09-02T00:00:00Z',
+    })
+
+    controller.verify()
+  })
 })

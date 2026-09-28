@@ -13,6 +13,7 @@ import {
 } from '@angular/core'
 import { IconComponent } from '../../../shared/icon/icon'
 import type { Startup } from '../domain/startup'
+import { detailStrings } from '../strings/detail.strings'
 
 @Component({
   selector: 'pulso-startup-detail-modal',
@@ -21,6 +22,7 @@ import type { Startup } from '../domain/startup'
   templateUrl: './startup-detail-modal.html',
 })
 export class StartupDetailModalComponent implements OnInit, AfterViewInit, OnDestroy {
+  readonly strings = detailStrings
   @Input() startup!: Startup
   @Input() recommendation = ''
   @Output() closed = new EventEmitter<void>()

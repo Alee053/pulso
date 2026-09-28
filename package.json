@@ -18,7 +18,7 @@
     "db:lint": "pnpm exec supabase --workdir database db lint --local",
     "db:test": "pnpm exec supabase --workdir database test db --local",
     "db:status": "pnpm exec supabase --workdir database status",
-    "db:verify": "./scripts/verify-local-supabase.sh",
+    "db:verify": "sh ./scripts/verify-local-supabase.sh",
     "db:compose:up": "docker compose up -d",
     "db:compose:down": "docker compose down",
     "db:compose:seed": "docker compose run --rm migrator",
@@ -26,11 +26,11 @@
     "db:migration:new": "pnpm exec supabase --workdir database migration new",
     "db:push:dry-run": "pnpm exec supabase --workdir database db push --linked --dry-run",
     "backend:run": "sh ./scripts/run-backend.sh",
-    "backend:verify": "./scripts/verify-local-backend.sh",
-    "auth:verify": "./scripts/verify-local-auth.sh",
-    "smoke:verify": "./scripts/verify-local-smoke.sh",
-    "backend:test": "./backend/gradlew -p backend test",
-    "backend:build": "./backend/gradlew -p backend build"
+    "backend:verify": "sh ./scripts/verify-local-backend.sh",
+    "auth:verify": "sh ./scripts/verify-local-auth.sh",
+    "smoke:verify": "sh ./scripts/verify-local-smoke.sh",
+    "backend:test": "sh ./backend/gradlew -p backend test",
+    "backend:build": "sh ./backend/gradlew -p backend build"
   },
   "devDependencies": {
     "supabase": "2.116.0"

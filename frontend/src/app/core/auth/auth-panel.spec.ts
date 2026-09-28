@@ -10,7 +10,9 @@ describe('AuthPanelComponent', () => {
     const auth = createGatewayStub(false)
     const fixture = createFixture(auth)
 
-    expect(fixture.nativeElement.textContent).toContain('Auth está inactivo')
+    expect(fixture.nativeElement.textContent).toContain(
+      'El acceso no está disponible en este momento.',
+    )
     expect(auth.initialize).toHaveBeenCalledOnce()
   })
 

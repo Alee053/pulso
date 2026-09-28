@@ -17,7 +17,9 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import com.pulso.backend.config.ProjectProperties;
 import com.pulso.backend.project.application.CreateDraftProject;
+import com.pulso.backend.project.application.ProjectConflictException;
 import com.pulso.backend.project.domain.ProjectDraft;
 
 @Testcontainers(disabledWithoutDocker = true)
@@ -26,6 +28,10 @@ class JdbcProjectRepositoryTest {
     private static final UUID PROFILE_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
     private static final UUID ACTIVE_SECTOR_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
     private static final UUID INACTIVE_SECTOR_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
+    private static final ProjectProperties PROPERTIES =
+            new ProjectProperties(2, 120, 160, 240, 5000, 120, 40, 254);
+    private static final ProjectDraft.Limits LIMITS =
+            new ProjectDraft.Limits(2, 120, 160, 240, 5000, 120, 40);
 
     @Container
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:17-alpine");
@@ -105,7 +111,7 @@ class JdbcProjectRepositoryTest {
 
     @Test
     void persistsDraftAndOwnerWithCanonicalNamesAndRoles() {
-        var result = new CreateDraftProject(repository).execute(PROFILE_ID, draft());
+        var result = new CreateDraftProject(repository, PROPERTIES).execute(PROFILE_ID, draft());
 
         assertThat(result.project().status()).isEqualTo("DRAFT");
         assertThat(result.project().createdByProfileId()).isEqualTo(PROFILE_ID);
@@ -113,6 +119,20 @@ class JdbcProjectRepositoryTest {
         assertThat(result.owner().profileId()).isEqualTo(PROFILE_ID);
         assertThat(result.owner().role()).isEqualTo("OWNER");
         assertThat(result.owner().membershipStatus()).isEqualTo("ACTIVE");
+        assertThat(count("public.projects")).isEqualTo(1);
+        assertThat(count("public.project_members")).isEqualTo(1);
+    }
+
+    @Test
+    void translatesDuplicateSlugIntoAProjectConflict() {
+        new CreateDraftProject(repository, PROPERTIES).execute(PROFILE_ID, draft());
+
+        assertThatThrownBy(() -> new CreateDraftProject(repository, PROPERTIES).execute(
+                PROFILE_ID,
+                draft()))
+                .isInstanceOf(ProjectConflictException.class)
+                .hasMessage("A project with the same slug already exists.");
+
         assertThat(count("public.projects")).isEqualTo(1);
         assertThat(count("public.project_members")).isEqualTo(1);
     }
@@ -139,7 +159,7 @@ class JdbcProjectRepositoryTest {
                 new DataSourceTransactionManager(dataSource()));
 
         assertThatThrownBy(() -> transaction.executeWithoutResult(status ->
-                new CreateDraftProject(repository).execute(PROFILE_ID, draft())))
+                new CreateDraftProject(repository, PROPERTIES).execute(PROFILE_ID, draft())))
                 .hasMessageContaining("forced owner failure");
 
         assertThat(count("public.projects")).isZero();
@@ -164,6 +184,7 @@ class JdbcProjectRepositoryTest {
                 "Proyecto de prueba.",
                 ACTIVE_SECTOR_ID,
                 "Cochabamba",
-                "MVP");
+                "MVP",
+                LIMITS);
     }
 }

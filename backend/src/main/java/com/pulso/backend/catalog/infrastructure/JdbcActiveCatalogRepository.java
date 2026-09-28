@@ -3,18 +3,20 @@ package com.pulso.backend.catalog.infrastructure;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 import com.pulso.backend.catalog.application.ActiveCatalogRepository;
+import com.pulso.backend.catalog.application.ActiveSectorLookup;
 import com.pulso.backend.catalog.domain.SectorCatalogItem;
 import com.pulso.backend.catalog.domain.SkillCatalogItem;
 import com.pulso.backend.catalog.domain.TagCatalogItem;
 
 @Repository
-public class JdbcActiveCatalogRepository implements ActiveCatalogRepository {
+public class JdbcActiveCatalogRepository implements ActiveCatalogRepository, ActiveSectorLookup {
 
     private final JdbcClient jdbcClient;
 
@@ -62,6 +64,47 @@ public class JdbcActiveCatalogRepository implements ActiveCatalogRepository {
                 .param("limit", limit)
                 .query(JdbcActiveCatalogRepository::mapSkill)
                 .list();
+    }
+
+    @Override
+    public Optional<UUID> findActiveSectorId(String identifier) {
+        if (identifier == null || identifier.isBlank()) {
+            return Optional.empty();
+        }
+
+        try {
+            return findActiveSectorIdById(UUID.fromString(identifier));
+        } catch (IllegalArgumentException exception) {
+            return findActiveSectorIdBySlug(identifier);
+        }
+    }
+
+    private Optional<UUID> findActiveSectorIdById(UUID sectorId) {
+        return jdbcClient.sql("""
+                select id
+                from public.sectors
+                where id = :sectorId
+                  and is_active = true
+                """)
+                .param("sectorId", sectorId)
+                .query((resultSet, rowNumber) -> resultSet.getObject("id", UUID.class))
+                .list()
+                .stream()
+                .findFirst();
+    }
+
+    private Optional<UUID> findActiveSectorIdBySlug(String slug) {
+        return jdbcClient.sql("""
+                select id
+                from public.sectors
+                where slug = :slug
+                  and is_active = true
+                """)
+                .param("slug", slug)
+                .query((resultSet, rowNumber) -> resultSet.getObject("id", UUID.class))
+                .list()
+                .stream()
+                .findFirst();
     }
 
     private static SectorCatalogItem mapSector(ResultSet resultSet, int rowNumber) throws SQLException {

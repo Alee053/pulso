@@ -378,6 +378,62 @@ button {
   );
 }
 
+.auth-panel__perspective {
+  width: 100%;
+  max-width: 28rem;
+  perspective: 1200px;
+}
+
+.auth-panel__flip-surface {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.auth-panel__flip-surface--forward {
+  animation: auth-panel-flip-forward 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.auth-panel__flip-surface--backward {
+  animation: auth-panel-flip-backward 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes auth-panel-flip-forward {
+  0% {
+    transform: rotateY(0deg) scale(1);
+  }
+
+  50% {
+    transform: rotateY(180deg) scale(0.96);
+  }
+
+  100% {
+    transform: rotateY(360deg) scale(1);
+  }
+}
+
+@keyframes auth-panel-flip-backward {
+  0% {
+    transform: rotateY(0deg) scale(1);
+  }
+
+  50% {
+    transform: rotateY(-180deg) scale(0.96);
+  }
+
+  100% {
+    transform: rotateY(-360deg) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-panel__flip-surface--forward,
+  .auth-panel__flip-surface--backward {
+    animation: none;
+  }
+}
+
 .glass-choice {
   position: relative;
   overflow: hidden;

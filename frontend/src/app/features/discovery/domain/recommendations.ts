@@ -1,26 +1,11 @@
 import { interestOptions } from '../data-access/interests'
+import { recommendationStrings } from '../strings/recommendations.strings'
 import type { Decision, InterestId, Startup } from './startup'
 
 export type PreferenceWeights = Record<string, number>
 
 export const signalLabels: Record<string, string> = {
-  agriculture: 'Agrotech',
-  collaboration: 'Colaboración',
-  'clean-energy': 'Energía limpia',
-  commerce: 'Comercio',
-  community: 'Comunidad',
-  education: 'Educación',
-  food: 'Alimentos',
-  growth: 'Crecimiento',
-  impact: 'Impacto',
-  innovation: 'Innovación',
-  investment: 'Inversión',
-  local: 'Local',
-  mobility: 'Movilidad',
-  products: 'Productos',
-  sustainability: 'Sostenibilidad',
-  technology: 'Tecnología',
-  opportunities: 'Oportunidades',
+  ...recommendationStrings.signalLabels,
 }
 
 const interestSignals = new Map(
@@ -112,8 +97,8 @@ export function getRecommendationReason(
   const labels = Array.from(new Set([...matchingLabels, ...learnedLabels])).slice(0, 2)
 
   if (labels.length > 0) {
-    return `Tus intereses conectan con ${labels.join(' y ')} en ${startup.city}.`
+    return recommendationStrings.matched(labels.join(recommendationStrings.labelJoiner), startup.city)
   }
 
-  return `Te mostramos ${startup.name} como una exploración nueva en ${startup.city}, cerca de proyectos que están creciendo.`
+  return recommendationStrings.explore(startup.name, startup.city)
 }

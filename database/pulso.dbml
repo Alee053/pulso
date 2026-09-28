@@ -67,7 +67,7 @@ Table profile_preferences {
 Table tags {
   id uuid [pk, default: `gen_random_uuid()`]
   slug text [not null, unique]
-  name text [not null]
+  name text [not null, unique]
   tag_type text [not null, default: 'TOPIC', note: "TOPIC, INDUSTRY o OTHER"]
   is_active boolean [not null, default: true]
   created_at timestamptz [not null, default: `now()`]
@@ -90,7 +90,7 @@ Table profile_tags {
 Table skills {
   id uuid [pk, default: `gen_random_uuid()`]
   slug text [not null, unique]
-  name text [not null]
+  name text [not null, unique]
   category text
   is_active boolean [not null, default: true]
   created_at timestamptz [not null, default: `now()`]
@@ -117,7 +117,7 @@ Table profile_skills {
 Table sectors {
   id uuid [pk, default: `gen_random_uuid()`]
   slug text [not null, unique]
-  name text [not null]
+  name text [not null, unique]
   description text
   is_active boolean [not null, default: true]
   sort_order int [not null, default: 0]
@@ -195,11 +195,12 @@ Table project_members {
 
   indexes {
     (project_id, profile_id) [unique]
+    (project_id, invitee_email) [unique, note: "Parcial para membership_status = INVITED; el correo se guarda ya normalizado"]
     (project_id, membership_status, is_public)
     profile_id
   }
 
-  Note: "Fusiona membresía e invitación para mantener el MVP pequeño. Debe existir profile_id o invitee_email, pero no ambos vacíos."
+  Note: "Fusiona membresía e invitación para mantener el MVP pequeño. Debe existir profile_id o invitee_email, pero no ambos vacíos. Una invitación activa duplicada es la misma pareja proyecto + invitee_email normalizado con membership_status INVITED. profile_id permanece vacío hasta aceptar. El token de aceptación solo se persiste como invite_token_digest."
 }
 
 // -----------------------------------------------------------------------------

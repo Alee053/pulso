@@ -29,6 +29,7 @@ import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import com.pulso.backend.config.ProfileProperties;
 import com.pulso.backend.config.SecurityConfig;
 import com.pulso.backend.profile.application.GetCurrentProfile;
 import com.pulso.backend.profile.application.ProfileRepository;
@@ -201,12 +202,16 @@ class MeControllerTest {
 
         @Bean
         GetCurrentProfile getCurrentProfile(ProfileRepository repository) {
-            return new GetCurrentProfile(repository);
+            return new GetCurrentProfile(
+                    repository,
+                    new ProfileProperties(120, 500, 500, 120, 120));
         }
 
         @Bean
         UpdateCurrentProfile updateCurrentProfile(ProfileRepository repository) {
-            return new UpdateCurrentProfile(repository);
+            return new UpdateCurrentProfile(
+                    repository,
+                    new ProfileProperties(120, 500, 500, 120, 120));
         }
 
         private static Profile profile() {

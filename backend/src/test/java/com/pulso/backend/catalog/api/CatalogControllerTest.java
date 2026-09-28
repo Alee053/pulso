@@ -17,6 +17,7 @@ import com.pulso.backend.catalog.application.ListActiveCatalogs;
 import com.pulso.backend.catalog.domain.SectorCatalogItem;
 import com.pulso.backend.catalog.domain.SkillCatalogItem;
 import com.pulso.backend.catalog.domain.TagCatalogItem;
+import com.pulso.backend.config.CatalogProperties;
 import com.pulso.backend.discovery.api.ApiExceptionHandler;
 
 class CatalogControllerTest {
@@ -84,7 +85,9 @@ class CatalogControllerTest {
 
     private static MockMvc mockMvc(ActiveCatalogRepository repository) {
         return MockMvcBuilders
-                .standaloneSetup(new CatalogController(new ListActiveCatalogs(repository)))
+                .standaloneSetup(new CatalogController(new ListActiveCatalogs(
+                        repository,
+                        new CatalogProperties(500))))
                 .setControllerAdvice(new ApiExceptionHandler())
                 .build();
     }

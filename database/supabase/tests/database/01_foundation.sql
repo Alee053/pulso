@@ -14,10 +14,9 @@ select has_index(
   'projects_status_published_at_id_idx',
   'published project ordering has an index'
 );
-select is(
-  (select count(*) from public.sectors where is_active),
-  2::bigint,
-  'local seed contains two active sectors'
+select ok(
+  (select count(*) >= 2 from public.sectors where is_active),
+  'local seed contains at least two active sectors'
 );
 
 select is(

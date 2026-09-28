@@ -9,7 +9,7 @@
   (click)="onCardClick($event)"
   role="group"
   tabindex="-1"
-  [attr.aria-label]="'Ver perfil de ' + startup.name"
+  [attr.aria-label]="strings.openAria(startup.name)"
 >
   <div class="absolute inset-0" [style.background]="'linear-gradient(145deg, ' + startup.accent + '55, #17201c)'">
     <img
@@ -41,7 +41,7 @@
       </div>
       <div class="discovery-card__title-row">
         <h2 class="discovery-card__title text-[2.75rem] font-medium leading-[0.96] tracking-[-0.07em] text-white sm:text-6xl">{{ startup.name }}</h2>
-        <button type="button" class="discovery-card__save" (pointerdown)="$event.stopPropagation()" (click)="saveFromButton($event)" [disabled]="disabled" [attr.aria-label]="isSaved ? 'Quitar de guardados' : 'Guardar startup'">
+        <button type="button" class="discovery-card__save" (pointerdown)="$event.stopPropagation()" (click)="saveFromButton($event)" [disabled]="disabled" [attr.aria-label]="isSaved ? strings.unsaveAria : strings.saveAria">
           <pulso-icon name="bookmark" [size]="19" [strokeWidth]="isSaved ? 2.4 : 1.8" [filled]="isSaved" />
         </button>
       </div>
@@ -49,7 +49,7 @@
       <p class="discovery-card__description mt-3 max-w-lg text-sm leading-6 text-white/48">{{ startup.description }}</p>
       <div class="mt-5 flex flex-wrap gap-1.5"><span *ngFor="let badge of startup.badges" class="card-badge">{{ badge }}</span></div>
       <button type="button" class="discovery-card__profile-link mt-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.13em] text-[#c5edff] transition hover:text-white" (click)="selectFromButton($event)">
-        Ver perfil completo <pulso-icon name="arrow-up-right" [size]="14" [strokeWidth]="1.8" />
+        {{ strings.openProfile }} <pulso-icon name="arrow-up-right" [size]="14" [strokeWidth]="1.8" />
       </button>
     </div>
   </div>

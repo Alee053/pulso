@@ -3,6 +3,7 @@ import { of, throwError } from 'rxjs'
 import { describe, expect, it, vi } from 'vitest'
 import { CatalogsApi } from '../data-access/catalogs-api'
 import { StartupsApi } from '../data-access/startups-api'
+import { PreferencesApi } from '../data-access/preferences-api'
 import { PulsoSession } from './pulso-session'
 
 describe('PulsoSession', () => {
@@ -32,6 +33,7 @@ describe('PulsoSession', () => {
     }))
     const session = createSession({ list })
 
+    await session.loadOnboardingPreferences()
     session.toggleInterest('collaborate')
     await session.startDiscovery()
 
@@ -55,12 +57,14 @@ describe('PulsoSession', () => {
     )
     const session = createSession({ list })
 
+    await session.loadOnboardingPreferences()
+    session.toggleInterest('discover')
     await session.startDiscovery()
 
     expect(session.catalog()).toEqual([])
     expect(session.feed()).toEqual([])
     expect(session.hasLoadedCatalog()).toBe(false)
-    expect(session.errorMessage()).toContain('backend esté disponible')
+    expect(session.errorMessage()).toContain('Inténtalo de nuevo')
     expect(session.isLoading()).toBe(false)
   })
 
@@ -99,6 +103,100 @@ describe('PulsoSession', () => {
     expect(session.selectedSectorIds()).toEqual(['sector-1'])
     expect(session.selectedTagIds()).toEqual(['tag-1'])
     expect(session.selectedSkillIds()).toEqual(['skill-1'])
+  })
+
+  it('restores saved intentions, sector references, and project stages', async () => {
+    const loadCatalogs = vi.fn().mockReturnValue(of({
+      sectors: [{
+        id: 'sector-1',
+        slug: 'sostenibilidad',
+        name: 'Sostenibilidad',
+        description: null,
+      }],
+      tags: [],
+      skills: [],
+    }))
+    const loadPreferences = vi.fn().mockReturnValue(of({
+      profileId: 'user-1',
+      intentions: ['DISCOVER', 'INVEST'],
+      preferredSectors: ['sostenibilidad'],
+      preferredStages: ['mvp', 'EARLY_STAGE'],
+    }))
+    const session = createSession({ loadCatalogs, loadPreferences })
+
+    await session.loadOnboardingPreferences()
+    await session.loadReferenceCatalogs()
+
+    expect(session.selectedInterests()).toEqual(['discover', 'invest'])
+    expect(session.selectedSectorIds()).toEqual(['sector-1'])
+    expect(session.selectedStageIds()).toEqual(['MVP', 'EARLY_STAGE'])
+    expect(session.hasLoadedPreferences()).toBe(true)
+  })
+
+  it('saves the current onboarding selections before entering discovery', async () => {
+    const savePreferences = vi.fn().mockImplementation((payload) => of({
+      profileId: 'user-1',
+      ...payload,
+    }))
+    const session = createSession({ savePreferences })
+
+    await session.loadOnboardingPreferences()
+    session.toggleInterest('discover')
+    session.toggleSector('sector-1')
+    session.toggleStage('MVP')
+
+    await session.startDiscovery()
+
+    expect(savePreferences).toHaveBeenCalledWith({
+      intentions: ['DISCOVER'],
+      preferredSectors: ['sector-1'],
+      preferredStages: ['MVP'],
+    })
+    expect(session.hasStarted()).toBe(true)
+    expect(session.preferencesSaveErrorMessage()).toBeNull()
+  })
+
+  it('keeps onboarding open when saving fails and retries the same flow', async () => {
+    const savePreferences = vi.fn()
+      .mockReturnValueOnce(throwError(() => new Error('503')))
+      .mockImplementation((payload) => of({
+        profileId: 'user-1',
+        ...payload,
+      }))
+    const session = createSession({ savePreferences })
+
+    await session.loadOnboardingPreferences()
+    session.toggleInterest('collaborate')
+
+    await session.startDiscovery()
+
+    expect(session.hasStarted()).toBe(false)
+    expect(session.preferencesSaveErrorMessage()).toContain('No pudimos guardar')
+    expect(session.arePreferencesSaving()).toBe(false)
+
+    session.retryPreferencesSave()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(savePreferences).toHaveBeenCalledTimes(2)
+    expect(session.hasStarted()).toBe(true)
+    expect(session.preferencesSaveErrorMessage()).toBeNull()
+  })
+
+  it('does not save or complete onboarding when loading preferences fails', async () => {
+    const loadPreferences = vi.fn().mockReturnValue(
+      throwError(() => new Error('401')),
+    )
+    const savePreferences = vi.fn()
+    const session = createSession({ loadPreferences, savePreferences })
+
+    await session.loadOnboardingPreferences()
+    session.toggleInterest('discover')
+    await session.startDiscovery()
+
+    expect(savePreferences).not.toHaveBeenCalled()
+    expect(session.hasStarted()).toBe(false)
+    expect(session.preferencesErrorMessage()).toContain('No pudimos cargar')
   })
 
   it('keeps a valid empty reference catalog visible as a loaded state', async () => {
@@ -158,6 +256,8 @@ describe('PulsoSession', () => {
 function createSession(overrides: {
   list?: ReturnType<typeof vi.fn>
   loadCatalogs?: ReturnType<typeof vi.fn>
+  loadPreferences?: ReturnType<typeof vi.fn>
+  savePreferences?: ReturnType<typeof vi.fn>
 } = {}): PulsoSession {
   const list = overrides.list ?? vi.fn().mockReturnValue(of({
     data: [],
@@ -168,12 +268,23 @@ function createSession(overrides: {
     tags: [],
     skills: [],
   }))
+  const loadPreferences = overrides.loadPreferences ?? vi.fn().mockReturnValue(of({
+    profileId: 'user-1',
+    intentions: [],
+    preferredSectors: [],
+    preferredStages: [],
+  }))
+  const savePreferences = overrides.savePreferences ?? vi.fn().mockImplementation((payload) => of({
+    profileId: 'user-1',
+    ...payload,
+  }))
 
   TestBed.configureTestingModule({
     providers: [
       PulsoSession,
       { provide: StartupsApi, useValue: { list } },
       { provide: CatalogsApi, useValue: { load: loadCatalogs } },
+      { provide: PreferencesApi, useValue: { load: loadPreferences, save: savePreferences } },
     ],
   })
 

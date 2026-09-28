@@ -4,6 +4,7 @@ import java.time.OffsetDateTime;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.pulso.backend.config.ApiMessages;
 import com.pulso.backend.profile.domain.ProfilePatch;
 
 @JsonIgnoreProperties(ignoreUnknown = false)
@@ -19,10 +20,11 @@ public record ProfilePatchRequest(
 
     @JsonAnySetter
     public void rejectUnknownField(String fieldName, Object value) {
-        throw new IllegalArgumentException("Field '" + fieldName + "' is not editable.");
+        throw new IllegalArgumentException(
+                String.format(ApiMessages.PROFILE_NOT_EDITABLE, fieldName));
     }
 
-    public ProfilePatch toPatch() {
+    public ProfilePatch toPatch(ProfilePatch.Limits limits) {
         return new ProfilePatch(
                 profileKind,
                 displayName,
@@ -31,6 +33,7 @@ public record ProfilePatchRequest(
                 city,
                 department,
                 profileVisibility,
-                onboardingCompletedAt);
+                onboardingCompletedAt,
+                limits);
     }
 }

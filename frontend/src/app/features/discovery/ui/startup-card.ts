@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common'
 import { Component, EventEmitter, Input, Output } from '@angular/core'
 import { IconComponent } from '../../../shared/icon/icon'
 import type { Decision, Startup } from '../domain/startup'
+import { cardStrings } from '../strings/feed.strings'
 
 /** Por encima de este ancho el descubrimiento se controla solo con botones y teclado. */
 const GESTURE_MAX_WIDTH = 1023
@@ -22,6 +23,8 @@ function clampOffset(value: number): number {
   templateUrl: './startup-card.html',
 })
 export class StartupCardComponent {
+  readonly strings = cardStrings
+
   @Input() startup!: Startup
   @Input() direction = 1
   @Input() disabled = false

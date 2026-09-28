@@ -7,6 +7,7 @@ export type InterestId =
 
 export type AppView = 'discover' | 'create-project' | 'saved' | 'profile' | 'detail'
 
+
 export type Decision = 'skip' | 'interested'
 
 export interface InterestOption {

@@ -50,6 +50,7 @@ These agreements make the codebase easier to change as the team and product grow
 - Keep secrets in environment variables or approved secret management. `.env.example` may document names and safe local shape, never real values.
 - Treat environment, request, database, and provider input as untrusted. Validate identifiers and avoid shell interpolation of untrusted values.
 - Keep configuration names stable and group them by concern. Fail clearly when required configuration is absent.
+- When adding or extracting presentation copy, environment names, or API limits, follow the destination convention in [`configurable-values-inventory.md`](./configurable-values-inventory.md). Do not version secret values.
 
 ## API and database coordination
 

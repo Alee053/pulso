@@ -83,6 +83,104 @@ Unavailable` without exposing the database error:
 }
 ```
 
+## `GET /api/v1/projects/{projectRef}` — public project detail (PUL-74)
+
+Returns the public detail of one canonical `Project`. `projectRef` accepts the
+project UUID (`projects.id`) or its public slug (`projects.slug`). The endpoint
+does not require an access token: an anonymous visitor and an authenticated
+visitor receive the same representation. Authentication never unlocks private
+project or membership fields in this response.
+
+Only a project whose canonical `projects.status` is `PUBLISHED` has a public
+representation. `DRAFT`, `PENDING_REVIEW`, `REJECTED`, `ARCHIVED`, and
+`SUSPENDED` projects are unavailable through this contract. The lookup must
+apply the publication predicate before assembling the response so an
+unpublished project cannot be distinguished from a missing one.
+
+Response `200 OK`:
+
+```json
+{
+  "data": {
+    "id": "33333333-3333-3333-3333-333333333333",
+    "slug": "eco-pack",
+    "name": "EcoPack Bolivia",
+    "tagline": "Envases biodegradables hechos con residuos agrícolas.",
+    "description": "Envases compostables para productores locales.",
+    "valueProposition": "Reduce residuos y mejora el valor de los desechos agrícolas.",
+    "sector": {
+      "id": "11111111-1111-1111-1111-111111111111",
+      "slug": "sostenibilidad",
+      "name": "Sostenibilidad"
+    },
+    "stage": "MVP",
+    "city": "Cochabamba",
+    "department": "Cochabamba",
+    "tags": [
+      {
+        "id": "22222222-2222-2222-2222-222222222222",
+        "slug": "economia-circular",
+        "name": "Economía circular"
+      }
+    ],
+    "externalLinks": [
+      {
+        "type": "WEBSITE",
+        "url": "https://ecopack.example",
+        "label": "Sitio web"
+      }
+    ],
+    "members": [
+      {
+        "profileId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        "displayName": "Persona Uno",
+        "avatarStoragePath": "avatars/persona-uno.webp",
+        "displayTitle": "Co-fundadora",
+        "isFeatured": true
+      }
+    ]
+  }
+}
+```
+
+The response maps only public product data from the canonical model:
+
+| Response field | Canonical source | Contract rule |
+| --- | --- | --- |
+| `id`, `slug`, `name`, `tagline`, `description`, `valueProposition`, `stage`, `city`, `department` | `projects` | `valueProposition` maps `value_proposition`; nullable descriptive and location fields remain `null`. |
+| `sector` | `projects.sector_id` → `sectors` | Includes only an active sector's `id`, `slug`, and `name`; catalog administration fields are omitted. |
+| `tags` | `project_tags` → `tags` | Includes only active tags' `id`, `slug`, and `name`; an empty relation is returned as `[]`. |
+| `externalLinks` | `projects.external_links` | Includes only public `{type, url, label}` entries; absent links are returned as `[]`. |
+| `members` | `project_members` → `profiles` | Includes only members with `membership_status = ACTIVE`, `is_public = true`, and a linked active profile. |
+
+Each public member exposes only `profileId`, `displayName`,
+`avatarStoragePath`, `displayTitle`, and `isFeatured`. The contract never
+returns `inviteeEmail`, `inviteTokenDigest`, membership identifiers, audit
+fields, or other invitation/private data. It also excludes project
+`status`, `verificationStatus`, `createdByProfileId`, review notes and review
+timestamps, publication/audit timestamps, and any other internal workflow
+field. The backend applies the `PUBLISHED` predicate before joining the
+sector or assembling any related public data. A project whose sector is not
+active is therefore unavailable, while inactive tags, private external links,
+private memberships, and non-active members are omitted from the response.
+
+Missing projects and projects that are not `PUBLISHED` return the same
+response to avoid revealing whether a private project exists:
+
+```json
+{
+  "type": "about:blank",
+  "title": "Public project not found",
+  "status": 404,
+  "detail": "The project does not exist or is not publicly available."
+}
+```
+
+An anonymous request, a request with a valid authenticated user token, and a
+request without a token therefore share the same `200`/`404` contract. A
+database failure uses the sanitized `503 Service Unavailable` problem
+response documented for the other API reads.
+
 ## `GET /api/v1/catalogs`
 
 Returns the active reference catalogs used by authenticated product flows. The
@@ -149,6 +247,176 @@ created by the ordered migrations before PUL-44. Migration
 gap using the existing DBML fields (`id`, `slug`, `name`, `tag_type`/`category`,
 `is_active`, and timestamps); it does not create profile/project relationship
 tables, which belong to the stories that persist those relationships.
+
+## `POST /api/v1/projects`
+
+Creates a project in `DRAFT` for the authenticated user and creates that same
+user's active `OWNER` membership in the same transaction. The profile ID is
+read from the validated JWT subject; the request cannot provide
+`createdByProfileId` or an owner identity.
+
+```sh
+curl -X POST \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "slug": "eco-pack",
+    "name": "EcoPack Bolivia",
+    "tagline": "Envases sostenibles",
+    "description": "Proyecto de prueba.",
+    "sectorId": "11111111-1111-1111-1111-111111111111",
+    "city": "Cochabamba",
+    "stage": "MVP"
+  }' \
+  http://localhost:8080/api/v1/projects
+```
+
+The request validates required text, the active `sectorId`, and the supported
+project stages (`IDEA`, `PROTOTYPE`, `MVP`, `EARLY_STAGE`, `GROWING`, and
+`ESTABLISHED`). `description` is optional. A successful request returns
+`201 Created` with the project and its owner relation:
+
+```json
+{
+  "project": {
+    "id": "33333333-3333-3333-3333-333333333333",
+    "slug": "eco-pack",
+    "name": "EcoPack Bolivia",
+    "tagline": "Envases sostenibles",
+    "description": "Proyecto de prueba.",
+    "sectorId": "11111111-1111-1111-1111-111111111111",
+    "city": "Cochabamba",
+    "stage": "MVP",
+    "status": "DRAFT",
+    "createdByProfileId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+  },
+  "owner": {
+    "id": "44444444-4444-4444-4444-444444444444",
+    "projectId": "33333333-3333-3333-3333-333333333333",
+    "profileId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "role": "OWNER",
+    "membershipStatus": "ACTIVE"
+  }
+}
+```
+
+Invalid input, unknown or inactive sectors, and client-provided identity
+fields return `400 Bad Request`. A duplicate project slug returns `409
+Conflict`; other PostgreSQL failures return the sanitized `503 Service
+Unavailable` response. Missing, invalid, or `service_role` bearer tokens
+return `401 Unauthorized`.
+
+## `POST /api/v1/projects/{projectId}/publication-request`
+
+Requests publication review for a project in `DRAFT`. The profile identity is
+always read from the validated JWT subject. The backend authorizes the action
+only when the matching `project_members` row for that exact project and profile
+has `role = OWNER` or `ADMIN` and `membership_status = ACTIVE`.
+
+The request body is empty (or `{}`). It cannot provide `profileId`, `owner`,
+`role`, `status`, `publishedAt`, `reviewedAt`, `reviewedByProfileId`, or
+`reviewNote`. The endpoint changes only `projects.status` to `PENDING_REVIEW`;
+it never publishes the project or changes review data.
+
+Response `200 OK`:
+
+```json
+{
+  "projectId": "33333333-3333-3333-3333-333333333333",
+  "status": "PENDING_REVIEW"
+}
+```
+
+## `POST /api/v1/projects/{projectId}/archive`
+
+Archives a project from `DRAFT`, `PENDING_REVIEW`, `PUBLISHED`, or `REJECTED`
+under the same persisted-membership authorization rule. The server sets
+`archived_at`, preserves `published_at`, and returns only the project reference
+and new status:
+
+```json
+{
+  "projectId": "33333333-3333-3333-3333-333333333333",
+  "status": "ARCHIVED"
+}
+```
+
+`MEMBER`, invited, left, removed, missing, external, or wrong-project
+memberships return the same `403 Membership permission` problem. Invalid
+action fields return `400`; invalid lifecycle sources return `400`; a concurrent
+state change returns the sanitized `409 Project state conflict`. There is no
+team endpoint that accepts a direct `PUBLISHED` transition.
+
+## `GET /api/v1/me/preferences`
+
+Returns the onboarding preferences of the authenticated profile. The profile
+ID is always derived from the validated JWT subject; there is no profile ID
+parameter that a client can use to read another person's preferences. If the
+profile has not saved preferences yet, the endpoint returns three empty arrays.
+
+```sh
+curl \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  http://localhost:8080/api/v1/me/preferences
+```
+
+Response `200 OK`:
+
+```json
+{
+  "profileId": "11111111-1111-1111-1111-111111111111",
+  "intentions": ["DISCOVER", "COLLABORATE"],
+  "preferredSectors": ["sostenibilidad"],
+  "preferredStages": ["MVP"]
+}
+```
+
+## `PUT /api/v1/me/preferences`
+
+Replaces all onboarding preferences for the authenticated profile. Repeating
+the same request is safe and keeps one row in
+`public.profile_preferences` because `profile_id` is the primary key and the
+repository uses an upsert.
+
+The request does not accept `profileId`; the server takes it from the JWT.
+`preferredSectors` is optional and defaults to `[]`; the other preference
+properties must be arrays, although an empty array is valid.
+
+```sh
+curl -X PUT \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "intentions": ["discover", "collaborate"],
+    "preferredSectors": ["sostenibilidad"],
+    "preferredStages": ["mvp"]
+  }' \
+  http://localhost:8080/api/v1/me/preferences
+```
+
+The backend normalizes intention and stage codes to uppercase. A preferred
+sector is accepted as an active catalog UUID or slug, using the active-sector
+lookup from `GET /api/v1/catalogs` (PUL-44), and is normalized to lowercase.
+The supported intention codes are `DISCOVER`, `BUY`, `COLLABORATE`, `WORK`,
+`INVEST`, `FIND_PARTNERS`, `FIND_CUSTOMERS`, `FIND_PROVIDERS`,
+and `EXPLORE_ECOSYSTEM`. Supported project stage codes are `IDEA`,
+`PROTOTYPE`, `MVP`, `EARLY_STAGE`, `GROWING`, and `ESTABLISHED`.
+
+Each preference array accepts at most 10 items. Blank, malformed, unknown or
+inactive values, and duplicates after normalization or active-sector resolution
+return `400 Bad Request`:
+
+```json
+{
+  "type": "about:blank",
+  "title": "Invalid preferences",
+  "status": 400,
+  "detail": "preferredSectors contains unknown or inactive sector 'desconocido'."
+}
+```
+
+Database failures return the sanitized `503 Service Unavailable` response
+documented above. Missing or invalid bearer tokens return `401 Unauthorized`.
 
 ## `GET /api/v1/me`
 

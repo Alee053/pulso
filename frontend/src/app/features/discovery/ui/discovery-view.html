@@ -4,9 +4,9 @@
       <ng-container *ngIf="isLoading; else resolvedFeed">
         <div class="discovery-view__state-panel glass-panel flex w-full max-w-[42rem] flex-col items-center justify-center px-7 py-16 text-center sm:px-12 sm:py-24" role="status" aria-live="polite">
           <span class="flex size-14 items-center justify-center rounded-2xl border border-[#a9e1ff]/20 bg-[#a9e1ff]/10 text-[#a9e1ff]"><pulso-icon name="sparkles" [size]="25" [strokeWidth]="1.6" /></span>
-          <span class="eyebrow mt-7">CARGANDO DISCOVERY</span>
-          <h2 class="mt-5 text-3xl font-medium tracking-[-0.055em] text-white sm:text-4xl">Buscando proyectos publicados.</h2>
-          <p class="mt-4 max-w-sm text-sm leading-6 text-white/45">Estamos consultando el catálogo real de Pulso.</p>
+          <span class="eyebrow mt-7">{{ strings.loadingEyebrow }}</span>
+          <h2 class="mt-5 text-3xl font-medium tracking-[-0.055em] text-white sm:text-4xl">{{ strings.loadingTitle }}</h2>
+          <p class="mt-4 max-w-sm text-sm leading-6 text-white/45">{{ strings.loadingLead }}</p>
         </div>
       </ng-container>
 
@@ -14,10 +14,10 @@
         <ng-container *ngIf="errorMessage; else loadedFeed">
           <div class="discovery-view__state-panel glass-panel flex w-full max-w-[42rem] flex-col items-center justify-center px-7 py-16 text-center sm:px-12 sm:py-24" role="alert">
             <span class="flex size-14 items-center justify-center rounded-2xl border border-[#efb4c6]/20 bg-[#efb4c6]/10 text-[#efb4c6]"><pulso-icon name="x" [size]="25" [strokeWidth]="1.6" /></span>
-            <span class="eyebrow mt-7">NO SE PUDO CARGAR</span>
-            <h2 class="mt-5 text-3xl font-medium tracking-[-0.055em] text-white sm:text-4xl">El catálogo no está disponible.</h2>
+            <span class="eyebrow mt-7">{{ strings.errorEyebrow }}</span>
+            <h2 class="mt-5 text-3xl font-medium tracking-[-0.055em] text-white sm:text-4xl">{{ strings.errorTitle }}</h2>
             <p class="mt-4 max-w-sm text-sm leading-6 text-white/45">{{ errorMessage }}</p>
-            <button type="button" class="solid-button mt-8" (click)="retryRequested.emit()"><pulso-icon name="rotate-ccw" [size]="15" />Reintentar</button>
+            <button type="button" class="solid-button mt-8" (click)="retryRequested.emit()"><pulso-icon name="rotate-ccw" [size]="15" />{{ common.retry }}</button>
           </div>
         </ng-container>
       </ng-template>
@@ -25,16 +25,16 @@
       <ng-template #loadedFeed>
         <ng-container *ngIf="currentStartup as startup; else emptyFeed">
           <div class="discovery-view__progress-meta mb-2 flex w-full max-w-[42rem] items-center justify-between text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-white/30">
-            <span>Exploración {{ activeNumber | number:'2.0-0' }} / {{ totalStartups | number:'2.0-0' }}</span>
-            <span>{{ feedRemaining }} por ver</span>
+            <span>{{ strings.progress(activeNumber, totalStartups) }}</span>
+            <span>{{ strings.remaining(feedRemaining) }}</span>
           </div>
           <div class="discovery-view__progress mb-5 h-1 w-full max-w-[42rem] overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-[#a9e1ff] transition-[width] duration-500" [style.width.%]="progress"></div></div>
 
           <div class="discovery-view__card-wrap relative flex min-h-0 w-full max-w-[42rem] flex-1 justify-center">
-            <div *ngIf="isDraggingLeft" class="drag-intent drag-intent--skip" [style.opacity]="horizontalIntensity"><span class="drag-intent__icon"><pulso-icon name="arrow-left" [size]="17" /></span>Pasar</div>
-            <div *ngIf="isDraggingRight" class="drag-intent drag-intent--interested" [style.opacity]="horizontalIntensity"><span class="drag-intent__icon"><pulso-icon name="heart" [size]="17" /></span>Me interesa</div>
-            <div *ngIf="isDraggingUp" class="drag-intent drag-intent--detail" [style.opacity]="verticalIntensity"><span class="drag-intent__icon"><pulso-icon name="arrow-up" [size]="17" /></span>Ver perfil</div>
-            <div *ngIf="isDraggingDown" class="drag-intent drag-intent--save" [style.opacity]="verticalIntensity"><span class="drag-intent__icon"><pulso-icon name="bookmark" [size]="17" /></span>Guardar</div>
+            <div *ngIf="isDraggingLeft" class="drag-intent drag-intent--skip" [style.opacity]="horizontalIntensity"><span class="drag-intent__icon"><pulso-icon name="arrow-left" [size]="17" /></span>{{ strings.skip }}</div>
+            <div *ngIf="isDraggingRight" class="drag-intent drag-intent--interested" [style.opacity]="horizontalIntensity"><span class="drag-intent__icon"><pulso-icon name="heart" [size]="17" /></span>{{ strings.interested }}</div>
+            <div *ngIf="isDraggingUp" class="drag-intent drag-intent--detail" [style.opacity]="verticalIntensity"><span class="drag-intent__icon"><pulso-icon name="arrow-up" [size]="17" /></span>{{ strings.seeProfile }}</div>
+            <div *ngIf="isDraggingDown" class="drag-intent drag-intent--save" [style.opacity]="verticalIntensity"><span class="drag-intent__icon"><pulso-icon name="bookmark" [size]="17" /></span>{{ strings.save }}</div>
 
             <pulso-startup-card
               [startup]="startup"
@@ -49,9 +49,9 @@
           </div>
 
           <div class="discovery-view__actions mt-6 flex w-full max-w-[25rem] items-start justify-center gap-3 sm:mt-7">
-            <button type="button" class="discovery-action" [disabled]="isTransitioning" aria-label="Pasar (←)" (click)="handleDecision('skip')"><span class="discovery-action__icon"><pulso-icon name="arrow-left" [size]="19" /></span><span class="discovery-action__label">Pasar</span><span class="discovery-action__shortcut">←</span></button>
-            <button type="button" class="discovery-action discovery-action--save" [disabled]="isTransitioning" aria-label="Guardar (S)" (click)="handleSave()"><span class="discovery-action__icon"><pulso-icon name="bookmark" [size]="19" [filled]="isSaved" /></span><span class="discovery-action__label">{{ isSaved ? 'Guardado' : 'Guardar' }}</span><span class="discovery-action__shortcut">S</span></button>
-            <button type="button" class="discovery-action discovery-action--interested" [disabled]="isTransitioning" aria-label="Me interesa (→)" (click)="handleDecision('interested')"><span class="discovery-action__icon"><pulso-icon name="heart" [size]="19" /></span><span class="discovery-action__label">Me interesa</span><span class="discovery-action__shortcut">→</span></button>
+            <button type="button" class="discovery-action" [disabled]="isTransitioning" [attr.aria-label]="strings.skipAria" (click)="handleDecision('skip')"><span class="discovery-action__icon"><pulso-icon name="arrow-left" [size]="19" /></span><span class="discovery-action__label">{{ strings.skip }}</span><span class="discovery-action__shortcut">←</span></button>
+            <button type="button" class="discovery-action discovery-action--save" [disabled]="isTransitioning" [attr.aria-label]="strings.saveAria" (click)="handleSave()"><span class="discovery-action__icon"><pulso-icon name="bookmark" [size]="19" [filled]="isSaved" /></span><span class="discovery-action__label">{{ isSaved ? strings.saved : strings.save }}</span><span class="discovery-action__shortcut">S</span></button>
+            <button type="button" class="discovery-action discovery-action--interested" [disabled]="isTransitioning" [attr.aria-label]="strings.interestedAria" (click)="handleDecision('interested')"><span class="discovery-action__icon"><pulso-icon name="heart" [size]="19" /></span><span class="discovery-action__label">{{ strings.interested }}</span><span class="discovery-action__shortcut">→</span></button>
           </div>
         </ng-container>
       </ng-template>
@@ -60,9 +60,9 @@
         <ng-container *ngIf="totalStartups === 0; else completedFeed">
           <div class="discovery-view__state-panel glass-panel flex w-full max-w-[42rem] flex-col items-center justify-center px-7 py-16 text-center sm:px-12 sm:py-24 fade-in-up">
             <span class="flex size-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-white/45"><pulso-icon name="compass" [size]="25" [strokeWidth]="1.6" /></span>
-            <span class="eyebrow mt-7">CATÁLOGO VACÍO</span>
-            <h2 class="mt-5 text-3xl font-medium tracking-[-0.055em] text-white sm:text-4xl">Todavía no hay proyectos publicados.</h2>
-            <p class="mt-4 max-w-sm text-sm leading-6 text-white/45">Cuando exista un proyecto publicado aparecerá aquí para descubrirlo.</p>
+            <span class="eyebrow mt-7">{{ strings.emptyEyebrow }}</span>
+            <h2 class="mt-5 text-3xl font-medium tracking-[-0.055em] text-white sm:text-4xl">{{ strings.emptyTitle }}</h2>
+            <p class="mt-4 max-w-sm text-sm leading-6 text-white/45">{{ strings.emptyLead }}</p>
           </div>
         </ng-container>
       </ng-template>
@@ -70,10 +70,10 @@
       <ng-template #completedFeed>
         <div class="discovery-view__state-panel glass-panel flex w-full max-w-[42rem] flex-col items-center justify-center px-7 py-16 text-center sm:px-12 sm:py-24 fade-in-up">
           <span class="flex size-14 items-center justify-center rounded-2xl border border-[#a9e1ff]/20 bg-[#a9e1ff]/10 text-[#a9e1ff]"><pulso-icon name="check" [size]="25" [strokeWidth]="1.6" /></span>
-          <span class="eyebrow mt-7">PRIMERA VUELTA COMPLETA</span>
-          <h2 class="mt-5 text-3xl font-medium tracking-[-0.055em] text-white sm:text-4xl">Ya viste todo el pulso.</h2>
-          <p class="mt-4 max-w-sm text-sm leading-6 text-white/45">Tu selección quedó guardada en la memoria de esta sesión. ¿Quieres explorar con una mirada nueva?</p>
-          <button type="button" class="solid-button mt-8" (click)="restarted.emit()"><pulso-icon name="rotate-ccw" [size]="15" />Volver a explorar</button>
+          <span class="eyebrow mt-7">{{ strings.doneEyebrow }}</span>
+          <h2 class="mt-5 text-3xl font-medium tracking-[-0.055em] text-white sm:text-4xl">{{ strings.doneTitle }}</h2>
+          <p class="mt-4 max-w-sm text-sm leading-6 text-white/45">{{ strings.doneLead }}</p>
+          <button type="button" class="solid-button mt-8" (click)="restarted.emit()"><pulso-icon name="rotate-ccw" [size]="15" />{{ strings.restart }}</button>
         </div>
       </ng-template>
     </section>

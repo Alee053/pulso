@@ -29,7 +29,8 @@ persistence stories are implemented.
 - Node.js 24 LTS or 26 and pnpm 11
 - Java 21
 - Docker Engine with Compose support
-- Google Chrome, available as `google-chrome`, for the browser smoke test
+- Google Chrome, available as `google-chrome`, `chrome`, or through
+  `PULSO_SMOKE_BROWSER`, for the browser smoke test
 
 The Supabase CLI is a pinned project dependency, so a separate global CLI is
 not required. The repository includes `.nvmrc` and a Gradle Wrapper for
@@ -184,8 +185,10 @@ or manually supplied secret. It reads the local public Auth URL/key from the
 Supabase CLI and supplies the local backend connection values internally. Its
 temporary services use ports `4200` (frontend), `8080` (backend), and `9222`
 (Chrome DevTools). Override them with `PULSO_SMOKE_FRONTEND_PORT`,
-`PULSO_SMOKE_BACKEND_PORT`, and `PULSO_SMOKE_CDP_PORT` when necessary. The
-script removes its temporary users, logs, responses, browser profile, and
+`PULSO_SMOKE_BACKEND_PORT`, and `PULSO_SMOKE_CDP_PORT` when necessary.
+On Windows, `pnpm smoke:verify` uses the `sh` command provided by Git Bash;
+the script also accepts `PULSO_SMOKE_BROWSER` when Chrome is not on `PATH`.
+The script removes its temporary users, logs, responses, browser profile, and
 child processes; Supabase remains running for subsequent development commands.
 Because it runs `pnpm db:reset`, it deletes data in the local database and
 reapplies the migrations and seed. It does not touch a hosted project.
@@ -237,7 +240,7 @@ Auth integration.
 | `/actuator/health` is down | Start Supabase first, then restart `pnpm backend:run`; `/api/health` only checks process liveness. |
 | Port `4200`, `8080`, `54321`, or `9222` is busy | Stop the process using the port before starting the corresponding service or set the smoke-test port override. |
 | Local data or migrations are stale | Run `docker compose down -v` and then `docker compose up -d`; this deletes local database data and reapplies migrations/seed. |
-| `pnpm smoke:verify` cannot find Chrome | Install Google Chrome and make sure the executable is available as `google-chrome` in `PATH`. |
+| `pnpm smoke:verify` cannot find Chrome | Install Google Chrome, add it to `PATH`, or set `PULSO_SMOKE_BROWSER` to its executable. On Windows, run from a shell with Git Bash `sh` available. |
 
 For database-specific workflows, see [`database/README.md`](database/README.md).
 The current logical MVP model is in

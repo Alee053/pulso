@@ -85,6 +85,24 @@ class ProjectUpdateControllerTest {
         assertThat(repository.patch.tagline()).isNull();
         assertThat(repository.patch.description()).isNull();
         assertThat(repository.patch.sectorId()).isNull();
+        assertThat(repository.patch.taglineProvided()).isFalse();
+    }
+
+    @Test
+    void preservesPresenceForExplicitNullableValues() throws Exception {
+        CapturingRepository repository = new CapturingRepository();
+
+        mockMvc(repository).perform(patch("/api/v1/projects/{projectId}", PROJECT_ID)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                          "description": null
+                        }
+                        """))
+                .andExpect(status().isOk());
+
+        assertThat(repository.patch.description()).isNull();
+        assertThat(repository.patch.descriptionProvided()).isTrue();
     }
 
     @Test

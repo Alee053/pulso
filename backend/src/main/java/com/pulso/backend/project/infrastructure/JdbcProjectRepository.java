@@ -104,16 +104,38 @@ public class JdbcProjectRepository implements ProjectRepository, ProjectUpdateRe
             ProjectUpdatePatch patch) {
         return jdbcClient.sql("""
                 update public.projects
-                set name = coalesce(cast(:name as text), name),
-                    tagline = coalesce(cast(:tagline as text), tagline),
-                    description = coalesce(cast(:description as text), description),
-                    value_proposition = coalesce(
-                        cast(:valueProposition as text),
-                        value_proposition),
-                    stage = coalesce(cast(:stage as text), stage),
-                    sector_id = coalesce(cast(:sectorId as uuid), sector_id),
-                    city = coalesce(cast(:city as text), city),
-                    department = coalesce(cast(:department as text), department)
+                set name = case
+                        when :nameProvided then cast(:name as text)
+                        else name
+                    end,
+                    tagline = case
+                        when :taglineProvided then cast(:tagline as text)
+                        else tagline
+                    end,
+                    description = case
+                        when :descriptionProvided then cast(:description as text)
+                        else description
+                    end,
+                    value_proposition = case
+                        when :valuePropositionProvided then cast(:valueProposition as text)
+                        else value_proposition
+                    end,
+                    stage = case
+                        when :stageProvided then cast(:stage as text)
+                        else stage
+                    end,
+                    sector_id = case
+                        when :sectorIdProvided then cast(:sectorId as uuid)
+                        else sector_id
+                    end,
+                    city = case
+                        when :cityProvided then cast(:city as text)
+                        else city
+                    end,
+                    department = case
+                        when :departmentProvided then cast(:department as text)
+                        else department
+                    end
                 where id = :projectId
                   and exists (
                       select 1
@@ -155,13 +177,21 @@ public class JdbcProjectRepository implements ProjectRepository, ProjectUpdateRe
                     archived_at
                 """)
                 .param("name", patch.name())
+                .param("nameProvided", patch.nameProvided())
                 .param("tagline", patch.tagline())
+                .param("taglineProvided", patch.taglineProvided())
                 .param("description", patch.description())
+                .param("descriptionProvided", patch.descriptionProvided())
                 .param("valueProposition", patch.valueProposition())
+                .param("valuePropositionProvided", patch.valuePropositionProvided())
                 .param("stage", patch.stage())
+                .param("stageProvided", patch.stageProvided())
                 .param("sectorId", patch.sectorId())
+                .param("sectorIdProvided", patch.sectorIdProvided())
                 .param("city", patch.city())
+                .param("cityProvided", patch.cityProvided())
                 .param("department", patch.department())
+                .param("departmentProvided", patch.departmentProvided())
                 .param("projectId", projectId)
                 .param("authenticatedProfileId", authenticatedProfileId)
                 .query(JdbcProjectRepository::mapUpdatedProject)

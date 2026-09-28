@@ -90,6 +90,73 @@ class ProjectUpdatePatchTest {
     }
 
     @Test
+    void distinguishesAnExplicitNullableValueFromAnOmittedRequiredValue() {
+        ProjectUpdatePatch patch = new ProjectUpdatePatch(
+                null,
+                false,
+                null,
+                false,
+                null,
+                true,
+                null,
+                false,
+                null,
+                false,
+                null,
+                false,
+                null,
+                false,
+                null,
+                false,
+                LIMITS);
+
+        assertThat(patch.descriptionProvided()).isTrue();
+        assertThat(patch.description()).isNull();
+
+        assertThatThrownBy(() -> new ProjectUpdatePatch(
+                null,
+                true,
+                null,
+                false,
+                null,
+                false,
+                null,
+                false,
+                null,
+                false,
+                null,
+                false,
+                null,
+                false,
+                null,
+                false,
+                LIMITS))
+                .isInstanceOf(ProjectValidationException.class)
+                .hasMessage("name is required.");
+
+        assertThatThrownBy(() -> new ProjectUpdatePatch(
+                null,
+                false,
+                null,
+                false,
+                null,
+                false,
+                null,
+                false,
+                null,
+                false,
+                null,
+                false,
+                null,
+                true,
+                null,
+                false,
+                LIMITS))
+                .isInstanceOf(ProjectValidationException.class)
+                .hasMessage("city is required.");
+    }
+
+    @Test
     void rejectsUnknownStagesAndValuesBeyondContractLimits() {
         assertThatThrownBy(() -> new ProjectUpdatePatch(
                 null,

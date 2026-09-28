@@ -121,6 +121,14 @@ public final class ApiMessages {
             "Membership owner required";
     public static final String MEMBERSHIP_OWNER_REQUIRED_DETAIL =
             "project must keep at least one active OWNER.";
+    public static final String MEMBERSHIP_PERMISSION_CODE = "membership_permission";
+    public static final String MEMBERSHIP_INVALID_TRANSITION_CODE =
+            "membership_invalid_transition";
+    public static final String MEMBERSHIP_OWNER_REQUIRED_CODE = "membership_owner_required";
+    public static final String MEMBERSHIP_CONFLICT_TITLE = "Membership conflict";
+    public static final String MEMBERSHIP_CONFLICT_CODE = "membership_conflict";
+    public static final String MEMBERSHIP_CONFLICT_DETAIL =
+            "The membership changed before the action completed.";
 
     public static final String CANNOT_ACTIVATE_NO_PROFILE =
             "cannot activate a membership without a profile.";
@@ -131,6 +139,7 @@ public final class ApiMessages {
     public static final String CANNOT_WITHDRAW_STATUS =
             "cannot withdraw a membership with status %s.";
     public static final String MEMBERSHIP_REQUIRED = "membership is required.";
+    public static final String MEMBERSHIP_ID_REQUIRED = "memberId is required.";
 
     public static final String CANNOT_REQUEST_PUBLICATION_FROM =
             "cannot request publication from %s.";

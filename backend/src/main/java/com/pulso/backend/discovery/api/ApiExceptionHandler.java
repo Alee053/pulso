@@ -13,12 +13,16 @@ import com.pulso.backend.preference.domain.OnboardingPreferencesValidationExcept
 import com.pulso.backend.profile.application.InvalidAuthenticatedSubjectException;
 import com.pulso.backend.profile.application.ProfileNotFoundException;
 import com.pulso.backend.profile.domain.ProfileValidationException;
+import com.pulso.backend.project.application.MembershipConflictException;
 import com.pulso.backend.project.application.ProjectConflictException;
 import com.pulso.backend.project.application.ProjectLifecycleAuthorizationException;
 import com.pulso.backend.project.application.ProjectLifecycleConflictException;
 import com.pulso.backend.project.application.ProjectUpdateAuthorizationException;
 import com.pulso.backend.project.application.PublicProjectNotFoundException;
 import com.pulso.backend.project.domain.DuplicateMemberInvitationException;
+import com.pulso.backend.project.domain.MembershipInvalidTransitionException;
+import com.pulso.backend.project.domain.MembershipOwnerInvariantException;
+import com.pulso.backend.project.domain.MembershipPermissionException;
 import com.pulso.backend.project.domain.MemberInvitationPermissionException;
 import com.pulso.backend.project.domain.MemberInvitationProjectNotFoundException;
 import com.pulso.backend.project.domain.ProjectValidationException;
@@ -87,6 +91,42 @@ public class ApiExceptionHandler {
                 exception.getMessage());
         problem.setTitle(ApiMessages.PROJECT_CONFLICT_TITLE);
         return problem;
+    }
+
+    @ExceptionHandler(MembershipPermissionException.class)
+    ProblemDetail membershipPermission(MembershipPermissionException exception) {
+        return membershipProblem(
+                HttpStatus.FORBIDDEN,
+                ApiMessages.MEMBERSHIP_PERMISSION_TITLE,
+                ApiMessages.MEMBERSHIP_PERMISSION_CODE,
+                exception.getMessage());
+    }
+
+    @ExceptionHandler(MembershipInvalidTransitionException.class)
+    ProblemDetail membershipInvalidTransition(MembershipInvalidTransitionException exception) {
+        return membershipProblem(
+                HttpStatus.CONFLICT,
+                ApiMessages.MEMBERSHIP_INVALID_TRANSITION_TITLE,
+                ApiMessages.MEMBERSHIP_INVALID_TRANSITION_CODE,
+                exception.getMessage());
+    }
+
+    @ExceptionHandler(MembershipOwnerInvariantException.class)
+    ProblemDetail membershipOwnerRequired(MembershipOwnerInvariantException exception) {
+        return membershipProblem(
+                HttpStatus.CONFLICT,
+                ApiMessages.MEMBERSHIP_OWNER_REQUIRED_TITLE,
+                ApiMessages.MEMBERSHIP_OWNER_REQUIRED_CODE,
+                exception.getMessage());
+    }
+
+    @ExceptionHandler(MembershipConflictException.class)
+    ProblemDetail membershipConflict(MembershipConflictException exception) {
+        return membershipProblem(
+                HttpStatus.CONFLICT,
+                ApiMessages.MEMBERSHIP_CONFLICT_TITLE,
+                ApiMessages.MEMBERSHIP_CONFLICT_CODE,
+                exception.getMessage());
     }
 
     @ExceptionHandler(MemberInvitationProjectNotFoundException.class)
@@ -178,6 +218,17 @@ public class ApiExceptionHandler {
                 HttpStatus.SERVICE_UNAVAILABLE,
                 ApiMessages.DATASTORE_UNAVAILABLE_DETAIL);
         problem.setTitle(ApiMessages.DATASTORE_UNAVAILABLE_TITLE);
+        return problem;
+    }
+
+    private static ProblemDetail membershipProblem(
+            HttpStatus status,
+            String title,
+            String code,
+            String detail) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
+        problem.setTitle(title);
+        problem.setProperty("code", code);
         return problem;
     }
 }

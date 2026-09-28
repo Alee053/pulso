@@ -107,6 +107,9 @@ public final class ApiMessages {
     public static final String DUPLICATE_INVITATION =
             "an active invitation already exists for this project and email.";
     public static final String INVITATION_PROJECT_NOT_FOUND_TITLE = "Project not found";
+    public static final String INVITATION_NOT_FOUND_TITLE = "Member invitation";
+    public static final String INVITATION_NOT_FOUND_DETAIL =
+            "invitation not found or already used.";
     public static final String INVITATION_PERMISSION_TITLE = "Membership permission";
     public static final String INVITATION_CONFLICT_TITLE = "Invitation conflict";
     public static final String INVITATION_CONFLICT_CODE = "invitation_duplicate";
@@ -170,6 +173,7 @@ public final class ApiMessages {
     public static final String SECTOR_MUST_BE_ACTIVE =
             "sectorId must reference an active sector.";
     public static final String FIELD_NOT_ACCEPTED = "Field '%s' is not accepted.";
+    public static final String REQUEST_BODY_REQUIRED = "request body is required.";
 
     public static final String STORED_PREFERENCES_INVALID_JSON =
             "Stored onboarding preferences contain invalid JSON.";

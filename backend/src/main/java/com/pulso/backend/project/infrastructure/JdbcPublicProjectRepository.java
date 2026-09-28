@@ -8,12 +8,13 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import com.pulso.backend.project.application.PublicProjectRepository;
 import com.pulso.backend.project.domain.PublicProjectDetail;
@@ -228,12 +229,12 @@ public class JdbcPublicProjectRepository implements PublicProjectRepository {
             if (root == null || !root.isArray()) {
                 return;
             }
-            root.elements().forEachRemaining(node -> {
+            root.forEach(node -> {
                 if (node.isObject()) {
                     consumer.accept(node);
                 }
             });
-        } catch (JsonProcessingException exception) {
+        } catch (JacksonException exception) {
             // PostgreSQL guarantees valid JSONB. Treat an invalid public shape
             // as an empty relation rather than leaking persistence details.
         }

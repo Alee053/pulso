@@ -142,6 +142,10 @@ public final class ApiMessages {
             "membershipStatus must be ACTIVE.";
     public static final String ROLE_MUST_BE_OWNER_OR_ADMIN =
             "role must be OWNER or ADMIN.";
+    public static final String PROJECT_LIFECYCLE_CONFLICT_TITLE =
+            "Project state conflict";
+    public static final String PROJECT_LIFECYCLE_CONFLICT_DETAIL =
+            "The project state changed before the action completed.";
 
     public static final String AUTHENTICATED_PROFILE_REQUIRED =
             "authenticatedProfileId is required.";

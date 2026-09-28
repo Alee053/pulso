@@ -23,16 +23,36 @@ class JdbcPublicProjectRepositoryTest {
             "33333333-3333-3333-3333-333333333333");
     private static final UUID DRAFT_PROJECT_ID = UUID.fromString(
             "55555555-5555-5555-5555-555555555555");
+    private static final UUID PENDING_PROJECT_ID = UUID.fromString(
+            "66666666-6666-6666-6666-666666666666");
+    private static final UUID REJECTED_PROJECT_ID = UUID.fromString(
+            "77777777-7777-7777-7777-777777777777");
+    private static final UUID ARCHIVED_PROJECT_ID = UUID.fromString(
+            "88888888-8888-8888-8888-888888888888");
+    private static final UUID SUSPENDED_PROJECT_ID = UUID.fromString(
+            "99999999-9999-9999-9999-999999999999");
+    private static final UUID INACTIVE_SECTOR_PROJECT_ID = UUID.fromString(
+            "12121212-1212-1212-1212-121212121212");
     private static final UUID SECTOR_ID = UUID.fromString(
             "11111111-1111-1111-1111-111111111111");
+    private static final UUID INACTIVE_SECTOR_ID = UUID.fromString(
+            "13131313-1313-1313-1313-131313131313");
     private static final UUID TAG_ID = UUID.fromString(
             "22222222-2222-2222-2222-222222222222");
+    private static final UUID INACTIVE_TAG_ID = UUID.fromString(
+            "14141414-1414-1414-1414-141414141414");
+    private static final UUID SECOND_TAG_ID = UUID.fromString(
+            "15151515-1515-1515-1515-151515151515");
     private static final UUID PUBLIC_PROFILE_ID = UUID.fromString(
             "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private static final UUID PRIVATE_PROFILE_ID = UUID.fromString(
             "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
     private static final UUID INACTIVE_PROFILE_ID = UUID.fromString(
             "cccccccc-cccc-cccc-cccc-cccccccccccc");
+    private static final UUID LEFT_PROFILE_ID = UUID.fromString(
+            "dddddddd-dddd-dddd-dddd-dddddddddddd");
+    private static final UUID SECOND_PUBLIC_PROFILE_ID = UUID.fromString(
+            "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
 
     @Container
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:17-alpine");
@@ -64,14 +84,16 @@ class JdbcPublicProjectRepositoryTest {
                 create table public.sectors (
                   id uuid primary key,
                   slug text not null,
-                  name text not null
+                  name text not null,
+                  is_active boolean not null
                 )
                 """).update();
         jdbcClient.sql("""
                 create table public.tags (
                   id uuid primary key,
                   slug text not null,
-                  name text not null
+                  name text not null,
+                  is_active boolean not null
                 )
                 """).update();
         jdbcClient.sql("""
@@ -108,14 +130,26 @@ class JdbcPublicProjectRepositoryTest {
                 )
                 """).update();
 
-        jdbcClient.sql("insert into public.sectors (id, slug, name) values (:id, :slug, :name)")
-                .param("id", SECTOR_ID)
-                .param("slug", "sostenibilidad")
-                .param("name", "Sostenibilidad")
+        jdbcClient.sql("""
+                insert into public.sectors (id, slug, name, is_active)
+                values
+                  (:activeId, 'sostenibilidad', 'Sostenibilidad', true),
+                  (:inactiveId, 'sector-inactivo', 'Sector inactivo', false)
+                """)
+                .param("activeId", SECTOR_ID)
+                .param("inactiveId", INACTIVE_SECTOR_ID)
                 .update();
-        jdbcClient.sql("insert into public.tags (id, slug, name) values (:id, :slug, :name)")
+        jdbcClient.sql("""
+                insert into public.tags (id, slug, name, is_active)
+                values
+                  (:id, :slug, :name, true),
+                  (:inactiveId, 'tag-inactivo', 'Tag inactivo', false),
+                  (:secondId, 'impacto', 'Impacto', true)
+                """)
                 .param("id", TAG_ID)
                 .param("slug", "economia-circular")
+                .param("inactiveId", INACTIVE_TAG_ID)
+                .param("secondId", SECOND_TAG_ID)
                 .param("name", "Economía circular")
                 .update();
         jdbcClient.sql("""
@@ -123,11 +157,15 @@ class JdbcPublicProjectRepositoryTest {
                 values
                   (:publicId, 'Persona Uno', 'avatars/persona-uno.webp', 'ACTIVE'),
                   (:privateId, 'Persona Privada', null, 'ACTIVE'),
-                  (:inactiveId, 'Persona Inactiva', null, 'SUSPENDED')
+                  (:inactiveId, 'Persona Inactiva', null, 'SUSPENDED'),
+                  (:leftId, 'Persona que salio', null, 'ACTIVE'),
+                  (:secondPublicId, 'Persona Dos', null, 'ACTIVE')
                 """)
                 .param("publicId", PUBLIC_PROFILE_ID)
                 .param("privateId", PRIVATE_PROFILE_ID)
                 .param("inactiveId", INACTIVE_PROFILE_ID)
+                .param("leftId", LEFT_PROFILE_ID)
+                .param("secondPublicId", SECOND_PUBLIC_PROFILE_ID)
                 .update();
         jdbcClient.sql("""
                 insert into public.projects (
@@ -143,18 +181,56 @@ class JdbcPublicProjectRepositoryTest {
                   (
                     :draftId, 'draft-project', 'Draft', 'Privado', null, null, 'IDEA',
                     null, null, null, :sectorId, 'DRAFT'
+                  ),
+                  (
+                    :pendingId, 'pending-project', 'Pending', 'Under review', null, null, 'IDEA',
+                    null, null, null, :sectorId, 'PENDING_REVIEW'
+                  ),
+                  (
+                    :rejectedId, 'rejected-project', 'Rejected', 'Rejected', null, null, 'IDEA',
+                    null, null, null, :sectorId, 'REJECTED'
+                  ),
+                  (
+                    :archivedId, 'archived-project', 'Archived', 'Archived', null, null, 'IDEA',
+                    null, null, null, :sectorId, 'ARCHIVED'
+                  ),
+                  (
+                    :suspendedId, 'suspended-project', 'Suspended', 'Suspended', null, null, 'IDEA',
+                    null, null, null, :sectorId, 'SUSPENDED'
+                  ),
+                  (
+                    :inactiveSectorId, 'inactive-sector-project', 'Inactive sector', 'Unavailable',
+                    null, null, 'IDEA', null, null, null, :inactiveSector, 'PUBLISHED'
                   )
                 """)
                 .param("projectId", PROJECT_ID)
                 .param("draftId", DRAFT_PROJECT_ID)
+                .param("pendingId", PENDING_PROJECT_ID)
+                .param("rejectedId", REJECTED_PROJECT_ID)
+                .param("archivedId", ARCHIVED_PROJECT_ID)
+                .param("suspendedId", SUSPENDED_PROJECT_ID)
+                .param("inactiveSectorId", INACTIVE_SECTOR_PROJECT_ID)
                 .param("links", """
-                        [{"type":"WEBSITE","url":"https://ecopack.example","label":"Sitio web",\"private\":\"no\"}]
+                        [
+                          {"type":"WEBSITE","url":"https://ecopack.example","label":"Sitio web","is_public":true},
+                          {"type":"ADMIN","url":"https://internal.ecopack.example","label":"Panel interno","is_public":false},
+                          {"type":"INVITE","url":"https://invite.ecopack.example","label":"Invitacion","private":true}
+                        ]
                         """)
                 .param("sectorId", SECTOR_ID)
+                .param("inactiveSector", INACTIVE_SECTOR_ID)
                 .update();
-        jdbcClient.sql("insert into public.project_tags (project_id, tag_id) values (:projectId, :tagId)")
+        jdbcClient.sql("""
+                insert into public.project_tags (project_id, tag_id)
+                values
+                  (:projectId, :activeTagId),
+                  (:projectId, :inactiveTagId),
+                  (:projectId, :secondTagId)
+                """)
                 .param("projectId", PROJECT_ID)
-                .param("tagId", TAG_ID)
+                .param("activeTagId", TAG_ID)
+                .param("inactiveTagId", INACTIVE_TAG_ID)
+                .param("secondTagId", SECOND_TAG_ID)
                 .update();
         jdbcClient.sql("""
                 insert into public.project_members (
@@ -162,15 +238,21 @@ class JdbcPublicProjectRepositoryTest {
                 ) values
                   (:publicMemberId, :projectId, :publicProfileId, 'ACTIVE', true, 'Co-fundadora', true),
                   (:privateMemberId, :projectId, :privateProfileId, 'ACTIVE', false, 'Invitado', false),
-                  (:inactiveMemberId, :projectId, :inactiveProfileId, 'ACTIVE', true, 'Ex miembro', false)
+                  (:inactiveMemberId, :projectId, :inactiveProfileId, 'ACTIVE', true, 'Ex miembro', false),
+                  (:leftMemberId, :projectId, :leftProfileId, 'LEFT', true, 'Former member', false),
+                  (:secondPublicMemberId, :projectId, :secondPublicProfileId, 'ACTIVE', true, 'Member', false)
                 """)
                 .param("publicMemberId", UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd"))
                 .param("privateMemberId", UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"))
                 .param("inactiveMemberId", UUID.fromString("ffffffff-ffff-ffff-ffff-ffffffffffff"))
+                .param("leftMemberId", UUID.fromString("12121212-3434-5656-7878-909090909090"))
+                .param("secondPublicMemberId", UUID.fromString("23232323-2323-2323-2323-232323232323"))
                 .param("projectId", PROJECT_ID)
                 .param("publicProfileId", PUBLIC_PROFILE_ID)
                 .param("privateProfileId", PRIVATE_PROFILE_ID)
                 .param("inactiveProfileId", INACTIVE_PROFILE_ID)
+                .param("leftProfileId", LEFT_PROFILE_ID)
+                .param("secondPublicProfileId", SECOND_PUBLIC_PROFILE_ID)
                 .update();
     }
 
@@ -184,7 +266,8 @@ class JdbcPublicProjectRepositoryTest {
         assertThat(bySlug.sector()).isEqualTo(
                 new PublicProjectDetail.Sector(SECTOR_ID, "sostenibilidad", "Sostenibilidad"));
         assertThat(bySlug.tags()).containsExactly(
-                new PublicProjectDetail.Tag(TAG_ID, "economia-circular", "Economía circular"));
+                new PublicProjectDetail.Tag(TAG_ID, "economia-circular", "Economía circular"),
+                new PublicProjectDetail.Tag(SECOND_TAG_ID, "impacto", "Impacto"));
         assertThat(bySlug.externalLinks()).containsExactly(
                 new PublicProjectDetail.ExternalLink(
                         "WEBSITE", "https://ecopack.example", "Sitio web"));
@@ -194,12 +277,23 @@ class JdbcPublicProjectRepositoryTest {
                         "Persona Uno",
                         "avatars/persona-uno.webp",
                         "Co-fundadora",
-                        true));
+                        true),
+                new PublicProjectDetail.Member(
+                        SECOND_PUBLIC_PROFILE_ID,
+                        "Persona Dos",
+                        null,
+                        "Member",
+                        false));
     }
 
     @Test
-    void doesNotReturnUnpublishedProjects() {
+    void doesNotReturnUnpublishedProjectsOrProjectsWithInactiveSectors() {
         assertThat(repository.findPublishedByReference("draft-project")).isEmpty();
+        assertThat(repository.findPublishedByReference("pending-project")).isEmpty();
+        assertThat(repository.findPublishedByReference("rejected-project")).isEmpty();
+        assertThat(repository.findPublishedByReference("archived-project")).isEmpty();
+        assertThat(repository.findPublishedByReference("suspended-project")).isEmpty();
+        assertThat(repository.findPublishedByReference("inactive-sector-project")).isEmpty();
         assertThat(repository.findPublishedByReference(DRAFT_PROJECT_ID.toString())).isEmpty();
         assertThat(repository.findPublishedByReference("not-a-project")).isEmpty();
     }

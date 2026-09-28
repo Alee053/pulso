@@ -68,7 +68,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/projects").authenticated()
                         .requestMatchers(
                                 HttpMethod.POST,
-                                "/api/v1/projects/*/members")
+                                "/api/v1/projects/*/members",
+                                "/api/v1/projects/*/publication-request",
+                                "/api/v1/projects/*/archive")
                         .authenticated()
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {

@@ -280,6 +280,37 @@ class JdbcProjectUpdateRepositoryTest {
         assertThat(updated.department()).isEqualTo("Cochabamba");
     }
 
+    @Test
+    void clearsNullableEditableFieldsOnlyWhenTheyAreExplicitlyProvidedAsNull() {
+        UpdatedProject updated = repository.updateInformation(
+                PROJECT_ID,
+                OWNER_ID,
+                new ProjectUpdatePatch(
+                        null,
+                        false,
+                        null,
+                        false,
+                        null,
+                        true,
+                        null,
+                        true,
+                        null,
+                        false,
+                        null,
+                        false,
+                        null,
+                        false,
+                        null,
+                        true,
+                        LIMITS)).orElseThrow();
+
+        assertThat(updated.description()).isNull();
+        assertThat(updated.valueProposition()).isNull();
+        assertThat(updated.department()).isNull();
+        assertThat(updated.city()).isEqualTo("Cochabamba");
+        assertThat(updated.name()).isEqualTo("EcoPack Bolivia");
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {
             "66666666-6666-6666-6666-666666666666",

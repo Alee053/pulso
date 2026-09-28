@@ -6,10 +6,14 @@ import type {
   CreatedDraftProject,
   ProjectCreateFormValue,
   ProjectStage,
+  ProjectUpdateFormValue,
+  UpdatedProject,
 } from '../domain/project'
 import type {
   ProjectCreateRequestDto,
   ProjectCreateResponseDto,
+  ProjectUpdateRequestDto,
+  ProjectUpdateResponseDto,
 } from './projects-dto'
 import { apiPaths } from './discovery.catalog.contract'
 
@@ -26,6 +30,18 @@ export class ProjectsApi {
         request,
       )
       .pipe(map(toCreatedDraftProject))
+  }
+
+  update(
+    projectId: string,
+    value: ProjectUpdateFormValue,
+  ): Observable<UpdatedProject> {
+    return this.http
+      .patch<ProjectUpdateResponseDto>(
+        `${appConfig.apiBaseUrl}${apiPaths.projects}/${encodeURIComponent(projectId)}`,
+        toProjectUpdateRequest(value),
+      )
+      .pipe(map(toUpdatedProject))
   }
 }
 
@@ -67,5 +83,52 @@ function toCreatedDraftProject(
       role: dto.owner.role,
       membershipStatus: dto.owner.membershipStatus,
     },
+  }
+}
+
+function toProjectUpdateRequest(
+  value: ProjectUpdateFormValue,
+): ProjectUpdateRequestDto {
+  return {
+    ...(value.name !== undefined ? { name: value.name.trim() } : {}),
+    ...(value.tagline !== undefined ? { tagline: value.tagline.trim() } : {}),
+    ...(value.description !== undefined
+      ? { description: normalizeOptionalText(value.description) }
+      : {}),
+    ...(value.valueProposition !== undefined
+      ? { valueProposition: normalizeOptionalText(value.valueProposition) }
+      : {}),
+    ...(value.stage !== undefined ? { stage: value.stage } : {}),
+    ...(value.sectorId !== undefined ? { sectorId: value.sectorId } : {}),
+    ...(value.city !== undefined
+      ? { city: normalizeOptionalText(value.city) }
+      : {}),
+    ...(value.department !== undefined
+      ? { department: normalizeOptionalText(value.department) }
+      : {}),
+  }
+}
+
+function normalizeOptionalText(value: string | null): string | null {
+  return value === null ? null : value.trim()
+}
+
+function toUpdatedProject(dto: ProjectUpdateResponseDto): UpdatedProject {
+  return {
+    id: dto.project.id,
+    slug: dto.project.slug,
+    name: dto.project.name,
+    tagline: dto.project.tagline,
+    description: dto.project.description,
+    valueProposition: dto.project.valueProposition,
+    sectorId: dto.project.sectorId,
+    stage: dto.project.stage as ProjectStage,
+    city: dto.project.city,
+    department: dto.project.department,
+    status: dto.project.status,
+    verificationStatus: dto.project.verificationStatus,
+    createdByProfileId: dto.project.createdByProfileId,
+    createdAt: dto.project.createdAt,
+    updatedAt: dto.project.updatedAt,
   }
 }

@@ -57,6 +57,16 @@ class PublicProjectControllerTest {
     }
 
     @Test
+    void doesNotLetAClientPublicationParameterOverrideTheSafeLookup() throws Exception {
+        mockMvc(reference -> Optional.empty())
+                .perform(get("/api/v1/projects/draft-project")
+                        .queryParam("status", "PUBLISHED"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.detail")
+                        .value("The project does not exist or is not publicly available."));
+    }
+
+    @Test
     void sanitizesPersistenceFailures() throws Exception {
         mockMvc(reference -> {
             throw new DataAccessResourceFailureException("password=secret host=database");

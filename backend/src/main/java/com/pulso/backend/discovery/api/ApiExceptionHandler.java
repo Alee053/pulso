@@ -15,6 +15,8 @@ import com.pulso.backend.profile.application.ProfileNotFoundException;
 import com.pulso.backend.profile.domain.ProfileValidationException;
 import com.pulso.backend.project.application.MembershipConflictException;
 import com.pulso.backend.project.application.ProjectConflictException;
+import com.pulso.backend.project.application.ProjectLifecycleAuthorizationException;
+import com.pulso.backend.project.application.ProjectLifecycleConflictException;
 import com.pulso.backend.project.application.PublicProjectNotFoundException;
 import com.pulso.backend.project.domain.MembershipInvalidTransitionException;
 import com.pulso.backend.project.domain.MembershipOwnerInvariantException;
@@ -121,6 +123,24 @@ public class ApiExceptionHandler {
                 ApiMessages.MEMBERSHIP_CONFLICT_TITLE,
                 ApiMessages.MEMBERSHIP_CONFLICT_CODE,
                 exception.getMessage());
+    }
+
+    @ExceptionHandler(ProjectLifecycleAuthorizationException.class)
+    ProblemDetail projectLifecycleAuthorization(ProjectLifecycleAuthorizationException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.FORBIDDEN,
+                exception.getMessage());
+        problem.setTitle(ApiMessages.MEMBERSHIP_PERMISSION_TITLE);
+        return problem;
+    }
+
+    @ExceptionHandler(ProjectLifecycleConflictException.class)
+    ProblemDetail projectLifecycleConflict(ProjectLifecycleConflictException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                exception.getMessage());
+        problem.setTitle(ApiMessages.PROJECT_LIFECYCLE_CONFLICT_TITLE);
+        return problem;
     }
 
     @ExceptionHandler(PublicProjectNotFoundException.class)

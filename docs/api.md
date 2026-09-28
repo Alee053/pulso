@@ -148,8 +148,8 @@ The response maps only public product data from the canonical model:
 | Response field | Canonical source | Contract rule |
 | --- | --- | --- |
 | `id`, `slug`, `name`, `tagline`, `description`, `valueProposition`, `stage`, `city`, `department` | `projects` | `valueProposition` maps `value_proposition`; nullable descriptive and location fields remain `null`. |
-| `sector` | `projects.sector_id` → `sectors` | Includes only `id`, `slug`, and `name`; catalog administration fields are omitted. |
-| `tags` | `project_tags` → `tags` | Includes only `id`, `slug`, and `name`; an empty relation is returned as `[]`. |
+| `sector` | `projects.sector_id` → `sectors` | Includes only an active sector's `id`, `slug`, and `name`; catalog administration fields are omitted. |
+| `tags` | `project_tags` → `tags` | Includes only active tags' `id`, `slug`, and `name`; an empty relation is returned as `[]`. |
 | `externalLinks` | `projects.external_links` | Includes only public `{type, url, label}` entries; absent links are returned as `[]`. |
 | `members` | `project_members` → `profiles` | Includes only members with `membership_status = ACTIVE`, `is_public = true`, and a linked active profile. |
 
@@ -159,7 +159,10 @@ returns `inviteeEmail`, `inviteTokenDigest`, membership identifiers, audit
 fields, or other invitation/private data. It also excludes project
 `status`, `verificationStatus`, `createdByProfileId`, review notes and review
 timestamps, publication/audit timestamps, and any other internal workflow
-field.
+field. The backend applies the `PUBLISHED` predicate before joining the
+sector or assembling any related public data. A project whose sector is not
+active is therefore unavailable, while inactive tags, private external links,
+private memberships, and non-active members are omitted from the response.
 
 Missing projects and projects that are not `PUBLISHED` return the same
 response to avoid revealing whether a private project exists:
@@ -351,6 +354,47 @@ the last active owner return `409` with codes
 Unknown action, role, or membership status returns `400`. A concurrent change
 that makes the expected membership state stale returns `409` with code
 `membership_conflict`.
+
+## `POST /api/v1/projects/{projectId}/publication-request`
+
+Requests publication review for a project in `DRAFT`. The profile identity is
+always read from the validated JWT subject. The backend authorizes the action
+only when the matching `project_members` row for that exact project and profile
+has `role = OWNER` or `ADMIN` and `membership_status = ACTIVE`.
+
+The request body is empty (or `{}`). It cannot provide `profileId`, `owner`,
+`role`, `status`, `publishedAt`, `reviewedAt`, `reviewedByProfileId`, or
+`reviewNote`. The endpoint changes only `projects.status` to `PENDING_REVIEW`;
+it never publishes the project or changes review data.
+
+Response `200 OK`:
+
+```json
+{
+  "projectId": "33333333-3333-3333-3333-333333333333",
+  "status": "PENDING_REVIEW"
+}
+```
+
+## `POST /api/v1/projects/{projectId}/archive`
+
+Archives a project from `DRAFT`, `PENDING_REVIEW`, `PUBLISHED`, or `REJECTED`
+under the same persisted-membership authorization rule. The server sets
+`archived_at`, preserves `published_at`, and returns only the project reference
+and new status:
+
+```json
+{
+  "projectId": "33333333-3333-3333-3333-333333333333",
+  "status": "ARCHIVED"
+}
+```
+
+`MEMBER`, invited, left, removed, missing, external, or wrong-project
+memberships return the same `403 Membership permission` problem. Invalid
+action fields return `400`; invalid lifecycle sources return `400`; a concurrent
+state change returns the sanitized `409 Project state conflict`. There is no
+team endpoint that accepts a direct `PUBLISHED` transition.
 
 ## `GET /api/v1/me/preferences`
 

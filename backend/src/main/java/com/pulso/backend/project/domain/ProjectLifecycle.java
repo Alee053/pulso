@@ -54,13 +54,16 @@ public final class ProjectLifecycle {
 
     private static void requireTeamActor(ProjectLifecycleActor actor) {
         if (actor == null) {
-            throw new ProjectValidationException(ApiMessages.MEMBERSHIP_PERMISSION_DETAIL);
+            throw new ProjectLifecyclePermissionException(
+                    ApiMessages.MEMBERSHIP_PERMISSION_DETAIL);
         }
         if (!"ACTIVE".equals(actor.membershipStatus())) {
-            throw new ProjectValidationException(ApiMessages.MEMBERSHIP_STATUS_MUST_BE_ACTIVE);
+            throw new ProjectLifecyclePermissionException(
+                    ApiMessages.MEMBERSHIP_STATUS_MUST_BE_ACTIVE);
         }
         if (!TEAM_ROLES.contains(actor.role())) {
-            throw new ProjectValidationException(ApiMessages.ROLE_MUST_BE_OWNER_OR_ADMIN);
+            throw new ProjectLifecyclePermissionException(
+                    ApiMessages.ROLE_MUST_BE_OWNER_OR_ADMIN);
         }
     }
 

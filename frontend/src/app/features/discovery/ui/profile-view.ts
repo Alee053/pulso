@@ -1,142 +1,148 @@
 import { CommonModule } from '@angular/common'
-import { Component, Input, inject, OnInit, effect } from '@angular/core'
-import { FormBuilder, ReactiveFormsModule, Validators, FormGroup } from '@angular/forms'
-
+import { Component, inject, Input, OnInit, signal } from '@angular/core'
+import { firstValueFrom } from 'rxjs'
+import { SupabaseAuthGateway } from '../../../core/auth/supabase-auth.gateway'
 import { IconComponent } from '../../../shared/icon/icon'
-import { PulsoSession } from '../application/pulso-session'
-import { ProfileValidation } from '../domain/profile'
+import { commonStrings } from '../../../shared/strings/common.strings'
+import {
+    ProfileApi,
+    type CurrentUserDto,
+    type ProfilePatchRequest,
+} from '../data-access/profile-api'
+import { profileContract } from '../data-access/project.contract'
 import type { InterestId, InterestOption } from '../domain/startup'
+import { profileStrings } from '../strings/profile.strings'
 
 @Component({
-  selector: 'pulso-profile-view',
-  standalone: true,
-    imports: [CommonModule, IconComponent, ReactiveFormsModule],
-  templateUrl: './profile-view.html',
+    selector: 'pulso-profile-view',
+    standalone: true,
+    imports: [CommonModule, IconComponent],
+    templateUrl: './profile-view.html',
 })
 export class ProfileViewComponent implements OnInit {
-  @Input() interestOptions: readonly InterestOption[] = []
-  @Input() selectedInterests: InterestId[] = []
+    readonly strings = profileStrings
+    readonly common = commonStrings
+    readonly profileContract = profileContract
 
-    private readonly session = inject(PulsoSession)
-    private readonly fb = inject(FormBuilder)
+    @Input() interestOptions: readonly InterestOption[] = []
+    @Input() selectedInterests: InterestId[] = []
 
-    profileForm!: FormGroup
-    readonly profile = this.session.profile
-    readonly isLoading = this.session.isProfileLoading
-    readonly isSaving = this.session.isProfileSaving
-    readonly errorMessage = this.session.profileError
-    readonly successMessage = this.session.profileSuccess
+    readonly auth = inject(SupabaseAuthGateway)
+    private readonly profileApi = inject(ProfileApi)
+    readonly profile = signal<CurrentUserDto | null>(null)
+    readonly isLoading = signal(true)
+    readonly isSaving = signal(false)
+    readonly errorMessage = signal<string | null>(null)
+    readonly validationMessage = signal<string | null>(null)
+    readonly feedbackMessage = signal<string | null>(null)
 
-  get selectedOptions(): readonly InterestOption[] {
-    return this.interestOptions.filter((option) =>
-      this.selectedInterests.includes(option.id),
-    )
-    }
+    displayName = ''
+    shortBio = ''
+    city = ''
+    department = ''
 
     ngOnInit(): void {
-        this.initForm()
-        this.loadProfile()
-
-        effect(() => {
-            const profile = this.session.profile()
-            if (profile && !this.profileForm.dirty) {
-                this.profileForm.patchValue({
-                    visibleName: profile.visibleName,
-                    bio: profile.bio,
-                    city: profile.city,
-                    department: profile.department,
-                })
-            }
-        })
-    }
-        
-
-    private initForm(): void {
-        this.profileForm = this.fb.group({
-            visibleName: [
-                '',
-                [
-                    Validators.required,
-                    Validators.minLength(ProfileValidation.visibleName.minLength),
-                    Validators.maxLength(ProfileValidation.visibleName.maxLength),
-                ],
-            ],
-            bio: [
-                '',
-                [Validators.maxLength(ProfileValidation.bio.maxLength)],
-            ],
-            city: [
-                '',
-                [
-                    Validators.required,
-                    Validators.maxLength(ProfileValidation.city.maxLength),
-                ],
-            ],
-            department: [
-                '',
-                [
-                    Validators.required,
-                    Validators.maxLength(ProfileValidation.department.maxLength),
-                ],
-            ],
-        })
-    }
-
-    private async loadProfile(): Promise<void> {
-        await this.session.loadProfile()
-    }
-
-    async onSubmit(): Promise<void> {
-        if (this.profileForm.invalid) {
-            this.markFormGroupTouched(this.profileForm)
-            return
-        }
-
-        const currentProfile = this.profile()
-        if (!currentProfile) {
-            this.session.profileError.set('No se encontró el perfil')
-            return
-        }
-
-        const updatedProfile = {
-            ...currentProfile,
-            ...this.profileForm.value,
-        }
-
-        await this.session.saveProfile(updatedProfile)
-    }
-
-    onRetry(): void {
-        this.session.clearProfileMessages()
         void this.loadProfile()
     }
 
-    clearError(): void {
-        this.session.clearProfileMessages()
+    get selectedOptions(): readonly InterestOption[] {
+        return this.interestOptions.filter((option) =>
+            this.selectedInterests.includes(option.id),
+        )
     }
 
-    private markFormGroupTouched(formGroup: FormGroup): void {
-        Object.values(formGroup.controls).forEach((control) => {
-            control.markAsTouched()
-            if (control instanceof FormGroup) {
-                this.markFormGroupTouched(control)
+    get avatarInitial(): string {
+        return (this.displayName.trim().charAt(0) || 'U').toUpperCase()
+    }
+
+    async loadProfile(): Promise<void> {
+        if (this.isSaving()) {
+            return
+        }
+
+        this.isLoading.set(true)
+        this.errorMessage.set(null)
+        this.feedbackMessage.set(null)
+
+        try {
+            const currentUser = await firstValueFrom(this.profileApi.getCurrent())
+            this.profile.set(currentUser)
+            this.hydrateForm(currentUser)
+        } catch {
+            this.profile.set(null)
+            this.errorMessage.set(this.strings.loadFailed)
+        } finally {
+            this.isLoading.set(false)
+        }
+    }
+
+    async saveProfile(event?: SubmitEvent): Promise<void> {
+        event?.preventDefault()
+        if (this.isSaving()) {
+            return
+        }
+
+        const normalizedDisplayName = this.displayName.trim()
+        if (!normalizedDisplayName) {
+            this.validationMessage.set(this.strings.displayNameRequired)
+            return
+        }
+
+        this.validationMessage.set(null)
+        this.feedbackMessage.set(null)
+        this.isSaving.set(true)
+
+        try {
+            const patch: ProfilePatchRequest = {
+                displayName: normalizedDisplayName,
             }
-        })
+            addOptionalField(patch, 'shortBio', this.shortBio)
+            addOptionalField(patch, 'city', this.city)
+            addOptionalField(patch, 'department', this.department)
+
+            const currentUser = await firstValueFrom(this.profileApi.update(patch))
+            this.profile.set(currentUser)
+            this.hydrateForm(currentUser)
+            this.feedbackMessage.set(this.strings.saved)
+        } catch {
+            this.feedbackMessage.set(this.strings.saveFailed)
+        } finally {
+            this.isSaving.set(false)
+        }
     }
 
-    getErrorMessage(controlName: string): string {
-        const control = this.profileForm.get(controlName)
-        if (!control) return ''
-
-        if (control.hasError('required')) return 'Campo obligatorio'
-        if (control.hasError('minlength')) {
-            return `Mínimo ${control.errors?.['minlength'].requiredLength} caracteres`
-        }
-        if (control.hasError('maxlength')) {
-            return `Máximo ${control.errors?.['maxlength'].requiredLength} caracteres`
+    async signOut(): Promise<void> {
+        if (this.isSaving()) {
+            return
         }
 
-        return 'Campo inválido'
+        this.isSaving.set(true)
+        this.feedbackMessage.set(null)
+        try {
+            await this.auth.signOut()
+        } catch {
+            this.feedbackMessage.set(this.common.sessionCloseFailed)
+        } finally {
+            this.isSaving.set(false)
+        }
+    }
+
+    private hydrateForm(currentUser: CurrentUserDto): void {
+        this.displayName = currentUser.profile.displayName ?? ''
+        this.shortBio = currentUser.profile.shortBio ?? ''
+        this.city = currentUser.profile.city ?? ''
+        this.department = currentUser.profile.department ?? ''
+        this.validationMessage.set(null)
     }
 }
 
+function addOptionalField(
+    patch: ProfilePatchRequest,
+    field: 'shortBio' | 'city' | 'department',
+    value: string,
+): void {
+    const normalized = value.trim()
+    if (normalized) {
+        patch[field] = normalized
+    }
+}

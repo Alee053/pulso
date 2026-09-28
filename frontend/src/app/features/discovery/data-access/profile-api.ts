@@ -1,53 +1,53 @@
-// frontend/src/app/features/discovery/data-access/profile-api.ts
+import { HttpClient } from '@angular/common/http'
+import { inject, Injectable } from '@angular/core'
+import { type Observable } from 'rxjs'
+import { appConfig } from '../../../core/config/app-config'
+import { apiPaths } from './discovery.catalog.contract'
 
-import { HttpClient } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
-import { map, type Observable } from 'rxjs';
-import { appConfig } from '../../../core/config/app-config';
-import type { Profile } from '../domain/profile';
+export interface ProfileDto {
+    id: string
+    profileKind: string
+    displayName: string | null
+    avatarStoragePath: string | null
+    shortBio: string | null
+    city: string | null
+    department: string | null
+    profileVisibility: string
+    verificationStatus: string
+    accountStatus: string
+    platformRole: string
+    onboardingCompletedAt: string | null
+    createdAt: string
+    updatedAt: string
+}
 
-interface ProfileApiResponse {
-    id: string;
-    nombre_visible: string;
-    biografia: string | null;
-    ciudad: string;
-    departamento: string;
-    correo?: string;
-    avatar_url?: string;
-    updated_at?: string;
+export interface CurrentUserDto {
+    subject: string
+    email: string | null
+    role: string
+    audience: string[]
+    profile: ProfileDto
+}
+
+export interface ProfilePatchRequest {
+    displayName?: string
+    shortBio?: string
+    city?: string
+    department?: string
 }
 
 @Injectable({ providedIn: 'root' })
 export class ProfileApi {
-    private readonly http = inject(HttpClient);
+    private readonly http = inject(HttpClient)
 
-    getProfile(userId: string): Observable<Profile> {
-        return this.http
-            .get<ProfileApiResponse>(`${appConfig.apiBaseUrl}/api/profile/${userId}`)
-            .pipe(map((response) => this.mapFromApi(response)));
+    getCurrent(): Observable<CurrentUserDto> {
+        return this.http.get<CurrentUserDto>(`${appConfig.apiBaseUrl}${apiPaths.profile}`)
     }
 
-    updateProfile(profile: Profile): Observable<Profile> {
-        return this.http
-            .put<ProfileApiResponse>(`${appConfig.apiBaseUrl}/api/profile/${profile.id}`, {
-                nombre_visible: profile.visibleName,
-                biografia: profile.bio || null,
-                ciudad: profile.city,
-                departamento: profile.department
-            })
-            .pipe(map((response) => this.mapFromApi(response)));
-    }
-
-    private mapFromApi(response: ProfileApiResponse): Profile {
-        return {
-            id: response.id,
-            visibleName: response.nombre_visible,
-            bio: response.biografia || '',
-            city: response.ciudad,
-            department: response.departamento,
-            email: response.correo,
-            avatarUrl: response.avatar_url,
-            updatedAt: response.updated_at ? new Date(response.updated_at) : undefined
-        };
+    update(patch: ProfilePatchRequest): Observable<CurrentUserDto> {
+        return this.http.patch<CurrentUserDto>(
+            `${appConfig.apiBaseUrl}${apiPaths.profile}`,
+            patch,
+        )
     }
 }

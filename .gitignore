@@ -13,3 +13,6 @@ database/supabase/.temp/
 .gradle/
 backend/build/
 backend/out/
+.vs/
+*.user
+*.suo

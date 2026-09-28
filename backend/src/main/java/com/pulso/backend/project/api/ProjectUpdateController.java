@@ -31,7 +31,9 @@ public class ProjectUpdateController {
         return ProjectUpdateResponse.from(updateProjectInformation.execute(
                 projectId,
                 authenticatedProfileId(jwt),
-                request.toPatch(updateProjectInformation.limits())));
+                request == null
+                        ? null
+                        : request.toPatch(updateProjectInformation.limits())));
     }
 
     private static UUID authenticatedProfileId(Jwt jwt) {

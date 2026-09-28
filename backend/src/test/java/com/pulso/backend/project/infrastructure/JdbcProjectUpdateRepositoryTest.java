@@ -5,8 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.util.Optional;
 import java.util.UUID;
 
 import javax.sql.DataSource;

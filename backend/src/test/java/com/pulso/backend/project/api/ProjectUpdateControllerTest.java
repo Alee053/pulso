@@ -24,7 +24,6 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 import com.pulso.backend.config.ApiMessages;
 import com.pulso.backend.config.ProjectProperties;
 import com.pulso.backend.discovery.api.ApiExceptionHandler;
-import com.pulso.backend.project.application.ProjectUpdateAuthorizationException;
 import com.pulso.backend.project.application.ProjectUpdateRepository;
 import com.pulso.backend.project.application.UpdateProjectInformation;
 import com.pulso.backend.project.domain.ProjectUpdatePatch;
@@ -133,6 +132,19 @@ class ProjectUpdateControllerTest {
                         """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.title").value("Invalid project"));
+
+        assertThat(repository.patch).isNull();
+    }
+
+    @Test
+    void rejectsAJsonNullBodyBeforePersistence() throws Exception {
+        CapturingRepository repository = new CapturingRepository();
+
+        mockMvc(repository).perform(patch("/api/v1/projects/{projectId}", PROJECT_ID)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("null"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value(ApiMessages.INVALID_REQUEST_TITLE));
 
         assertThat(repository.patch).isNull();
     }

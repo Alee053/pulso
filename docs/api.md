@@ -306,6 +306,75 @@ Conflict`; other PostgreSQL failures return the sanitized `503 Service
 Unavailable` response. Missing, invalid, or `service_role` bearer tokens
 return `401 Unauthorized`.
 
+## `PATCH /api/v1/projects/{projectId}` — project information update (PUL-63)
+
+Updates an existing canonical project for the authenticated project team. The
+profile identity comes exclusively from the validated JWT subject, and the
+server reads the requested project's `project_members` row. Only an active
+`OWNER` or `ADMIN` can perform the update; the client cannot submit a role,
+profile identity, or another project identifier to change that decision.
+
+The request accepts only these editable properties:
+
+```json
+{
+  "name": "EcoPack actualizado",
+  "tagline": "Envases biodegradables mejorados.",
+  "description": "Nueva descripción.",
+  "valueProposition": "Reduce residuos y mejora el valor local.",
+  "stage": "EARLY_STAGE",
+  "sectorId": "11111111-1111-1111-1111-111111111111",
+  "city": "Santa Cruz",
+  "department": "Santa Cruz"
+}
+```
+
+The operation is partial: omitted properties keep their stored values. Text
+and stage values are trimmed/normalized and validated against the same project
+limits and stage catalog used during creation. `name`, `tagline`, `stage`, and
+`sectorId` cannot be explicitly null; the nullable descriptive fields and
+`department` may be cleared with `null`. The deployed `projects.city` column
+is required, so an explicitly null city is rejected while an omitted city is
+preserved.
+
+The update writes only the canonical `projects` table. Its existing
+`projects_set_updated_at` trigger advances `updated_at`; `id`, `slug`,
+`created_by_profile_id`, `created_at`, `status`, `verification_status`, review
+data, publication data, and archival data are not assigned by the request.
+
+Response `200 OK`:
+
+```json
+{
+  "project": {
+    "id": "33333333-3333-3333-3333-333333333333",
+    "slug": "eco-pack",
+    "name": "EcoPack actualizado",
+    "tagline": "Envases biodegradables mejorados.",
+    "description": "Nueva descripción.",
+    "valueProposition": "Reduce residuos y mejora el valor local.",
+    "sectorId": "11111111-1111-1111-1111-111111111111",
+    "stage": "EARLY_STAGE",
+    "city": "Santa Cruz",
+    "department": "Santa Cruz",
+    "status": "DRAFT",
+    "verificationStatus": "UNVERIFIED",
+    "createdByProfileId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "createdAt": "2026-09-01T12:00:00Z",
+    "updatedAt": "2026-09-08T12:00:00Z"
+  }
+}
+```
+
+Unknown or protected properties, invalid values, and inactive/unknown sectors
+return `400 Bad Request`. Missing memberships, members, invited/left/removed
+memberships, external profiles, a different project's membership, and a
+missing project all return the same `403 Membership permission` problem so the
+endpoint does not disclose private project existence. Missing, invalid, or
+`service_role` bearer tokens return `401 Unauthorized`. Angular calls this
+contract through the feature's `ProjectsApi` HTTP adapter; it does not read
+project rows directly from Supabase.
+
 ## `POST /api/v1/projects/{projectId}/publication-request`
 
 Requests publication review for a project in `DRAFT`. The profile identity is

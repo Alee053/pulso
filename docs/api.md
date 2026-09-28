@@ -728,3 +728,57 @@ insufficient project membership returns `403` with `active OWNER or ADMIN
 membership is required.`. A second active invitation for the same project and
 normalized email returns `409` with code `invitation_duplicate`. Invalid email
 input and client-controlled fields return `400`.
+
+## `POST /api/v1/project-members/accept` — accept member invitation (PUL-80)
+
+Accepts an invitation for the authenticated account and activates the existing
+`project_members` row. The endpoint requires a valid user JWT. The profile ID
+and email are read from the validated JWT; the request cannot provide either
+identity value.
+
+```sh
+curl -X POST \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"token":"accept-me"}' \
+  http://localhost:8080/api/v1/project-members/accept
+```
+
+The backend hashes the presented token with the existing SHA-256 digest
+algorithm and looks up `project_members.invite_token_digest`. It normalizes the
+JWT email with the invitation rules and compares it before assigning
+`profile_id`. A successful request changes the same row from `INVITED` to
+`ACTIVE`, preserves `role = MEMBER`, records `joined_at`, and clears the digest
+so the token cannot be replayed.
+
+Response `200 OK`:
+
+```json
+{
+  "id": "55555555-5555-5555-5555-555555555555",
+  "projectId": "33333333-3333-3333-3333-333333333333",
+  "inviteeEmail": "ada@example.com",
+  "profileId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+  "role": "MEMBER",
+  "membershipStatus": "ACTIVE",
+  "createdByProfileId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+}
+```
+
+Invalid or unavailable tokens, already accepted invitations, email mismatches,
+and profiles that already have a membership return the same sanitized `404`
+problem response and do not modify the row:
+
+```json
+{
+  "type": "about:blank",
+  "title": "Member invitation",
+  "status": 404,
+  "detail": "invitation not found or already used."
+}
+```
+
+The conditional update is transactional and serialized by the invitation row;
+concurrent acceptance attempts therefore produce at most one active profile
+association. The response and errors never include the plaintext token or its
+digest.

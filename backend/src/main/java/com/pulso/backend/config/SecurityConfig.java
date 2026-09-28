@@ -69,6 +69,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/projects/*").authenticated()
                         .requestMatchers(
                                 HttpMethod.POST,
+                                "/api/v1/projects/*/members",
                                 "/api/v1/projects/*/publication-request",
                                 "/api/v1/projects/*/archive")
                         .authenticated()

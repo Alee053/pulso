@@ -1,43 +1,9 @@
-<!-- Estado: Cargando -->
-<!--<div *ngIf="state().status === 'loading'" class="loading-state" role="status" aria-live="polite">
-    <div class="spinner"></div>
-    <p>Cargando proyecto...</p>
-</div> -->
-<!---ng-container *ngIf="state().status === 'loaded'">
-    <pulso-startup-detail-modal *ngIf="getLoadedProject() as project"
-                                [startup]="mapToStartup(project)"
-                                [recommendation]="recommendation"
-                                (closed)="close()" />
-</!--ng-container>
-
-<!-- Estado: No disponible
-<div *ngIf="state().status === 'empty'" class="empty-state" role="status">
-    <span class="empty-icon">📭</span>
-    <h2>Proyecto no disponible</h2>
-    <p>Este proyecto no está publicado o fue removido.</p>
-    <button type="button" (click)="close()">Volver</button>
-</div>
-
-<!-- Estado: Error
-<div *ngIf="state().status === 'error'" class="error-state" role="alert">
-    <span class="error-icon">⚠️</span>
-    <h2>No se pudo cargar el proyecto</h2>
-    <p>{{ state().message }}</p>
-    <div class="error-actions">
-        <button *ngIf="state().retryable" type="button" (click)="retry()">Reintentar</button>
-        <button type="button" (click)="close()">Volver</button>
-    </div>
-</div>
-
-<!-- Estado: Cargado
-<pulso-startup-detail-modal *ngIf="state().status === 'loaded' && state().project as project"
-                            [startup]="mapToStartup(project)"
-                            [recommendation]="recommendation"
-                            (closed)="close()" />-->
+<section [attr.role]="loadedProject ? null : 'dialog'" [attr.aria-modal]="loadedProject ? null : 'true'" aria-label="Detalle público del proyecto">
 <!-- Estado: Cargando -->
 <div *ngIf="isLoading" class="loading-state" role="status" aria-live="polite">
     <div class="spinner"></div>
     <p>Cargando proyecto...</p>
+    <button type="button" (click)="close()">Volver</button>
 </div>
 
 <!-- Estado: No disponible -->
@@ -63,4 +29,6 @@
 <pulso-startup-detail-modal *ngIf="loadedProject as project"
                             [startup]="mapToStartup(project)"
                             [recommendation]="recommendation"
+                            [manageFocus]="false"
                             (closed)="close()" />
+</section>

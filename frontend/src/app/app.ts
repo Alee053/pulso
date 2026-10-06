@@ -7,7 +7,6 @@ import { NavigationBarComponent } from './features/discovery/ui/navigation-bar'
 import { OnboardingComponent } from './features/discovery/ui/onboarding'
 import { ProfileViewComponent } from './features/discovery/ui/profile-view'
 import { SavedViewComponent } from './features/discovery/ui/saved-view'
-import { StartupDetailModalComponent } from './features/discovery/ui/startup-detail-modal'
 import { PublicProjectDetailComponent } from './features/discovery/ui/public-project-detail'
 import { PulsoSession } from './features/discovery/application/pulso-session'
 import { IconComponent } from './shared/icon/icon'
@@ -27,7 +26,6 @@ import { ProjectCreateFormComponent } from './features/discovery/ui/project-crea
         ProfileViewComponent,
         ProjectCreateFormComponent,
         SavedViewComponent,
-        StartupDetailModalComponent,
         PublicProjectDetailComponent,
         IconComponent,
     ],

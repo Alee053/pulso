@@ -151,7 +151,7 @@ The response maps only public product data from the canonical model:
 | `sector` | `projects.sector_id` → `sectors` | Includes only an active sector's `id`, `slug`, and `name`; catalog administration fields are omitted. |
 | `tags` | `project_tags` → `tags` | Includes only active tags' `id`, `slug`, and `name`; an empty relation is returned as `[]`. |
 | `externalLinks` | `projects.external_links` | Includes only public `{type, url, label}` entries; absent links are returned as `[]`. |
-| `members` | `project_members` → `profiles` | Includes only members with `membership_status = ACTIVE`, `is_public = true`, and a linked active profile. |
+| `members` | `project_members` → `profiles` | Includes only members with `membership_status = ACTIVE`, `is_public = true`, and a linked active, public profile without a soft deletion (`account_status = ACTIVE`, `profile_visibility = PUBLIC`, `deleted_at IS NULL`). |
 
 Each public member exposes only `profileId`, `displayName`,
 `avatarStoragePath`, `displayTitle`, and `isFeatured`. The contract never

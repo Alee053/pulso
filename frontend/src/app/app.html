@@ -40,10 +40,6 @@
 
 <ng-template #applicationShell>
     <div class="app-shell relative flex min-h-screen flex-col overflow-hidden text-white">
-        <button (click)="session.openProjectDetail('eco-pack')"
-                style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; padding: 12px 20px; background: #a9e1ff; color: #17201c; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
-            Ver detalle (temporal)
-        </button>
         <div class="ambient-orb ambient-orb--sky" aria-hidden="true"></div>
         <div class="ambient-orb ambient-orb--blue" aria-hidden="true"></div>
 
@@ -92,13 +88,13 @@
                                     [selectedInterests]="session.selectedInterests()" />
 
                 <pulso-public-project-detail *ngSwitchCase="'detail'"
-                                             [projectId]="session.selectedProjectId() || 'eco-pack'"
+                                             [projectId]="session.selectedProjectId() || ''"
                                              (closed)="session.closeProjectDetail()" />
             </ng-container>
         </div>
 
-        <pulso-startup-detail-modal *ngIf="selectedStartup() as startup"
-                                    [startup]="startup"
+        <pulso-public-project-detail *ngIf="selectedStartup() as startup"
+                                    [projectId]="startup.id"
                                     [recommendation]="session.getReason(startup)"
                                     (closed)="closeStartup()" />
     </div>

@@ -25,6 +25,7 @@ export class StartupDetailModalComponent implements OnInit, AfterViewInit, OnDes
   readonly strings = detailStrings
   @Input() startup!: Startup
   @Input() recommendation = ''
+  @Input() manageFocus = true
   @Output() closed = new EventEmitter<void>()
   @ViewChild('modal') modalRef?: ElementRef<HTMLElement>
   @ViewChild('closeButton') closeButtonRef?: ElementRef<HTMLButtonElement>
@@ -35,6 +36,7 @@ export class StartupDetailModalComponent implements OnInit, AfterViewInit, OnDes
   private originalOverflow = ''
 
   ngOnInit(): void {
+    if (!this.manageFocus) return
     this.originalOverflow = document.body.style.overflow
     this.previousActiveElement =
       document.activeElement instanceof HTMLElement ? document.activeElement : null
@@ -42,11 +44,13 @@ export class StartupDetailModalComponent implements OnInit, AfterViewInit, OnDes
   }
 
   ngAfterViewInit(): void {
+    if (!this.manageFocus) return
     window.setTimeout(() => this.closeButtonRef?.nativeElement.focus(), 0)
   }
 
   @HostListener('document:keydown', ['$event'])
   handleKeyDown(event: KeyboardEvent): void {
+    if (!this.manageFocus) return
     if (event.key === 'Escape') {
       event.preventDefault()
       this.closed.emit()
@@ -84,6 +88,7 @@ export class StartupDetailModalComponent implements OnInit, AfterViewInit, OnDes
   }
 
   ngOnDestroy(): void {
+    if (!this.manageFocus) return
     document.body.style.overflow = this.originalOverflow
     if (this.previousActiveElement?.isConnected) {
       this.previousActiveElement.focus()

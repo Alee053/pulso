@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http'
 import { inject, Injectable } from '@angular/core'
-import { catchError, map, Observable, of, throwError } from 'rxjs'
+import { catchError, map, Observable, throwError } from 'rxjs'
 import { appConfig } from '../../../core/config/app-config'
 import type {
     PublicExternalLink,
@@ -9,9 +9,16 @@ import type {
     PublicSector,
     PublicTag,
 } from '../domain/startup'
-import { getMockProject } from './mock-public-projects'
 
-const USE_MOCK = true
+interface PublicProjectResponseDto {
+    data: PublicProjectDetail
+}
+
+export interface PublicProjectError {
+    status: number
+    message: string
+    retryable: boolean
+}
 
 @Injectable({ providedIn: 'root' })
 export class PublicProjectApi {
@@ -20,18 +27,12 @@ export class PublicProjectApi {
 
     getPublicDetail(reference: string): Observable<PublicProjectDetail> {
         if (!reference || reference.trim() === '') {
-            return throwError(() => ({ status: 400, message: 'Referencia requerida' }))
-        }
-
-        if (USE_MOCK) {
-            const mock = getMockProject(reference)
-            if (mock) return of(mock)
-            return throwError(() => ({ status: 404, message: 'No disponible' }))
+            return throwError(() => ({ status: 400, message: 'Referencia de proyecto inválida', retryable: false }))
         }
 
         return this.http
-            .get<{ data: any; message: string; status: number }>(
-                `${this.baseUrl}/${reference}/public`
+            .get<PublicProjectResponseDto>(
+                `${this.baseUrl}/${encodeURIComponent(reference.trim())}`
             )
             .pipe(
                 map((response) => this.mapToDomain(response.data)),
@@ -39,7 +40,7 @@ export class PublicProjectApi {
             )
     }
 
-    private mapToDomain(raw: any): PublicProjectDetail {
+    private mapToDomain(raw: PublicProjectDetail): PublicProjectDetail {
         if (!raw) throw new Error('Respuesta vacía del servidor')
 
         return {
@@ -59,7 +60,7 @@ export class PublicProjectApi {
         }
     }
 
-    private mapSector(raw: any): PublicSector {
+    private mapSector(raw: PublicSector): PublicSector {
         return {
             id: raw?.id ?? '',
             slug: this.sanitizeText(raw?.slug) ?? '',
@@ -85,7 +86,7 @@ export class PublicProjectApi {
         return null
     }
 
-    private mapTags(raw: any): PublicTag[] {
+    private mapTags(raw: PublicTag[]): PublicTag[] {
         if (!Array.isArray(raw)) return []
         return raw
             .map((tag) => ({
@@ -96,7 +97,7 @@ export class PublicProjectApi {
             .filter((tag) => tag.id !== '' && tag.name !== '')
     }
 
-    private mapExternalLinks(raw: any): PublicExternalLink[] {
+    private mapExternalLinks(raw: PublicExternalLink[]): PublicExternalLink[] {
         if (!Array.isArray(raw)) return []
         return raw
             .map((link) => ({
@@ -107,7 +108,7 @@ export class PublicProjectApi {
             .filter((link) => link.url !== '')
     }
 
-    private mapMembers(raw: any): PublicMember[] {
+    private mapMembers(raw: PublicMember[]): PublicMember[] {
         if (!Array.isArray(raw)) return []
         return raw.map((member) => ({
             profileId: member?.profileId ?? '',

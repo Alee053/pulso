@@ -74,6 +74,8 @@ public class JdbcPublicProjectRepository implements PublicProjectRepository {
                       and member.membership_status = 'ACTIVE'
                       and member.is_public = true
                       and profile.account_status = 'ACTIVE'
+                      and profile.profile_visibility = 'PUBLIC'
+                      and profile.deleted_at is null
                 ), '[]'::jsonb)::text as members
             from public.projects p
             join public.sectors s on s.id = p.sector_id

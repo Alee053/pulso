@@ -1,63 +1,44 @@
-<main class="relative min-h-screen overflow-hidden px-5 pb-8 pt-6 sm:px-10 sm:pb-12 sm:pt-8">
-  <div class="ambient-orb ambient-orb--sky" aria-hidden="true"></div>
-  <div class="ambient-orb ambient-orb--blue" aria-hidden="true"></div>
-
-  <div class="relative mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-6xl flex-col">
-    <header class="flex items-center justify-between">
+<main class="onboarding-page">
+  <div class="mx-auto w-full max-w-6xl">
+    <header class="flex items-center justify-between gap-4">
       <pulso-brand-mark />
-      <span class="text-[0.68rem] font-medium uppercase tracking-[0.18em] text-white/35">
-        {{ strings.stepMark }}
-      </span>
+      <span class="text-sm text-slate-400">{{ strings.stepMark }}</span>
     </header>
 
-    <div class="mx-auto flex w-full max-w-4xl flex-1 flex-col justify-center py-12 sm:py-16">
-      <div class="fade-in-up">
+    <div class="onboarding-page__content">
+      <div class="page-header fade-in-up">
         <span class="eyebrow">{{ common.eyebrowComingMap }}</span>
-        <h1 class="mt-6 max-w-3xl text-4xl font-medium tracking-[-0.065em] text-white text-balance sm:text-6xl lg:text-[5.25rem] lg:leading-[0.98]">
-          {{ strings.title }}
-        </h1>
-        <p class="mt-6 max-w-xl text-base leading-7 text-white/55 sm:text-lg">
-          {{ strings.lead }}
-        </p>
+        <h1 class="page-title mt-3 text-balance">{{ strings.title }}</h1>
+        <p class="page-lead mt-4 max-w-2xl">{{ strings.lead }}</p>
       </div>
 
-      <section class="mt-12 sm:mt-16 fade-in-up fade-in-up--delayed">
-        <div class="mb-4 flex items-end justify-between gap-4">
+      <section class="mt-8" aria-labelledby="interest-options-title">
+        <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-white/35">
-              {{ strings.startEyebrow }}
-            </p>
-            <h2 class="mt-2 text-xl font-medium tracking-[-0.03em] text-white sm:text-2xl">
-              {{ strings.startTitle }}
-            </h2>
+            <p class="eyebrow">{{ strings.startEyebrow }}</p>
+            <h2 id="interest-options-title" class="mt-2 text-xl font-semibold tracking-tight text-slate-50">{{ strings.startTitle }}</h2>
           </div>
-          <p class="hidden text-right text-xs leading-5 text-white/35 sm:block">
-            {{ strings.startHintLine1 }}<br />{{ strings.startHintLine2 }}
-          </p>
+          <p class="text-sm leading-6 text-slate-400">{{ strings.startHintLine1 }} {{ strings.startHintLine2 }}</p>
         </div>
 
-        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div class="onboarding-page__choices">
           <button
-            *ngFor="let interest of interestOptions; let index = index"
+            *ngFor="let interest of interestOptions"
             type="button"
-            class="glass-choice group relative min-h-36 text-left sm:min-h-44 lg:min-h-52"
-            [class.glass-choice--selected]="isSelected(interest)"
-            [style.animation-delay]="(0.2 + index * 0.06) + 's'"
+            class="choice-card relative text-left"
+            [class.choice-card--selected]="isSelected(interest)"
+            [attr.aria-pressed]="isSelected(interest)"
             (click)="interestToggled.emit(interest.id)"
           >
-            <span class="flex size-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] text-[#c7ecff] transition-colors group-hover:bg-white/10">
+            <span class="flex size-10 items-center justify-center rounded-xl bg-sky-400/10 text-sky-300" aria-hidden="true">
               <pulso-icon [name]="interest.icon" />
             </span>
-            <span class="mt-6 block text-sm font-medium leading-5 text-white/90">
-              {{ interest.label }}
-            </span>
-            <span class="mt-2 block max-w-[12rem] text-xs leading-5 text-white/40">
-              {{ interest.description }}
-            </span>
+            <span class="mt-4 block pr-5 text-sm font-semibold leading-5 text-slate-50">{{ interest.label }}</span>
+            <span class="mt-2 block text-sm leading-6 text-slate-400">{{ interest.description }}</span>
             <span
               *ngIf="isSelected(interest)"
-              class="absolute right-4 top-4 flex size-6 items-center justify-center rounded-full bg-[#a9e1ff] text-[#071521]"
-              [attr.aria-label]="strings.selectedAria"
+              class="absolute right-4 top-4 flex size-6 items-center justify-center rounded-full bg-sky-300 text-slate-950"
+              aria-hidden="true"
             >
               <pulso-icon name="check" [size]="14" [strokeWidth]="3" />
             </span>
@@ -65,134 +46,92 @@
         </div>
       </section>
 
-      <section class="mt-10 fade-in-up fade-in-up--more-delayed" aria-labelledby="catalog-preferences-title">
+      <section class="mt-8" aria-labelledby="catalog-preferences-title">
         <div class="mb-5">
-          <p class="text-xs font-semibold uppercase tracking-[0.16em] text-white/35">
-            {{ strings.optionalEyebrow }}
-          </p>
-          <h2 id="catalog-preferences-title" class="mt-2 text-xl font-medium tracking-[-0.03em] text-white sm:text-2xl">
-            {{ strings.catalogTitle }}
-          </h2>
-          <p class="mt-2 max-w-2xl text-sm leading-6 text-white/40">
-            {{ strings.catalogLead }}
-          </p>
+          <p class="eyebrow">{{ strings.optionalEyebrow }}</p>
+          <h2 id="catalog-preferences-title" class="mt-2 text-xl font-semibold tracking-tight text-slate-50">{{ strings.catalogTitle }}</h2>
+          <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-400">{{ strings.catalogLead }}</p>
         </div>
 
-        <div *ngIf="preferencesLoading" class="glass-panel mb-5 px-5 py-4" role="status" aria-live="polite">
-          <p class="text-sm text-white/55">{{ strings.preferencesLoading }}</p>
+        <div *ngIf="preferencesLoading" class="status-message mb-4" role="status">{{ strings.preferencesLoading }}</div>
+
+        <div *ngIf="!preferencesLoading && preferencesErrorMessage" class="status-message status-message--error mb-4" role="alert">
+          <p>{{ preferencesErrorMessage }}</p>
+          <button type="button" class="contact-button mt-3" (click)="preferencesRetryRequested.emit()">{{ common.retry }}</button>
         </div>
 
-        <div *ngIf="!preferencesLoading && preferencesErrorMessage" class="glass-panel mb-5 px-5 py-5" role="alert">
-          <p class="text-sm leading-6 text-white/60">{{ preferencesErrorMessage }}</p>
-          <button
-            type="button"
-            class="contact-button mt-4"
-            (click)="preferencesRetryRequested.emit()"
-          >
-            {{ common.retry }}
-          </button>
+        <div *ngIf="catalogsLoading" class="state-panel" role="status">{{ strings.catalogsLoading }}</div>
+
+        <div *ngIf="!catalogsLoading && catalogsErrorMessage" class="status-message status-message--error" role="alert">
+          <p>{{ catalogsErrorMessage }}</p>
+          <button type="button" class="contact-button mt-3" (click)="catalogsRetryRequested.emit()">{{ common.retry }}</button>
         </div>
 
-        <div *ngIf="catalogsLoading" class="glass-panel px-5 py-6" role="status" aria-live="polite">
-          <p class="text-sm text-white/55">{{ strings.catalogsLoading }}</p>
-        </div>
-
-        <div *ngIf="!catalogsLoading && catalogsErrorMessage" class="glass-panel px-5 py-6" role="alert">
-          <p class="text-sm leading-6 text-white/60">{{ catalogsErrorMessage }}</p>
-          <button
-            type="button"
-            class="contact-button mt-4"
-            (click)="catalogsRetryRequested.emit()"
-          >
-            {{ common.retry }}
-          </button>
-        </div>
-
-        <div *ngIf="!catalogsLoading && !catalogsErrorMessage && catalogsLoaded" class="grid gap-5 lg:grid-cols-2">
-          <section class="glass-panel p-5" aria-labelledby="sector-options-title">
-            <h3 id="sector-options-title" class="text-sm font-medium text-white/85">{{ strings.sectorsTitle }}</h3>
-            <p class="mt-1 text-xs leading-5 text-white/35">{{ strings.sectorsHint }}</p>
-
+        <div *ngIf="!catalogsLoading && !catalogsErrorMessage && catalogsLoaded" class="grid gap-4 md:grid-cols-2">
+          <section class="panel p-5" aria-labelledby="sector-options-title">
+            <h3 id="sector-options-title" class="text-base font-semibold text-slate-100">{{ strings.sectorsTitle }}</h3>
+            <p class="field-hint mt-1">{{ strings.sectorsHint }}</p>
             <div *ngIf="sectors.length > 0; else emptySectors" class="mt-4 flex flex-wrap gap-2">
               <button
                 *ngFor="let sector of sectors"
                 type="button"
-                [class]="isSectorSelected(sector) ? 'contact-button border-white text-white' : 'contact-button'"
+                class="contact-button"
                 [attr.aria-pressed]="isSectorSelected(sector)"
                 (click)="sectorToggled.emit(sector.id)"
-              >
-                {{ sector.name }}
-              </button>
+              >{{ sector.name }}</button>
             </div>
-            <ng-template #emptySectors>
-              <p class="mt-4 text-xs leading-5 text-white/40" role="status">{{ strings.sectorsEmpty }}</p>
-            </ng-template>
+            <ng-template #emptySectors><p class="field-hint mt-4" role="status">{{ strings.sectorsEmpty }}</p></ng-template>
           </section>
 
-          <section class="glass-panel p-5" aria-labelledby="stage-options-title">
-            <h3 id="stage-options-title" class="text-sm font-medium text-white/85">{{ strings.stagesTitle }}</h3>
-            <p class="mt-1 text-xs leading-5 text-white/35">{{ strings.stagesHint }}</p>
-
+          <section class="panel p-5" aria-labelledby="stage-options-title">
+            <h3 id="stage-options-title" class="text-base font-semibold text-slate-100">{{ strings.stagesTitle }}</h3>
+            <p class="field-hint mt-1">{{ strings.stagesHint }}</p>
             <div *ngIf="stages.length > 0; else emptyStages" class="mt-4 flex flex-wrap gap-2">
               <button
                 *ngFor="let stage of stages"
                 type="button"
-                [class]="isStageSelected(stage) ? 'contact-button border-white text-white' : 'contact-button'"
+                class="contact-button"
                 [attr.aria-pressed]="isStageSelected(stage)"
                 (click)="stageToggled.emit(stage.id)"
-              >
-                {{ stage.label }}
-              </button>
+              >{{ stage.label }}</button>
             </div>
-            <ng-template #emptyStages>
-              <p class="mt-4 text-xs leading-5 text-white/40" role="status">{{ strings.stagesEmpty }}</p>
-            </ng-template>
+            <ng-template #emptyStages><p class="field-hint mt-4" role="status">{{ strings.stagesEmpty }}</p></ng-template>
           </section>
 
-          <section class="glass-panel p-5" aria-labelledby="tag-options-title">
-            <h3 id="tag-options-title" class="text-sm font-medium text-white/85">{{ strings.tagsTitle }}</h3>
-            <p class="mt-1 text-xs leading-5 text-white/35">{{ strings.tagsHint }}</p>
-
+          <section class="panel p-5" aria-labelledby="tag-options-title">
+            <h3 id="tag-options-title" class="text-base font-semibold text-slate-100">{{ strings.tagsTitle }}</h3>
+            <p class="field-hint mt-1">{{ strings.tagsHint }}</p>
             <div *ngIf="tags.length > 0; else emptyTags" class="mt-4 flex flex-wrap gap-2">
               <button
                 *ngFor="let tag of tags"
                 type="button"
-                [class]="isTagSelected(tag) ? 'contact-button border-white text-white' : 'contact-button'"
+                class="contact-button"
                 [attr.aria-pressed]="isTagSelected(tag)"
                 (click)="tagToggled.emit(tag.id)"
-              >
-                {{ tag.name }}
-              </button>
+              >{{ tag.name }}</button>
             </div>
-            <ng-template #emptyTags>
-              <p class="mt-4 text-xs leading-5 text-white/40" role="status">{{ strings.tagsEmpty }}</p>
-            </ng-template>
+            <ng-template #emptyTags><p class="field-hint mt-4" role="status">{{ strings.tagsEmpty }}</p></ng-template>
           </section>
 
-          <section class="glass-panel p-5" aria-labelledby="skill-options-title">
-            <h3 id="skill-options-title" class="text-sm font-medium text-white/85">{{ strings.skillsTitle }}</h3>
-            <p class="mt-1 text-xs leading-5 text-white/35">{{ strings.skillsHint }}</p>
-
+          <section class="panel p-5" aria-labelledby="skill-options-title">
+            <h3 id="skill-options-title" class="text-base font-semibold text-slate-100">{{ strings.skillsTitle }}</h3>
+            <p class="field-hint mt-1">{{ strings.skillsHint }}</p>
             <div *ngIf="skills.length > 0; else emptySkills" class="mt-4 flex flex-wrap gap-2">
               <button
                 *ngFor="let skill of skills"
                 type="button"
-                [class]="isSkillSelected(skill) ? 'contact-button border-white text-white' : 'contact-button'"
+                class="contact-button"
                 [attr.aria-pressed]="isSkillSelected(skill)"
                 (click)="skillToggled.emit(skill.id)"
-              >
-                {{ skill.name }}
-              </button>
+              >{{ skill.name }}</button>
             </div>
-            <ng-template #emptySkills>
-              <p class="mt-4 text-xs leading-5 text-white/40" role="status">{{ strings.skillsEmpty }}</p>
-            </ng-template>
+            <ng-template #emptySkills><p class="field-hint mt-4" role="status">{{ strings.skillsEmpty }}</p></ng-template>
           </section>
         </div>
       </section>
 
-      <div class="mt-8 flex flex-col items-start gap-4 sm:mt-10 sm:flex-row sm:items-center sm:justify-between fade-in-up fade-in-up--more-delayed">
-        <p class="text-xs leading-5 text-white/35">
+      <div class="onboarding-page__footer mt-6">
+        <p class="text-sm leading-6 text-slate-400" role="status">
           <ng-container [ngSwitch]="selectedInterests.length">
             <span *ngSwitchCase="0">{{ strings.needInterest }}</span>
             <span *ngSwitchCase="1">{{ strings.oneInterest }}</span>
@@ -200,16 +139,14 @@
           </ng-container>
         </p>
         <div class="flex w-full flex-col items-start gap-3 sm:w-auto sm:items-end">
-          <div *ngIf="preferencesSaveErrorMessage" class="flex flex-wrap items-center gap-3" role="alert">
-            <p class="text-xs leading-5 text-[#efb4c6]">{{ preferencesSaveErrorMessage }}</p>
+          <div *ngIf="preferencesSaveErrorMessage" class="status-message status-message--error flex flex-wrap items-center gap-3" role="alert">
+            <p>{{ preferencesSaveErrorMessage }}</p>
             <button
               type="button"
               class="contact-button"
               [disabled]="preferencesSaving"
               (click)="preferencesSaveRetryRequested.emit()"
-            >
-              {{ strings.saveRetry }}
-            </button>
+            >{{ strings.saveRetry }}</button>
           </div>
           <button
             type="button"
@@ -225,7 +162,7 @@
       </div>
     </div>
 
-    <footer class="flex items-center justify-between border-t border-white/10 pt-5 text-[0.65rem] uppercase tracking-[0.14em] text-white/25">
+    <footer class="auth-page__footer">
       <span>{{ common.madeWithCuriosity }}</span>
       <span>{{ common.localeLine }}</span>
     </footer>

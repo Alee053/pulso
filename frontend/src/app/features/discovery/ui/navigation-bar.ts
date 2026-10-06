@@ -3,6 +3,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core'
 import { BrandMarkComponent } from '../../../shared/brand-mark/brand-mark'
 import { IconComponent, type IconName } from '../../../shared/icon/icon'
 import type { AppView } from '../domain/startup'
+import { commonStrings } from '../../../shared/strings/common.strings'
 import { navigationStrings } from '../strings/navigation.strings'
 
 interface NavigationItem {
@@ -23,6 +24,9 @@ export class NavigationBarComponent {
   @Input() interestedCount = 0
   @Output() navigated = new EventEmitter<AppView>()
 
+  @Output() exampleRequested = new EventEmitter<void>()
+
+  readonly common = commonStrings
   readonly strings = navigationStrings
 
   readonly navigationItems: readonly NavigationItem[] = [

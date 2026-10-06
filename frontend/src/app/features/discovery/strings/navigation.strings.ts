@@ -1,4 +1,6 @@
 export const navigationStrings = {
+  menuLabel: 'TU ESPACIO',
+  exampleShortLabel: 'Ejemplo',
   discover: 'Descubrir',
   createProject: 'Crear proyecto',
   saved: 'Guardados',

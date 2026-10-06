@@ -1,52 +1,48 @@
-<main class="stacked-view mx-auto w-full max-w-5xl px-5 pb-32 sm:px-8 lg:px-10 lg:pb-16">
-  <div class="mb-9 max-w-xl">
+<main class="page stacked-view">
+  <header class="page-header">
     <span class="eyebrow">{{ strings.eyebrow }}</span>
-    <h1 class="mt-5 text-4xl font-medium tracking-[-0.06em] text-white sm:text-5xl">{{ strings.title }}</h1>
-    <p class="mt-4 text-base leading-7 text-white/50">
-      {{ strings.lead }}
-    </p>
-  </div>
+    <h1 class="page-title">{{ strings.title }}</h1>
+    <p class="page-lead">{{ strings.lead }}</p>
+  </header>
 
   <ng-container *ngIf="isLoading(); else loadedProfile">
-    <section class="glass-panel p-6 sm:p-8" role="status" aria-live="polite">
-      <p class="text-sm text-white/55">{{ strings.loading }}</p>
+    <section class="state-panel" role="status" aria-live="polite">
+      <p>{{ strings.loading }}</p>
     </section>
   </ng-container>
 
   <ng-template #loadedProfile>
-    <section *ngIf="errorMessage() as error; else profileContent" class="glass-panel p-6 sm:p-8" role="alert">
-      <p class="text-sm leading-6 text-white/60">{{ error }}</p>
+    <section *ngIf="errorMessage() as error; else profileContent" class="state-panel" role="alert">
+      <p>{{ error }}</p>
       <button type="button" class="contact-button mt-5" (click)="loadProfile()">{{ common.retry }}</button>
     </section>
   </ng-template>
 
   <ng-template #profileContent>
-    <div class="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
-      <section class="glass-panel p-6 sm:p-8 fade-in-up" aria-labelledby="profile-form-title">
-        <div class="flex items-start justify-between gap-4">
+    <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+      <section class="panel p-5 sm:p-8" aria-labelledby="profile-form-title">
+        <div class="flex flex-wrap items-center justify-between gap-4">
           <div class="flex min-w-0 items-center gap-4">
-            <span class="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-[#a9e1ff] text-lg font-semibold text-[#071521] shadow-lg shadow-sky-950/20">
+            <span class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-sky-200 text-lg font-semibold text-slate-950" aria-hidden="true">
               {{ avatarInitial }}
             </span>
             <div class="min-w-0">
-              <p id="profile-form-title" class="text-lg font-medium tracking-[-0.03em] text-white/90">{{ strings.formTitle }}</p>
-              <p class="mt-1 truncate text-sm text-white/40">{{ auth.session()?.email || profile()?.email }}</p>
+              <h2 id="profile-form-title" class="text-lg font-semibold text-slate-100">{{ strings.formTitle }}</h2>
+              <p class="mt-1 break-all text-sm text-slate-400">{{ auth.session()?.email || profile()?.email }}</p>
             </div>
           </div>
-          <button type="button" class="contact-button shrink-0" [disabled]="isSaving()" (click)="signOut()">
+          <button type="button" class="contact-button" [disabled]="isSaving()" (click)="signOut()">
             {{ common.signOut }}
           </button>
         </div>
+        <p class="mt-5 text-sm leading-6 text-slate-400">{{ strings.formHint }}</p>
 
-        <p class="mt-5 rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2 text-xs leading-5 text-white/40">
-          {{ strings.formHint }}
-        </p>
-
-        <form class="mt-7 flex flex-col gap-4" (submit)="saveProfile($event)">
-          <label class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-white/35">
-            {{ strings.displayName }}
+        <form class="mt-7 flex flex-col gap-5" (submit)="saveProfile($event)" [attr.aria-busy]="isSaving()">
+          <div>
+            <label for="profile-display-name" class="field-label">{{ strings.displayName }}</label>
             <input
-              class="mt-2 block h-11 w-full rounded-xl border border-white/10 bg-black/15 px-3 text-sm font-normal normal-case tracking-normal text-white outline-none transition placeholder:text-white/25 focus:border-[#a9e1ff]/60"
+              id="profile-display-name"
+              class="field-input mt-2"
               type="text"
               name="displayName"
               autocomplete="name"
@@ -54,27 +50,34 @@
               [value]="displayName"
               (input)="displayName = $any($event.target).value"
               required
-              aria-describedby="profile-validation"
+              [attr.aria-invalid]="validationMessage() && !displayName.trim() ? 'true' : null"
+              [attr.aria-describedby]="validationMessage() ? 'profile-validation' : null"
             />
-          </label>
+            <p id="profile-validation" *ngIf="validationMessage() as validation" class="field-error mt-2" role="alert">
+              {{ validation }}
+            </p>
+          </div>
 
-          <label class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-white/35">
-            {{ strings.shortBio }}
+          <div>
+            <label for="profile-short-bio" class="field-label">{{ strings.shortBio }}</label>
             <textarea
-              class="mt-2 block min-h-28 w-full resize-y rounded-xl border border-white/10 bg-black/15 px-3 py-2 text-sm font-normal normal-case tracking-normal text-white outline-none transition placeholder:text-white/25 focus:border-[#a9e1ff]/60"
+              id="profile-short-bio"
+              class="field-input mt-2 min-h-28 resize-y"
               name="shortBio"
+              rows="4"
               [attr.maxlength]="profileContract.shortBioMaxLength"
               [placeholder]="strings.shortBioPlaceholder"
               [value]="shortBio"
               (input)="shortBio = $any($event.target).value"
             ></textarea>
-          </label>
+          </div>
 
-          <div class="grid gap-4 sm:grid-cols-2">
-            <label class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-white/35">
-              {{ strings.city }}
+          <div class="grid gap-5 sm:grid-cols-2">
+            <div>
+              <label for="profile-city" class="field-label">{{ strings.city }}</label>
               <input
-                class="mt-2 block h-11 w-full rounded-xl border border-white/10 bg-black/15 px-3 text-sm font-normal normal-case tracking-normal text-white outline-none transition placeholder:text-white/25 focus:border-[#a9e1ff]/60"
+                id="profile-city"
+                class="field-input mt-2"
                 type="text"
                 name="city"
                 autocomplete="address-level2"
@@ -83,12 +86,12 @@
                 [value]="city"
                 (input)="city = $any($event.target).value"
               />
-            </label>
-
-            <label class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-white/35">
-              {{ strings.department }}
+            </div>
+            <div>
+              <label for="profile-department" class="field-label">{{ strings.department }}</label>
               <input
-                class="mt-2 block h-11 w-full rounded-xl border border-white/10 bg-black/15 px-3 text-sm font-normal normal-case tracking-normal text-white outline-none transition placeholder:text-white/25 focus:border-[#a9e1ff]/60"
+                id="profile-department"
+                class="field-input mt-2"
                 type="text"
                 name="department"
                 autocomplete="address-level1"
@@ -97,200 +100,43 @@
                 [value]="department"
                 (input)="department = $any($event.target).value"
               />
-            </label>
+            </div>
           </div>
 
-          <p id="profile-validation" *ngIf="validationMessage() as validation" class="text-xs leading-5 text-[#ffd0d6]" role="alert">
-            {{ validation }}
-          </p>
-          <p *ngIf="feedbackMessage() as feedback" class="text-xs leading-5 text-[#a9e1ff]" role="status">
+          <p *ngIf="feedbackMessage() as feedback" class="status-message" [class.status-message--error]="feedback !== strings.saved" [attr.role]="feedback === strings.saved ? 'status' : 'alert'">
             {{ feedback }}
           </p>
-
-          <div class="flex justify-end pt-2">
-            <button type="submit" class="solid-button" [disabled]="isSaving()">
+          <div class="flex justify-end border-t border-slate-700/60 pt-5">
+            <button type="submit" class="solid-button w-full sm:w-auto" [disabled]="isSaving()">
               {{ isSaving() ? strings.saving : strings.save }}
             </button>
           </div>
         </form>
       </section>
 
-      <div class="flex flex-col gap-5">
-        <section class="glass-panel p-6 sm:p-8 fade-in-up fade-in-up--delayed">
+      <aside class="flex flex-col gap-6">
+        <section class="panel p-5 sm:p-6" aria-labelledby="profile-interests-title">
           <div class="flex items-center justify-between gap-4">
             <div>
-              <p class="text-xs font-semibold uppercase tracking-[0.13em] text-white/35">{{ strings.selection }}</p>
-              <p class="mt-2 text-sm text-white/65">{{ strings.activeInterests(selectedOptions.length) }}</p>
+              <h2 id="profile-interests-title" class="text-base font-semibold text-slate-100">{{ strings.selection }}</h2>
+              <p class="mt-1 text-sm text-slate-400">{{ strings.activeInterests(selectedOptions.length) }}</p>
             </div>
-            <pulso-icon name="sparkles" [size]="18" class="text-[#a9e1ff]" />
+            <pulso-icon name="sparkles" [size]="20" class="text-sky-300" />
           </div>
           <div class="mt-5 flex flex-wrap gap-2">
             <span *ngFor="let interest of selectedOptions" class="interest-pill">
               <pulso-icon [name]="interest.icon" [size]="14" />
               {{ interest.shortLabel }}
             </span>
-            <span *ngIf="selectedOptions.length === 0" class="text-sm text-white/40">
-              {{ strings.noInterests }}
-            </span>
+            <p *ngIf="selectedOptions.length === 0" class="text-sm leading-6 text-slate-400">{{ strings.noInterests }}</p>
           </div>
         </section>
-
-        <section class="relative flex-1 overflow-hidden rounded-[2rem] border border-[#a9e1ff]/20 bg-[#a9e1ff]/[0.08] p-6 sm:p-8 fade-in-up fade-in-up--more-delayed">
-          <div class="absolute -right-12 -top-12 size-40 rounded-full bg-[#a9e1ff]/15 blur-3xl"></div>
-          <div class="relative">
-            <span class="flex size-10 items-center justify-center rounded-xl border border-[#a9e1ff]/20 bg-[#a9e1ff]/10 text-[#a9e1ff]"><pulso-icon name="sparkles" [size]="18" [strokeWidth]="1.7" /></span>
-            <p class="mt-8 text-xs font-semibold uppercase tracking-[0.13em] text-[#a9e1ff]/65">{{ strings.noteEyebrow }}</p>
-            <h2 class="mt-3 max-w-xs text-2xl font-medium leading-tight tracking-[-0.045em] text-white/90">{{ strings.noteTitle }}</h2>
-            <p class="mt-4 text-sm leading-6 text-white/50">{{ strings.noteLead }}</p>
-          </div>
+        <section class="panel p-5 sm:p-6">
+          <span class="eyebrow">{{ strings.noteEyebrow }}</span>
+          <h2 class="mt-3 text-xl font-semibold leading-snug text-slate-100">{{ strings.noteTitle }}</h2>
+          <p class="mt-3 text-sm leading-6 text-slate-400">{{ strings.noteLead }}</p>
         </section>
-      </div>
+      </aside>
     </div>
   </ng-template>
 </main>
-
-<section class="mt-12 max-w-2xl mx-auto p-6 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10">
-    <h2 class="text-xl font-semibold text-white/90 mb-6">Editar Perfil</h2>
-
-    <!-- Loading -->
-    @if (isLoading()) {
-    <div class="flex items-center justify-center gap-3 p-4 bg-blue-500/10 rounded-md text-blue-300">
-        <div class="w-5 h-5 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin"></div>
-        <span>Cargando perfil...</span>
-    </div>
-    }
-
-    <!-- Error -->
-    @if (errorMessage() && !isLoading()) {
-    <div class="flex items-center gap-3 p-4 bg-red-500/10 rounded-md border border-red-500/20 text-red-300 mb-4">
-        <span>⚠️</span>
-        <span class="flex-1">{{ errorMessage() }}</span>
-        <button (click)="onRetry()" class="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700">Reintentar</button>
-        <button (click)="clearError()" class="text-red-400 hover:text-red-300 text-xl" aria-label="Cerrar error">✕</button>
-    </div>
-    }
-
-    <!-- Success -->
-    @if (successMessage()) {
-    <div class="flex items-center gap-3 p-4 bg-green-500/10 rounded-md border border-green-500/20 text-green-300 mb-4">
-        <span>✅</span>
-        <span>{{ successMessage() }}</span>
-    </div>
-    }
-
-    <!-- Form -->
-    @if (!isLoading()) {
-    <form [formGroup]="profileForm" (ngSubmit)="onSubmit()" novalidate class="space-y-4">
-
-        <!-- Nombre visible -->
-        <div>
-            <label for="visibleName" class="block text-sm font-medium text-white/70">Nombre visible <span class="text-red-400">*</span></label>
-            <input id="visibleName"
-                   type="text"
-                   formControlName="visibleName"
-                   [class.border-red-500]="profileForm.get('visibleName')?.invalid && profileForm.get('visibleName')?.touched"
-                   class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                   placeholder="Tu nombre visible"
-                   maxlength="50">
-            <small class="block text-xs text-white/40 mt-1">Entre 2 y 50 caracteres</small>
-            @if (profileForm.get('visibleName')?.invalid && profileForm.get('visibleName')?.touched) {
-            <div class="mt-1 text-sm text-red-400">{{ getErrorMessage('visibleName') }}</div>
-            }
-        </div>
-
-        <!-- Biografía -->
-        <div>
-            <label for="bio" class="block text-sm font-medium text-white/70">Biografía breve</label>
-            <textarea id="bio"
-                      formControlName="bio"
-                      [class.border-red-500]="profileForm.get('bio')?.invalid && profileForm.get('bio')?.touched"
-                      class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
-                      placeholder="Cuéntanos sobre ti"
-                      rows="3"
-                      maxlength="200"></textarea>
-            <small class="block text-xs text-white/40 mt-1">{{ 200 - (profileForm.get('bio')?.value?.length || 0) }} caracteres restantes</small>
-            @if (profileForm.get('bio')?.invalid && profileForm.get('bio')?.touched) {
-            <div class="mt-1 text-sm text-red-400">{{ getErrorMessage('bio') }}</div>
-            }
-        </div>
-
-        <!-- Ciudad -->
-        <div>
-            <label for="city" class="block text-sm font-medium text-white/70">Ciudad <span class="text-red-400">*</span></label>
-            <input id="city"
-                   type="text"
-                   formControlName="city"
-                   [class.border-red-500]="profileForm.get('city')?.invalid && profileForm.get('city')?.touched"
-                   class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                   placeholder="Tu ciudad"
-                   maxlength="100">
-            @if (profileForm.get('city')?.invalid && profileForm.get('city')?.touched) {
-            <div class="mt-1 text-sm text-red-400">{{ getErrorMessage('city') }}</div>
-            }
-        </div>
-
-        <!-- Departamento -->
-        <div>
-            <label for="department" class="block text-sm font-medium text-white/70">Departamento <span class="text-red-400">*</span></label>
-            <select id="department"
-                    formControlName="department"
-                    [class.border-red-500]="profileForm.get('department')?.invalid && profileForm.get('department')?.touched"
-                    class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none">
-                <option value="" class="text-gray-700">Selecciona un departamento</option>
-                <option value="Amazonas">Amazonas</option>
-                <option value="Antioquia">Antioquia</option>
-                <option value="Arauca">Arauca</option>
-                <option value="Atlántico">Atlántico</option>
-                <option value="Bolívar">Bolívar</option>
-                <option value="Boyacá">Boyacá</option>
-                <option value="Caldas">Caldas</option>
-                <option value="Caquetá">Caquetá</option>
-                <option value="Casanare">Casanare</option>
-                <option value="Cauca">Cauca</option>
-                <option value="Cesar">Cesar</option>
-                <option value="Chocó">Chocó</option>
-                <option value="Córdoba">Córdoba</option>
-                <option value="Cundinamarca">Cundinamarca</option>
-                <option value="Guainía">Guainía</option>
-                <option value="Guaviare">Guaviare</option>
-                <option value="Huila">Huila</option>
-                <option value="La Guajira">La Guajira</option>
-                <option value="Magdalena">Magdalena</option>
-                <option value="Meta">Meta</option>
-                <option value="Nariño">Nariño</option>
-                <option value="Norte de Santander">Norte de Santander</option>
-                <option value="Putumayo">Putumayo</option>
-                <option value="Quindío">Quindío</option>
-                <option value="Risaralda">Risaralda</option>
-                <option value="San Andrés y Providencia">San Andrés y Providencia</option>
-                <option value="Santander">Santander</option>
-                <option value="Sucre">Sucre</option>
-                <option value="Tolima">Tolima</option>
-                <option value="Valle del Cauca">Valle del Cauca</option>
-                <option value="Vaupés">Vaupés</option>
-                <option value="Vichada">Vichada</option>
-            </select>
-            @if (profileForm.get('department')?.invalid && profileForm.get('department')?.touched) {
-            <div class="mt-1 text-sm text-red-400">{{ getErrorMessage('department') }}</div>
-            }
-        </div>
-
-        <!-- Botón Guardar -->
-        <div class="pt-4 border-t border-white/10">
-            <button type="submit"
-                    [disabled]="profileForm.invalid || isSaving()"
-                    class="w-full px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium disabled:opacity-60 disabled:cursor-not-allowed">
-                @if (!isSaving()) {
-                <span>Guardar cambios</span>
-                }
-                @if (isSaving()) {
-                <span class="flex items-center justify-center gap-2">
-                    <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                    Guardando...
-                </span>
-                }
-            </button>
-        </div>
-    </form>
-    }
-</section>

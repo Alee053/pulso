@@ -93,6 +93,16 @@ These are deep-module seams: the caller-facing surface is small, while the modul
 - Keep component templates focused on composition and user intent. Move non-trivial policy into a class, application module, or pure domain function.
 - Use route-level lazy loading once feature routes exist and the feature weight justifies it.
 
+### Visual system
+
+- `frontend/src/index.css` owns semantic color, spacing, radius, and navigation tokens, plus stable presentation primitives: `page`, `page-header`, `panel`, `field-*`, `state-panel`, and button styles.
+- Feature templates compose these primitives with Tailwind layout utilities. Feature state, events, validators, and data access remain in their existing modules.
+- Dark navy/slate surfaces and sky-blue actions carry the Pulso identity. Essential text uses readable opaque colors; imagery sits beside or behind a controlled overlay rather than determining text contrast.
+- Mobile discovery retains gestures on the cover and offers the same labeled actions above the bottom navigation; the card text allows vertical panning and pinch zoom. Long pages use normal document scrolling and reserve room for these controls and device safe areas.
+- Project dialogs scroll as one surface, keep dismissal reachable, contain keyboard focus, and restore the opener on close. Nonessential motion is disabled throughout when reduced motion is requested.
+
+The design research and scope are recorded in [UI/UX refactor research](../research/ui-ux-refactor.md).
+
 ### Naming and files
 
 - Use lower-kebab-case filenames for Angular code.

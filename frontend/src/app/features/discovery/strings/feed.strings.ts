@@ -1,7 +1,18 @@
 export const feedStrings = {
-  loadingEyebrow: 'CARGANDO DISCOVERY',
+  pageEyebrow: 'EL ECOSISTEMA, MÁS CERCA',
+  pageTitle: 'Ideas con pulso.',
+  pageLead: 'Descubre proyectos, conoce sus ideas y guarda los que te inspiran.',
+  feedAria: 'Proyectos por descubrir',
+  actionsAria: 'Acciones del proyecto',
+  contextAria: 'Tu exploración',
+  contextTitle: 'Una mirada propia',
+  contextLead: 'Tus intereses orientan los proyectos que descubres.',
+  actionsTitle: 'Explora a tu ritmo',
+  actionsLead: 'Pasa al siguiente proyecto, guárdalo para después o expresa tu interés. Abre su perfil para conocer más.',
+  unsaveAria: 'Quitar de guardados (S)',
+  loadingEyebrow: 'PREPARANDO TU EXPLORACIÓN',
   loadingTitle: 'Buscando proyectos publicados.',
-  loadingLead: 'Estamos consultando el catálogo real de Pulso.',
+  loadingLead: 'Estamos preparando los proyectos publicados para ti.',
   errorEyebrow: 'NO SE PUDO CARGAR',
   errorTitle: 'El catálogo no está disponible.',
   catalogFailed:
@@ -24,7 +35,7 @@ export const feedStrings = {
   doneEyebrow: 'PRIMERA VUELTA COMPLETA',
   doneTitle: 'Ya viste todo el pulso.',
   doneLead:
-    'Tu selección quedó guardada. ¿Quieres explorar con una mirada nueva?',
+    'Tus guardados e intereses siguen en esta sesión. Puedes volver a explorar cuando quieras.',
   restart: 'Volver a explorar',
   toastSaved: 'Guardado en tu selección',
   toastRemoved: 'Quitado de tus guardados',
@@ -32,7 +43,7 @@ export const feedStrings = {
 
 export const cardStrings = {
   openAria: (name: string): string => `Ver perfil de ${name}`,
-  saveAria: 'Guardar startup',
+  saveAria: 'Guardar proyecto',
   unsaveAria: 'Quitar de guardados',
   openProfile: 'Ver perfil completo',
   descriptionFallback: (city: string, sector: string): string =>

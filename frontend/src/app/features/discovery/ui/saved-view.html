@@ -1,55 +1,83 @@
-<main class="stacked-view mx-auto w-full max-w-5xl px-5 pb-32 sm:px-8 lg:px-10 lg:pb-16">
-  <div class="mb-9 max-w-xl">
+<main class="page stacked-view">
+  <header class="page-header">
     <span class="eyebrow">{{ strings.eyebrow }}</span>
-    <h1 class="mt-5 text-4xl font-medium tracking-[-0.06em] text-white sm:text-5xl">{{ strings.title }}</h1>
-    <p class="mt-4 text-base leading-7 text-white/50">{{ strings.lead }}</p>
-  </div>
+    <h1 class="page-title">{{ strings.title }}</h1>
+    <p class="page-lead">{{ strings.lead }}</p>
+  </header>
 
   <ng-container *ngIf="savedStartups.length > 0 || interestedStartups.length > 0; else emptySavedState">
-    <div class="grid gap-10 lg:grid-cols-2 lg:gap-8">
-      <section>
-        <div class="mb-4 flex items-center justify-between">
-          <div class="flex items-center gap-2.5"><pulso-icon name="bookmark" [size]="16" class="text-[#a9e1ff]" /><h2 class="text-sm font-semibold uppercase tracking-[0.13em] text-white/65">{{ strings.savedHeading }}</h2></div>
-          <span class="text-xs text-white/30">{{ savedStartups.length }}</span>
+    <div class="grid items-start gap-8 xl:grid-cols-2">
+      <section aria-labelledby="saved-heading">
+        <div class="mb-4 flex items-center justify-between gap-4">
+          <h2 id="saved-heading" class="flex items-center gap-3 text-base font-semibold text-slate-100">
+            <pulso-icon name="bookmark" [size]="19" class="text-sky-300" />
+            {{ strings.savedHeading }}
+            <span class="rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-300">{{ savedStartups.length }}</span>
+          </h2>
         </div>
         <div *ngIf="savedStartups.length > 0; else noSaved" class="space-y-3">
-          <button *ngFor="let startup of savedStartups" type="button" class="group flex w-full flex-col gap-4 rounded-[1.65rem] border border-white/10 bg-white/[0.045] p-3 text-left transition hover:border-white/20 hover:bg-white/[0.075] sm:flex-row sm:items-center sm:p-4" (click)="startupSelected.emit(startup)">
+          <button *ngFor="let startup of savedStartups" type="button" class="collection-card group" (click)="startupSelected.emit(startup)">
             <pulso-startup-thumb [startup]="startup" />
-            <span class="min-w-0 flex-1 px-1 pb-1 sm:px-0 sm:pb-0">
-              <span class="flex items-start justify-between gap-3"><span><span class="block text-base font-medium tracking-[-0.02em] text-white/90">{{ startup.name }}</span><span class="mt-1 block text-xs text-white/40">{{ startup.city }} · {{ startup.sector }}</span></span><pulso-icon name="chevron-right" [size]="17" class="mt-1 shrink-0 text-white/30 transition group-hover:translate-x-0.5 group-hover:text-white/70" /></span>
-              <span class="mt-4 block text-sm leading-6 text-white/60">{{ startup.pitch }}</span>
-              <span class="mt-4 flex flex-wrap gap-1.5"><span *ngFor="let badge of startup.badges | slice:0:2" class="mini-badge">{{ badge }}</span></span>
+            <span class="collection-card__content">
+              <span class="flex items-start justify-between gap-3">
+                <span class="min-w-0">
+                  <span class="collection-card__title">{{ startup.name }}</span>
+                  <span class="collection-card__meta">{{ startup.city }} · {{ startup.sector }}</span>
+                </span>
+                <pulso-icon name="chevron-right" [size]="18" class="mt-1 shrink-0 text-slate-400" />
+              </span>
+              <span class="collection-card__pitch">{{ startup.pitch }}</span>
+              <span class="mt-3 flex flex-wrap gap-1.5">
+                <span *ngFor="let badge of startup.badges | slice:0:2" class="mini-badge">{{ badge }}</span>
+              </span>
             </span>
           </button>
         </div>
-        <ng-template #noSaved><p class="rounded-2xl border border-dashed border-white/10 px-5 py-8 text-sm text-white/35">{{ strings.noneSaved }}</p></ng-template>
+        <ng-template #noSaved>
+          <p class="state-panel text-sm">{{ strings.noneSaved }}</p>
+        </ng-template>
       </section>
 
-      <section>
-        <div class="mb-4 flex items-center justify-between">
-          <div class="flex items-center gap-2.5"><pulso-icon name="heart" [size]="16" class="text-[#efb4c6]" /><h2 class="text-sm font-semibold uppercase tracking-[0.13em] text-white/65">{{ strings.interestedHeading }}</h2></div>
-          <span class="text-xs text-white/30">{{ interestedStartups.length }}</span>
+      <section aria-labelledby="interested-heading">
+        <div class="mb-4 flex items-center justify-between gap-4">
+          <h2 id="interested-heading" class="flex items-center gap-3 text-base font-semibold text-slate-100">
+            <pulso-icon name="heart" [size]="19" class="text-rose-300" />
+            {{ strings.interestedHeading }}
+            <span class="rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-300">{{ interestedStartups.length }}</span>
+          </h2>
         </div>
         <div *ngIf="interestedStartups.length > 0; else noInterested" class="space-y-3">
-          <button *ngFor="let startup of interestedStartups" type="button" class="group flex w-full flex-col gap-4 rounded-[1.65rem] border border-white/10 bg-white/[0.045] p-3 text-left transition hover:border-white/20 hover:bg-white/[0.075] sm:flex-row sm:items-center sm:p-4" (click)="startupSelected.emit(startup)">
+          <button *ngFor="let startup of interestedStartups" type="button" class="collection-card group" (click)="startupSelected.emit(startup)">
             <pulso-startup-thumb [startup]="startup" />
-            <span class="min-w-0 flex-1 px-1 pb-1 sm:px-0 sm:pb-0">
-              <span class="flex items-start justify-between gap-3"><span><span class="block text-base font-medium tracking-[-0.02em] text-white/90">{{ startup.name }}</span><span class="mt-1 block text-xs text-white/40">{{ startup.city }} · {{ startup.sector }}</span></span><pulso-icon name="chevron-right" [size]="17" class="mt-1 shrink-0 text-white/30 transition group-hover:translate-x-0.5 group-hover:text-white/70" /></span>
-              <span class="mt-4 block text-sm leading-6 text-white/60">{{ startup.pitch }}</span>
-              <span class="mt-4 flex flex-wrap gap-1.5"><span *ngFor="let badge of startup.badges | slice:0:2" class="mini-badge">{{ badge }}</span></span>
+            <span class="collection-card__content">
+              <span class="flex items-start justify-between gap-3">
+                <span class="min-w-0">
+                  <span class="collection-card__title">{{ startup.name }}</span>
+                  <span class="collection-card__meta">{{ startup.city }} · {{ startup.sector }}</span>
+                </span>
+                <pulso-icon name="chevron-right" [size]="18" class="mt-1 shrink-0 text-slate-400" />
+              </span>
+              <span class="collection-card__pitch">{{ startup.pitch }}</span>
+              <span class="mt-3 flex flex-wrap gap-1.5">
+                <span *ngFor="let badge of startup.badges | slice:0:2" class="mini-badge">{{ badge }}</span>
+              </span>
             </span>
           </button>
         </div>
-        <ng-template #noInterested><p class="rounded-2xl border border-dashed border-white/10 px-5 py-8 text-sm text-white/35">{{ strings.noneInterested }}</p></ng-template>
+        <ng-template #noInterested>
+          <p class="state-panel text-sm">{{ strings.noneInterested }}</p>
+        </ng-template>
       </section>
     </div>
   </ng-container>
 
   <ng-template #emptySavedState>
-    <div class="flex flex-col items-center justify-center rounded-[1.75rem] border border-dashed border-white/12 bg-white/[0.025] px-6 py-16 text-center">
-      <span class="flex size-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-[#a9e1ff]"><pulso-icon name="bookmark" [size]="21" [strokeWidth]="1.6" /></span>
-      <h3 class="mt-5 text-base font-medium text-white/85">{{ strings.emptyTitle }}</h3>
-      <p class="mt-2 max-w-xs text-sm leading-6 text-white/40">{{ strings.emptyLead }}</p>
-    </div>
+    <section class="state-panel flex flex-col items-center py-12 text-center">
+      <span class="flex size-12 items-center justify-center rounded-2xl border border-slate-700 bg-slate-800 text-sky-300">
+        <pulso-icon name="bookmark" [size]="22" />
+      </span>
+      <h2 class="mt-5 text-lg font-semibold text-slate-100">{{ strings.emptyTitle }}</h2>
+      <p class="mt-2 max-w-sm text-sm leading-6 text-slate-400">{{ strings.emptyLead }}</p>
+    </section>
   </ng-template>
 </main>

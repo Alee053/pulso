@@ -1,35 +1,29 @@
-<div class="auth-panel__perspective">
-  <div
-    class="auth-panel__flip-surface"
-    [class.auth-panel__flip-surface--forward]="flipDirection() === 'forward'"
-    [class.auth-panel__flip-surface--backward]="flipDirection() === 'backward'"
-  >
-    <section class="glass-panel w-full max-w-md p-6 sm:p-8" aria-labelledby="auth-panel-title">
+<section class="panel w-full p-6 sm:p-8" aria-labelledby="auth-panel-title" [attr.aria-busy]="auth.isLoading() || isBusy()">
   <div class="min-w-0">
-        <span class="eyebrow">
-          {{ auth.session() ? strings.eyebrowSession : mode() === 'sign-in' ? strings.eyebrowSignIn : strings.eyebrowSignUp }}
-        </span>
-        <h2 id="auth-panel-title" class="mt-3 text-2xl font-medium tracking-[-0.04em] text-white/90">
-          {{ auth.session() ? strings.titleSession : mode() === 'sign-in' ? strings.titleSignIn : strings.titleSignUp }}
-        </h2>
-        <p class="mt-3 text-sm leading-6 text-white/45">
-          {{ auth.session() ? strings.leadSession : mode() === 'sign-in' ? strings.leadSignIn : strings.leadSignUp }}
+    <span class="eyebrow">
+      {{ auth.session() ? strings.eyebrowSession : mode() === 'sign-in' ? strings.eyebrowSignIn : strings.eyebrowSignUp }}
+    </span>
+    <h2 id="auth-panel-title" class="mt-3 text-2xl font-semibold tracking-tight text-slate-50">
+      {{ auth.session() ? strings.titleSession : mode() === 'sign-in' ? strings.titleSignIn : strings.titleSignUp }}
+    </h2>
+    <p class="mt-3 text-sm leading-6 text-slate-400">
+      {{ auth.session() ? strings.leadSession : mode() === 'sign-in' ? strings.leadSignIn : strings.leadSignUp }}
     </p>
   </div>
 
   <ng-container *ngIf="auth.isLoading(); else loadedAuth">
-    <p class="mt-8 text-xs text-white/45" role="status">{{ strings.checkingAccess }}</p>
+    <p class="status-message mt-6" role="status">{{ strings.checkingAccess }}</p>
   </ng-container>
 
   <ng-template #loadedAuth>
     <ng-container *ngIf="auth.session() as session; else signedOut">
-      <div class="mt-8 flex flex-col gap-4">
-        <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-          <p class="text-xs font-semibold uppercase tracking-[0.13em] text-white/35">{{ strings.activeSession }}</p>
-          <p class="mt-2 truncate text-sm text-white/70">{{ session.email || session.id }}</p>
+      <div class="mt-6 flex flex-col gap-4">
+        <div class="rounded-xl border border-slate-700 bg-slate-950/40 p-4">
+          <p class="field-label">{{ strings.activeSession }}</p>
+          <p class="mt-2 break-all text-sm text-slate-300">{{ session.email || session.id }}</p>
         </div>
         <button type="button" class="contact-button self-start" [disabled]="isBusy()" (click)="signOut()">
-          {{ common.signOut }}
+          {{ isBusy() ? strings.signingOut : common.signOut }}
         </button>
       </div>
     </ng-container>
@@ -37,51 +31,63 @@
 
   <ng-template #signedOut>
     <ng-container *ngIf="auth.isConfigured; else missingConfiguration">
-      <form class="mt-8 flex w-full flex-col gap-4" (submit)="submit($event)">
-        <label class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-white/35">
-          {{ strings.emailLabel }}
+      <form class="mt-6 flex w-full flex-col gap-5" (submit)="submit($event)">
+        <div>
+          <label class="field-label" for="auth-email">{{ strings.emailLabel }}</label>
           <input
-            class="mt-2 block h-11 w-full rounded-xl border border-white/10 bg-black/15 px-3 text-sm font-normal normal-case tracking-normal text-white outline-none transition placeholder:text-white/25 focus:border-[#a9e1ff]/60"
+            id="auth-email"
+            class="field-input mt-2"
             type="email"
             name="email"
             autocomplete="email"
             [placeholder]="strings.emailPlaceholder"
             [value]="email"
             (input)="email = $any($event.target).value"
+            [attr.aria-describedby]="messageIsError() ? 'auth-feedback' : null"
             required
           />
-        </label>
-        <label class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-white/35">
-          {{ strings.passwordLabel }}
+        </div>
+        <div>
+          <label class="field-label" for="auth-password">{{ strings.passwordLabel }}</label>
           <input
-            class="mt-2 block h-11 w-full rounded-xl border border-white/10 bg-black/15 px-3 text-sm font-normal normal-case tracking-normal text-white outline-none transition placeholder:text-white/25 focus:border-[#a9e1ff]/60"
+            id="auth-password"
+            class="field-input mt-2"
             type="password"
             name="password"
-            autocomplete="current-password"
-            [placeholder]="strings.passwordPlaceholder"
+            [attr.autocomplete]="mode() === 'sign-up' ? 'new-password' : 'current-password'"
+            [placeholder]="mode() === 'sign-up' ? strings.passwordPlaceholder : strings.signInPasswordPlaceholder"
             [value]="password"
             (input)="password = $any($event.target).value"
+            [attr.aria-describedby]="messageIsError() ? 'auth-password-hint auth-feedback' : 'auth-password-hint'"
             required
             [attr.minlength]="strings.passwordMinLength"
           />
-        </label>
-        <button type="submit" class="solid-button mt-2 w-full" [disabled]="isBusy()">
-          {{ mode() === 'sign-in' ? strings.submitSignIn : strings.submitSignUp }}
+          <p id="auth-password-hint" class="field-hint mt-2">{{ strings.passwordHint }}</p>
+        </div>
+        <button type="submit" class="solid-button mt-1 w-full" [disabled]="isBusy()">
+          {{ isBusy() ? (mode() === 'sign-in' ? strings.signingIn : strings.signingUp) : (mode() === 'sign-in' ? strings.submitSignIn : strings.submitSignUp) }}
         </button>
-        <button type="button" class="contact-button w-full justify-center" [disabled]="isBusy()" (click)="toggleMode()">
-          {{ mode() === 'sign-in' ? strings.toggleToSignUp : strings.toggleToSignIn }}
-        </button>
+        <div class="border-t border-slate-700/70 pt-5">
+          <p class="mb-3 text-center text-sm text-slate-400">
+            {{ mode() === 'sign-in' ? strings.noAccount : strings.hasAccount }}
+          </p>
+          <button type="button" class="contact-button w-full justify-center" [disabled]="isBusy()" (click)="toggleMode()">
+            {{ mode() === 'sign-in' ? strings.toggleToSignUp : strings.toggleToSignIn }}
+          </button>
+        </div>
       </form>
     </ng-container>
   </ng-template>
 
   <ng-template #missingConfiguration>
-    <p class="mt-8 text-xs leading-5 text-white/40" role="status">
-      {{ strings.missingConfig }}
-    </p>
+    <p class="status-message status-message--error mt-6" role="status">{{ strings.missingConfig }}</p>
   </ng-template>
 
-  <p *ngIf="message()" class="mt-5 text-xs leading-5 text-[#a9e1ff]" role="status">{{ message() }}</p>
-    </section>
-  </div>
-</div>
+  <p
+    *ngIf="message()"
+    id="auth-feedback"
+    class="status-message mt-5"
+    [class.status-message--error]="messageIsError()"
+    [attr.role]="messageIsError() ? 'alert' : 'status'"
+  >{{ message() }}</p>
+</section>

@@ -15,6 +15,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -45,9 +46,11 @@ class ProjectLifecycleControllerTest {
     private static final Instant ARCHIVED_AT = Instant.parse("2026-09-20T12:00:00Z");
     private static final Clock FIXED_CLOCK = Clock.fixed(ARCHIVED_AT, ZoneOffset.UTC);
 
-    @Test
-    void returnsOnlyTheMinimalPublicationRequestResultForTheJwtProfile() throws Exception {
-        CapturingRepository repository = repository("OWNER", "ACTIVE", "DRAFT");
+    @ParameterizedTest
+    @ValueSource(strings = {"OWNER", "ADMIN"})
+    void returnsOnlyTheMinimalPublicationRequestResultForAnActiveOwnerOrAdmin(String role)
+            throws Exception {
+        CapturingRepository repository = repository(role, "ACTIVE", "DRAFT");
 
         mockMvc(repository).perform(post(path("publication-request")))
                 .andExpect(status().isOk())
@@ -61,6 +64,36 @@ class ProjectLifecycleControllerTest {
         assertThat(repository.requestedProjectId).isEqualTo(PROJECT_ID);
         assertThat(repository.requestedProfileId).isEqualTo(PROFILE_ID);
         assertThat(repository.updatedState.status()).isEqualTo("PENDING_REVIEW");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"PENDING_REVIEW", "PUBLISHED", "REJECTED", "ARCHIVED", "SUSPENDED"})
+    void returnsTheDocumentedErrorWhenPublicationIsRequestedOutsideDraft(String currentStatus)
+            throws Exception {
+        CapturingRepository repository = repository("OWNER", "ACTIVE", currentStatus);
+
+        mockMvc(repository).perform(post(path("publication-request")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Invalid project"))
+                .andExpect(jsonPath("$.detail")
+                        .value("cannot request publication from " + currentStatus + "."));
+
+        assertThat(repository.updatedState).isNull();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"ARCHIVED", "SUSPENDED"})
+    void returnsTheDocumentedErrorWhenAnArchivedOrSuspendedProjectIsArchivedAgain(
+            String currentStatus) throws Exception {
+        CapturingRepository repository = repository("OWNER", "ACTIVE", currentStatus);
+
+        mockMvc(repository).perform(post(path("archive")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Invalid project"))
+                .andExpect(jsonPath("$.detail")
+                        .value("cannot archive from " + currentStatus + "."));
+
+        assertThat(repository.updatedState).isNull();
     }
 
     @Test

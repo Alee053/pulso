@@ -30,6 +30,8 @@ class JdbcProjectLifecycleRepositoryTest {
             "33333333-3333-3333-3333-333333333333");
     private static final UUID OTHER_PROJECT_ID = UUID.fromString(
             "44444444-4444-4444-4444-444444444444");
+    private static final UUID MISSING_PROJECT_ID = UUID.fromString(
+            "cccccccc-cccc-cccc-cccc-cccccccccccc");
     private static final UUID OWNER_ID = UUID.fromString(
             "11111111-1111-1111-1111-111111111111");
     private static final UUID ADMIN_ID = UUID.fromString(
@@ -129,6 +131,11 @@ class JdbcProjectLifecycleRepositoryTest {
     void doesNotResolveMembershipFromAnotherProjectOrAnExternalProfile() {
         assertThat(repository.findForActor(OTHER_PROJECT_ID, OWNER_ID)).isEmpty();
         assertThat(repository.findForActor(PROJECT_ID, EXTERNAL_ID)).isEmpty();
+    }
+
+    @Test
+    void doesNotResolveAMembershipForANonexistentProject() {
+        assertThat(repository.findForActor(MISSING_PROJECT_ID, OWNER_ID)).isEmpty();
     }
 
     @ParameterizedTest

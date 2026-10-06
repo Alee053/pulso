@@ -1,5 +1,7 @@
 package com.pulso.backend.discovery.api;
 
+import java.util.Map;
+
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -9,6 +11,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.pulso.backend.config.ApiMessages;
+import com.pulso.backend.ops.logging.ApplicationLogger;
+import com.pulso.backend.ops.logging.LogContext;
 import com.pulso.backend.preference.domain.OnboardingPreferencesValidationException;
 import com.pulso.backend.profile.application.InvalidAuthenticatedSubjectException;
 import com.pulso.backend.profile.application.ProfileNotFoundException;
@@ -223,7 +227,12 @@ public class ApiExceptionHandler {
     }
 
     @ExceptionHandler(DataAccessException.class)
-    ProblemDetail dataStoreUnavailable() {
+    ProblemDetail dataStoreUnavailable(DataAccessException exception) {
+        ApplicationLogger.error(
+                new LogContext("api", "dataStoreUnavailable", null, null),
+                "A request failed while accessing the data store",
+                Map.of("httpStatus", HttpStatus.SERVICE_UNAVAILABLE.value()),
+                exception);
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.SERVICE_UNAVAILABLE,
                 ApiMessages.DATASTORE_UNAVAILABLE_DETAIL);

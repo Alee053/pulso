@@ -12,7 +12,10 @@
       <div class="relative p-5 sm:p-7">
         <span class="project-stage">{{ startup.stage }}</span>
         <h2 id="startup-detail-title" class="detail-modal__title mt-4">{{ startup.name }}</h2>
-        <div *ngIf="startup.city" class="mt-3 inline-flex items-center gap-1.5 text-sm text-[var(--color-muted)]"><pulso-icon name="map-pin" [size]="15" />{{ startup.city }}</div>
+        <div *ngIf="startup.city || startup.department" class="mt-3 inline-flex items-center gap-1.5 text-sm text-[var(--color-muted)]">
+          <pulso-icon name="map-pin" [size]="15" />
+          <span>{{ startup.city || startup.department }}<ng-container *ngIf="startup.city && startup.department && startup.department !== startup.city"> · {{ startup.department }}</ng-container></span>
+        </div>
       </div>
     </div>
     <div class="detail-modal__body">
@@ -20,6 +23,10 @@
         <div class="min-w-0">
           <p class="text-lg font-medium leading-7 text-[var(--color-text)]">{{ startup.pitch }}</p>
           <p *ngIf="startup.description" class="mt-4 whitespace-pre-line text-base leading-7 text-[var(--color-muted)]">{{ startup.description }}</p>
+          <section *ngIf="startup.valueProposition" class="mt-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-accent-surface)] p-5" aria-labelledby="project-value-title">
+            <h3 id="project-value-title" class="text-sm font-semibold text-[var(--color-text)]">{{ strings.valueProposition }}</h3>
+            <p class="mt-2 text-sm leading-6 text-[var(--color-muted)]">{{ startup.valueProposition }}</p>
+          </section>
           <div *ngIf="startup.badges.length > 0" class="mt-5 flex flex-wrap gap-2"><span *ngFor="let badge of startup.badges" class="mini-badge">{{ badge }}</span></div>
           <dl *ngIf="startup.metrics.length > 0" class="mt-7 grid gap-3 sm:grid-cols-3">
             <div *ngFor="let metric of startup.metrics" class="metric-card"><dt class="text-sm text-[var(--color-muted)]">{{ metric.label }}</dt><dd class="mt-2 text-lg font-semibold text-[var(--color-text)]">{{ metric.value }}</dd></div>
@@ -30,7 +37,7 @@
             <div class="mt-5 grid gap-4 sm:grid-cols-2">
               <div *ngFor="let founder of startup.founders" class="flex min-w-0 items-center gap-3">
                 <span class="flex size-11 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] text-sm font-semibold text-[var(--color-accent)]">{{ founder.initials }}</span>
-                <span class="min-w-0"><span class="block text-sm font-semibold text-[var(--color-text)]">{{ founder.name }}</span><span class="mt-1 block text-sm text-[var(--color-muted)]">{{ founder.role }}</span></span>
+                <span class="min-w-0"><span class="block text-sm font-semibold text-[var(--color-text)]">{{ founder.name }}</span><span class="mt-1 flex flex-wrap items-center gap-2 text-sm text-[var(--color-muted)]">{{ founder.role }}<span *ngIf="founder.isFeatured" class="mini-badge">{{ strings.featuredMember }}</span></span></span>
               </div>
             </div>
           </section>
@@ -53,7 +60,29 @@
           <span *ngIf="startup.teamSize" class="inline-flex items-center gap-2"><pulso-icon name="users-round" [size]="15" />{{ startup.teamSize }}</span>
         </div>
         <div class="flex min-w-0 flex-wrap items-center gap-2">
-          <a *ngIf="startup.website" [href]="startup.website" class="modal-link max-w-full break-all" target="_blank" rel="noreferrer"><pulso-icon name="external-link" [size]="15" class="shrink-0" />{{ startup.website }}</a>
+          <nav *ngIf="startup.publicLinks?.length; else legacyWebsite"
+               class="flex min-w-0 flex-wrap items-center gap-2"
+               [attr.aria-label]="strings.publicLinksAria">
+            <a *ngFor="let link of startup.publicLinks"
+               [href]="link.url"
+               class="modal-link max-w-full break-all"
+               target="_blank"
+               rel="noopener noreferrer"
+               [attr.aria-label]="(link.label || link.type) + ' (se abre en una pestaña nueva)'">
+              <pulso-icon name="external-link" [size]="15" class="shrink-0" />
+              <span>{{ link.label || link.type }}</span>
+            </a>
+          </nav>
+          <ng-template #legacyWebsite>
+            <a *ngIf="startup.website"
+               [href]="startup.website"
+               class="modal-link max-w-full break-all"
+               target="_blank"
+               rel="noopener noreferrer"
+               [attr.aria-label]="startup.website + ' (se abre en una pestaña nueva)'">
+              <pulso-icon name="external-link" [size]="15" class="shrink-0" />{{ startup.website }}
+            </a>
+          </ng-template>
           <button type="button" class="contact-button" (click)="contactStarted = true"><pulso-icon [name]="contactStarted ? 'check' : 'message-circle'" [size]="15" />{{ contactStarted ? strings.contactDone : strings.contact }}</button>
         </div>
       </footer>

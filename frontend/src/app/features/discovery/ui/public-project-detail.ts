@@ -136,8 +136,8 @@ export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterVie
                     let retryable = true
 
                     if (err.status === 404) {
-                        message = 'El proyecto no está disponible'
-                        retryable = false
+                        this.state.set({ status: 'empty' })
+                        return
                     } else if (err.status === 400) {
                         message = 'Referencia de proyecto inválida'
                         retryable = false
@@ -174,9 +174,11 @@ export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterVie
             name: project.name,
             logoMark: project.name.charAt(0).toUpperCase(),
             city: project.city ?? '',
+            department: project.department,
             sector: project.sector.name,
             pitch: project.tagline,
             description: project.description ?? '',
+            valueProposition: project.valueProposition,
             stage: project.stage,
             tags: project.tags.map((t) => t.name),
             badges: project.tags.map((t) => t.name),
@@ -192,6 +194,7 @@ export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterVie
                     .join('')
                     .toUpperCase()
                     .slice(0, 2),
+                isFeatured: m.isFeatured,
             })),
             lookingFor: [],
             founded: '',
@@ -201,6 +204,7 @@ export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterVie
             socials: project.externalLinks
                 .filter((l) => l.type !== 'WEBSITE')
                 .map((l) => l.url),
+            publicLinks: project.externalLinks,
             recommendation: '',
             metrics: [],
             popularity: 0,

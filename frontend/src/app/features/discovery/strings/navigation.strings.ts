@@ -3,6 +3,7 @@ export const navigationStrings = {
   exampleShortLabel: 'Ejemplo',
   discover: 'Descubrir',
   createProject: 'Crear proyecto',
+  teams: 'Mis equipos',
   saved: 'Guardados',
   profile: 'Perfil',
   aria: 'Navegación principal',

@@ -50,6 +50,11 @@ pulso:
     default-limit: ${PULSO_DISCOVERY_DEFAULT_LIMIT:20}
     max-limit: ${PULSO_DISCOVERY_MAX_LIMIT:50}
     max-offset: ${PULSO_DISCOVERY_MAX_OFFSET:100000}
+  current-projects:
+    default-offset: 0
+    default-limit: 20
+    max-limit: 50
+    max-offset: 100000
   catalogs:
     max-items-per-catalog: ${PULSO_CATALOGS_MAX_ITEMS_PER_CATALOG:500}
   preferences:

@@ -1,3 +1,6 @@
+<pulso-invitation-acceptance *ngIf="invitation.requested(); else regularApplication" />
+
+<ng-template #regularApplication>
 <ng-container *ngIf="auth.isLoading(); else resolvedSession">
     <pulso-auth-page />
 </ng-container>
@@ -85,6 +88,8 @@
                                            [catalogsLoaded]="session.hasLoadedReferenceCatalogs()"
                                            [catalogsErrorMessage]="session.catalogsErrorMessage()" />
 
+                <pulso-project-teams *ngSwitchCase="'teams'" />
+
                 <pulso-saved-view *ngSwitchCase="'saved'"
                                   [savedStartups]="session.savedStartups()"
                                   [interestedStartups]="session.interestedStartups()"
@@ -105,4 +110,6 @@
                                     [recommendation]="session.getReason(startup)"
                                     (closed)="closeStartup()" />
     </div>
+</ng-template>
+
 </ng-template>

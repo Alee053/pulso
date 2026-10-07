@@ -138,3 +138,56 @@ The executable create contract is `MemberInvitation`. The acceptance use case
 receives the authenticated profile and email plus the presented token; it
 never accepts identity from the request body. Persistence performs the digest
 lookup and conditional row update without returning token material.
+
+## Angular invitation and acceptance
+
+PUL-81 adds a **Mis equipos** view with loading, empty, error, retry, and
+pagination states. It reads only the authenticated account's active project
+memberships from `GET /api/v1/me/projects?offset=0&limit=20`. The backend derives
+the profile from the validated JWT; no request parameter chooses an identity.
+Results are ordered by project name and ID, with a default limit of 20, maximum
+limit of 50, and offset between 0 and 100000. Limits are configured under
+`pulso.current-projects`.
+
+```json
+{
+  "data": [
+    {
+      "projectId": "33333333-3333-3333-3333-333333333333",
+      "name": "EcoPack",
+      "role": "OWNER",
+      "membershipStatus": "ACTIVE"
+    }
+  ],
+  "meta": { "offset": 0, "limit": 20, "hasMore": false }
+}
+```
+
+The read endpoint exposes no other membership, invitation email, profile ID,
+token, or digest. It requires authentication (`401` otherwise), rejects invalid
+pagination (`400`), and returns an empty page when the actor has no active
+memberships. It uses the existing schema without migrations. The frontend
+shows the invitation form only for active owner/admin memberships. The create
+endpoint remains the authorization boundary if permissions change after a read.
+The form submits only the normalized invitee email, offers no role selector,
+and confirms registration without promising email delivery.
+
+The Angular acceptance entry point is the app URL with an `invitation` fragment
+parameter. A future delivery adapter can construct that link; PUL-81 does not
+implement delivery or return token material from creation. On application
+initialization, Angular captures the token privately in memory and removes that
+parameter with `history.replaceState` before initializing Auth. The token never
+appears in template inputs, storage, logs, or error text. It is sent only in the
+accept request body. Acceptance is offered before onboarding, with sign-in and
+account switching available. Successful acceptance or dismissal clears the
+in-memory token; refreshing requires reopening the original invitation link.
+
+Acceptance `404` remains deliberately indistinguishable for an unavailable,
+used, mismatched, or already-associated invitation. Angular gives combined
+account-check/new-invitation guidance rather than claiming a specific cause.
+Network/server failures offer an explicit retry with the same in-memory token;
+if an earlier response was lost after the server accepted, the existing backend
+rejects the retry without applying a second association. Changing accounts or
+destroying a view cancels its pending subscription and clears account-specific
+presentation state. A cancelled request may already have reached the server;
+it does not undo a committed invitation or acceptance.

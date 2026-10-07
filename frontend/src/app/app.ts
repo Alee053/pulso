@@ -12,6 +12,9 @@ import { PulsoSession } from './features/discovery/application/pulso-session'
 import { IconComponent } from './shared/icon/icon'
 import { commonStrings } from './shared/strings/common.strings'
 import type { AppView, Startup } from './features/discovery/domain/startup'
+import { InvitationLink } from './features/discovery/application/invitation-link'
+import { InvitationAcceptanceComponent } from './features/discovery/ui/invitation-acceptance'
+import { ProjectTeamsComponent } from './features/discovery/ui/project-teams'
 import { ProjectCreateFormComponent } from './features/discovery/ui/project-create-form'
 
 @Component({
@@ -20,6 +23,8 @@ import { ProjectCreateFormComponent } from './features/discovery/ui/project-crea
     imports: [
         CommonModule,
         AuthPageComponent,
+        InvitationAcceptanceComponent,
+        ProjectTeamsComponent,
         DiscoveryViewComponent,
         NavigationBarComponent,
         OnboardingComponent,
@@ -33,6 +38,7 @@ import { ProjectCreateFormComponent } from './features/discovery/ui/project-crea
     styleUrl: './app.css',
 })
 export class AppComponent implements OnInit {
+    readonly invitation = inject(InvitationLink)
     readonly common = commonStrings
     readonly auth = inject(SupabaseAuthGateway)
     readonly session = inject(PulsoSession)

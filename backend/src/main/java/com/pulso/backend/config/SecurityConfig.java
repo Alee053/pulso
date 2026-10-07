@@ -38,6 +38,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
         CatalogProperties.class,
         PreferenceProperties.class,
         ProfileProperties.class,
+        CurrentProjectsProperties.class,
         ProjectProperties.class
 })
 public class SecurityConfig {
@@ -63,6 +64,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/startups").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/projects/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/catalogs").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/me/projects").authenticated()
                         .requestMatchers("/api/v1/me").authenticated()
                         .requestMatchers("/api/v1/me/preferences").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/projects").authenticated()

@@ -4,7 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { mockStartups } from './features/discovery/data-access/mock-startups'
 import { MOCK_PUBLIC_PROJECTS } from './features/discovery/data-access/mock-public-projects'
 import { TestBed } from '@angular/core/testing'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { SupabaseAuthGateway } from './core/auth/supabase-auth.gateway'
 import type { AuthenticatedUser } from './core/auth/supabase-auth.gateway'
 import { AppComponent } from './app'
@@ -13,7 +13,32 @@ import { emptyReferenceCatalogs } from './features/discovery/domain/catalog'
 import { interestOptions } from './features/discovery/data-access/interests'
 import { projectStageOptions, type ProjectStage } from './features/discovery/domain/preferences'
 
+afterEach(() => history.replaceState(null, '', '/'))
+
 describe('AppComponent', () => {
+  it('accepts an invitation before onboarding and removes its secret from the location', () => {
+    history.replaceState(null, '', '/#invitation=private-token')
+    const session = createSessionStub()
+    const auth = createAuthStub()
+    auth.session.set({ id: 'invitee-1', email: 'ada@example.test' })
+    TestBed.configureTestingModule({ imports: [AppComponent], providers: [
+      provideHttpClient(), provideHttpClientTesting(),
+      { provide: PulsoSession, useValue: session }, { provide: SupabaseAuthGateway, useValue: auth },
+    ] })
+    const fixture = TestBed.createComponent(AppComponent)
+    fixture.detectChanges()
+    expect(location.hash).toBe('')
+    expect(fixture.nativeElement.querySelector('pulso-onboarding')).toBeNull()
+    expect(fixture.nativeElement.innerHTML).not.toContain('private-token')
+    fixture.nativeElement.querySelector('[data-action=accept]').click()
+    const http = TestBed.inject(HttpTestingController)
+    http.expectOne('http://localhost:8080/api/v1/project-members/accept')
+      .flush({ projectId: 'project-1', role: 'MEMBER', membershipStatus: 'ACTIVE' })
+    fixture.detectChanges()
+    expect(fixture.nativeElement.textContent).toContain('Ya formas parte del equipo')
+    http.verify()
+  })
+
   it('shows the standalone Auth page before the authenticated application', () => {
     const session = createSessionStub()
     const auth = createAuthStub()
@@ -21,6 +46,7 @@ describe('AppComponent', () => {
     TestBed.configureTestingModule({
       imports: [AppComponent],
       providers: [
+        provideHttpClient(), provideHttpClientTesting(),
         { provide: PulsoSession, useValue: session },
         { provide: SupabaseAuthGateway, useValue: auth },
       ],
@@ -79,6 +105,7 @@ describe('AppComponent', () => {
     TestBed.configureTestingModule({
       imports: [AppComponent],
       providers: [
+        provideHttpClient(), provideHttpClientTesting(),
         { provide: PulsoSession, useValue: session },
         { provide: SupabaseAuthGateway, useValue: auth },
       ],

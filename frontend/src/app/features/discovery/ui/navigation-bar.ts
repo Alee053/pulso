@@ -32,6 +32,7 @@ export class NavigationBarComponent {
   readonly navigationItems: readonly NavigationItem[] = [
     { id: 'discover', label: navigationStrings.discover, icon: 'compass' },
     { id: 'create-project', label: navigationStrings.createProject, icon: 'sparkles' },
+    { id: 'teams', label: navigationStrings.teams, icon: 'users-round' },
     { id: 'saved', label: navigationStrings.saved, icon: 'bookmark' },
     { id: 'profile', label: navigationStrings.profile, icon: 'user-round' },
   ]

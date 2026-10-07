@@ -40,6 +40,9 @@
 
 <ng-template #applicationShell>
     <div class="app-shell relative flex min-h-screen flex-col overflow-hidden text-white">
+        <div class="ambient-orb ambient-orb--sky" aria-hidden="true"></div>
+        <div class="ambient-orb ambient-orb--blue" aria-hidden="true"></div>
+
         <div *ngIf="session.preferencesSavedMessage() as message" class="toast" role="status" aria-live="polite">
             <span class="flex size-7 items-center justify-center rounded-full bg-[#a9e1ff]/15 text-[#a9e1ff]">
                 <pulso-icon name="check" [size]="14" />
@@ -92,13 +95,13 @@
                                     [selectedInterests]="session.selectedInterests()" />
 
                 <pulso-public-project-detail *ngSwitchCase="'detail'"
-                                             [projectId]="session.selectedProjectId() || 'eco-pack'"
+                                             [projectId]="session.selectedProjectId() || ''"
                                              (closed)="session.closeProjectDetail()" />
             </ng-container>
         </div>
 
-        <pulso-startup-detail-modal *ngIf="selectedStartup() as startup"
-                                    [startup]="startup"
+        <pulso-public-project-detail *ngIf="selectedStartup() as startup"
+                                    [projectId]="startup.id"
                                     [recommendation]="session.getReason(startup)"
                                     (closed)="closeStartup()" />
     </div>

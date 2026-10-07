@@ -1,21 +1,46 @@
 package com.pulso.backend.project.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
-import javax.sql.DataSource;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.testcontainers.postgresql.PostgreSQLContainer;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import com.pulso.backend.project.domain.PublicProjectDetail;
 
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+
+@SpringBootTest
+@AutoConfigureMockMvc
 @Testcontainers(disabledWithoutDocker = true)
 class JdbcPublicProjectRepositoryTest {
 
@@ -57,18 +82,24 @@ class JdbcPublicProjectRepositoryTest {
     @Container
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:17-alpine");
 
+    @Autowired
     private JdbcPublicProjectRepository repository;
+    @Autowired
     private JdbcClient jdbcClient;
+    @Autowired
+    private MockMvc mockMvc;
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @DynamicPropertySource
+    static void databaseProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
+        registry.add("spring.datasource.username", POSTGRES::getUsername);
+        registry.add("spring.datasource.password", POSTGRES::getPassword);
+    }
 
     @BeforeEach
     void setUp() {
-        DataSource dataSource = new DriverManagerDataSource(
-                POSTGRES.getJdbcUrl(),
-                POSTGRES.getUsername(),
-                POSTGRES.getPassword());
-        jdbcClient = JdbcClient.create(dataSource);
-        repository = new JdbcPublicProjectRepository(jdbcClient);
-
         jdbcClient.sql("drop table if exists public.project_members, public.project_tags, "
                 + "public.projects, public.tags, public.sectors, public.profiles cascade")
                 .update();
@@ -77,7 +108,11 @@ class JdbcPublicProjectRepositoryTest {
                   id uuid primary key,
                   display_name text,
                   avatar_storage_path text,
-                  account_status text not null
+                  account_status text not null,
+                  profile_visibility text not null default 'PUBLIC',
+                  deleted_at timestamptz,
+                  short_bio text default 'private biography',
+                  platform_role text default 'ADMIN'
                 )
                 """).update();
         jdbcClient.sql("""
@@ -109,7 +144,10 @@ class JdbcPublicProjectRepositoryTest {
                   department text,
                   external_links jsonb,
                   sector_id uuid not null references public.sectors (id),
-                  status text not null
+                  status text not null,
+                  published_at timestamptz,
+                  review_note text default 'private review note',
+                  reviewed_by_profile_id uuid
                 )
                 """).update();
         jdbcClient.sql("""
@@ -126,7 +164,9 @@ class JdbcPublicProjectRepositoryTest {
                   membership_status text not null,
                   is_public boolean not null,
                   display_title text,
-                  is_featured boolean not null
+                  is_featured boolean not null,
+                  invitee_email text,
+                  invite_token_digest text
                 )
                 """).update();
 
@@ -254,6 +294,14 @@ class JdbcPublicProjectRepositoryTest {
                 .param("leftProfileId", LEFT_PROFILE_ID)
                 .param("secondPublicProfileId", SECOND_PUBLIC_PROFILE_ID)
                 .update();
+        jdbcClient.sql("""
+                insert into public.project_members (
+                    id, project_id, membership_status, is_public, is_featured,
+                    invitee_email, invite_token_digest
+                ) values (:id, :projectId, 'INVITED', true, true,
+                    'invited@example.test', 'test-invite-digest')
+                """).param("id", UUID.fromString("abababab-abab-abab-abab-abababababab"))
+                .param("projectId", PROJECT_ID).update();
     }
 
     @Test
@@ -284,6 +332,146 @@ class JdbcPublicProjectRepositoryTest {
                         null,
                         "Member",
                         false));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"PRIVATE,ACTIVE,false", "MEMBERS_ONLY,ACTIVE,false", "PUBLIC,DELETED,false",
+            "PUBLIC,ACTIVE,true"})
+    void doesNotExposeProfilesWithoutPublicConsent(String visibility, String accountStatus,
+            boolean deleted) throws Exception {
+        jdbcClient.sql("""
+                update public.profiles set profile_visibility = :visibility,
+                    account_status = :accountStatus,
+                    deleted_at = case when :deleted then now() else null end
+                where id = :id
+                """)
+                .param("visibility", visibility).param("accountStatus", accountStatus)
+                .param("deleted", deleted).param("id", PUBLIC_PROFILE_ID).update();
+
+        for (boolean authenticated : new boolean[] {false, true}) {
+            mockMvc.perform(publicRequest("eco-pack", authenticated))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.members.length()").value(1))
+                    .andExpect(jsonPath("$.data.members[0].profileId")
+                            .value(SECOND_PUBLIC_PROFILE_ID.toString()));
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource({"eco-pack,false", "eco-pack,true",
+            "33333333-3333-3333-3333-333333333333,false",
+            "33333333-3333-3333-3333-333333333333,true"})
+    void exposesExactlyTheAuthorizedPublicContract(String reference, boolean authenticated)
+            throws Exception {
+        String body = mockMvc.perform(publicRequest(reference, authenticated))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.members.length()").value(2))
+                .andExpect(jsonPath("$.data.members[0].profileId").value(PUBLIC_PROFILE_ID.toString()))
+                .andExpect(jsonPath("$.data.members[1].profileId").value(SECOND_PUBLIC_PROFILE_ID.toString()))
+                .andReturn().getResponse().getContentAsString();
+        JsonNode envelope = objectMapper.readTree(body);
+        assertFields(envelope, "data");
+        JsonNode data = envelope.path("data");
+        assertFields(data, "id", "slug", "name", "tagline", "description", "valueProposition",
+                "sector", "stage", "city", "department", "tags", "externalLinks", "members");
+        assertFields(data.path("sector"), "id", "slug", "name");
+        data.path("tags").forEach(tag -> assertFields(tag, "id", "slug", "name"));
+        data.path("externalLinks").forEach(link -> assertFields(link, "type", "url", "label"));
+        data.path("members").forEach(member -> assertFields(member,
+                "profileId", "displayName", "avatarStoragePath", "displayTitle", "isFeatured"));
+        assertThat(body).doesNotContain("private biography", "private review note",
+                "invited@example.test", "test-invite-digest", "test-token");
+    }
+
+    @ParameterizedTest
+    @CsvSource({"DRAFT,false", "DRAFT,true", "PENDING_REVIEW,false", "PENDING_REVIEW,true",
+            "REJECTED,false", "REJECTED,true", "ARCHIVED,false", "ARCHIVED,true",
+            "SUSPENDED,false", "SUSPENDED,true"})
+    void hidesNonPublishedDetailsForEveryVisitor(String projectStatus, boolean authenticated)
+            throws Exception {
+        jdbcClient.sql("update public.projects set status = :status where id = :id")
+                .param("status", projectStatus).param("id", PROJECT_ID).update();
+        String missing = mockMvc.perform(publicRequest("missing-project", authenticated))
+                .andExpect(status().isNotFound()).andReturn().getResponse().getContentAsString();
+        for (String reference : new String[] {"eco-pack", PROJECT_ID.toString()}) {
+            String unavailable = mockMvc.perform(publicRequest(reference, authenticated)
+                            .queryParam("status", "PUBLISHED"))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.data").doesNotExist())
+                    .andReturn().getResponse().getContentAsString();
+            assertThat(objectMapper.readTree(unavailable).path("detail"))
+                    .isEqualTo(objectMapper.readTree(missing).path("detail"));
+            assertThat(unavailable).doesNotContain("EcoPack", projectStatus);
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource({"INVITED,false", "INVITED,true", "LEFT,false", "LEFT,true",
+            "REMOVED,false", "REMOVED,true"})
+    void excludesNonActiveMembershipsEvenWithAProfile(String membershipStatus, boolean authenticated)
+            throws Exception {
+        jdbcClient.sql("""
+                update public.project_members set membership_status = :status,
+                    invitee_email = 'invited@example.test', invite_token_digest = 'test-invite-digest'
+                where profile_id = :id
+                """).param("status", membershipStatus).param("id", PUBLIC_PROFILE_ID).update();
+        mockMvc.perform(publicRequest("eco-pack", authenticated))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.members.length()").value(1))
+                .andExpect(jsonPath("$.data.members[0].profileId")
+                        .value(SECOND_PUBLIC_PROFILE_ID.toString()));
+    }
+
+    @Test
+    void openingPublicDetailsDoesNotChangeTheExistingFeedContract() throws Exception {
+        String before = mockMvc.perform(get("/api/v1/startups"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].id").exists())
+                .andExpect(jsonPath("$.meta.offset").value(0))
+                .andReturn().getResponse().getContentAsString();
+        mockMvc.perform(publicRequest("eco-pack", false)).andExpect(status().isOk());
+        mockMvc.perform(publicRequest("draft-project", true)).andExpect(status().isNotFound());
+        String after = mockMvc.perform(get("/api/v1/startups"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(objectMapper.readTree(after)).isEqualTo(objectMapper.readTree(before));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"false", "true"})
+    void hidesDatabaseFailureDetailsFromEveryVisitor(boolean authenticated) throws Exception {
+        jdbcClient.sql("drop table public.project_members").update();
+        String body = mockMvc.perform(publicRequest("eco-pack", authenticated))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.detail").value("The data store is temporarily unavailable."))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(body).doesNotContain("project_members", "select", "jdbc", "password", "PSQL");
+    }
+
+    private static MockHttpServletRequestBuilder publicRequest(String reference, boolean authenticated)
+            throws Exception {
+        MockHttpServletRequestBuilder request = get("/api/v1/projects/" + reference);
+        if (!authenticated) {
+            return request;
+        }
+        Date issuedAt = new Date();
+        JWTClaimsSet claims = new JWTClaimsSet.Builder()
+                .issuer("http://test.supabase.local/auth/v1")
+                .subject(PUBLIC_PROFILE_ID.toString())
+                .audience("authenticated")
+                .claim("role", "authenticated")
+                .issueTime(issuedAt)
+                .expirationTime(new Date(issuedAt.getTime() + 300_000))
+                .build();
+        SignedJWT token = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims);
+        token.sign(new MACSigner(new SecretKeySpec(
+                "test-secret-that-is-long-enough-for-local-tests".getBytes(StandardCharsets.UTF_8),
+                "HmacSHA256")));
+        return request.header("Authorization", "Bearer " + token.serialize());
+    }
+
+    private static void assertFields(JsonNode node, String... fields) {
+        assertThat(node.properties().stream().map(java.util.Map.Entry::getKey)
+                .collect(Collectors.toSet())).isEqualTo(Set.of(fields));
     }
 
     @Test

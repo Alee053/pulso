@@ -1,15 +1,20 @@
 import { CommonModule } from '@angular/common'
 import {
     Component,
-    Input,
+    AfterViewChecked,
+    ElementRef,
+    HostListener,
     OnInit,
+    Input,
+    OnChanges,
+    SimpleChanges,
     OnDestroy,
     inject,
     signal,
     Output,
     EventEmitter,
 } from '@angular/core'
-import { Subject, takeUntil } from 'rxjs'
+import { Subscription } from 'rxjs'
 import { PublicProjectApi } from '../data-access/public-project-api'
 import type {
     PublicProjectDetail,
@@ -26,14 +31,17 @@ import { StartupDetailModalComponent } from './startup-detail-modal'
     imports: [CommonModule, IconComponent, StartupDetailModalComponent],
     templateUrl: './public-project-detail.html',
 })
-export class PublicProjectDetailComponent implements OnInit, OnDestroy {
+export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterViewChecked, OnDestroy {
     readonly strings = detailStrings
     @Input() projectId!: string
     @Input() recommendation = ''
     @Output() closed = new EventEmitter<void>()
 
     private readonly api = inject(PublicProjectApi)
-    private readonly destroy$ = new Subject<void>()
+    private request?: Subscription
+    private readonly element = inject<ElementRef<HTMLElement>>(ElementRef)
+    private previousActiveElement: HTMLElement | null = null
+    private originalOverflow = ''
 
     readonly state = signal<PublicProjectState>({ status: 'loading' })
 
@@ -65,15 +73,56 @@ export class PublicProjectDetailComponent implements OnInit, OnDestroy {
     }
 
     ngOnInit(): void {
-        this.loadProject()
+        this.previousActiveElement = document.activeElement instanceof HTMLElement
+            ? document.activeElement : null
+        this.originalOverflow = document.body.style.overflow
+        document.body.style.overflow = 'hidden'
+    }
+
+    ngAfterViewChecked(): void {
+        if (!this.element.nativeElement.contains(document.activeElement)) {
+            this.focusableElements()[0]?.focus()
+        }
+    }
+
+    @HostListener('document:keydown', ['$event'])
+    handleKeyDown(event: KeyboardEvent): void {
+        if (event.key === 'Escape') {
+            event.preventDefault()
+            this.close()
+            return
+        }
+        if (event.key !== 'Tab') return
+        const elements = this.focusableElements()
+        const first = elements[0]
+        const last = elements[elements.length - 1]
+        if (!first || !last) {
+            event.preventDefault()
+        } else if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault()
+            last.focus()
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault()
+            first.focus()
+        }
+    }
+
+    private focusableElements(): NodeListOf<HTMLElement> {
+        return this.element.nativeElement.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+        )
+    }
+
+    ngOnChanges(changes: SimpleChanges): void {
+        if (changes['projectId']) this.loadProject()
     }
 
     loadProject(): void {
+        this.request?.unsubscribe()
         this.state.set({ status: 'loading' })
 
-        this.api
+        this.request = this.api
             .getPublicDetail(this.projectId)
-            .pipe(takeUntil(this.destroy$))
             .subscribe({
                 next: (project) => {
                     if (!project || !project.id) {
@@ -160,7 +209,8 @@ export class PublicProjectDetailComponent implements OnInit, OnDestroy {
     }
 
     ngOnDestroy(): void {
-        this.destroy$.next()
-        this.destroy$.complete()
+        this.request?.unsubscribe()
+        document.body.style.overflow = this.originalOverflow
+        if (this.previousActiveElement?.isConnected) this.previousActiveElement.focus()
     }
 }

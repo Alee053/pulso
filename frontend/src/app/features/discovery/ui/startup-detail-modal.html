@@ -53,7 +53,7 @@
           <span *ngIf="startup.teamSize" class="inline-flex items-center gap-2"><pulso-icon name="users-round" [size]="15" />{{ startup.teamSize }}</span>
         </div>
         <div class="flex min-w-0 flex-wrap items-center gap-2">
-          <a *ngIf="startup.website" [href]="'https://' + startup.website" class="modal-link max-w-full break-all" target="_blank" rel="noreferrer" (click)="$event.preventDefault()"><pulso-icon name="external-link" [size]="15" class="shrink-0" />{{ startup.website }}</a>
+          <a *ngIf="startup.website" [href]="startup.website" class="modal-link max-w-full break-all" target="_blank" rel="noreferrer"><pulso-icon name="external-link" [size]="15" class="shrink-0" />{{ startup.website }}</a>
           <button type="button" class="contact-button" (click)="contactStarted = true"><pulso-icon [name]="contactStarted ? 'check' : 'message-circle'" [size]="15" />{{ contactStarted ? strings.contactDone : strings.contact }}</button>
         </div>
       </footer>

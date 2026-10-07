@@ -1,24 +1,39 @@
-<main class="page" *ngIf="!loadedProject">
-  <div *ngIf="isLoading" class="state-panel" role="status" aria-live="polite">
-    <span class="state-icon"><span class="spinner" aria-hidden="true"></span></span>
-    <h1 class="page-title">{{ strings.publicLoading }}</h1>
-    <p>{{ strings.publicLoadingLead }}</p>
-    <button type="button" class="contact-button" (click)="close()">{{ strings.back }}</button>
-  </div>
-  <div *ngIf="isEmpty" class="state-panel" role="status">
-    <span class="state-icon"><pulso-icon name="compass" [size]="24" /></span>
-    <h1 class="page-title">{{ strings.publicEmptyTitle }}</h1>
-    <p>{{ strings.publicEmptyLead }}</p>
-    <button type="button" class="contact-button" (click)="close()">{{ strings.back }}</button>
-  </div>
-  <div *ngIf="hasError" class="state-panel" role="alert">
-    <span class="state-icon state-icon--error"><pulso-icon name="compass" [size]="24" /></span>
-    <h1 class="page-title">{{ strings.publicErrorTitle }}</h1>
-    <p>{{ errorMessage }}</p>
-    <div class="flex flex-wrap justify-center gap-3">
-      <button *ngIf="isRetryable" type="button" class="solid-button" (click)="retry()">{{ strings.retry }}</button>
+<section
+  [attr.role]="loadedProject ? null : 'dialog'"
+  [attr.aria-modal]="loadedProject ? null : 'true'"
+  [attr.aria-label]="loadedProject ? null : 'Detalle público del proyecto'"
+>
+  <main class="page" *ngIf="!loadedProject">
+    <div *ngIf="isLoading" class="state-panel" role="status" aria-live="polite">
+      <span class="state-icon"><span class="spinner" aria-hidden="true"></span></span>
+      <h1 class="page-title">{{ strings.publicLoading }}</h1>
+      <p>{{ strings.publicLoadingLead }}</p>
       <button type="button" class="contact-button" (click)="close()">{{ strings.back }}</button>
     </div>
-  </div>
-</main>
-<pulso-startup-detail-modal *ngIf="loadedProject as project" [startup]="mapToStartup(project)" [recommendation]="recommendation" (closed)="close()" />
+
+    <div *ngIf="isEmpty" class="state-panel" role="status">
+      <span class="state-icon"><pulso-icon name="compass" [size]="24" /></span>
+      <h1 class="page-title">{{ strings.publicEmptyTitle }}</h1>
+      <p>{{ strings.publicEmptyLead }}</p>
+      <button type="button" class="contact-button" (click)="close()">{{ strings.back }}</button>
+    </div>
+
+    <div *ngIf="hasError" class="state-panel" role="alert">
+      <span class="state-icon state-icon--error"><pulso-icon name="compass" [size]="24" /></span>
+      <h1 class="page-title">{{ strings.publicErrorTitle }}</h1>
+      <p>{{ errorMessage }}</p>
+      <div class="flex flex-wrap justify-center gap-3">
+        <button *ngIf="isRetryable" type="button" class="solid-button" (click)="retry()">{{ strings.retry }}</button>
+        <button type="button" class="contact-button" (click)="close()">{{ strings.back }}</button>
+      </div>
+    </div>
+  </main>
+
+  <pulso-startup-detail-modal
+    *ngIf="loadedProject as project"
+    [startup]="mapToStartup(project)"
+    [recommendation]="recommendation"
+    [manageFocus]="false"
+    (closed)="close()"
+  />
+</section>

@@ -11,9 +11,9 @@ These agreements make the codebase easier to change as the team and product grow
 
 ## Branches, commits, and review
 
-- Use a short-lived branch such as `feat/discovery-feed`, `fix/startup-timeout`, or `docs/api-contracts`.
-- Keep commits coherent and easy to revert. Use the repository's existing prefixes: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, and `chore:`.
-- A pull request should explain the behavior change, affected project, validation performed, migration/rollback concerns, and any follow-up work.
+- Use a short-lived branch containing the Linear issue, such as `feat/pul-72-project-lifecycle`, `fix/pul-64-project-roles`, or `docs/pul-123-api-contracts`. Linear-generated branch names with a username prefix are also valid.
+- Keep commits coherent and easy to revert. Follow the mandatory commit and PR title format in [`AGENTS.md`](../../AGENTS.md#commit-and-pr-titles), including the primary Linear issue as the scope.
+- Follow the [PR body contract](../../AGENTS.md#pr-body-contract) and [repository template](../../.github/pull_request_template.md). The delivery workflow and client setup are in [agent workflows](./agent-workflows.md).
 - Request review from the owner of every changed seam. Cross-project changes need both frontend and backend review.
 - Do not merge a breaking API or schema change without a compatibility plan.
 - Do not add AI attribution, credentials, generated secrets, or unrelated formatting churn.

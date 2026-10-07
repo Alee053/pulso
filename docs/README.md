@@ -20,6 +20,7 @@ This directory is the durable reference for the codebase: what is deployed in th
 14. [Architecture decisions](./adr/0001-monorepo-project-seams.md) — decisions that are costly or surprising to reverse.
 15. [Supabase decision](./adr/0003-supabase-database-and-auth.md) — database, migrations, RLS, and Auth boundaries.
 16. [Project/startup compatibility](./adr/0004-project-startup-compatibility.md) — canonical domain naming, current baseline, and migration order.
+17. [Agent workflows](./engineering/agent-workflows.md) — shared skills, commit/PR conventions, and Codex, OpenCode, and Claude Code entry points.
 
 The database-specific workflow starts at [`database/README.md`](../database/README.md).
 

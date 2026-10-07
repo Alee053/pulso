@@ -361,7 +361,7 @@ membership. Rollback and rejected actions do not emit successful-change events.
 See [MVP audit](architecture/membership-administration.md#mvp-audit) for fields
 and log-retention limitations.
 
-## `PATCH /api/v1/projects/{projectId}` — project information update (PUL-63)
+## `PATCH /api/v1/projects/{projectId}` — project information update (PUL-11 / S2.1)
 
 Updates an existing canonical project for the authenticated project team. The
 profile identity comes exclusively from the validated JWT subject, and the
@@ -396,6 +396,8 @@ The update writes only the canonical `projects` table. Its existing
 `projects_set_updated_at` trigger advances `updated_at`; `id`, `slug`,
 `created_by_profile_id`, `created_at`, `status`, `verification_status`, review
 data, publication data, and archival data are not assigned by the request.
+Project information edits preserve membership identities, project/profile
+references, roles, and membership statuses in `project_members`.
 
 Response `200 OK`:
 
@@ -429,6 +431,24 @@ endpoint does not disclose private project existence. Missing, invalid, or
 `service_role` bearer tokens return `401 Unauthorized`. Angular calls this
 contract through the feature's `ProjectsApi` HTTP adapter; it does not read
 project rows directly from Supabase.
+
+### Acceptance coverage
+
+[PUL-11](https://linear.app/pulso-bo/issue/PUL-11/s21-editar-la-informacion-basica-de-un-proyecto)
+is implemented by PUL-62 (editable contract), PUL-63 (update operation), PUL-64
+(authorization), and PUL-65 (regression coverage). The current tests exercise
+these acceptance criteria:
+
+| Criterion | Test boundary |
+| --- | --- |
+| Active owner/admin can edit all eight information fields | [JDBC update tests](../backend/src/test/java/com/pulso/backend/project/infrastructure/JdbcProjectUpdateRepositoryTest.java) |
+| Identity, creator, lifecycle/review data, and memberships are preserved while `updated_at` advances | JDBC update tests compare persisted project data and membership rows before and after the operation |
+| Member, external, inactive, and another project's memberships cannot authorize an edit | JDBC update tests assert rejection with unchanged project and membership rows |
+| Required fields, lengths, stage, sector, and protected properties are validated | [Domain validation](../backend/src/test/java/com/pulso/backend/project/domain/ProjectUpdatePatchTest.java), [application validation](../backend/src/test/java/com/pulso/backend/project/application/UpdateProjectInformationTest.java), and [HTTP contract tests](../backend/src/test/java/com/pulso/backend/project/api/ProjectUpdateControllerTest.java) |
+| Only a valid authenticated user token reaches the update operation | [JWT/security tests](../backend/src/test/java/com/pulso/backend/project/api/ProjectUpdateSecurityTest.java) |
+
+The JDBC checks use isolated Testcontainers PostgreSQL with a minimal schema;
+they do not prove deployed migration/RLS behavior or a live Supabase browser flow.
 
 ## `POST /api/v1/projects/{projectId}/publication-request`
 

@@ -39,6 +39,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
         PreferenceProperties.class,
         ProfileProperties.class,
         CurrentProjectsProperties.class,
+        ProjectMembersProperties.class,
         ProjectProperties.class
 })
 public class SecurityConfig {
@@ -62,6 +63,7 @@ public class SecurityConfig {
                                 "/actuator/info")
                         .permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/startups").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/projects/*/members").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/projects/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/catalogs").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/me/projects").authenticated()

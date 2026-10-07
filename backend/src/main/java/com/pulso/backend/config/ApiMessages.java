@@ -115,6 +115,7 @@ public final class ApiMessages {
     public static final String INVITATION_CONFLICT_CODE = "invitation_duplicate";
 
     public static final String MEMBERSHIP_PERMISSION_TITLE = "Membership permission";
+    public static final String MEMBERSHIP_READ_PERMISSION_DETAIL = "active project membership is required.";
     public static final String MEMBERSHIP_PERMISSION_DETAIL =
             "active OWNER or ADMIN membership is required.";
     public static final String MEMBERSHIP_SELF_ELEVATION = "cannot elevate own role.";

@@ -5,12 +5,13 @@ import { SupabaseAuthGateway } from '../../../core/auth/supabase-auth.gateway'
 import { CurrentProjectsApi } from '../data-access/current-projects-api'
 import type { CurrentProjectMembership } from '../domain/member-invitation'
 import { invitationStrings } from '../strings/invitation.strings'
-import { MemberInvitationFormComponent } from './member-invitation-form'
+import { ProjectMembersComponent } from './project-members'
+import type { UpdatedMembership } from '../domain/project-member'
 
 @Component({
   selector: 'pulso-project-teams',
   standalone: true,
-  imports: [CommonModule, MemberInvitationFormComponent],
+  imports: [CommonModule, ProjectMembersComponent],
   templateUrl: './project-teams.html',
 })
 export class ProjectTeamsComponent implements OnDestroy {
@@ -69,4 +70,17 @@ export class ProjectTeamsComponent implements OnDestroy {
   }
 
   trackProject(_index: number, project: CurrentProjectMembership): string { return project.projectId }
+
+  updateOwnMembership(member: Pick<UpdatedMembership, 'projectId' | 'role' | 'membershipStatus'>): void {
+    if (!this.projects().some((project) => project.projectId === member.projectId)) return
+    if (member.membershipStatus !== 'ACTIVE') {
+      // Leaving removes one row from the active-team window, including a pending next page.
+      this.request?.unsubscribe()
+      this.loading.set(false)
+      this.nextOffset = Math.max(0, this.nextOffset - 1)
+    }
+    this.projects.update((projects) => member.membershipStatus === 'ACTIVE'
+      ? projects.map((project) => project.projectId === member.projectId ? { ...project, role: member.role } : project)
+      : projects.filter((project) => project.projectId !== member.projectId))
+  }
 }

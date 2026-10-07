@@ -1,0 +1,48 @@
+<section class="mt-5 border-t border-[var(--color-border)] pt-5" [attr.aria-label]="strings.title">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h3 class="text-lg font-semibold">{{ strings.title }}</h3>
+    <button type="button" class="contact-button" (click)="refresh()" [disabled]="loading() || submitting()">{{ strings.refresh }}</button>
+  </div>
+  <p *ngIf="loading()" class="status-message mt-4" role="status">{{ strings.loading }}</p>
+  <div *ngIf="loadError() as error" class="status-message status-message--error mt-4" role="alert">
+    <p>{{ error }}</p>
+    <button type="button" class="contact-button mt-3" (click)="retry()" [disabled]="loading()">{{ strings.retry }}</button>
+  </div>
+  <p *ngIf="changeError() as error" class="status-message status-message--error mt-4" role="alert">{{ error }}</p>
+  <p *ngIf="succeeded()" class="status-message status-message--success mt-4" role="status">{{ strings.success }}</p>
+  <p *ngIf="!loading() && !loadError() && !canAdminister()" class="field-hint">{{ strings.readOnly }}</p>
+  <p *ngIf="!loading() && !loadError() && members().length === 0" class="status-message mt-4" role="status">{{ strings.empty }}</p>
+  <ul class="mt-4 grid gap-4" [attr.aria-busy]="loading() || submitting()">
+    <li *ngFor="let member of members(); trackBy: trackMember" class="min-w-0 rounded-[var(--radius-md)] border border-[var(--color-border)] p-4" [attr.data-member]="member.id">
+      <h4 class="font-semibold break-words">{{ member.displayName || (member.profileId ? strings.privateName : strings.invitationName) }}</h4>
+      <p *ngIf="member.displayTitle" class="field-hint break-words">{{ member.displayTitle }}</p>
+      <p class="field-hint">{{ strings.roleLabel }}: {{ strings.role[member.role] }} · {{ strings.statusLabel }}: {{ strings.status[member.membershipStatus] }}</p>
+      <p *ngIf="isOwn(member)" class="field-hint">{{ strings.you }}</p>
+      <p *ngIf="!member.displayName && canAdminister()" class="field-hint break-all">{{ strings.reference }}: {{ member.id }}</p>
+      <div *ngIf="canAdminister()" class="mt-4 flex flex-wrap items-end gap-3">
+        <label *ngIf="roleOptions(member).length > 1" class="field-label w-full min-w-0 sm:w-auto" [attr.for]="'member-role-' + member.id">
+          {{ strings.changeRole }}
+          <select [id]="'member-role-' + member.id" class="field-input" [value]="member.role" (change)="requestRoleChange(member, $event)" [disabled]="loading() || submitting()">
+            <option *ngFor="let role of roleOptions(member)" [value]="role" [selected]="role === member.role">{{ strings.role[role] }}</option>
+          </select>
+        </label>
+        <button *ngIf="canActivate(member)" #activate type="button" class="contact-button" data-action="activate" (click)="prepare(member, { action: 'activate' }, activate)" [disabled]="loading() || submitting()">{{ strings.activate }}</button>
+        <button *ngIf="canWithdraw(member)" #withdraw type="button" class="contact-button" data-action="withdraw" (click)="prepare(member, { action: 'withdraw' }, withdraw)" [disabled]="loading() || submitting()">{{ isOwn(member) ? strings.leave : strings.withdraw }}</button>
+      </div>
+      <ng-container *ngIf="confirmation() as pending">
+        <section *ngIf="pending.member.id === member.id" #confirmationPanel tabindex="-1" class="status-message mt-4" [attr.aria-label]="strings.confirmation" (keydown.escape)="cancel()">
+          <h5 class="font-semibold">{{ strings.confirmation }}</h5>
+          <p class="mt-2" *ngIf="pending.change.action === 'activate'">{{ strings.activateConfirmation }}</p>
+          <p class="mt-2" *ngIf="pending.change.action === 'withdraw'">{{ isOwn(member) ? strings.leaveConfirmation : strings.withdrawConfirmation }}</p>
+          <p class="mt-2" *ngIf="pending.change.action === 'changeRole'">{{ strings.changeRoleConfirmation }} {{ strings.role[pending.change.role] }}</p>
+          <div class="mt-4 flex flex-wrap gap-3">
+            <button type="button" class="solid-button" data-action="confirm" (click)="confirm()" [disabled]="submitting()">{{ submitting() ? strings.submitting : strings.confirm }}</button>
+            <button type="button" class="contact-button" data-action="cancel" (click)="cancel()" [disabled]="submitting()">{{ strings.cancel }}</button>
+          </div>
+        </section>
+      </ng-container>
+    </li>
+  </ul>
+  <button *ngIf="hasMore() && !loadError()" type="button" class="contact-button mt-4" data-action="more-members" (click)="load()" [disabled]="loading() || submitting()">{{ strings.more }}</button>
+  <pulso-member-invitation-form *ngIf="invitationProject() as currentProject" [project]="currentProject" (invited)="refresh()" />
+</section>

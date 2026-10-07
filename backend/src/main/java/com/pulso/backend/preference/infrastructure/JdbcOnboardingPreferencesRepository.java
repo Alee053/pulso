@@ -3,11 +3,13 @@ package com.pulso.backend.preference.infrastructure;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
@@ -25,9 +27,22 @@ public class JdbcOnboardingPreferencesRepository implements OnboardingPreference
             profile_id,
             intentions::text as intentions,
             preferred_sectors::text as preferred_sectors,
-            preferred_stages::text as preferred_stages
+            preferred_stages::text as preferred_stages,
+            recommendation_weights::text as recommendation_weights,
+            coalesce((
+                select jsonb_agg(profile_tags.tag_id order by profile_tags.tag_id)
+                from public.profile_tags
+                where profile_tags.profile_id = profile_preferences.profile_id
+            ), '[]'::jsonb)::text as preferred_tags,
+            coalesce((
+                select jsonb_agg(profile_skills.skill_id order by profile_skills.skill_id)
+                from public.profile_skills
+                where profile_skills.profile_id = profile_preferences.profile_id
+            ), '[]'::jsonb)::text as preferred_skills
             """;
     private static final TypeReference<List<String>> STRING_LIST_TYPE = new TypeReference<>() {
+    };
+    private static final TypeReference<Map<String, Double>> WEIGHTS_TYPE = new TypeReference<>() {
     };
 
     private final JdbcClient jdbcClient;
@@ -58,8 +73,9 @@ public class JdbcOnboardingPreferencesRepository implements OnboardingPreference
     }
 
     @Override
+    @Transactional
     public OnboardingPreferences upsert(OnboardingPreferences preferences) {
-        return jdbcClient.sql("""
+        jdbcClient.sql("""
                 insert into public.profile_preferences (
                     profile_id,
                     intentions,
@@ -75,14 +91,30 @@ public class JdbcOnboardingPreferencesRepository implements OnboardingPreference
                 set intentions = excluded.intentions,
                     preferred_sectors = excluded.preferred_sectors,
                     preferred_stages = excluded.preferred_stages
-                returning %s
-                """.formatted(PREFERENCE_COLUMNS))
+                """)
                 .param("profileId", preferences.profileId())
                 .param("intentions", toJson(preferences.intentions()))
                 .param("preferredSectors", toJson(preferences.preferredSectors()))
                 .param("preferredStages", toJson(preferences.preferredStages()))
-                .query(this::mapPreferences)
-                .single();
+                .update();
+
+        replaceProfileTags(preferences);
+        replaceProfileSkills(preferences);
+        return findByProfileId(preferences.profileId()).orElseThrow();
+    }
+
+    @Override
+    @Transactional
+    public void saveRecommendationWeights(UUID profileId, Map<String, Double> weights) {
+        jdbcClient.sql("""
+                insert into public.profile_preferences (profile_id, recommendation_weights)
+                values (:profileId, cast(:weights as jsonb))
+                on conflict (profile_id) do update
+                set recommendation_weights = excluded.recommendation_weights
+                """)
+                .param("profileId", profileId)
+                .param("weights", toJson(weights))
+                .update();
     }
 
     private OnboardingPreferences mapPreferences(ResultSet resultSet, int rowNumber)
@@ -92,6 +124,9 @@ public class JdbcOnboardingPreferencesRepository implements OnboardingPreference
                 fromJson(resultSet, "intentions"),
                 fromJson(resultSet, "preferred_sectors"),
                 fromJson(resultSet, "preferred_stages"),
+                fromJson(resultSet, "preferred_tags"),
+                fromJson(resultSet, "preferred_skills"),
+                fromWeights(resultSet, "recommendation_weights"),
                 new OnboardingPreferences.Limits(
                         properties.maxItemsPerField(),
                         properties.maxTokenLength(),
@@ -110,13 +145,55 @@ public class JdbcOnboardingPreferencesRepository implements OnboardingPreference
         }
     }
 
-    private String toJson(List<String> values) {
+    private String toJson(Object values) {
         try {
             return objectMapper.writeValueAsString(values);
         } catch (JacksonException exception) {
             throw new IllegalStateException(
                     ApiMessages.PREFERENCES_SERIALIZE_FAILED,
                     exception);
+        }
+    }
+
+    private Map<String, Double> fromWeights(ResultSet resultSet, String column) throws SQLException {
+        try {
+            return objectMapper.readValue(
+                    resultSet.getString(column),
+                    WEIGHTS_TYPE);
+        } catch (JacksonException exception) {
+            throw new SQLException(
+                    ApiMessages.STORED_PREFERENCES_INVALID_JSON,
+                    exception);
+        }
+    }
+
+    private void replaceProfileTags(OnboardingPreferences preferences) {
+        jdbcClient.sql("delete from public.profile_tags where profile_id = :profileId")
+                .param("profileId", preferences.profileId())
+                .update();
+        for (String tagId : preferences.preferredTags()) {
+            jdbcClient.sql("""
+                    insert into public.profile_tags (profile_id, tag_id)
+                    values (:profileId, :tagId)
+                    """)
+                    .param("profileId", preferences.profileId())
+                    .param("tagId", UUID.fromString(tagId))
+                    .update();
+        }
+    }
+
+    private void replaceProfileSkills(OnboardingPreferences preferences) {
+        jdbcClient.sql("delete from public.profile_skills where profile_id = :profileId")
+                .param("profileId", preferences.profileId())
+                .update();
+        for (String skillId : preferences.preferredSkills()) {
+            jdbcClient.sql("""
+                    insert into public.profile_skills (profile_id, skill_id)
+                    values (:profileId, :skillId)
+                    """)
+                    .param("profileId", preferences.profileId())
+                    .param("skillId", UUID.fromString(skillId))
+                    .update();
         }
     }
 }

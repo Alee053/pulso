@@ -67,6 +67,7 @@ export class AppComponent implements OnInit {
         this.activeUserId = authenticatedUser.id
         void this.session.loadReferenceCatalogs()
         void this.session.loadOnboardingPreferences()
+        void this.session.loadProjectCollections()
     })
 
     ngOnInit(): void {

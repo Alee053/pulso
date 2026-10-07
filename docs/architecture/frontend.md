@@ -30,7 +30,7 @@ frontend/src/
 
 [`membership-administration.ts`](../../frontend/src/app/features/discovery/domain/membership-administration.ts) is the interface seam for membership administration: which actions an owner, admin, or member may be offered, and the permission, invalid-transition, and owner-invariant copy. The backend remains the source of truth for transitions.
 
-The first server-backed seam is [`StartupsApi`](../../frontend/src/app/features/discovery/data-access/startups-api.ts), a typed Angular `HttpClient` adapter for `GET /api/v1/startups`. It maps transport DTOs to a small discovery summary type and validates bounded pagination inputs. [`SupabaseAuthGateway`](../../frontend/src/app/core/auth/supabase-auth.gateway.ts) hides the provider client, owns the current session, exposes sign-up/sign-in/sign-out operations, and returns only the current access token to data-access code. [`AuthPanelComponent`](../../frontend/src/app/core/auth/auth-panel.ts) is the small UI surface for local Auth. The global [`authInterceptor`](../../frontend/src/app/core/auth/auth.interceptor.ts) adds that token only to backend API requests without placing Auth or raw URLs in discovery UI components.
+[`StartupsApi`](../../frontend/src/app/features/discovery/data-access/startups-api.ts) adapts the public `GET /api/v1/startups` catalog contract. Authenticated discovery and product state use [`ProjectInteractionsApi`](../../frontend/src/app/features/discovery/data-access/project-interactions-api.ts) and [`PreferencesApi`](../../frontend/src/app/features/discovery/data-access/preferences-api.ts), which read and write through the Spring API. [`SupabaseAuthGateway`](../../frontend/src/app/core/auth/supabase-auth.gateway.ts) hides the provider client, owns the current session, exposes sign-up/sign-in/sign-out operations, and returns only the current access token to data-access code. [`AuthPanelComponent`](../../frontend/src/app/core/auth/auth-panel.ts) is the small UI surface for local Auth. The global [`authInterceptor`](../../frontend/src/app/core/auth/auth.interceptor.ts) adds that token only to backend API requests without placing Auth or raw URLs in discovery UI components.
 
 [`app-config.ts`](../../frontend/src/app/core/config/app-config.ts) is compiled
 with safe local defaults by `angular.json`. The frontend build wrapper
@@ -78,7 +78,7 @@ These are deep-module seams: the caller-facing surface is small, while the modul
 
 ### Data access
 
-- Keep HTTP clients, browser storage, analytics, and retry policy behind feature data-access modules.
+- Keep HTTP clients, Auth session storage, analytics, and retry policy behind feature data-access modules. Product preferences and discovery interactions are stored by the backend; the browser does not keep a second product-data copy in local storage.
 - Map transport DTOs to frontend domain types at the adapter seam. Backend field names and nullable transport details must not spread through templates.
 - Keep API base URLs and public Auth configuration in the build configuration,
   never in UI components. Missing public Auth values leave the gateway
@@ -139,13 +139,14 @@ for the HTTP contract, token lifecycle, and delivery limitation.
 
 ## Current discovery integration
 
-The discovery feed now uses the public API while preserving the domain and UI interfaces:
+The authenticated discovery feed and its profile collections use the backend API while preserving the domain and UI interfaces:
 
 1. Map the API summary DTO to the discovery domain type without leaking transport fields into templates.
 2. Model loading, empty, error, retry, and stale-data behavior in the application module.
 3. Decide how much server data is needed for the full startup detail before changing the response contract.
-4. Keep saved and interested interactions local until their persistence stories are implemented.
-5. Extend the response contract deliberately if the detail view needs more than the current summary.
+4. Persist onboarding preferences, tag/skill selections, saved projects, feedback decisions, and learned recommendation weights through authenticated backend APIs.
+5. Reload saved and interested collections for the active account and discard stale responses when the account changes.
+6. Extend the response contract deliberately if the detail view needs more than the current summary.
 
 Do not create a shared TypeScript package for the first endpoint. Generate or share contract artifacts only after repeated cross-project duplication proves that it reduces rather than increases coupling.
 

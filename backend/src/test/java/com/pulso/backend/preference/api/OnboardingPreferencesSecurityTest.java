@@ -6,7 +6,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -24,6 +26,7 @@ import com.pulso.backend.config.PreferenceProperties;
 import com.pulso.backend.config.SecurityConfig;
 import com.pulso.backend.discovery.api.ApiExceptionHandler;
 import com.pulso.backend.preference.application.GetOnboardingPreferences;
+import com.pulso.backend.preference.application.ActivePreferenceCatalogLookup;
 import com.pulso.backend.preference.application.OnboardingPreferencesRepository;
 import com.pulso.backend.preference.application.SaveOnboardingPreferences;
 import com.pulso.backend.preference.domain.OnboardingPreferences;
@@ -49,6 +52,16 @@ class OnboardingPreferencesSecurityTest {
         mockMvc.perform(put("/api/v1/me/preferences")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void requiresAnAccessTokenForDiscoveryInteractionRoutes() throws Exception {
+        mockMvc.perform(get("/api/v1/me/discovery-feed"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/me/saved-projects"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/me/interested-projects"))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -86,6 +99,25 @@ class OnboardingPreferencesSecurityTest {
                 public OnboardingPreferences upsert(OnboardingPreferences preferences) {
                     return preferences;
                 }
+
+                @Override
+                public void saveRecommendationWeights(UUID profileId, Map<String, Double> weights) {
+                }
+            };
+        }
+
+        @Bean
+        ActivePreferenceCatalogLookup activePreferenceCatalogLookup() {
+            return new ActivePreferenceCatalogLookup() {
+                @Override
+                public Set<UUID> findActiveTagIds(List<UUID> ids) {
+                    return Set.copyOf(ids);
+                }
+
+                @Override
+                public Set<UUID> findActiveSkillIds(List<UUID> ids) {
+                    return Set.copyOf(ids);
+                }
             };
         }
 
@@ -100,10 +132,12 @@ class OnboardingPreferencesSecurityTest {
         @Bean
         SaveOnboardingPreferences saveOnboardingPreferences(
                 OnboardingPreferencesRepository repository,
-                ActiveSectorLookup activeSectorLookup) {
+                ActiveSectorLookup activeSectorLookup,
+                ActivePreferenceCatalogLookup activePreferenceCatalogLookup) {
             return new SaveOnboardingPreferences(
                     repository,
                     activeSectorLookup,
+                    activePreferenceCatalogLookup,
                     new PreferenceProperties(10, 40, 120));
         }
     }

@@ -35,10 +35,13 @@ export const feedStrings = {
   doneEyebrow: 'PRIMERA VUELTA COMPLETA',
   doneTitle: 'Ya viste todo el pulso.',
   doneLead:
-    'Tus guardados e intereses siguen en esta sesión. Puedes volver a explorar cuando quieras.',
+    'Tus guardados e intereses quedan vinculados a tu cuenta. Puedes volver a explorar cuando quieras.',
   restart: 'Volver a explorar',
   toastSaved: 'Guardado en tu selección',
   toastRemoved: 'Quitado de tus guardados',
+  interactionSaveFailed: 'No pudimos actualizar tus guardados. Inténtalo de nuevo.',
+  interactionFeedbackFailed: 'No pudimos guardar tu decisión. Inténtalo de nuevo.',
+  retryInteraction: 'Reintentar',
 } as const;
 
 export const cardStrings = {

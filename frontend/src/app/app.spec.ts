@@ -60,7 +60,7 @@ describe('AppComponent', () => {
     expect(auth.initialize).toHaveBeenCalled()
   })
 
-  it.each(['discover', 'saved'])('opens server detail from %s without losing the feed or local decisions', (view) => {
+  it.each(['discover', 'saved'])('opens server detail from %s without losing the feed or persisted decisions', (view) => {
     const session = createSessionStub()
     const auth = createAuthStub()
     auth.session.set({ id: 'user-1', email: 'person@example.test' })
@@ -119,6 +119,7 @@ describe('AppComponent', () => {
 
     expect(session.loadReferenceCatalogs).toHaveBeenCalledOnce()
     expect(session.loadOnboardingPreferences).toHaveBeenCalledOnce()
+    expect(session.loadProjectCollections).toHaveBeenCalledOnce()
   })
 })
 
@@ -151,11 +152,39 @@ function createSessionStub() {
     isLoading: signal(false),
     savedStartups: signal([mockStartups[0]]),
     interestedStartups: signal([mockStartups[1]]),
+    savedCount: signal(1),
+    interestedCount: signal(1),
+    savedHasMore: signal(false),
+    interestedHasMore: signal(false),
+    hasLoadedSavedProjects: signal(true),
+    hasLoadedInterestedProjects: signal(true),
+    isLoadingSavedProjects: signal(false),
+    isLoadingInterestedProjects: signal(false),
+    savedProjectsErrorMessage: signal<string | null>(null),
+    interestedProjectsErrorMessage: signal<string | null>(null),
+    isSavingInteraction: signal(false),
+    interactionErrorMessage: signal<string | null>(null),
+    feedRemaining: signal(2),
+    totalStartups: signal(2),
     getReason: () => 'Proyecto recomendado',
     savedIds: signal<string[]>([]),
     interestedIds: signal<string[]>([]),
     loadReferenceCatalogs: vi.fn().mockResolvedValue(undefined),
     loadOnboardingPreferences: vi.fn().mockResolvedValue(undefined),
+    loadProjectCollections: vi.fn().mockResolvedValue(undefined),
+    resetForUserChange: vi.fn(),
+    goToView: vi.fn(),
+    openProjectDetail: vi.fn(),
+    closeProjectDetail: vi.fn(),
+    toggleSaved: vi.fn(),
+    makeDecision: vi.fn(),
+    retryInteraction: vi.fn(),
+    retryDiscovery: vi.fn(),
+    restartDiscovery: vi.fn(),
+    retrySavedProjects: vi.fn(),
+    retryInterestedProjects: vi.fn(),
+    loadMoreSavedProjects: vi.fn(),
+    loadMoreInterestedProjects: vi.fn(),
     toggleInterest: vi.fn(),
     toggleSector: vi.fn(),
     toggleTag: vi.fn(),

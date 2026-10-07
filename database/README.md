@@ -15,6 +15,13 @@ the source of truth for what is implemented in Supabase. The naming boundary
 between the logical model and the current foundation is recorded in
 [ADR 0004](../docs/adr/0004-project-startup-compatibility.md).
 
+The S3 discovery-persistence migration adds profile tag/skill selections,
+saved-project state, feedback state, and interaction history. The logical DBML
+already includes opportunities, but this migration leaves
+`interaction_events.opportunity_id` unconstrained because the ordered SQL
+history does not yet create `project_opportunities`; add that foreign key with
+the opportunity persistence migration.
+
 For the complete developer onboarding flow, including the backend and Angular
 dev server, start at [`../README.md#developer-onboarding`](../README.md#developer-onboarding).
 

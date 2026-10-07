@@ -5,73 +5,14 @@
     <p class="page-lead">{{ strings.lead }}</p>
   </header>
 
-  <ng-container *ngIf="savedStartups.length > 0 || interestedStartups.length > 0; else emptySavedState">
-    <div class="grid items-start gap-8 xl:grid-cols-2">
-      <section aria-labelledby="saved-heading">
-        <div class="mb-4 flex items-center justify-between gap-4">
-          <h2 id="saved-heading" class="flex items-center gap-3 text-base font-semibold text-slate-100">
-            <pulso-icon name="bookmark" [size]="19" class="text-sky-300" />
-            {{ strings.savedHeading }}
-            <span class="rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-300">{{ savedStartups.length }}</span>
-          </h2>
-        </div>
-        <div *ngIf="savedStartups.length > 0; else noSaved" class="space-y-3">
-          <button *ngFor="let startup of savedStartups" type="button" class="collection-card group" (click)="startupSelected.emit(startup)">
-            <pulso-startup-thumb [startup]="startup" />
-            <span class="collection-card__content">
-              <span class="flex items-start justify-between gap-3">
-                <span class="min-w-0">
-                  <span class="collection-card__title">{{ startup.name }}</span>
-                  <span class="collection-card__meta">{{ startup.city }} · {{ startup.sector }}</span>
-                </span>
-                <pulso-icon name="chevron-right" [size]="18" class="mt-1 shrink-0 text-slate-400" />
-              </span>
-              <span class="collection-card__pitch">{{ startup.pitch }}</span>
-              <span class="mt-3 flex flex-wrap gap-1.5">
-                <span *ngFor="let badge of startup.badges | slice:0:2" class="mini-badge">{{ badge }}</span>
-              </span>
-            </span>
-          </button>
-        </div>
-        <ng-template #noSaved>
-          <p class="state-panel text-sm">{{ strings.noneSaved }}</p>
-        </ng-template>
-      </section>
+  <section
+    *ngIf="(!hasLoadedSavedProjects && isLoadingSavedProjects) || (!hasLoadedInterestedProjects && isLoadingInterestedProjects)"
+    class="state-panel"
+    role="status"
+    aria-live="polite"
+  >{{ strings.loading }}</section>
 
-      <section aria-labelledby="interested-heading">
-        <div class="mb-4 flex items-center justify-between gap-4">
-          <h2 id="interested-heading" class="flex items-center gap-3 text-base font-semibold text-slate-100">
-            <pulso-icon name="heart" [size]="19" class="text-rose-300" />
-            {{ strings.interestedHeading }}
-            <span class="rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-300">{{ interestedStartups.length }}</span>
-          </h2>
-        </div>
-        <div *ngIf="interestedStartups.length > 0; else noInterested" class="space-y-3">
-          <button *ngFor="let startup of interestedStartups" type="button" class="collection-card group" (click)="startupSelected.emit(startup)">
-            <pulso-startup-thumb [startup]="startup" />
-            <span class="collection-card__content">
-              <span class="flex items-start justify-between gap-3">
-                <span class="min-w-0">
-                  <span class="collection-card__title">{{ startup.name }}</span>
-                  <span class="collection-card__meta">{{ startup.city }} · {{ startup.sector }}</span>
-                </span>
-                <pulso-icon name="chevron-right" [size]="18" class="mt-1 shrink-0 text-slate-400" />
-              </span>
-              <span class="collection-card__pitch">{{ startup.pitch }}</span>
-              <span class="mt-3 flex flex-wrap gap-1.5">
-                <span *ngFor="let badge of startup.badges | slice:0:2" class="mini-badge">{{ badge }}</span>
-              </span>
-            </span>
-          </button>
-        </div>
-        <ng-template #noInterested>
-          <p class="state-panel text-sm">{{ strings.noneInterested }}</p>
-        </ng-template>
-      </section>
-    </div>
-  </ng-container>
-
-  <ng-template #emptySavedState>
+  <ng-container *ngIf="hasLoadedSavedProjects && hasLoadedInterestedProjects && savedCount === 0 && interestedCount === 0 && !savedProjectsErrorMessage && !interestedProjectsErrorMessage; else collections">
     <section class="state-panel flex flex-col items-center py-12 text-center">
       <span class="flex size-12 items-center justify-center rounded-2xl border border-slate-700 bg-slate-800 text-sky-300">
         <pulso-icon name="bookmark" [size]="22" />
@@ -79,5 +20,87 @@
       <h2 class="mt-5 text-lg font-semibold text-slate-100">{{ strings.emptyTitle }}</h2>
       <p class="mt-2 max-w-sm text-sm leading-6 text-slate-400">{{ strings.emptyLead }}</p>
     </section>
+  </ng-container>
+
+  <ng-template #collections>
+    <div class="grid items-start gap-8 xl:grid-cols-2">
+      <section aria-labelledby="saved-heading">
+        <div class="mb-4 flex items-center justify-between gap-4">
+          <h2 id="saved-heading" class="flex items-center gap-3 text-base font-semibold text-slate-100">
+            <pulso-icon name="bookmark" [size]="19" class="text-sky-300" />
+            {{ strings.savedHeading }}
+            <span class="rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-300">{{ savedCount }}</span>
+          </h2>
+        </div>
+        <section *ngIf="savedProjectsErrorMessage as error" class="state-panel" role="alert">
+          <p>{{ error }}</p>
+          <button type="button" class="contact-button mt-3" (click)="retrySavedRequested.emit()">{{ common.retry }}</button>
+        </section>
+        <ng-container *ngIf="!savedProjectsErrorMessage && hasLoadedSavedProjects">
+          <div *ngIf="savedStartups.length > 0; else noSaved" class="space-y-3">
+            <button *ngFor="let startup of savedStartups" type="button" class="collection-card group" (click)="startupSelected.emit(startup)">
+              <pulso-startup-thumb [startup]="startup" />
+              <span class="collection-card__content">
+                <span class="flex items-start justify-between gap-3">
+                  <span class="min-w-0">
+                    <span class="collection-card__title">{{ startup.name }}</span>
+                    <span class="collection-card__meta">{{ startup.city }} · {{ startup.sector }}</span>
+                  </span>
+                  <pulso-icon name="chevron-right" [size]="18" class="mt-1 shrink-0 text-slate-400" />
+                </span>
+                <span class="collection-card__pitch">{{ startup.pitch }}</span>
+                <span class="mt-3 flex flex-wrap gap-1.5">
+                  <span *ngFor="let badge of startup.badges | slice:0:2" class="mini-badge">{{ badge }}</span>
+                </span>
+              </span>
+            </button>
+          </div>
+          <ng-template #noSaved><p class="state-panel text-sm">{{ strings.noneSaved }}</p></ng-template>
+          <button *ngIf="savedHasMore" type="button" class="contact-button mt-4" [disabled]="isLoadingSavedProjects" (click)="loadMoreSavedRequested.emit()">
+            {{ isLoadingSavedProjects ? strings.loading : strings.loadMore }}
+          </button>
+        </ng-container>
+        <p *ngIf="isLoadingSavedProjects && hasLoadedSavedProjects" class="field-hint mt-3" role="status">{{ strings.loading }}</p>
+      </section>
+
+      <section aria-labelledby="interested-heading">
+        <div class="mb-4 flex items-center justify-between gap-4">
+          <h2 id="interested-heading" class="flex items-center gap-3 text-base font-semibold text-slate-100">
+            <pulso-icon name="heart" [size]="19" class="text-rose-300" />
+            {{ strings.interestedHeading }}
+            <span class="rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-300">{{ interestedCount }}</span>
+          </h2>
+        </div>
+        <section *ngIf="interestedProjectsErrorMessage as error" class="state-panel" role="alert">
+          <p>{{ error }}</p>
+          <button type="button" class="contact-button mt-3" (click)="retryInterestedRequested.emit()">{{ common.retry }}</button>
+        </section>
+        <ng-container *ngIf="!interestedProjectsErrorMessage && hasLoadedInterestedProjects">
+          <div *ngIf="interestedStartups.length > 0; else noInterested" class="space-y-3">
+            <button *ngFor="let startup of interestedStartups" type="button" class="collection-card group" (click)="startupSelected.emit(startup)">
+              <pulso-startup-thumb [startup]="startup" />
+              <span class="collection-card__content">
+                <span class="flex items-start justify-between gap-3">
+                  <span class="min-w-0">
+                    <span class="collection-card__title">{{ startup.name }}</span>
+                    <span class="collection-card__meta">{{ startup.city }} · {{ startup.sector }}</span>
+                  </span>
+                  <pulso-icon name="chevron-right" [size]="18" class="mt-1 shrink-0 text-slate-400" />
+                </span>
+                <span class="collection-card__pitch">{{ startup.pitch }}</span>
+                <span class="mt-3 flex flex-wrap gap-1.5">
+                  <span *ngFor="let badge of startup.badges | slice:0:2" class="mini-badge">{{ badge }}</span>
+                </span>
+              </span>
+            </button>
+          </div>
+          <ng-template #noInterested><p class="state-panel text-sm">{{ strings.noneInterested }}</p></ng-template>
+          <button *ngIf="interestedHasMore" type="button" class="contact-button mt-4" [disabled]="isLoadingInterestedProjects" (click)="loadMoreInterestedRequested.emit()">
+            {{ isLoadingInterestedProjects ? strings.loading : strings.loadMore }}
+          </button>
+        </ng-container>
+        <p *ngIf="isLoadingInterestedProjects && hasLoadedInterestedProjects" class="field-hint mt-3" role="status">{{ strings.loading }}</p>
+      </section>
+    </div>
   </ng-template>
 </main>

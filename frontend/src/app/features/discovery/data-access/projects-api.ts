@@ -10,6 +10,7 @@ import type {
   UpdatedProject,
 } from '../domain/project'
 import type {
+  MemberInvitationDto,
   ProjectCreateRequestDto,
   ProjectCreateResponseDto,
   ProjectUpdateRequestDto,
@@ -20,7 +21,26 @@ import { apiPaths } from './discovery.catalog.contract'
 @Injectable({ providedIn: 'root' })
 export class ProjectsApi {
   private readonly http = inject(HttpClient)
+  createInvitation(
+    projectId: string,
+    inviteeEmail: string,
+  ): Observable<MemberInvitationDto> {
+    return this.http.post<MemberInvitationDto>(
+      `${appConfig.apiBaseUrl}/api/v1/projects/${encodeURIComponent(projectId)}/members`,
+      {
+        inviteeEmail: inviteeEmail.trim().toLowerCase(),
+      },
+    )
+  }
 
+  acceptInvitation(
+    token: string,
+  ): Observable<MemberInvitationDto> {
+    return this.http.post<MemberInvitationDto>(
+      `${appConfig.apiBaseUrl}/api/v1/project-members/accept`,
+      { token },
+    )
+  }
   createDraft(value: ProjectCreateFormValue): Observable<CreatedDraftProject> {
     const request = toProjectCreateRequest(value)
 

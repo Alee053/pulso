@@ -16,10 +16,12 @@ export class InvitationLink {
     if (!browser) return
     const url = new URL(browser.location.href)
     const fragment = new URLSearchParams(url.hash.slice(1))
-    if (!fragment.has('invitation')) return
+    const tokens = [...fragment.getAll('invitation'), ...fragment.getAll('invite')]
+    if (tokens.length === 0) return
     this.requested.set(true)
-    this.token = fragment.get('invitation')
+    this.token = tokens.length === 1 ? tokens[0] : null
     fragment.delete('invitation')
+    fragment.delete('invite')
     url.hash = fragment.toString()
     browser.history.replaceState(browser.history.state, '', url.pathname + url.search + url.hash)
   }

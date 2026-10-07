@@ -89,7 +89,8 @@ class MemberInvitationControllerTest {
                         new CreateMemberInvitation(
                                 repository,
                                 () -> "accept-me",
-                                new ProjectProperties(2, 120, 160, 240, 5000, 120, 40, 254))))
+                                new ProjectProperties(2, 120, 160, 240, 5000, 120, 40, 254),
+                                (email, token) -> { })))
                 .setControllerAdvice(new ApiExceptionHandler())
                 .setCustomArgumentResolvers(new JwtArgumentResolver())
                 .build();

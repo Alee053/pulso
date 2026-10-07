@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,9 +24,13 @@ public class AdministerProjectMembership {
             "withdraw");
 
     private final MembershipAdministrationRepository repository;
+    private final ApplicationEventPublisher events;
 
-    public AdministerProjectMembership(MembershipAdministrationRepository repository) {
+    public AdministerProjectMembership(
+            MembershipAdministrationRepository repository,
+            ApplicationEventPublisher events) {
         this.repository = repository;
+        this.events = events;
     }
 
     @Transactional
@@ -58,6 +63,15 @@ public class AdministerProjectMembership {
         if (updated != 1) {
             throw new MembershipConflictException();
         }
+        events.publishEvent(new MembershipAdministrationAccepted(
+                authenticatedProfileId,
+                normalizedAction,
+                projectId,
+                memberId,
+                target.role(),
+                next.role(),
+                target.membershipStatus(),
+                next.membershipStatus()));
         return next;
     }
 

@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { authInterceptor } from '../../../core/auth/auth.interceptor'
 import { SupabaseAuthGateway } from '../../../core/auth/supabase-auth.gateway'
 import { MemberInvitationsApi } from './member-invitations-api'
+import { ProjectsApi } from './projects-api'
 
 describe('MemberInvitationsApi', () => {
   it('accepts using only the private token body and authenticated bearer', async () => {
@@ -55,6 +56,38 @@ describe('MemberInvitationsApi', () => {
       profileId: null, role: 'MEMBER', membershipStatus: 'INVITED', createdByProfileId: 'actor-1',
       token: 'unexpected-secret', inviteTokenDigest: 'unexpected-digest' })
     expect(await result).toEqual({ projectId: 'project-1', membershipStatus: 'INVITED' })
+    http.verify()
+  })
+})
+
+describe('ProjectsApi invitations', () => {
+  it('normalizes email and does not send actor, role or token in create request', async () => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] })
+    const api = TestBed.inject(ProjectsApi)
+    const http = TestBed.inject(HttpTestingController)
+    const pending = firstValueFrom(api.createInvitation('project-id', ' Ada@Example.com '))
+    const request = http.expectOne('http://localhost:8080/api/v1/projects/project-id/members')
+    expect(request.request.method).toBe('POST')
+    expect(request.request.body).toEqual({ inviteeEmail: 'ada@example.com' })
+    request.flush({ id: 'invite-id', projectId: 'project-id', inviteeEmail: 'ada@example.com',
+      profileId: null, role: 'MEMBER', membershipStatus: 'INVITED', createdByProfileId: 'owner-id' },
+      { status: 201, statusText: 'Created' })
+    const result = await pending
+    expect(result.membershipStatus).toBe('INVITED')
+    expect(result).not.toHaveProperty('inviteTokenDigest')
+    http.verify()
+  })
+  it('submits only token for acceptance', async () => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] })
+    const api = TestBed.inject(ProjectsApi)
+    const http = TestBed.inject(HttpTestingController)
+    const pending = firstValueFrom(api.acceptInvitation('secret-token'))
+    const request = http.expectOne('http://localhost:8080/api/v1/project-members/accept')
+    expect(request.request.method).toBe('POST')
+    expect(request.request.body).toEqual({ token: 'secret-token' })
+    request.flush({ id: 'invite-id', projectId: 'project-id', inviteeEmail: 'ada@example.com',
+      profileId: 'user-id', role: 'MEMBER', membershipStatus: 'ACTIVE', createdByProfileId: 'owner-id' })
+    await expect(pending).resolves.toMatchObject({ membershipStatus: 'ACTIVE', profileId: 'user-id' })
     http.verify()
   })
 })

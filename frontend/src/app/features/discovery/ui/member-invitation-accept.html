@@ -1,0 +1,7 @@
+<section class="mx-auto mt-12 max-w-xl glass-panel p-8 text-white">
+  <h1 class="text-2xl">Invitación a Pulso</h1>
+  <p class="mt-3 text-white/60">Acepta con la cuenta del correo que recibió la invitación.</p>
+  <button *ngIf="!projectId()" (click)="accept()" [disabled]="busy()" class="mt-6 rounded-xl bg-sky-600 p-3">{{ busy() ? 'Aceptando...' : 'Aceptar invitación' }}</button>
+  <p *ngIf="projectId()" role="status" class="mt-4 text-green-300">Ahora formas parte del proyecto.</p>
+  <p *ngIf="error()" role="alert" class="mt-4 text-red-300">{{ error() }}</p>
+</section>

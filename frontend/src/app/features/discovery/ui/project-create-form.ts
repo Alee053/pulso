@@ -10,15 +10,13 @@ import {
   FormGroup,
   ReactiveFormsModule,
   Validators,
-
-}
- 
- from '@angular/forms'
+} from '@angular/forms'
 import { firstValueFrom } from 'rxjs'
 import { SupabaseAuthGateway } from '../../../core/auth/supabase-auth.gateway'
 import type { SectorCatalogItem } from '../../discovery/domain/catalog'
 import { projectContract } from '../data-access/project.contract'
 import { ProjectsApi } from '../data-access/projects-api'
+import { MemberInvitationPanelComponent } from './member-invitation-panel'
 import {
   projectStageOptions,
   type CreatedDraftProject,
@@ -30,7 +28,7 @@ import { projectStrings } from '../strings/project.strings'
 @Component({
   selector: 'pulso-project-create-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, MemberInvitationPanelComponent],
   templateUrl: './project-create-form.html',
 })
 export class ProjectCreateFormComponent {

@@ -97,7 +97,7 @@ class CreateMemberInvitationTest {
     }
 
     private static CreateMemberInvitation service(CapturingRepository repository) {
-        return new CreateMemberInvitation(repository, () -> "accept-me", PROPERTIES);
+        return new CreateMemberInvitation(repository, () -> "accept-me", PROPERTIES, (email, token) -> { });
     }
 
     private static CapturingRepository repository() {

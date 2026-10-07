@@ -40,6 +40,33 @@ set_env_if_unset() {
     DB_CONNECTION_TIMEOUT_MS)
       if [ -z "${DB_CONNECTION_TIMEOUT_MS+x}" ]; then export "DB_CONNECTION_TIMEOUT_MS=$value"; fi
       ;;
+    PULSO_SMTP_PORT)
+      if [ -z "${PULSO_SMTP_PORT+x}" ]; then export "PULSO_SMTP_PORT=$value"; fi
+      ;;
+    SMTP_HOST)
+      if [ -z "${SMTP_HOST+x}" ]; then export "SMTP_HOST=$value"; fi
+      ;;
+    SMTP_PORT)
+      if [ -z "${SMTP_PORT+x}" ]; then export "SMTP_PORT=$value"; fi
+      ;;
+    SMTP_USERNAME)
+      if [ -z "${SMTP_USERNAME+x}" ]; then export "SMTP_USERNAME=$value"; fi
+      ;;
+    SMTP_PASSWORD)
+      if [ -z "${SMTP_PASSWORD+x}" ]; then export "SMTP_PASSWORD=$value"; fi
+      ;;
+    SMTP_AUTH)
+      if [ -z "${SMTP_AUTH+x}" ]; then export "SMTP_AUTH=$value"; fi
+      ;;
+    SMTP_STARTTLS)
+      if [ -z "${SMTP_STARTTLS+x}" ]; then export "SMTP_STARTTLS=$value"; fi
+      ;;
+    PULSO_INVITATION_FRONTEND_URL)
+      if [ -z "${PULSO_INVITATION_FRONTEND_URL+x}" ]; then export "PULSO_INVITATION_FRONTEND_URL=$value"; fi
+      ;;
+    PULSO_INVITATION_FROM)
+      if [ -z "${PULSO_INVITATION_FROM+x}" ]; then export "PULSO_INVITATION_FROM=$value"; fi
+      ;;
     *)
       printf '%s\n' 'Unsupported variable in the selected environment file.' >&2
       exit 1

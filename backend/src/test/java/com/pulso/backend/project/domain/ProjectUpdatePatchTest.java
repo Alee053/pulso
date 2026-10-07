@@ -3,9 +3,13 @@ package com.pulso.backend.project.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.Locale;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class ProjectUpdatePatchTest {
 
@@ -183,5 +187,43 @@ class ProjectUpdatePatchTest {
                 LIMITS))
                 .isInstanceOf(ProjectValidationException.class)
                 .hasMessage("description must not exceed 5000 characters.");
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "name,160", "tagline,240", "description,5000", "valueProposition,5000",
+            "city,120", "department,120"
+    })
+    void acceptsTextAtTheLimitAndRejectsOneCharacterBeyond(String field, int maxLength) {
+        ProjectUpdatePatch patch = textPatch(field, "x".repeat(maxLength));
+
+        assertThat(patch).extracting(field).isEqualTo("x".repeat(maxLength));
+        assertThatThrownBy(() -> textPatch(field, "x".repeat(maxLength + 1)))
+                .isInstanceOf(ProjectValidationException.class)
+                .hasMessage(field + " must not exceed " + maxLength + " characters.");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "IDEA", "PROTOTYPE", "MVP", "EARLY_STAGE", "GROWING", "ESTABLISHED" })
+    void acceptsEveryDocumentedStageAndNormalizesIt(String stage) {
+        ProjectUpdatePatch patch = new ProjectUpdatePatch(
+                null, null, null, null, "  " + stage.toLowerCase(Locale.ROOT) + "  ",
+                null, null, null, LIMITS);
+
+        assertThat(patch.stage()).isEqualTo(stage);
+        assertThat(patch.stageProvided()).isTrue();
+    }
+
+    private static ProjectUpdatePatch textPatch(String field, String value) {
+        return new ProjectUpdatePatch(
+                "name".equals(field) ? value : null,
+                "tagline".equals(field) ? value : null,
+                "description".equals(field) ? value : null,
+                "valueProposition".equals(field) ? value : null,
+                null,
+                null,
+                "city".equals(field) ? value : null,
+                "department".equals(field) ? value : null,
+                LIMITS);
     }
 }

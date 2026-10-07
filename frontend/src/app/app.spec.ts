@@ -16,8 +16,8 @@ import { projectStageOptions, type ProjectStage } from './features/discovery/dom
 afterEach(() => history.replaceState(null, '', '/'))
 
 describe('AppComponent', () => {
-  it('accepts an invitation before onboarding and removes its secret from the location', () => {
-    history.replaceState(null, '', '/#invitation=private-token')
+  it.each(['invitation', 'invite'])('accepts the %s link before onboarding and removes its secret from the location', (parameter) => {
+    history.replaceState(null, '', '/#' + parameter + '=private-token')
     const session = createSessionStub()
     const auth = createAuthStub()
     auth.session.set({ id: 'invitee-1', email: 'ada@example.test' })

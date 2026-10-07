@@ -119,7 +119,7 @@ show owner/admin controls, while `MemberInvitationsApi` sends create/accept
 requests through the Auth interceptor and translates server failures into safe
 Spanish copy. No browser product query goes to Supabase.
 
-`InvitationLink` consumes the initial `invitation` URL fragment before Auth
+`InvitationLink` consumes the initial `invitation` or SMTP `invite` URL fragment before Auth
 initialization, removes it from the location, and holds its token privately in
 memory for the acceptance request. The app composes `InvitationAcceptanceComponent`
 before onboarding so an invited account can authenticate, accept, or switch

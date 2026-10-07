@@ -355,6 +355,12 @@ Unknown action, role, or membership status returns `400`. A concurrent change
 that makes the expected membership state stale returns `409` with code
 `membership_conflict`.
 
+Committed membership changes emit an `INFO` audit event through the backend's
+structured logger, identifying the authenticated actor, action, project, and
+membership. Rollback and rejected actions do not emit successful-change events.
+See [MVP audit](architecture/membership-administration.md#mvp-audit) for fields
+and log-retention limitations.
+
 ## `PATCH /api/v1/projects/{projectId}` — project information update (PUL-63)
 
 Updates an existing canonical project for the authenticated project team. The
@@ -707,7 +713,9 @@ curl -X POST \
 The email is trimmed and lowercased before duplicate detection and
 persistence. The server generates an acceptance token and stores only its
 SHA-256 digest; the token and digest are never returned in the HTTP response
-or written to logs.
+or written to logs. It also sends the plaintext token to the invitee through
+the configured SMTP transport as a frontend link. If delivery fails, the
+invitation transaction is rolled back.
 
 Response `201 Created`:
 

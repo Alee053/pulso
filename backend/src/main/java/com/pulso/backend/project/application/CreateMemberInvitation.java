@@ -19,14 +19,17 @@ public class CreateMemberInvitation {
 
     private final MemberInvitationRepository repository;
     private final MemberInvitationTokenGenerator tokenGenerator;
+    private final MemberInvitationDelivery delivery;
     private final MemberInvitation.Limits limits;
 
     public CreateMemberInvitation(
             MemberInvitationRepository repository,
             MemberInvitationTokenGenerator tokenGenerator,
-            ProjectProperties properties) {
+            ProjectProperties properties,
+            MemberInvitationDelivery delivery) {
         this.repository = repository;
         this.tokenGenerator = tokenGenerator;
+        this.delivery = delivery;
         this.limits = new MemberInvitation.Limits(properties.inviteeEmailMaxLength());
     }
 
@@ -43,15 +46,18 @@ public class CreateMemberInvitation {
 
         MemberInvitationActor actor = repository.findActor(projectId, authenticatedProfileId)
                 .orElseThrow(MemberInvitationPermissionException::new);
+        String token = tokenGenerator.generate();
         CreatedMemberInvitation created = MemberInvitation.invite(
                 projectId,
                 true,
                 actor,
                 inviteeEmail,
-                tokenGenerator.generate(),
+                token,
                 repository.findInvitations(projectId),
                 limits);
-        return repository.createInvitation(created);
+        PersistedMemberInvitation persisted = repository.createInvitation(created);
+        delivery.send(created.invitation().inviteeEmail(), token);
+        return persisted;
     }
 
     private static void requireIdentifiers(UUID projectId, UUID authenticatedProfileId) {

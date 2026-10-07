@@ -26,6 +26,17 @@ function setup(authenticated = true, fragment = '#invitation=private-token') {
 afterEach(() => history.replaceState(null, '', '/'))
 
 describe('InvitationAcceptanceComponent', () => {
+  it('removes all token parameters and rejects ambiguous links without a request', () => {
+    const { fixture, http } = setup(true, '#invite=first-secret&invitation=second-secret&section=team')
+    expect(location.hash).toBe('#section=team')
+    expect(fixture.nativeElement.textContent).toContain('El enlace de invitación no es válido')
+    expect(fixture.nativeElement.innerHTML).not.toContain('first-secret')
+    expect(fixture.nativeElement.innerHTML).not.toContain('second-secret')
+    fixture.componentInstance.accept()
+    http.expectNone(path)
+    http.verify()
+  })
+
   it('keeps the invitation through sign-in without submitting anonymously', () => {
     const { fixture, auth, http } = setup(false)
     expect(fixture.nativeElement.querySelector('pulso-auth-panel')).not.toBeNull()

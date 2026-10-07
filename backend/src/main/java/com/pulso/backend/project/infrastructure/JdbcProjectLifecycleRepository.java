@@ -43,6 +43,25 @@ public class JdbcProjectLifecycleRepository implements ProjectLifecycleRepositor
 
     @Override
     public Optional<ProjectLifecycleSnapshot> findForActor(UUID projectId, UUID profileId) {
+        // Share membership administration's lock, then read a fresh permission snapshot.
+        var lockedProject = jdbcClient.sql("""
+                select p.id
+                from public.projects p
+                where p.id = :projectId
+                  and exists (
+                      select 1 from public.project_members member
+                      where member.project_id = p.id and member.profile_id = :profileId
+                  )
+                for update
+                """)
+                .param("projectId", projectId)
+                .param("profileId", profileId)
+                .query(UUID.class)
+                .optional();
+        if (lockedProject.isEmpty()) {
+            return Optional.empty();
+        }
+
         return jdbcClient.sql(LIFECYCLE_FOR_ACTOR)
                 .param("projectId", projectId)
                 .param("profileId", profileId)

@@ -4,8 +4,9 @@
 `com.pulso.backend.project.domain.MembershipAdministration` and the interface
 action/error seam in
 `frontend/src/app/features/discovery/domain/membership-administration.ts`.
-**Current** for the HTTP activate, change-role, and withdraw endpoint.
-**Target** for a membership-administration screen.
+**Current** for the protected roster read and HTTP activate, change-role, and
+withdraw endpoints. **Current** for the administration panel under each team in
+`Mis equipos`.
 
 S2.5 formalizes how existing `project_members` rows are administered. Roles
 are `OWNER`, `ADMIN`, and `MEMBER`. Membership statuses are `INVITED`,
@@ -70,6 +71,24 @@ same project cannot both approve a stale owner state.
 
 ## HTTP contract
 
+The backend exposes an authenticated, paginated roster for active project
+owners and admins:
+
+`GET /api/v1/projects/{projectId}/members?offset=0&limit=20`
+
+The response includes the membership ID, profile ID, role, status, and profile
+display name. It includes `inviteeEmail` only while the row is `INVITED`; it
+never returns `inviteTokenDigest` or other invitation token material. Pages use
+stable `created_at`, `id` ordering, a default size of 20, and a maximum size of
+50. Missing or insufficient project membership returns `403`.
+
+The `Mis equipos` panel shows these controls only when the signed-in user's
+persisted membership is an active owner or admin. It loads the roster on demand,
+offers activation for bound `LEFT`/`REMOVED` rows, role changes for active rows,
+and withdrawal for other invited/active rows. The client hides self-promotion;
+the backend remains authoritative for every request and for the last-owner
+invariant.
+
 The backend implements the three actions through one authenticated endpoint.
 The authenticated profile is the actor. The request body cannot set
 `profileId`, `membershipStatus`, or `createdByProfileId`.
@@ -128,7 +147,7 @@ stack or prove a live browser flow.
 | Self-elevation | `MembershipPermissionException` | `403` | `membership_permission` | `cannot elevate own role.` | No puedes elevar tu propio rol. |
 | Status or identity that the action does not allow | `MembershipInvalidTransitionException` | `409` | `membership_invalid_transition` | `cannot {action} a membership with status {status}.` or `cannot activate a membership without a profile.` | Esa membresía no admite esta acción. |
 | Last active owner would be removed or demoted | `MembershipOwnerInvariantException` | `409` | `membership_owner_required` | `project must keep at least one active OWNER.` | El proyecto debe conservar al menos un owner activo. |
-| Concurrent membership change makes the expected row stale | `MembershipConflictException` | `409` | `membership_conflict` | `The membership changed before the action completed.` | |
+| Concurrent membership change makes the expected row stale | `MembershipConflictException` | `409` | `membership_conflict` | `The membership changed before the action completed.` | La membresía cambió mientras se procesaba la solicitud. Actualiza la lista e inténtalo de nuevo. |
 | Unknown role or membership status | `ProjectValidationException` | `400` | | Field-specific validation message | |
 
 The executable backend contract is `MembershipAdministration`. Callers supply

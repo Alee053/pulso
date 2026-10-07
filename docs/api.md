@@ -306,7 +306,46 @@ Conflict`; other PostgreSQL failures return the sanitized `503 Service
 Unavailable` response. Missing, invalid, or `service_role` bearer tokens
 return `401 Unauthorized`.
 
-## `PATCH /api/v1/projects/{projectId}/members/{memberId}` — administer membership (PUL-83)
+## `GET /api/v1/projects/{projectId}/members` — list memberships for administration (PUL-14)
+
+Lists project memberships for an authenticated, active project `OWNER` or
+`ADMIN`. The profile identity comes from the validated JWT subject. A regular
+`MEMBER`, an invited/inactive role, a user from another project, or a missing
+membership receives the same `403 Membership permission` response.
+
+```sh
+curl -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  "http://localhost:8080/api/v1/projects/33333333-3333-3333-3333-333333333333/members?offset=0&limit=20"
+```
+
+The endpoint returns a bounded page (default 20, maximum 50, offset maximum
+100000), ordered by membership creation time and ID. It includes each row's
+membership ID, profile ID when bound, display name, role, and status. Pending
+invitations include their normalized `inviteeEmail` so an owner/admin can
+identify and withdraw them. Other rows return `inviteeEmail: null`. The response
+never includes an invitation token digest or plaintext token.
+
+```json
+{
+  "data": [
+    {
+      "id": "44444444-4444-4444-4444-444444444444",
+      "projectId": "33333333-3333-3333-3333-333333333333",
+      "profileId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      "displayName": "Persona Dos",
+      "inviteeEmail": null,
+      "role": "MEMBER",
+      "membershipStatus": "ACTIVE"
+    }
+  ],
+  "meta": { "offset": 0, "limit": 20, "hasMore": false }
+}
+```
+
+Invalid pagination returns `400 Bad Request`; missing or invalid bearer tokens
+return `401 Unauthorized`.
+
+## `PATCH /api/v1/projects/{projectId}/members/{memberId}` — administer membership (PUL-14 / PUL-83)
 
 Updates an existing project membership for an authenticated active `OWNER` or
 `ADMIN`. An active `MEMBER` may only use `withdraw` on their own membership.

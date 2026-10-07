@@ -5,12 +5,14 @@ import { SupabaseAuthGateway } from '../../../core/auth/supabase-auth.gateway'
 import { CurrentProjectsApi } from '../data-access/current-projects-api'
 import type { CurrentProjectMembership } from '../domain/member-invitation'
 import { invitationStrings } from '../strings/invitation.strings'
+import type { ActorMembershipChange } from '../domain/project-membership-administration'
 import { MemberInvitationFormComponent } from './member-invitation-form'
+import { ProjectMembershipAdminComponent } from './project-membership-admin'
 
 @Component({
   selector: 'pulso-project-teams',
   standalone: true,
-  imports: [CommonModule, MemberInvitationFormComponent],
+  imports: [CommonModule, MemberInvitationFormComponent, ProjectMembershipAdminComponent],
   templateUrl: './project-teams.html',
 })
 export class ProjectTeamsComponent implements OnDestroy {
@@ -21,6 +23,7 @@ export class ProjectTeamsComponent implements OnDestroy {
   private userId: string | null = null
   private nextOffset = 0
   readonly projects = signal<CurrentProjectMembership[]>([])
+  readonly actorProfileId = signal<string | null>(null)
   readonly loading = signal(false)
   readonly errorMessage = signal<string | null>(null)
   readonly hasMore = signal(false)
@@ -30,6 +33,7 @@ export class ProjectTeamsComponent implements OnDestroy {
     untracked(() => {
       if (this.userId === userId) return
       this.userId = userId
+      this.actorProfileId.set(userId)
       this.request?.unsubscribe()
       this.projects.set([])
       this.nextOffset = 0
@@ -69,4 +73,10 @@ export class ProjectTeamsComponent implements OnDestroy {
   }
 
   trackProject(_index: number, project: CurrentProjectMembership): string { return project.projectId }
+
+  actorMembershipChanged(change: ActorMembershipChange): void {
+    this.projects.update((projects) => projects.map((project) => project.projectId === change.projectId
+      ? { ...project, role: change.role }
+      : project))
+  }
 }

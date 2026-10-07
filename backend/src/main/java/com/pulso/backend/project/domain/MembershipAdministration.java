@@ -19,6 +19,10 @@ public final class MembershipAdministration {
     private MembershipAdministration() {
     }
 
+    public static boolean canAdminister(MembershipActor actor) {
+        return hasAdminAuthority(actor, null);
+    }
+
     public static ProjectMember activate(
             MembershipActor actor,
             ProjectMember target,

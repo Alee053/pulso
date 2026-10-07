@@ -1,6 +1,7 @@
 package com.pulso.backend.project.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -25,8 +26,11 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 
 import com.pulso.backend.discovery.api.ApiExceptionHandler;
 import com.pulso.backend.project.application.AdministerProjectMembership;
+import com.pulso.backend.project.application.ListProjectMemberships;
 import com.pulso.backend.project.application.MembershipAdministrationRepository;
+import com.pulso.backend.config.ProjectMembershipsProperties;
 import com.pulso.backend.project.domain.MembershipActor;
+import com.pulso.backend.project.domain.ManagedProjectMember;
 import com.pulso.backend.project.domain.ProjectMember;
 
 class ProjectMembershipControllerTest {
@@ -60,6 +64,40 @@ class ProjectMembershipControllerTest {
                 .andExpect(jsonPath("$.role").value("ADMIN"))
                 .andExpect(jsonPath("$.membershipStatus").value("ACTIVE"))
                 .andExpect(jsonPath("$.createdByProfileId").value(PROFILE_ID.toString()));
+    }
+
+    @Test
+    void listsMemberSummariesWithBoundedPaginationAndNoInvitationSecrets() throws Exception {
+        CapturingRepository repository = repository(member("MEMBER", "ACTIVE"));
+        repository.managedMembers = List.of(
+                new ManagedProjectMember(MEMBER_ID, PROJECT_ID, TARGET_PROFILE_ID,
+                        "Ada", null, "MEMBER", "ACTIVE"),
+                new ManagedProjectMember(UUID.fromString("77777777-7777-7777-7777-777777777777"),
+                        PROJECT_ID, null, null, "ada@example.test", "MEMBER", "INVITED"));
+
+        mockMvc(repository).perform(get("/api/v1/projects/" + PROJECT_ID + "/members")
+                .param("offset", "0")
+                .param("limit", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].displayName").value("Ada"))
+                .andExpect(jsonPath("$.data[0].inviteeEmail").doesNotExist())
+                .andExpect(jsonPath("$.data[0].inviteTokenDigest").doesNotExist())
+                .andExpect(jsonPath("$.meta.offset").value(0))
+                .andExpect(jsonPath("$.meta.limit").value(1))
+                .andExpect(jsonPath("$.meta.hasMore").value(true));
+    }
+
+    @Test
+    void rejectsOutOfRangeRosterPaginationBeforeReadingMemberships() throws Exception {
+        CapturingRepository repository = repository(member("MEMBER", "ACTIVE"));
+
+        mockMvc(repository).perform(get("/api/v1/projects/" + PROJECT_ID + "/members")
+                .param("offset", "100001")
+                .param("limit", "20"))
+                .andExpect(status().isBadRequest());
+
+        assertEquals(0, repository.rosterReads);
     }
 
     @Test
@@ -202,10 +240,13 @@ class ProjectMembershipControllerTest {
     }
 
     private static MockMvc mockMvc(CapturingRepository repository) {
+        ProjectMembershipsProperties properties = new ProjectMembershipsProperties(0, 20, 50, 100000);
         return MockMvcBuilders
                 .standaloneSetup(new ProjectMembershipController(
                         new AdministerProjectMembership(repository, event -> {
-                        })))
+                        }),
+                        new ListProjectMemberships(repository),
+                        properties))
                 .setControllerAdvice(new ApiExceptionHandler())
                 .setCustomArgumentResolvers(new JwtArgumentResolver())
                 .build();
@@ -273,6 +314,8 @@ class ProjectMembershipControllerTest {
         private MembershipActor actor = owner();
         private ProjectMember target;
         private List<ProjectMember> members = List.of();
+        private List<ManagedProjectMember> managedMembers = List.of();
+        private int rosterReads;
         private int updateCalls;
         private int updatedRows = 1;
 
@@ -293,6 +336,12 @@ class ProjectMembershipControllerTest {
         @Override
         public List<ProjectMember> findMembers(UUID projectId) {
             return members;
+        }
+
+        @Override
+        public List<ManagedProjectMember> findManagedMembers(UUID projectId, int offset, int limit) {
+            rosterReads++;
+            return managedMembers.stream().skip(offset).limit(limit).toList();
         }
 
         @Override

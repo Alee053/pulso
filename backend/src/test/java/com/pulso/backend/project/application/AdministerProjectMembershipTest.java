@@ -17,6 +17,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import com.pulso.backend.project.domain.MembershipActor;
+import com.pulso.backend.project.domain.ManagedProjectMember;
 import com.pulso.backend.project.domain.MembershipOwnerInvariantException;
 import com.pulso.backend.project.domain.MembershipPermissionException;
 import com.pulso.backend.project.domain.ProjectMember;
@@ -335,6 +336,11 @@ class AdministerProjectMembershipTest {
         @Override
         public List<ProjectMember> findMembers(UUID projectId) {
             return members;
+        }
+
+        @Override
+        public List<ManagedProjectMember> findManagedMembers(UUID projectId, int offset, int limit) {
+            return List.of();
         }
 
         @Override

@@ -707,7 +707,9 @@ curl -X POST \
 The email is trimmed and lowercased before duplicate detection and
 persistence. The server generates an acceptance token and stores only its
 SHA-256 digest; the token and digest are never returned in the HTTP response
-or written to logs.
+or written to logs. It also sends the plaintext token to the invitee through
+the configured SMTP transport as a frontend link. If delivery fails, the
+invitation transaction is rolled back.
 
 Response `201 Created`:
 

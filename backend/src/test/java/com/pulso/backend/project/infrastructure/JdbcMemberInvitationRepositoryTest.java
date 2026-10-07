@@ -87,7 +87,8 @@ class JdbcMemberInvitationRepositoryTest {
         var result = new CreateMemberInvitation(
                 repository,
                 () -> "accept-me",
-                PROPERTIES).execute(PROJECT_ID, OWNER_ID, " Ada@Example.COM ");
+                PROPERTIES,
+                (email, token) -> { }).execute(PROJECT_ID, OWNER_ID, " Ada@Example.COM ");
 
         assertThat(result.id()).isNotNull();
         assertThat(result.invitation().inviteeEmail()).isEqualTo("ada@example.com");
@@ -110,7 +111,8 @@ class JdbcMemberInvitationRepositoryTest {
         CreateMemberInvitation service = new CreateMemberInvitation(
                 repository,
                 () -> "accept-me",
-                PROPERTIES);
+                PROPERTIES,
+                (email, token) -> { });
         service.execute(PROJECT_ID, OWNER_ID, "ada@example.com");
 
         assertThatThrownBy(() -> service.execute(

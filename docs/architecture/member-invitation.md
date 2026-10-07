@@ -2,8 +2,7 @@
 
 **Status: Current** for the invitation policy in
 `com.pulso.backend.project.domain.MemberInvitation`, the protected HTTP create
-endpoint, and the authenticated acceptance endpoint. **Target** for email
-delivery.
+endpoint, authenticated acceptance endpoint, and SMTP email delivery.
 
 S2.4 uses the canonical `project_members` row as both membership and
 invitation. There is no separate invitation table. An invitation identifies a
@@ -44,6 +43,25 @@ The database enforces the active-duplicate rule with a partial unique index on
 `(project_id, invitee_email)` for `INVITED` rows. Emails are stored already
 normalized.
 
+## Email delivery
+
+The create use case persists the invitation digest and sends the plaintext
+accept token to the normalized invitee email. The mail contains a link to the
+frontend hash route `/#invite={token}`. The HTTP response and database row never
+include the plaintext token.
+
+SMTP is configured through `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`,
+`SMTP_PASSWORD`, `SMTP_AUTH`, and `SMTP_STARTTLS`. The link base URL comes from
+`PULSO_INVITATION_FRONTEND_URL`, and the sender address comes from
+`PULSO_INVITATION_FROM`. `SMTP_PORT` falls back to `PULSO_SMTP_PORT` and then
+to `54325`, the host port exposed for the repository's Mailpit service.
+
+Delivery runs inside the create operation's database transaction. A mail-send
+failure aborts the operation and rolls back the invitation row. SMTP cannot
+participate in that transaction, so a later database commit failure could
+still leave a delivered link without a persisted invitation; an outbox is the
+follow-up option if that failure mode needs stronger handling.
+
 ## Permissions
 
 Creating an invitation requires an **active** `OWNER` or `ADMIN` membership on
@@ -66,8 +84,8 @@ cannot be replayed by the same or another profile.
 
 ## HTTP contract
 
-The backend implements the protected create and acceptance endpoints. Email
-delivery remains a later slice.
+The backend implements the protected create and acceptance endpoints. Creating
+an invitation also sends the accept link through the configured SMTP transport.
 
 ### Create
 

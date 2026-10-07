@@ -30,6 +30,16 @@ export interface ProjectCreateResponseDto {
   }
 }
 
+export interface MemberInvitationDto {
+  id: string
+  projectId: string
+  inviteeEmail: string
+  profileId: string | null
+  role: string
+  membershipStatus: 'INVITED' | 'ACTIVE'
+  createdByProfileId: string
+}
+
 export interface ProjectUpdateRequestDto {
   name?: string
   tagline?: string

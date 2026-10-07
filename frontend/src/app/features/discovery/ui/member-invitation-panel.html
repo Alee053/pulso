@@ -1,0 +1,13 @@
+<section class="glass-panel p-6 sm:p-8">
+  <h2 class="text-xl font-semibold text-white">Invitar integrante</h2>
+  <p class="mt-2 text-sm text-white/60">Se enviará una invitación al correo indicado.</p>
+  <form class="mt-5" [formGroup]="form" (ngSubmit)="submit()">
+    <label for="invite-email" class="block text-sm text-white">Correo electrónico</label>
+    <input id="invite-email" type="email" formControlName="email" autocomplete="email"
+      class="mt-2 w-full rounded-xl border border-white/20 bg-white/5 p-3 text-white" />
+    <p *ngIf="form.controls.email.touched && form.controls.email.invalid" role="alert" class="text-red-300">Ingresa un correo válido.</p>
+    <button type="submit" [disabled]="busy()" class="mt-4 rounded-xl bg-sky-600 px-5 py-3 text-white">{{ busy() ? 'Enviando...' : 'Enviar invitación' }}</button>
+  </form>
+  <p *ngIf="success()" role="status" class="mt-3 text-green-300">{{ success() }}</p>
+  <p *ngIf="error()" role="alert" class="mt-3 text-red-300">{{ error() }}</p>
+</section>

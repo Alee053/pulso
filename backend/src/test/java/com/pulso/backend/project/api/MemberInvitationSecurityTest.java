@@ -113,7 +113,7 @@ class MemberInvitationSecurityTest {
                 MemberInvitationRepository repository,
                 MemberInvitationTokenGenerator tokenGenerator,
                 ProjectProperties properties) {
-            return new CreateMemberInvitation(repository, tokenGenerator, properties);
+            return new CreateMemberInvitation(repository, tokenGenerator, properties, (email, token) -> { });
         }
     }
 }

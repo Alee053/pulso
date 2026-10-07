@@ -1,0 +1,21 @@
+<main class="page stacked-view">
+  <header class="page-header">
+    <h1 class="page-title">{{ strings.teamsTitle }}</h1>
+    <p class="page-lead">{{ strings.teamsLead }}</p>
+    <button type="button" class="contact-button mt-4" data-action="refresh-teams" (click)="refresh()" [disabled]="loading()">{{ strings.refreshTeams }}</button>
+  </header>
+  <p *ngIf="loading()" class="state-panel" role="status">{{ strings.teamsLoading }}</p>
+  <div *ngIf="errorMessage() as error" class="state-panel" role="alert">
+    <p>{{ error }}</p>
+    <button type="button" class="solid-button mt-4" (click)="load()" [disabled]="loading()">{{ strings.retry }}</button>
+  </div>
+  <p *ngIf="!loading() && !errorMessage() && projects().length === 0" class="state-panel" role="status">{{ strings.teamsEmpty }}</p>
+  <div class="grid gap-5">
+    <section *ngFor="let project of projects(); trackBy: trackProject" class="panel p-5 sm:p-8" [attr.data-project]="project.projectId">
+      <h2 class="text-xl font-semibold break-words">{{ project.name }}</h2>
+      <p class="field-hint mt-2">{{ strings.role[project.role] }}</p>
+      <pulso-member-invitation-form [project]="project" />
+    </section>
+  </div>
+  <button *ngIf="hasMore() && !errorMessage()" type="button" class="contact-button mt-5" (click)="load()" [disabled]="loading()">{{ strings.more }}</button>
+</main>

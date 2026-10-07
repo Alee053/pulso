@@ -1,0 +1,17 @@
+<form *ngIf="canInvite" class="mt-5 border-t border-[var(--color-border)] pt-5" (submit)="$event.preventDefault(); submit()" novalidate [attr.aria-busy]="submitting()">
+  <h3 class="text-base font-semibold">{{ strings.inviteTitle }}</h3>
+  <fieldset [disabled]="submitting()" class="mt-4">
+    <label [for]="'invite-email-' + project.projectId" class="field-label">{{ strings.emailLabel }}</label>
+    <input [id]="'invite-email-' + project.projectId" type="email" autocomplete="email" [formControl]="email" maxlength="254"
+           class="field-input mt-2" aria-required="true" [attr.aria-invalid]="email.touched && email.invalid"
+           [attr.aria-describedby]="'invite-hint-' + project.projectId + (email.touched && email.invalid ? ' invite-error-' + project.projectId : '')" />
+    <p [id]="'invite-hint-' + project.projectId" class="field-hint mt-2">{{ strings.emailHint }}</p>
+    <p *ngIf="email.touched && email.invalid" [id]="'invite-error-' + project.projectId" class="field-error mt-2" role="alert">{{ strings.emailInvalid }}</p>
+    <button type="submit" class="solid-button mt-4 w-full sm:w-auto" [disabled]="submitting()">{{ submitting() ? strings.inviting : strings.invite }}</button>
+  </fieldset>
+  <div *ngIf="failure() as error" class="status-message status-message--error mt-4" role="alert">
+    <p>{{ error.message }}</p>
+    <button *ngIf="error.retryable" type="button" class="contact-button mt-3" (click)="submit()" [disabled]="submitting()">{{ strings.retry }}</button>
+  </div>
+  <p *ngIf="registered()" class="status-message mt-4" role="status">{{ strings.invited }}</p>
+</form>

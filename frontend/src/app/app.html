@@ -1,3 +1,6 @@
+<pulso-invitation-acceptance *ngIf="invitation.requested(); else regularApplication" />
+
+<ng-template #regularApplication>
 <ng-container *ngIf="auth.isLoading(); else resolvedSession">
     <pulso-auth-page />
 </ng-container>
@@ -7,9 +10,7 @@
 </ng-template>
 
 <ng-template #authenticatedApplication>
-    <pulso-member-invitation-accept *ngIf="invitationToken() as token; else normalApp" [token]="token" />
-    <ng-template #normalApp>
-        <ng-container *ngIf="!session.hasStarted(); else applicationShell">
+    <ng-container *ngIf="!session.hasStarted(); else applicationShell">
         <pulso-onboarding [interestOptions]="session.interestOptions"
                           [selectedInterests]="session.selectedInterests()"
                           [sectors]="session.referenceCatalogs().sectors"
@@ -37,8 +38,7 @@
                           (preferencesRetryRequested)="session.retryOnboardingPreferences()"
                           (preferencesSaveRetryRequested)="session.retryPreferencesSave()"
                           (started)="session.startDiscovery()" />
-        </ng-container>
-    </ng-template>
+    </ng-container>
 </ng-template>
 
 <ng-template #applicationShell>
@@ -88,6 +88,8 @@
                                            [catalogsLoaded]="session.hasLoadedReferenceCatalogs()"
                                            [catalogsErrorMessage]="session.catalogsErrorMessage()" />
 
+                <pulso-project-teams *ngSwitchCase="'teams'" />
+
                 <pulso-saved-view *ngSwitchCase="'saved'"
                                   [savedStartups]="session.savedStartups()"
                                   [interestedStartups]="session.interestedStartups()"
@@ -108,4 +110,6 @@
                                     [recommendation]="session.getReason(startup)"
                                     (closed)="closeStartup()" />
     </div>
+</ng-template>
+
 </ng-template>

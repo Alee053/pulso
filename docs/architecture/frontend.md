@@ -110,6 +110,23 @@ The design research and scope are recorded in [UI/UX refactor research](../resea
 - Name folders after product behavior (`discovery`, `saved`, `profile`), not generic buckets such as `utils`, `helpers`, or `common`.
 - Keep feature-local code local until reuse is demonstrated. `shared/` is a curated public surface, not a dumping ground.
 
+## Project teams and invitations
+
+`CurrentProjectsApi` reads the authenticated account's paginated active teams.
+`ProjectTeamsComponent` owns its page, loading/error/retry state, and account
+changes. `MemberInvitationFormComponent` uses the existing membership policy to
+show owner/admin controls, while `MemberInvitationsApi` sends create/accept
+requests through the Auth interceptor and translates server failures into safe
+Spanish copy. No browser product query goes to Supabase.
+
+`InvitationLink` consumes the initial `invitation` or SMTP `invite` URL fragment before Auth
+initialization, removes it from the location, and holds its token privately in
+memory for the acceptance request. The app composes `InvitationAcceptanceComponent`
+before onboarding so an invited account can authenticate, accept, or switch
+accounts. These components clear stale results on identity changes while keeping
+session refreshes for the same account stable. See [member invitation](./member-invitation.md)
+for the HTTP contract, token lifecycle, and delivery limitation.
+
 ## Current discovery integration
 
 The discovery feed now uses the public API while preserving the domain and UI interfaces:

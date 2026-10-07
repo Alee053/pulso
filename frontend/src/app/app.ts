@@ -12,8 +12,10 @@ import { PulsoSession } from './features/discovery/application/pulso-session'
 import { IconComponent } from './shared/icon/icon'
 import { commonStrings } from './shared/strings/common.strings'
 import type { AppView, Startup } from './features/discovery/domain/startup'
+import { InvitationLink } from './features/discovery/application/invitation-link'
+import { InvitationAcceptanceComponent } from './features/discovery/ui/invitation-acceptance'
+import { ProjectTeamsComponent } from './features/discovery/ui/project-teams'
 import { ProjectCreateFormComponent } from './features/discovery/ui/project-create-form'
-import { MemberInvitationAcceptComponent } from './features/discovery/ui/member-invitation-accept'
 
 @Component({
     selector: 'pulso-root',
@@ -21,12 +23,13 @@ import { MemberInvitationAcceptComponent } from './features/discovery/ui/member-
     imports: [
         CommonModule,
         AuthPageComponent,
+        InvitationAcceptanceComponent,
+        ProjectTeamsComponent,
         DiscoveryViewComponent,
         NavigationBarComponent,
         OnboardingComponent,
         ProfileViewComponent,
         ProjectCreateFormComponent,
-        MemberInvitationAcceptComponent,
         SavedViewComponent,
         PublicProjectDetailComponent,
         IconComponent,
@@ -35,11 +38,11 @@ import { MemberInvitationAcceptComponent } from './features/discovery/ui/member-
     styleUrl: './app.css',
 })
 export class AppComponent implements OnInit {
+    readonly invitation = inject(InvitationLink)
     readonly common = commonStrings
     readonly auth = inject(SupabaseAuthGateway)
     readonly session = inject(PulsoSession)
     readonly selectedStartup = signal<Startup | null>(null)
-    readonly invitationToken = signal<string | null>(null)
     private activeUserId: string | null = null
 
     private readonly authSessionEffect = effect(() => {
@@ -67,10 +70,6 @@ export class AppComponent implements OnInit {
     })
 
     ngOnInit(): void {
-        const match = /^#invite=([A-Za-z0-9_-]{20,200})$/.exec(location.hash)
-        if (match) {
-            this.invitationToken.set(match[1])
-        }
         document.title = commonStrings.documentTitle
         void this.auth.initialize().catch(() => undefined)
     }

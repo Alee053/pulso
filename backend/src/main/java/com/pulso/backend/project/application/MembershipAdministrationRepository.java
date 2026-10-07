@@ -5,7 +5,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.pulso.backend.project.domain.MembershipActor;
-import com.pulso.backend.project.domain.ManagedProjectMember;
 import com.pulso.backend.project.domain.ProjectMember;
 
 public interface MembershipAdministrationRepository {
@@ -17,8 +16,6 @@ public interface MembershipAdministrationRepository {
     Optional<ProjectMember> findMember(UUID projectId, UUID memberId);
 
     List<ProjectMember> findMembers(UUID projectId);
-
-    List<ManagedProjectMember> findManagedMembers(UUID projectId, int offset, int limit);
 
     int updateMembership(
             UUID projectId,

@@ -10,7 +10,6 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 import com.pulso.backend.project.application.MembershipAdministrationRepository;
-import com.pulso.backend.project.domain.ManagedProjectMember;
 import com.pulso.backend.project.domain.MembershipActor;
 import com.pulso.backend.project.domain.ProjectMember;
 
@@ -82,32 +81,6 @@ public class JdbcMembershipAdministrationRepository implements MembershipAdminis
                 """)
                 .param("projectId", projectId)
                 .query(JdbcMembershipAdministrationRepository::mapMember)
-                .list();
-    }
-
-    @Override
-    public List<ManagedProjectMember> findManagedMembers(UUID projectId, int offset, int limit) {
-        return jdbcClient.sql("""
-                select m.id, m.project_id, m.profile_id, p.display_name,
-                       case when m.membership_status = 'INVITED' then m.invitee_email end as invitee_email,
-                       m.role, m.membership_status
-                from public.project_members m
-                left join public.profiles p on p.id = m.profile_id
-                where m.project_id = :projectId
-                order by m.created_at, m.id
-                limit :limit offset :offset
-                """)
-                .param("projectId", projectId)
-                .param("limit", limit)
-                .param("offset", offset)
-                .query((resultSet, rowNumber) -> new ManagedProjectMember(
-                        resultSet.getObject("id", UUID.class),
-                        resultSet.getObject("project_id", UUID.class),
-                        resultSet.getObject("profile_id", UUID.class),
-                        resultSet.getString("display_name"),
-                        resultSet.getString("invitee_email"),
-                        resultSet.getString("role"),
-                        resultSet.getString("membership_status")))
                 .list();
     }
 

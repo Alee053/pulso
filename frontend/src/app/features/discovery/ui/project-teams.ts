@@ -5,14 +5,13 @@ import { SupabaseAuthGateway } from '../../../core/auth/supabase-auth.gateway'
 import { CurrentProjectsApi } from '../data-access/current-projects-api'
 import type { CurrentProjectMembership } from '../domain/member-invitation'
 import { invitationStrings } from '../strings/invitation.strings'
-import type { ActorMembershipChange } from '../domain/project-membership-administration'
-import { MemberInvitationFormComponent } from './member-invitation-form'
-import { ProjectMembershipAdminComponent } from './project-membership-admin'
+import { ProjectMembersComponent } from './project-members'
+import type { UpdatedMembership } from '../domain/project-member'
 
 @Component({
   selector: 'pulso-project-teams',
   standalone: true,
-  imports: [CommonModule, MemberInvitationFormComponent, ProjectMembershipAdminComponent],
+  imports: [CommonModule, ProjectMembersComponent],
   templateUrl: './project-teams.html',
 })
 export class ProjectTeamsComponent implements OnDestroy {
@@ -23,7 +22,6 @@ export class ProjectTeamsComponent implements OnDestroy {
   private userId: string | null = null
   private nextOffset = 0
   readonly projects = signal<CurrentProjectMembership[]>([])
-  readonly actorProfileId = signal<string | null>(null)
   readonly loading = signal(false)
   readonly errorMessage = signal<string | null>(null)
   readonly hasMore = signal(false)
@@ -33,7 +31,6 @@ export class ProjectTeamsComponent implements OnDestroy {
     untracked(() => {
       if (this.userId === userId) return
       this.userId = userId
-      this.actorProfileId.set(userId)
       this.request?.unsubscribe()
       this.projects.set([])
       this.nextOffset = 0
@@ -74,9 +71,16 @@ export class ProjectTeamsComponent implements OnDestroy {
 
   trackProject(_index: number, project: CurrentProjectMembership): string { return project.projectId }
 
-  actorMembershipChanged(change: ActorMembershipChange): void {
-    this.projects.update((projects) => projects.map((project) => project.projectId === change.projectId
-      ? { ...project, role: change.role }
-      : project))
+  updateOwnMembership(member: Pick<UpdatedMembership, 'projectId' | 'role' | 'membershipStatus'>): void {
+    if (!this.projects().some((project) => project.projectId === member.projectId)) return
+    if (member.membershipStatus !== 'ACTIVE') {
+      // Leaving removes one row from the active-team window, including a pending next page.
+      this.request?.unsubscribe()
+      this.loading.set(false)
+      this.nextOffset = Math.max(0, this.nextOffset - 1)
+    }
+    this.projects.update((projects) => member.membershipStatus === 'ACTIVE'
+      ? projects.map((project) => project.projectId === member.projectId ? { ...project, role: member.role } : project)
+      : projects.filter((project) => project.projectId !== member.projectId))
   }
 }

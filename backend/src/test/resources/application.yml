@@ -58,12 +58,12 @@ pulso:
     default-limit: 20
     max-limit: 50
     max-offset: 100000
-  current-projects:
+  project-members:
     default-offset: 0
     default-limit: 20
     max-limit: 50
     max-offset: 100000
-  project-memberships:
+  current-projects:
     default-offset: 0
     default-limit: 20
     max-limit: 50

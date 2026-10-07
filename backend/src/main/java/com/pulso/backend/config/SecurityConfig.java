@@ -39,6 +39,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
         PreferenceProperties.class,
         ProfileProperties.class,
         CurrentProjectsProperties.class,
+        ProjectMembersProperties.class,
         ProjectProperties.class
 })
 public class SecurityConfig {

@@ -64,17 +64,6 @@ describe('membership administration', () => {
     })
   })
 
-  it('maps a stale membership update to conflict guidance', () => {
-    expect(membershipAdministrationErrorFromDetail(
-      'The membership changed before the action completed.',
-    )).toEqual({
-      kind: 'conflict',
-      code: 'membership_conflict',
-      title: 'Membership conflict',
-      message: 'La membresía cambió mientras se procesaba la solicitud. Actualiza la lista e inténtalo de nuevo.',
-    })
-  })
-
   it('maps endpoint details onto the three interface errors', () => {
     expect(membershipAdministrationErrorFromDetail(
       'active OWNER or ADMIN membership is required.',

@@ -1,12 +1,18 @@
 package com.pulso.backend.project.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Date;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -17,9 +23,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -34,6 +42,7 @@ import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import com.pulso.backend.project.domain.ProjectLifecycleState;
 import com.pulso.backend.project.domain.PublicProjectDetail;
 
 import tools.jackson.databind.JsonNode;
@@ -90,6 +99,8 @@ class JdbcPublicProjectRepositoryTest {
     private MockMvc mockMvc;
     @Autowired
     private ObjectMapper objectMapper;
+    @Autowired
+    private JdbcProjectLifecycleRepository lifecycleRepository;
 
     @DynamicPropertySource
     static void databaseProperties(DynamicPropertyRegistry registry) {
@@ -146,8 +157,10 @@ class JdbcPublicProjectRepositoryTest {
                   sector_id uuid not null references public.sectors (id),
                   status text not null,
                   published_at timestamptz,
+                  archived_at timestamptz,
                   review_note text default 'private review note',
-                  reviewed_by_profile_id uuid
+                  reviewed_by_profile_id uuid,
+                  reviewed_at timestamptz
                 )
                 """).update();
         jdbcClient.sql("""
@@ -162,6 +175,7 @@ class JdbcPublicProjectRepositoryTest {
                   project_id uuid not null references public.projects (id),
                   profile_id uuid references public.profiles (id),
                   membership_status text not null,
+                  role text not null default 'MEMBER',
                   is_public boolean not null,
                   display_title text,
                   is_featured boolean not null,
@@ -447,12 +461,158 @@ class JdbcPublicProjectRepositoryTest {
         assertThat(body).doesNotContain("project_members", "select", "jdbc", "password", "PSQL");
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"OWNER", "ADMIN"})
+    void publicationRequestAndArchiveKeepTheProjectPrivate(String role) throws Exception {
+        jdbcClient.sql("update public.projects set status = 'DRAFT' where id = :id")
+                .param("id", PROJECT_ID).update();
+        setTeamRole(role, "ACTIVE");
+        Map<String, Object> auditBefore = reviewAudit();
+        assertProjectHidden();
+
+        mockMvc.perform(lifecycleRequest("publication-request"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.projectId").value(PROJECT_ID.toString()))
+                .andExpect(jsonPath("$.status").value("PENDING_REVIEW"));
+        assertThat(lifecycleState()).isEqualTo(new ProjectLifecycleState("PENDING_REVIEW", null, null));
+        assertThat(reviewAudit()).isEqualTo(auditBefore);
+        assertProjectHidden();
+        mockMvc.perform(lifecycleRequest("publication-request")).andExpect(status().isBadRequest());
+
+        mockMvc.perform(lifecycleRequest("archive"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ARCHIVED"));
+        ProjectLifecycleState archived = lifecycleState();
+        assertThat(archived.status()).isEqualTo("ARCHIVED");
+        assertThat(archived.archivedAt()).isNotNull();
+        assertThat(archived.publishedAt()).isNull();
+        assertThat(reviewAudit()).isEqualTo(auditBefore);
+        assertProjectHidden();
+        mockMvc.perform(lifecycleRequest("publication-request")).andExpect(status().isBadRequest());
+        mockMvc.perform(lifecycleRequest("archive")).andExpect(status().isBadRequest());
+        assertThat(lifecycleState()).isEqualTo(archived);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"OWNER", "ADMIN"})
+    void archivingAPublishedProjectRemovesItFromPublicReadsAndPreservesReview(String role)
+            throws Exception {
+        Instant publishedAt = Instant.parse("2026-09-01T12:00:00Z");
+        jdbcClient.sql("""
+                update public.projects set published_at = :publishedAt,
+                    reviewed_at = :reviewedAt, reviewed_by_profile_id = :reviewer
+                where id = :id
+                """)
+                .param("publishedAt", publishedAt.atOffset(ZoneOffset.UTC))
+                .param("reviewedAt", publishedAt.minusSeconds(60).atOffset(ZoneOffset.UTC))
+                .param("reviewer", PRIVATE_PROFILE_ID).param("id", PROJECT_ID).update();
+        setTeamRole(role, "ACTIVE");
+        Map<String, Object> auditBefore = reviewAudit();
+        mockMvc.perform(publicRequest("eco-pack", false)).andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/startups"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[*].id").value(hasItem(PROJECT_ID.toString())));
+
+        Instant beforeArchive = Instant.now();
+        mockMvc.perform(lifecycleRequest("archive"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ARCHIVED"));
+
+        ProjectLifecycleState archived = lifecycleState();
+        assertThat(archived.publishedAt()).isEqualTo(publishedAt);
+        assertThat(archived.archivedAt()).isBetween(beforeArchive, Instant.now());
+        assertThat(reviewAudit()).isEqualTo(auditBefore);
+        assertProjectHidden();
+    }
+
+    @ParameterizedTest
+    @CsvSource({"MEMBER, ACTIVE", "OWNER, INVITED", "ADMIN, LEFT", "OWNER, REMOVED"})
+    void deniedTeamActionsLeaveProjectAndAuditUntouched(String role, String membershipStatus)
+            throws Exception {
+        setTeamRole(role, membershipStatus);
+        ProjectLifecycleState before = lifecycleState();
+        Map<String, Object> auditBefore = reviewAudit();
+        for (String action : new String[] {"publication-request", "archive"}) {
+            mockMvc.perform(lifecycleRequest(action))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.detail").value("active OWNER or ADMIN membership is required."));
+        }
+        assertThat(lifecycleState()).isEqualTo(before);
+        assertThat(reviewAudit()).isEqualTo(auditBefore);
+        mockMvc.perform(publicRequest("eco-pack", false)).andExpect(status().isOk());
+    }
+
+    @Test
+    void directPublicationAndReviewFieldsAreRejectedWithoutPersisting() throws Exception {
+        jdbcClient.sql("update public.projects set status = 'DRAFT' where id = :id")
+                .param("id", PROJECT_ID).update();
+        setTeamRole("OWNER", "ACTIVE");
+        ProjectLifecycleState before = lifecycleState();
+        Map<String, Object> auditBefore = reviewAudit();
+        for (String action : new String[] {"publication-request", "archive"}) {
+            mockMvc.perform(lifecycleRequest(action).contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"status\":\"PUBLISHED\"}"))
+                    .andExpect(status().isBadRequest());
+            mockMvc.perform(lifecycleRequest(action).contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"reviewNote\":\"approved\"}"))
+                    .andExpect(status().isBadRequest());
+        }
+        assertThat(lifecycleState()).isEqualTo(before);
+        assertThat(reviewAudit()).isEqualTo(auditBefore);
+        assertProjectHidden();
+    }
+
+    private void assertProjectHidden() throws Exception {
+        for (boolean authenticated : new boolean[] {false, true}) {
+            for (String reference : new String[] {"eco-pack", PROJECT_ID.toString()}) {
+                mockMvc.perform(publicRequest(reference, authenticated))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.data").doesNotExist());
+            }
+            MockHttpServletRequestBuilder feed = get("/api/v1/startups");
+            if (authenticated) {
+                feed.header("Authorization", "Bearer " + signedToken());
+            }
+            mockMvc.perform(feed)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].id").value(not(hasItem(PROJECT_ID.toString()))));
+        }
+    }
+
+    private void setTeamRole(String role, String membershipStatus) {
+        jdbcClient.sql("""
+                update public.project_members set role = :role, membership_status = :status
+                where project_id = :project and profile_id = :profile
+                """)
+                .param("role", role).param("status", membershipStatus)
+                .param("project", PROJECT_ID).param("profile", PUBLIC_PROFILE_ID).update();
+    }
+
+    private ProjectLifecycleState lifecycleState() {
+        return lifecycleRepository.findForActor(PROJECT_ID, PUBLIC_PROFILE_ID).orElseThrow().state();
+    }
+
+    private Map<String, Object> reviewAudit() {
+        return jdbcClient.sql("""
+                select review_note, reviewed_by_profile_id, reviewed_at from public.projects where id = :id
+                """).param("id", PROJECT_ID).query().singleRow();
+    }
+
+    private static MockHttpServletRequestBuilder lifecycleRequest(String action) throws Exception {
+        return post("/api/v1/projects/" + PROJECT_ID + "/" + action)
+                .header("Authorization", "Bearer " + signedToken());
+    }
+
     private static MockHttpServletRequestBuilder publicRequest(String reference, boolean authenticated)
             throws Exception {
         MockHttpServletRequestBuilder request = get("/api/v1/projects/" + reference);
         if (!authenticated) {
             return request;
         }
+        return request.header("Authorization", "Bearer " + signedToken());
+    }
+
+    private static String signedToken() throws Exception {
         Date issuedAt = new Date();
         JWTClaimsSet claims = new JWTClaimsSet.Builder()
                 .issuer("http://test.supabase.local/auth/v1")
@@ -466,7 +626,7 @@ class JdbcPublicProjectRepositoryTest {
         token.sign(new MACSigner(new SecretKeySpec(
                 "test-secret-that-is-long-enough-for-local-tests".getBytes(StandardCharsets.UTF_8),
                 "HmacSHA256")));
-        return request.header("Authorization", "Bearer " + token.serialize());
+        return token.serialize();
     }
 
     private static void assertFields(JsonNode node, String... fields) {

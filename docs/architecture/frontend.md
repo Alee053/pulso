@@ -119,6 +119,16 @@ show owner/admin controls, while `MemberInvitationsApi` sends create/accept
 requests through the Auth interceptor and translates server failures into safe
 Spanish copy. No browser product query goes to Supabase.
 
+`ProjectMembersComponent` owns each team's roster, pagination, inline action
+confirmation, and mutation feedback. `ProjectMembersApi` consumes the protected
+GET roster and existing PATCH membership contract, validates responses, and maps
+recognized failures to Spanish copy. Controls and the invitation form use the
+roster's persisted actor role; a member sees only the public read projection.
+Successful mutations replace the row by membership ID and reload its page for
+public fields while preserving other loaded pages. Own role changes update the
+parent team permissions; leaving removes that team. Requests and confirmations
+are cancelled when the project or authenticated account changes.
+
 `InvitationLink` consumes the initial `invitation` or SMTP `invite` URL fragment before Auth
 initialization, removes it from the location, and holds its token privately in
 memory for the acceptance request. The app composes `InvitationAcceptanceComponent`

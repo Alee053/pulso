@@ -23,6 +23,7 @@ export interface Founder {
   name: string
   role: string
   initials: string
+  isFeatured?: boolean
 }
 
 export interface StartupMetric {
@@ -55,6 +56,9 @@ export interface Startup {
   metrics: StartupMetric[]
   popularity: number
   exploration: number
+  valueProposition?: string | null
+  department?: string | null
+  publicLinks?: PublicExternalLink[]
 }
 
 export interface StartupSummary {

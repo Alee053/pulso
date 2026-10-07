@@ -51,6 +51,33 @@ identity, role, target status, or review fields. Missing memberships and all
 non-active/non-authorized memberships share the same `403` response so the API
 does not disclose private project state.
 
+## Transaction and concurrent membership changes
+
+`ChangeProjectLifecycle` keeps the snapshot and update in one transaction.
+`JdbcProjectLifecycleRepository.findForActor` first locks the matching project
+row with `FOR UPDATE`, using the same row as membership administration. It then
+reads project state and persisted membership in a separate statement, after any
+competing administration transaction has committed. A missing project or
+membership returns no snapshot and retains the same `403` contract.
+
+The lock is held until the lifecycle transaction completes. A revocation or
+demotion that commits first therefore prevents the waiting team action; if the
+team action locks first, membership administration waits for its completion.
+The update also retains the expected-status and active owner/admin predicates.
+This coordination relies on membership administration sharing the project lock;
+it does not authorize direct database writes to bypass that protocol.
+
+Regression checks cover both public and transactional boundaries:
+
+- `MembershipAdministrationTransactionTest` runs publication request and archive
+  against concurrent withdrawal and demotion using the Spring-proxied services.
+- `JdbcPublicProjectRepositoryTest` executes the protected HTTP actions with
+  signed test JWTs and PostgreSQL, checks public feed/detail reads after each
+  transition, preserves review data, and rejects forbidden bodies and actors.
+
+These checks use isolated Testcontainers PostgreSQL with minimal schemas. They
+do not validate deployed migrations, RLS, or a live Supabase browser flow.
+
 ## Administrative review (out of S2.2)
 
 These transitions are documented so later review slices do not collide with the

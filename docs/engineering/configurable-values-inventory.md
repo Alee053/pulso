@@ -70,14 +70,12 @@ Configuración de entorno y reglas de contrato viven bajo `pulso.<capability>.*`
 
 Los nombres se documentan en [`.env.example`](../../.env.example) con forma local segura, nunca con secretos reales. El perfil de test usa [`backend/src/test/resources/application.yml`](../../backend/src/test/resources/application.yml).
 
-Prefijos actuales o previstos:
+Prefijos previstos, aún sin extraer:
 
 ```text
 pulso.security.supabase.*     # ya existe
 pulso.cors.*                  # ya existe
 pulso.discovery.*             # paginación del catálogo
-pulso.current-projects.*      # paginación de Mis equipos
-pulso.project-memberships.*   # paginación del roster de administración
 pulso.catalogs.*              # tope de lectura
 pulso.preferences.*           # tamaños de lista
 pulso.profile.*               # longitudes de campo

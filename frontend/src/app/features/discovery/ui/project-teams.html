@@ -14,9 +14,7 @@
     <section *ngFor="let project of projects(); trackBy: trackProject" class="panel p-5 sm:p-8" [attr.data-project]="project.projectId">
       <h2 class="text-xl font-semibold break-words">{{ project.name }}</h2>
       <p class="field-hint mt-2">{{ strings.role[project.role] }}</p>
-      <pulso-member-invitation-form [project]="project" />
-      <pulso-project-membership-admin *ngIf="actorProfileId() as actorId" [project]="project"
-        [actorProfileId]="actorId" (membershipChanged)="actorMembershipChanged($event)" />
+      <pulso-project-members [project]="project" (ownMembershipChanged)="updateOwnMembership($event)" />
     </section>
   </div>
   <button *ngIf="hasMore() && !errorMessage()" type="button" class="contact-button mt-5" (click)="load()" [disabled]="loading()">{{ strings.more }}</button>

@@ -3,7 +3,6 @@ package com.pulso.backend.project.api;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -31,21 +30,13 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.pulso.backend.config.SecurityConfig;
-import com.pulso.backend.config.ProjectMembershipsProperties;
 import com.pulso.backend.project.application.AdministerProjectMembership;
-import com.pulso.backend.project.application.ListProjectMemberships;
 import com.pulso.backend.project.application.MembershipAdministrationRepository;
-import com.pulso.backend.project.domain.ManagedProjectMember;
 import com.pulso.backend.project.domain.MembershipActor;
 import com.pulso.backend.project.domain.ProjectMember;
-import com.pulso.backend.discovery.api.ApiExceptionHandler;
 
 @WebMvcTest(ProjectMembershipController.class)
-@Import({
-        SecurityConfig.class,
-        ApiExceptionHandler.class,
-        ProjectMembershipSecurityTest.TestBeans.class
-})
+@Import({SecurityConfig.class, ProjectMembershipSecurityTest.TestBeans.class})
 class ProjectMembershipSecurityTest {
 
     private static final UUID OWNER_PROFILE_ID = UUID.fromString(
@@ -84,37 +75,6 @@ class ProjectMembershipSecurityTest {
                 .andExpect(status().isUnauthorized());
 
         assertEquals(0, repository.updateCalls);
-    }
-
-    @Test
-    void requiresAnAccessTokenToReadTheAdministrationRoster() throws Exception {
-        mockMvc.perform(get("/api/v1/projects/" + PROJECT_ID + "/members"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"OWNER", "ADMIN"})
-    void letsOnlyActiveAdministratorsReadMemberSummaries(String role) throws Exception {
-        repository.setActor(PROJECT_ID, role, "ACTIVE");
-        repository.managedMembers = List.of(new ManagedProjectMember(
-                MEMBER_ID, PROJECT_ID, TARGET_PROFILE_ID, "Ada", null, "MEMBER", "ACTIVE"));
-
-        mockMvc.perform(get("/api/v1/projects/" + PROJECT_ID + "/members")
-                .with(jwt().jwt(authenticatedJwt(ACTOR_PROFILE_ID.toString()))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].profileId").value(TARGET_PROFILE_ID.toString()))
-                .andExpect(jsonPath("$.data[0].displayName").value("Ada"));
-    }
-
-    @ParameterizedTest
-    @MethodSource("forbiddenRosterActors")
-    void deniesRosterReadsForNonAdministrators(String role, String status) throws Exception {
-        repository.setActor(PROJECT_ID, role, status);
-
-        mockMvc.perform(get("/api/v1/projects/" + PROJECT_ID + "/members")
-                .with(jwt().jwt(authenticatedJwt(ACTOR_PROFILE_ID.toString()))))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("membership_permission"));
     }
 
     @ParameterizedTest
@@ -238,14 +198,6 @@ class ProjectMembershipSecurityTest {
                         .map(action -> Arguments.of(actor[0], actor[1], action)));
     }
 
-    private static Stream<Arguments> forbiddenRosterActors() {
-        return Stream.of("MEMBER", "OWNER", "ADMIN")
-                .flatMap(role -> Stream.of("ACTIVE", "INVITED", "LEFT", "REMOVED")
-                        .filter(status -> !("ACTIVE".equals(status)
-                                && ("OWNER".equals(role) || "ADMIN".equals(role))))
-                        .map(status -> Arguments.of(role, status)));
-    }
-
     private static String targetStatus(String action) {
         return "activate".equals(action) ? "LEFT" : "ACTIVE";
     }
@@ -283,7 +235,6 @@ class ProjectMembershipSecurityTest {
 
         private final Map<ProjectProfile, MembershipActor> actors = new HashMap<>();
         private ProjectMember target;
-        private List<ManagedProjectMember> managedMembers = List.of();
         private int updateCalls;
 
         void setActor(UUID projectId, String role, String membershipStatus) {
@@ -312,11 +263,6 @@ class ProjectMembershipSecurityTest {
                     UUID.fromString("11111111-1111-1111-1111-111111111111"),
                     PROJECT_ID, OWNER_PROFILE_ID, "OWNER", "ACTIVE", OWNER_PROFILE_ID);
             return PROJECT_ID.equals(projectId) ? List.of(owner, target) : List.of();
-        }
-
-        @Override
-        public List<ManagedProjectMember> findManagedMembers(UUID projectId, int offset, int limit) {
-            return managedMembers.stream().skip(offset).limit(limit).toList();
         }
 
         @Override
@@ -350,16 +296,6 @@ class ProjectMembershipSecurityTest {
                 MembershipAdministrationRepository repository,
                 ApplicationEventPublisher events) {
             return new AdministerProjectMembership(repository, events);
-        }
-
-        @Bean
-        ListProjectMemberships listProjectMemberships(MembershipAdministrationRepository repository) {
-            return new ListProjectMemberships(repository);
-        }
-
-        @Bean
-        ProjectMembershipsProperties projectMembershipsProperties() {
-            return new ProjectMembershipsProperties(0, 20, 50, 100000);
         }
     }
 }

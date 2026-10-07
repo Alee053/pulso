@@ -4,9 +4,8 @@
 `com.pulso.backend.project.domain.MembershipAdministration` and the interface
 action/error seam in
 `frontend/src/app/features/discovery/domain/membership-administration.ts`.
-**Current** for the protected roster read and HTTP activate, change-role, and
-withdraw endpoints. **Current** for the administration panel under each team in
-`Mis equipos`.
+**Current** for the HTTP activate, change-role, withdraw, and protected team-list endpoints.
+**Current** for the membership-administration screen in Mis equipos.
 
 S2.5 formalizes how existing `project_members` rows are administered. Roles
 are `OWNER`, `ADMIN`, and `MEMBER`. Membership statuses are `INVITED`,
@@ -69,25 +68,35 @@ admin. The application locks the project row while it reads the actor,
 target, and current memberships, so concurrent administration requests for the
 same project cannot both approve a stale owner state.
 
+## Protected team read
+
+`GET /api/v1/projects/{projectId}/members` is a separate query controller/use
+case behind `ProjectMembersReader`; it does not change the existing PATCH port
+or mutation policy. The JDBC reader selects the persisted active actor and its
+bounded page in one parameterized statement, so the permission decision and
+returned rows share a PostgreSQL snapshot. A left lateral join distinguishes
+an authorized empty page from absent authorization.
+
+An active owner/admin reads all existing rows and lifecycle states. An active
+member reads only public active memberships whose linked profile is active,
+public, and not soft-deleted. Missing, invited, left, removed, or other-project
+actors are forbidden. No project-role JWT claim participates in authorization.
+
+For every role, names and titles are populated only when the row satisfies
+that same public predicate. Administrative rows preserve membership/profile
+IDs and role/status but mask private names/titles. Unaccepted invitations have
+nullable profile IDs. Email, tokens/digests, inviter fields, and timestamps are
+never projected by the query or its DTOs. See [API contract](../api.md#get-apiv1projectsprojectidmembers--team-administration-list-pul-85)
+for response shape, bounds, and errors.
+
+The read page includes authoritative actor role/status so Angular can refresh
+its local permission state following a self-demotion. The UI owns roster state
+within each project team, consumes only the backend HTTP adapter, and offers
+administration controls only to owner/admin actors. It confirms changes before
+sending the existing PATCH action and merges responses by membership ID.
+Persisted backend authorization and invariants remain authoritative.
+
 ## HTTP contract
-
-The backend exposes an authenticated, paginated roster for active project
-owners and admins:
-
-`GET /api/v1/projects/{projectId}/members?offset=0&limit=20`
-
-The response includes the membership ID, profile ID, role, status, and profile
-display name. It includes `inviteeEmail` only while the row is `INVITED`; it
-never returns `inviteTokenDigest` or other invitation token material. Pages use
-stable `created_at`, `id` ordering, a default size of 20, and a maximum size of
-50. Missing or insufficient project membership returns `403`.
-
-The `Mis equipos` panel shows these controls only when the signed-in user's
-persisted membership is an active owner or admin. It loads the roster on demand,
-offers activation for bound `LEFT`/`REMOVED` rows, role changes for active rows,
-and withdrawal for other invited/active rows. The client hides self-promotion;
-the backend remains authoritative for every request and for the last-owner
-invariant.
 
 The backend implements the three actions through one authenticated endpoint.
 The authenticated profile is the actor. The request body cannot set
@@ -147,7 +156,7 @@ stack or prove a live browser flow.
 | Self-elevation | `MembershipPermissionException` | `403` | `membership_permission` | `cannot elevate own role.` | No puedes elevar tu propio rol. |
 | Status or identity that the action does not allow | `MembershipInvalidTransitionException` | `409` | `membership_invalid_transition` | `cannot {action} a membership with status {status}.` or `cannot activate a membership without a profile.` | Esa membresía no admite esta acción. |
 | Last active owner would be removed or demoted | `MembershipOwnerInvariantException` | `409` | `membership_owner_required` | `project must keep at least one active OWNER.` | El proyecto debe conservar al menos un owner activo. |
-| Concurrent membership change makes the expected row stale | `MembershipConflictException` | `409` | `membership_conflict` | `The membership changed before the action completed.` | La membresía cambió mientras se procesaba la solicitud. Actualiza la lista e inténtalo de nuevo. |
+| Concurrent membership change makes the expected row stale | `MembershipConflictException` | `409` | `membership_conflict` | `The membership changed before the action completed.` | |
 | Unknown role or membership status | `ProjectValidationException` | `400` | | Field-specific validation message | |
 
 The executable backend contract is `MembershipAdministration`. Callers supply

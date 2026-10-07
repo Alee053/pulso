@@ -24,16 +24,6 @@ class MembershipAdministrationTest {
     private static final UUID MEMBER_MEMBERSHIP_ID = UUID.fromString("55555555-5555-5555-5555-555555555555");
     private static final UUID TARGET_MEMBERSHIP_ID = UUID.fromString("66666666-6666-6666-6666-666666666666");
 
-    @Test
-    void onlyActiveOwnersAndAdminsCanReadTheAdministrationRoster() {
-        assertThat(MembershipAdministration.canAdminister(owner())).isTrue();
-        assertThat(MembershipAdministration.canAdminister(admin())).isTrue();
-        assertThat(MembershipAdministration.canAdminister(member())).isFalse();
-        assertThat(MembershipAdministration.canAdminister(
-                new MembershipActor(PROJECT_ID, OWNER_ID, "OWNER", "INVITED"))).isFalse();
-        assertThat(MembershipAdministration.canAdminister(null)).isFalse();
-    }
-
     @ParameterizedTest
     @CsvSource({
             "MEMBER, ACTIVE",

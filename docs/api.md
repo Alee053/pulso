@@ -306,24 +306,29 @@ Conflict`; other PostgreSQL failures return the sanitized `503 Service
 Unavailable` response. Missing, invalid, or `service_role` bearer tokens
 return `401 Unauthorized`.
 
-## `GET /api/v1/projects/{projectId}/members` — list memberships for administration (PUL-14)
+## `GET /api/v1/projects/{projectId}/members` — team administration list (PUL-85)
 
-Lists project memberships for an authenticated, active project `OWNER` or
-`ADMIN`. The profile identity comes from the validated JWT subject. A regular
-`MEMBER`, an invited/inactive role, a user from another project, or a missing
-membership receives the same `403 Membership permission` response.
+Requires a valid user bearer token and an `ACTIVE` membership on the requested
+project. The actor comes from the JWT subject, while its role and status are
+read from persisted membership. JWT project-role claims are not permissions.
+Missing or inactive membership, another project's membership, and an unknown
+project return the same `403` with code `membership_permission` and detail
+`active project membership is required.`. Missing/invalid tokens or a subject
+that is not a profile UUID return `401`.
 
-```sh
-curl -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
-  "http://localhost:8080/api/v1/projects/33333333-3333-3333-3333-333333333333/members?offset=0&limit=20"
-```
+An active `OWNER` or `ADMIN` can list all existing membership states. An active
+`MEMBER` receives only rows satisfying the public team predicate: membership
+`ACTIVE` and `is_public = true`, linked profile `account_status = ACTIVE`,
+`profile_visibility = PUBLIC`, and `deleted_at IS NULL`. This endpoint does not
+require the project to be published because authenticated teams also administer
+drafts and archived projects.
 
-The endpoint returns a bounded page (default 20, maximum 50, offset maximum
-100000), ordered by membership creation time and ID. It includes each row's
-membership ID, profile ID when bound, display name, role, and status. Pending
-invitations include their normalized `inviteeEmail` so an owner/admin can
-identify and withdraw them. Other rows return `inviteeEmail: null`. The response
-never includes an invitation token digest or plaintext token.
+Parameters are bounded `offset` (default `0`, maximum `100000`) and `limit`
+(default `20`, maximum `50`). Invalid windows return `400`. Rows use stable
+membership UUID ordering; `hasMore` is based on one extra authorized row. These
+limits are configured under `pulso.project-members.*`.
+
+Response `200 OK`:
 
 ```json
 {
@@ -332,20 +337,33 @@ never includes an invitation token digest or plaintext token.
       "id": "44444444-4444-4444-4444-444444444444",
       "projectId": "33333333-3333-3333-3333-333333333333",
       "profileId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
-      "displayName": "Persona Dos",
-      "inviteeEmail": null,
       "role": "MEMBER",
-      "membershipStatus": "ACTIVE"
+      "membershipStatus": "ACTIVE",
+      "displayName": "Integrante público",
+      "displayTitle": "Desarrollo"
     }
   ],
+  "actor": { "role": "OWNER", "membershipStatus": "ACTIVE" },
   "meta": { "offset": 0, "limit": 20, "hasMore": false }
 }
 ```
 
-Invalid pagination returns `400 Bad Request`; missing or invalid bearer tokens
-return `401 Unauthorized`.
+`profileId` is nullable for unaccepted invitations. `displayName` and
+`displayTitle` are nullable, and both are masked for every row that does not
+satisfy the public team predicate, including administrative reads. The response
+contains no email, invitation token/digest, inviter identity, timestamps, or
+private profile content. Membership/profile IDs are returned only within this
+authenticated team contract. The existing PATCH response is unchanged.
 
-## `PATCH /api/v1/projects/{projectId}/members/{memberId}` — administer membership (PUL-14 / PUL-83)
+Authorization, actor metadata, and the page are selected in one PostgreSQL
+statement, sharing one read snapshot. A valid actor with no visible rows or a
+window past the last row receives an empty `data` list and its authoritative
+`actor`; an unauthorized actor never receives a team list. Database failures
+return the sanitized `503` problem response. Offset pagination can shift between
+requests if another administrator changes membership concurrently; callers
+refresh permissions and roster after changes.
+
+## `PATCH /api/v1/projects/{projectId}/members/{memberId}` — administer membership (PUL-83)
 
 Updates an existing project membership for an authenticated active `OWNER` or
 `ADMIN`. An active `MEMBER` may only use `withdraw` on their own membership.

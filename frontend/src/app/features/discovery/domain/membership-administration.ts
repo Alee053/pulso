@@ -4,7 +4,6 @@ export type MembershipAdminErrorKind =
   | 'permission'
   | 'invalidTransition'
   | 'ownerInvariant'
-  | 'conflict'
 
 export interface MembershipActorView {
   role: string
@@ -53,18 +52,10 @@ const ownerInvariantError = {
   message: membershipStrings.ownerRequiredDetail,
 } as const satisfies MembershipAdministrationError
 
-const conflictError = {
-  kind: 'conflict',
-  code: 'membership_conflict',
-  title: 'Membership conflict',
-  message: 'La membresía cambió mientras se procesaba la solicitud. Actualiza la lista e inténtalo de nuevo.',
-} as const satisfies MembershipAdministrationError
-
 export const membershipAdministrationErrors = {
   permission: permissionError,
   invalidTransition: invalidTransitionError,
   ownerInvariant: ownerInvariantError,
-  conflict: conflictError,
 } as const
 
 export function canAdministerMemberships(actor: MembershipActorView | null): boolean {
@@ -108,9 +99,6 @@ export function membershipAdministrationErrorFromDetail(
   }
   if (detail === 'project must keep at least one active OWNER.') {
     return ownerInvariantError
-  }
-  if (detail === 'The membership changed before the action completed.') {
-    return conflictError
   }
   return invalidTransitionError
 }

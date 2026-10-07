@@ -1,111 +1,111 @@
 <ng-container *ngIf="auth.isLoading(); else resolvedSession">
-  <pulso-auth-page />
+    <pulso-auth-page />
 </ng-container>
 
 <ng-template #resolvedSession>
-  <pulso-auth-page *ngIf="!auth.session(); else authenticatedApplication" />
+    <pulso-auth-page *ngIf="!auth.session(); else authenticatedApplication" />
 </ng-template>
 
 <ng-template #authenticatedApplication>
-  <pulso-member-invitation-accept *ngIf="invitationToken() as token; else normalApp" [token]="token" />
-<ng-template #normalApp>
-<ng-container *ngIf="!session.hasStarted(); else applicationShell">
-  <pulso-onboarding
-    [interestOptions]="session.interestOptions"
-    [selectedInterests]="session.selectedInterests()"
-    [sectors]="session.referenceCatalogs().sectors"
-    [tags]="session.referenceCatalogs().tags"
-    [skills]="session.referenceCatalogs().skills"
-    [selectedSectorIds]="session.selectedSectorIds()"
-    [selectedTagIds]="session.selectedTagIds()"
-    [selectedSkillIds]="session.selectedSkillIds()"
-    [stages]="session.stageOptions"
-    [selectedStageIds]="session.selectedStageIds()"
-    [catalogsLoading]="session.areCatalogsLoading()"
-    [catalogsLoaded]="session.hasLoadedReferenceCatalogs()"
-    [catalogsErrorMessage]="session.catalogsErrorMessage()"
-    [preferencesLoading]="session.arePreferencesLoading()"
-    [preferencesLoaded]="session.hasLoadedPreferences()"
-    [preferencesErrorMessage]="session.preferencesErrorMessage()"
-    [preferencesSaving]="session.arePreferencesSaving()"
-    [preferencesSaveErrorMessage]="session.preferencesSaveErrorMessage()"
-    (interestToggled)="session.toggleInterest($event)"
-    (sectorToggled)="session.toggleSector($event)"
-    (tagToggled)="session.toggleTag($event)"
-    (skillToggled)="session.toggleSkill($event)"
-    (stageToggled)="session.toggleStage($event)"
-    (catalogsRetryRequested)="session.retryReferenceCatalogs()"
-    (preferencesRetryRequested)="session.retryOnboardingPreferences()"
-    (preferencesSaveRetryRequested)="session.retryPreferencesSave()"
-    (started)="session.startDiscovery()"
-  />
-</ng-container>
-</ng-template>
+    <pulso-member-invitation-accept *ngIf="invitationToken() as token; else normalApp" [token]="token" />
+    <ng-template #normalApp>
+        <ng-container *ngIf="!session.hasStarted(); else applicationShell">
+        <pulso-onboarding [interestOptions]="session.interestOptions"
+                          [selectedInterests]="session.selectedInterests()"
+                          [sectors]="session.referenceCatalogs().sectors"
+                          [tags]="session.referenceCatalogs().tags"
+                          [skills]="session.referenceCatalogs().skills"
+                          [selectedSectorIds]="session.selectedSectorIds()"
+                          [selectedTagIds]="session.selectedTagIds()"
+                          [selectedSkillIds]="session.selectedSkillIds()"
+                          [stages]="session.stageOptions"
+                          [selectedStageIds]="session.selectedStageIds()"
+                          [catalogsLoading]="session.areCatalogsLoading()"
+                          [catalogsLoaded]="session.hasLoadedReferenceCatalogs()"
+                          [catalogsErrorMessage]="session.catalogsErrorMessage()"
+                          [preferencesLoading]="session.arePreferencesLoading()"
+                          [preferencesLoaded]="session.hasLoadedPreferences()"
+                          [preferencesErrorMessage]="session.preferencesErrorMessage()"
+                          [preferencesSaving]="session.arePreferencesSaving()"
+                          [preferencesSaveErrorMessage]="session.preferencesSaveErrorMessage()"
+                          (interestToggled)="session.toggleInterest($event)"
+                          (sectorToggled)="session.toggleSector($event)"
+                          (tagToggled)="session.toggleTag($event)"
+                          (skillToggled)="session.toggleSkill($event)"
+                          (stageToggled)="session.toggleStage($event)"
+                          (catalogsRetryRequested)="session.retryReferenceCatalogs()"
+                          (preferencesRetryRequested)="session.retryOnboardingPreferences()"
+                          (preferencesSaveRetryRequested)="session.retryPreferencesSave()"
+                          (started)="session.startDiscovery()" />
+        </ng-container>
+    </ng-template>
 </ng-template>
 
 <ng-template #applicationShell>
-  <div class="app-shell relative flex min-h-screen flex-col overflow-hidden text-white">
-    <div class="ambient-orb ambient-orb--sky" aria-hidden="true"></div>
-    <div class="ambient-orb ambient-orb--blue" aria-hidden="true"></div>
+    <div class="app-shell relative flex min-h-screen flex-col overflow-hidden text-white">
+        <div class="ambient-orb ambient-orb--sky" aria-hidden="true"></div>
+        <div class="ambient-orb ambient-orb--blue" aria-hidden="true"></div>
 
-    <div *ngIf="session.preferencesSavedMessage() as message" class="toast" role="status" aria-live="polite">
-      <span class="flex size-7 items-center justify-center rounded-full bg-[#a9e1ff]/15 text-[#a9e1ff]"><pulso-icon name="check" [size]="14" /></span>
-      {{ message }}
+        <div *ngIf="session.preferencesSavedMessage() as message" class="toast" role="status" aria-live="polite">
+            <span class="flex size-7 items-center justify-center rounded-full bg-[#a9e1ff]/15 text-[#a9e1ff]">
+                <pulso-icon name="check" [size]="14" />
+            </span>
+            {{ message }}
+        </div>
+
+        <pulso-navigation-bar [activeView]="session.activeView()"
+                              [savedCount]="session.savedIds().length"
+                              [interestedCount]="session.interestedIds().length"
+                              (navigated)="navigateTo($event)"
+                              (exampleRequested)="session.openProjectDetail('eco-pack')" />
+
+        <div class="app-shell__content">
+            <header class="workspace-header">
+                <span>{{ common.workspaceLabel }}</span>
+                <button type="button" class="reference-example" (click)="session.openProjectDetail('eco-pack')">
+                    <pulso-icon name="arrow-up-right" [size]="16" />{{ common.exampleProject }}
+                </button>
+            </header>
+            <ng-container [ngSwitch]="session.activeView()">
+                <pulso-discovery-view *ngSwitchCase="'discover'"
+                                      [activeSignals]="session.activeSignals()"
+                                      [currentStartup]="session.currentStartup()"
+                                      [errorMessage]="session.errorMessage()"
+                                      [feedRemaining]="session.feed().length"
+                                      [isLoading]="session.isLoading()"
+                                      [isModalOpen]="selectedStartup() !== null"
+                                      [totalStartups]="session.catalog().length"
+                                      [savedIds]="session.savedIds()"
+                                      (decisionMade)="session.makeDecision($event)"
+                                      (restarted)="session.restartDiscovery()"
+                                      (retryRequested)="session.retryDiscovery()"
+                                      (startupSaved)="session.toggleSaved($event)"
+                                      (startupSelected)="selectStartup($event)" />
+
+                <pulso-project-create-form *ngSwitchCase="'create-project'"
+                                           [sectors]="session.referenceCatalogs().sectors"
+                                           [catalogsLoading]="session.areCatalogsLoading()"
+                                           [catalogsLoaded]="session.hasLoadedReferenceCatalogs()"
+                                           [catalogsErrorMessage]="session.catalogsErrorMessage()" />
+
+                <pulso-saved-view *ngSwitchCase="'saved'"
+                                  [savedStartups]="session.savedStartups()"
+                                  [interestedStartups]="session.interestedStartups()"
+                                  (startupSelected)="selectStartup($event)" />
+
+                <pulso-profile-view *ngSwitchCase="'profile'"
+                                    [interestOptions]="session.interestOptions"
+                                    [selectedInterests]="session.selectedInterests()" />
+
+                <pulso-public-project-detail *ngSwitchCase="'detail'"
+                                             [projectId]="session.selectedProjectId() || ''"
+                                             (closed)="session.closeProjectDetail()" />
+            </ng-container>
+        </div>
+
+        <pulso-public-project-detail *ngIf="selectedStartup() as startup"
+                                    [projectId]="startup.id"
+                                    [recommendation]="session.getReason(startup)"
+                                    (closed)="closeStartup()" />
     </div>
-
-    <pulso-navigation-bar
-      [activeView]="session.activeView()"
-      [savedCount]="session.savedIds().length"
-      [interestedCount]="session.interestedIds().length"
-      (navigated)="navigateTo($event)"
-    />
-
-    <div class="app-shell__content">
-      <ng-container [ngSwitch]="session.activeView()">
-        <pulso-discovery-view
-          *ngSwitchCase="'discover'"
-          [activeSignals]="session.activeSignals()"
-          [currentStartup]="session.currentStartup()"
-          [errorMessage]="session.errorMessage()"
-          [feedRemaining]="session.feed().length"
-          [isLoading]="session.isLoading()"
-          [isModalOpen]="selectedStartup() !== null"
-          [totalStartups]="session.catalog().length"
-          [savedIds]="session.savedIds()"
-          (decisionMade)="session.makeDecision($event)"
-          (restarted)="session.restartDiscovery()"
-          (retryRequested)="session.retryDiscovery()"
-          (startupSaved)="session.toggleSaved($event)"
-          (startupSelected)="selectStartup($event)"
-        />
-        <pulso-project-create-form
-          *ngSwitchCase="'create-project'"
-          [sectors]="session.referenceCatalogs().sectors"
-          [catalogsLoading]="session.areCatalogsLoading()"
-          [catalogsLoaded]="session.hasLoadedReferenceCatalogs()"
-          [catalogsErrorMessage]="session.catalogsErrorMessage()"
-        />
-
-        <pulso-saved-view
-          *ngSwitchCase="'saved'"
-          [savedStartups]="session.savedStartups()"
-          [interestedStartups]="session.interestedStartups()"
-          (startupSelected)="selectStartup($event)"
-        />
-
-        <pulso-profile-view
-          *ngSwitchCase="'profile'"
-          [interestOptions]="session.interestOptions"
-          [selectedInterests]="session.selectedInterests()"
-        />
-      </ng-container>
-    </div>
-
-    <pulso-startup-detail-modal
-      *ngIf="selectedStartup() as startup"
-      [startup]="startup"
-      [recommendation]="session.getReason(startup)"
-      (closed)="closeStartup()"
-    />
-  </div>
 </ng-template>

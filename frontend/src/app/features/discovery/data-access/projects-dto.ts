@@ -29,6 +29,7 @@ export interface ProjectCreateResponseDto {
     membershipStatus: string
   }
 }
+
 export interface MemberInvitationDto {
   id: string
   projectId: string
@@ -37,4 +38,35 @@ export interface MemberInvitationDto {
   role: string
   membershipStatus: 'INVITED' | 'ACTIVE'
   createdByProfileId: string
+}
+
+export interface ProjectUpdateRequestDto {
+  name?: string
+  tagline?: string
+  description?: string | null
+  valueProposition?: string | null
+  stage?: string
+  sectorId?: string
+  city?: string | null
+  department?: string | null
+}
+
+export interface ProjectUpdateResponseDto {
+  project: {
+    id: string
+    slug: string
+    name: string
+    tagline: string
+    description: string | null
+    valueProposition: string | null
+    sectorId: string
+    stage: string
+    city: string | null
+    department: string | null
+    status: string
+    verificationStatus: string
+    createdByProfileId: string | null
+    createdAt: string
+    updatedAt: string
+  }
 }

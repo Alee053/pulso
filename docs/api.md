@@ -148,10 +148,10 @@ The response maps only public product data from the canonical model:
 | Response field | Canonical source | Contract rule |
 | --- | --- | --- |
 | `id`, `slug`, `name`, `tagline`, `description`, `valueProposition`, `stage`, `city`, `department` | `projects` | `valueProposition` maps `value_proposition`; nullable descriptive and location fields remain `null`. |
-| `sector` | `projects.sector_id` → `sectors` | Includes only `id`, `slug`, and `name`; catalog administration fields are omitted. |
-| `tags` | `project_tags` → `tags` | Includes only `id`, `slug`, and `name`; an empty relation is returned as `[]`. |
+| `sector` | `projects.sector_id` → `sectors` | Includes only an active sector's `id`, `slug`, and `name`; catalog administration fields are omitted. |
+| `tags` | `project_tags` → `tags` | Includes only active tags' `id`, `slug`, and `name`; an empty relation is returned as `[]`. |
 | `externalLinks` | `projects.external_links` | Includes only public `{type, url, label}` entries; absent links are returned as `[]`. |
-| `members` | `project_members` → `profiles` | Includes only members with `membership_status = ACTIVE`, `is_public = true`, and a linked active profile. |
+| `members` | `project_members` → `profiles` | Includes only members with `membership_status = ACTIVE`, `is_public = true`, and a linked active, public profile without a soft deletion (`account_status = ACTIVE`, `profile_visibility = PUBLIC`, `deleted_at IS NULL`). |
 
 Each public member exposes only `profileId`, `displayName`,
 `avatarStoragePath`, `displayTitle`, and `isFeatured`. The contract never
@@ -159,7 +159,10 @@ returns `inviteeEmail`, `inviteTokenDigest`, membership identifiers, audit
 fields, or other invitation/private data. It also excludes project
 `status`, `verificationStatus`, `createdByProfileId`, review notes and review
 timestamps, publication/audit timestamps, and any other internal workflow
-field.
+field. The backend applies the `PUBLISHED` predicate before joining the
+sector or assembling any related public data. A project whose sector is not
+active is therefore unavailable, while inactive tags, private external links,
+private memberships, and non-active members are omitted from the response.
 
 Missing projects and projects that are not `PUBLISHED` return the same
 response to avoid revealing whether a private project exists:
@@ -302,6 +305,165 @@ fields return `400 Bad Request`. A duplicate project slug returns `409
 Conflict`; other PostgreSQL failures return the sanitized `503 Service
 Unavailable` response. Missing, invalid, or `service_role` bearer tokens
 return `401 Unauthorized`.
+
+## `PATCH /api/v1/projects/{projectId}/members/{memberId}` — administer membership (PUL-83)
+
+Updates an existing project membership for an authenticated active `OWNER` or
+`ADMIN`. An active `MEMBER` may only use `withdraw` on their own membership.
+The authenticated profile is always taken from the JWT subject; the request
+cannot change `profileId`, `membershipStatus`, or `createdByProfileId`.
+
+Supported request bodies are:
+
+```json
+{ "action": "activate" }
+```
+
+```json
+{ "action": "changeRole", "role": "ADMIN" }
+```
+
+```json
+{ "action": "withdraw" }
+```
+
+`activate` changes a `LEFT` or `REMOVED` membership with a bound profile to
+`ACTIVE`. `changeRole` changes the role of an `ACTIVE` membership. `withdraw`
+changes an `INVITED` or `ACTIVE` membership to `REMOVED`, except that an
+active member withdrawing their own membership becomes `LEFT`. The project
+must retain at least one active `OWNER`. Administration requests for the same
+project are serialized while this invariant is checked.
+
+Response `200 OK` returns the updated membership:
+
+```json
+{
+  "id": "44444444-4444-4444-4444-444444444444",
+  "projectId": "33333333-3333-3333-3333-333333333333",
+  "profileId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+  "role": "ADMIN",
+  "membershipStatus": "ACTIVE",
+  "createdByProfileId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+}
+```
+
+Missing or insufficient membership returns `403` with code
+`membership_permission`. Invalid transitions and attempts to remove or demote
+the last active owner return `409` with codes
+`membership_invalid_transition` or `membership_owner_required`, respectively.
+Unknown action, role, or membership status returns `400`. A concurrent change
+that makes the expected membership state stale returns `409` with code
+`membership_conflict`.
+
+## `PATCH /api/v1/projects/{projectId}` — project information update (PUL-63)
+
+Updates an existing canonical project for the authenticated project team. The
+profile identity comes exclusively from the validated JWT subject, and the
+server reads the requested project's `project_members` row. Only an active
+`OWNER` or `ADMIN` can perform the update; the client cannot submit a role,
+profile identity, or another project identifier to change that decision.
+
+The request accepts only these editable properties:
+
+```json
+{
+  "name": "EcoPack actualizado",
+  "tagline": "Envases biodegradables mejorados.",
+  "description": "Nueva descripción.",
+  "valueProposition": "Reduce residuos y mejora el valor local.",
+  "stage": "EARLY_STAGE",
+  "sectorId": "11111111-1111-1111-1111-111111111111",
+  "city": "Santa Cruz",
+  "department": "Santa Cruz"
+}
+```
+
+The operation is partial: omitted properties keep their stored values. Text
+and stage values are trimmed/normalized and validated against the same project
+limits and stage catalog used during creation. `name`, `tagline`, `stage`, and
+`sectorId` cannot be explicitly null; the nullable descriptive fields and
+`department` may be cleared with `null`. The deployed `projects.city` column
+is required, so an explicitly null city is rejected while an omitted city is
+preserved.
+
+The update writes only the canonical `projects` table. Its existing
+`projects_set_updated_at` trigger advances `updated_at`; `id`, `slug`,
+`created_by_profile_id`, `created_at`, `status`, `verification_status`, review
+data, publication data, and archival data are not assigned by the request.
+
+Response `200 OK`:
+
+```json
+{
+  "project": {
+    "id": "33333333-3333-3333-3333-333333333333",
+    "slug": "eco-pack",
+    "name": "EcoPack actualizado",
+    "tagline": "Envases biodegradables mejorados.",
+    "description": "Nueva descripción.",
+    "valueProposition": "Reduce residuos y mejora el valor local.",
+    "sectorId": "11111111-1111-1111-1111-111111111111",
+    "stage": "EARLY_STAGE",
+    "city": "Santa Cruz",
+    "department": "Santa Cruz",
+    "status": "DRAFT",
+    "verificationStatus": "UNVERIFIED",
+    "createdByProfileId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "createdAt": "2026-09-01T12:00:00Z",
+    "updatedAt": "2026-09-08T12:00:00Z"
+  }
+}
+```
+
+Unknown or protected properties, invalid values, and inactive/unknown sectors
+return `400 Bad Request`. Missing memberships, members, invited/left/removed
+memberships, external profiles, a different project's membership, and a
+missing project all return the same `403 Membership permission` problem so the
+endpoint does not disclose private project existence. Missing, invalid, or
+`service_role` bearer tokens return `401 Unauthorized`. Angular calls this
+contract through the feature's `ProjectsApi` HTTP adapter; it does not read
+project rows directly from Supabase.
+
+## `POST /api/v1/projects/{projectId}/publication-request`
+
+Requests publication review for a project in `DRAFT`. The profile identity is
+always read from the validated JWT subject. The backend authorizes the action
+only when the matching `project_members` row for that exact project and profile
+has `role = OWNER` or `ADMIN` and `membership_status = ACTIVE`.
+
+The request body is empty (or `{}`). It cannot provide `profileId`, `owner`,
+`role`, `status`, `publishedAt`, `reviewedAt`, `reviewedByProfileId`, or
+`reviewNote`. The endpoint changes only `projects.status` to `PENDING_REVIEW`;
+it never publishes the project or changes review data.
+
+Response `200 OK`:
+
+```json
+{
+  "projectId": "33333333-3333-3333-3333-333333333333",
+  "status": "PENDING_REVIEW"
+}
+```
+
+## `POST /api/v1/projects/{projectId}/archive`
+
+Archives a project from `DRAFT`, `PENDING_REVIEW`, `PUBLISHED`, or `REJECTED`
+under the same persisted-membership authorization rule. The server sets
+`archived_at`, preserves `published_at`, and returns only the project reference
+and new status:
+
+```json
+{
+  "projectId": "33333333-3333-3333-3333-333333333333",
+  "status": "ARCHIVED"
+}
+```
+
+`MEMBER`, invited, left, removed, missing, external, or wrong-project
+memberships return the same `403 Membership permission` problem. Invalid
+action fields return `400`; invalid lifecycle sources return `400`; a concurrent
+state change returns the sanitized `409 Project state conflict`. There is no
+team endpoint that accepts a direct `PUBLISHED` transition.
 
 ## `GET /api/v1/me/preferences`
 
@@ -526,3 +688,99 @@ must be used with an empty JWKS URI. The API accepts only JWTs with the
 
 The browser gets only a publishable/anon key. Database passwords, JWT secrets,
 and service-role keys remain server-side.
+
+## `POST /api/v1/projects/{projectId}/members` — create member invitation (PUL-79)
+
+Creates an invitation for an existing project. The authenticated profile is
+resolved from the JWT and must have an active `OWNER` or `ADMIN` membership in
+that project. The request cannot provide the role, membership status, profile,
+creator, token, or token digest.
+
+```sh
+curl -X POST \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"inviteeEmail":"Ada@Example.com"}' \
+  http://localhost:8080/api/v1/projects/33333333-3333-3333-3333-333333333333/members
+```
+
+The email is trimmed and lowercased before duplicate detection and
+persistence. The server generates an acceptance token and stores only its
+SHA-256 digest; the token and digest are never returned in the HTTP response
+or written to logs. It also sends the plaintext token to the invitee through
+the configured SMTP transport as a frontend link. If delivery fails, the
+invitation transaction is rolled back.
+
+Response `201 Created`:
+
+```json
+{
+  "id": "55555555-5555-5555-5555-555555555555",
+  "projectId": "33333333-3333-3333-3333-333333333333",
+  "inviteeEmail": "ada@example.com",
+  "profileId": null,
+  "role": "MEMBER",
+  "membershipStatus": "INVITED",
+  "createdByProfileId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+}
+```
+
+An unknown project returns `404` with `project does not exist.`. A missing or
+insufficient project membership returns `403` with `active OWNER or ADMIN
+membership is required.`. A second active invitation for the same project and
+normalized email returns `409` with code `invitation_duplicate`. Invalid email
+input and client-controlled fields return `400`.
+
+## `POST /api/v1/project-members/accept` — accept member invitation (PUL-80)
+
+Accepts an invitation for the authenticated account and activates the existing
+`project_members` row. The endpoint requires a valid user JWT. The profile ID
+and email are read from the validated JWT; the request cannot provide either
+identity value.
+
+```sh
+curl -X POST \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"token":"accept-me"}' \
+  http://localhost:8080/api/v1/project-members/accept
+```
+
+The backend hashes the presented token with the existing SHA-256 digest
+algorithm and looks up `project_members.invite_token_digest`. It normalizes the
+JWT email with the invitation rules and compares it before assigning
+`profile_id`. A successful request changes the same row from `INVITED` to
+`ACTIVE`, preserves `role = MEMBER`, records `joined_at`, and clears the digest
+so the token cannot be replayed.
+
+Response `200 OK`:
+
+```json
+{
+  "id": "55555555-5555-5555-5555-555555555555",
+  "projectId": "33333333-3333-3333-3333-333333333333",
+  "inviteeEmail": "ada@example.com",
+  "profileId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+  "role": "MEMBER",
+  "membershipStatus": "ACTIVE",
+  "createdByProfileId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+}
+```
+
+Invalid or unavailable tokens, already accepted invitations, email mismatches,
+and profiles that already have a membership return the same sanitized `404`
+problem response and do not modify the row:
+
+```json
+{
+  "type": "about:blank",
+  "title": "Member invitation",
+  "status": 404,
+  "detail": "invitation not found or already used."
+}
+```
+
+The conditional update is transactional and serialized by the invitation row;
+concurrent acceptance attempts therefore produce at most one active profile
+association. The response and errors never include the plaintext token or its
+digest.

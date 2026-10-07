@@ -94,6 +94,47 @@ layout; it is a deliberate choice for locality and team ownership. See
 - `ops` contains health behavior separate from product capabilities.
 - `/api/health` is liveness. Actuator health is the dependency/readiness signal.
 
+#### Structured diagnostic logging
+
+Backend modules use [`ApplicationLogger`](../../backend/src/main/java/com/pulso/backend/ops/logging/ApplicationLogger.java)
+to emit one-line JSON events with a timestamp, level, module, operation,
+optional request and user identifiers, and structured metadata. The helper
+redacts sensitive metadata keys and common credential, token, email, phone,
+address, identity, payment, and Supabase service-role-key patterns in messages
+and exception details. When a sensitive key-value assignment appears in text,
+the helper redacts from that field through the end of the message or exception
+string so multiword values cannot leak. Pass only operational metadata; keep
+messages fixed in code and do not log request or response bodies.
+
+For example, a module can attach identifiers and metadata without assembling a
+message string:
+
+```java
+import java.util.Map;
+import java.util.UUID;
+
+import com.pulso.backend.ops.logging.ApplicationLogger;
+import com.pulso.backend.ops.logging.LogContext;
+
+final class ProjectMembershipModule {
+    void reportRejectedUpdate(String requestId, UUID profileId, UUID projectId, UUID membershipId) {
+        ApplicationLogger.warn(
+                new LogContext("project", "updateMembership", requestId, profileId.toString()),
+                "Membership update was rejected",
+                Map.of("projectId", projectId.toString(), "membershipId", membershipId.toString()));
+    }
+}
+```
+
+For failures, use `ApplicationLogger.error(context, message, metadata,
+exception)`. The helper includes the exception type, a redacted message, stack
+frames, and its cause chain. The shared API exception handler uses this path
+for data-store failures.
+
+Set `PULSO_LOG_LEVEL` to `INFO` (default), `WARN`, `ERROR`, or `OFF` to control
+the helper's output without changing calling modules. Request and user
+identifiers are optional context supplied by the caller when available.
+
 ## Authentication boundary
 
 Supabase Auth is the identity provider. Angular sends the access token in the

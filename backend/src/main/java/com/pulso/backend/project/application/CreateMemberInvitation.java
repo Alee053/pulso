@@ -1,52 +1,71 @@
 package com.pulso.backend.project.application;
 
-import java.security.SecureRandom;
-import java.util.Base64;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.pulso.backend.config.ApiMessages;
 import com.pulso.backend.config.ProjectProperties;
 import com.pulso.backend.project.domain.CreatedMemberInvitation;
 import com.pulso.backend.project.domain.MemberInvitation;
+import com.pulso.backend.project.domain.MemberInvitationActor;
+import com.pulso.backend.project.domain.MemberInvitationPermissionException;
+import com.pulso.backend.project.domain.MemberInvitationProjectNotFoundException;
 import com.pulso.backend.project.domain.ProjectValidationException;
 
 @Service
-
 public class CreateMemberInvitation {
-    private final MemberInvitationRepository repository;
-    private final MemberInvitationDelivery delivery;
-    private final SecureRandom random = new SecureRandom();
-    private final ProjectProperties projectProperties;
 
-    public CreateMemberInvitation(MemberInvitationRepository repository,
-                                MemberInvitationDelivery delivery,
-                                ProjectProperties projectProperties) {
+    private final MemberInvitationRepository repository;
+    private final MemberInvitationTokenGenerator tokenGenerator;
+    private final MemberInvitationDelivery delivery;
+    private final MemberInvitation.Limits limits;
+
+    public CreateMemberInvitation(
+            MemberInvitationRepository repository,
+            MemberInvitationTokenGenerator tokenGenerator,
+            ProjectProperties properties,
+            MemberInvitationDelivery delivery) {
         this.repository = repository;
+        this.tokenGenerator = tokenGenerator;
         this.delivery = delivery;
-        this.projectProperties = projectProperties;
+        this.limits = new MemberInvitation.Limits(properties.inviteeEmailMaxLength());
     }
 
-    // Delivery is deliberately part of the operation: failed delivery must not be reported as success.
-    // SMTP is not transactional; a production deployment should replace it with an outbox when needed.
-    @org.springframework.transaction.annotation.Transactional
-    public CreatedInvitationResult execute(UUID actorId, UUID projectId, String email) {
-        if (actorId == null || projectId == null) {
-            throw new ProjectValidationException("actor and projectId are required.");
+    @Transactional
+    public PersistedMemberInvitation execute(
+            UUID projectId,
+            UUID authenticatedProfileId,
+            String inviteeEmail) {
+        requireIdentifiers(projectId, authenticatedProfileId);
+
+        if (!repository.projectExists(projectId)) {
+            throw new MemberInvitationProjectNotFoundException();
         }
-        byte[] bytes = new byte[32];
-        random.nextBytes(bytes);
-        String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+
+        MemberInvitationActor actor = repository.findActor(projectId, authenticatedProfileId)
+                .orElseThrow(MemberInvitationPermissionException::new);
+        String token = tokenGenerator.generate();
         CreatedMemberInvitation created = MemberInvitation.invite(
-                projectId, repository.projectExists(projectId),
-                repository.findActor(projectId, actorId).orElse(null),
-                email, token, repository.findMembers(projectId),
-                new MemberInvitation.Limits(projectProperties.inviteeEmailMaxLength()));
-        if (repository.isActiveAccountEmail(projectId, created.invitation().inviteeEmail())) {
-            throw new MemberInvitationConflictException();
-        }
-        UUID id = repository.save(created);
+                projectId,
+                true,
+                actor,
+                inviteeEmail,
+                token,
+                repository.findInvitations(projectId),
+                limits);
+        PersistedMemberInvitation persisted = repository.createInvitation(created);
         delivery.send(created.invitation().inviteeEmail(), token);
-        return new CreatedInvitationResult(id, created.invitation());
+        return persisted;
+    }
+
+    private static void requireIdentifiers(UUID projectId, UUID authenticatedProfileId) {
+        if (projectId == null) {
+            throw new ProjectValidationException(ApiMessages.PROJECT_ID_REQUIRED);
+        }
+        if (authenticatedProfileId == null) {
+            throw new ProjectValidationException(ApiMessages.AUTHENTICATED_PROFILE_REQUIRED);
+        }
     }
 }

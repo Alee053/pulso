@@ -33,7 +33,7 @@ export class MemberInvitationPanelComponent {
     } catch (e) {
       this.error.set(e instanceof HttpErrorResponse
         ? ({ 400:'Correo inválido.', 401:'Inicia sesión.', 403:'No tienes permisos.',
-             404:'Proyecto inexistente.', 409:'Ya existe una invitación o membresía.' } as Record<number,string>)[e.status]
+             404:'Proyecto inexistente.', 409:'Ya existe una invitación para ese correo.' } as Record<number,string>)[e.status]
             ?? 'No se pudo enviar la invitación.'
         : 'No se pudo enviar la invitación.')
     } finally { this.busy.set(false) }

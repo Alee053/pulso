@@ -26,8 +26,9 @@ export class MemberInvitationAcceptComponent {
       history.replaceState(null, '', location.pathname + location.search)
     } catch (e) {
       this.error.set(e instanceof HttpErrorResponse
-        ? ({ 400:'Invitación inválida.', 401:'Inicia sesión.', 403:'Usa la cuenta invitada.',
-             404:'Invitación inexistente o utilizada.', 409:'Ya perteneces al proyecto.' } as Record<number,string>)[e.status]
+        ? ({ 400:'Invitación inválida.', 401:'Inicia sesión.',
+             404:'La invitación no está disponible para esta cuenta.',
+             409:'Ya perteneces al proyecto.' } as Record<number,string>)[e.status]
             ?? 'No se pudo aceptar la invitación.'
         : 'No se pudo aceptar la invitación.')
     } finally { this.busy.set(false) }

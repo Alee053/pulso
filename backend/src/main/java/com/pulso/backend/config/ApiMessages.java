@@ -106,6 +106,13 @@ public final class ApiMessages {
     public static final String INVITATION_PROJECT_NOT_FOUND = "project does not exist.";
     public static final String DUPLICATE_INVITATION =
             "an active invitation already exists for this project and email.";
+    public static final String INVITATION_PROJECT_NOT_FOUND_TITLE = "Project not found";
+    public static final String INVITATION_NOT_FOUND_TITLE = "Member invitation";
+    public static final String INVITATION_NOT_FOUND_DETAIL =
+            "invitation not found or already used.";
+    public static final String INVITATION_PERMISSION_TITLE = "Membership permission";
+    public static final String INVITATION_CONFLICT_TITLE = "Invitation conflict";
+    public static final String INVITATION_CONFLICT_CODE = "invitation_duplicate";
 
     public static final String MEMBERSHIP_PERMISSION_TITLE = "Membership permission";
     public static final String MEMBERSHIP_PERMISSION_DETAIL =
@@ -117,6 +124,14 @@ public final class ApiMessages {
             "Membership owner required";
     public static final String MEMBERSHIP_OWNER_REQUIRED_DETAIL =
             "project must keep at least one active OWNER.";
+    public static final String MEMBERSHIP_PERMISSION_CODE = "membership_permission";
+    public static final String MEMBERSHIP_INVALID_TRANSITION_CODE =
+            "membership_invalid_transition";
+    public static final String MEMBERSHIP_OWNER_REQUIRED_CODE = "membership_owner_required";
+    public static final String MEMBERSHIP_CONFLICT_TITLE = "Membership conflict";
+    public static final String MEMBERSHIP_CONFLICT_CODE = "membership_conflict";
+    public static final String MEMBERSHIP_CONFLICT_DETAIL =
+            "The membership changed before the action completed.";
 
     public static final String CANNOT_ACTIVATE_NO_PROFILE =
             "cannot activate a membership without a profile.";
@@ -127,6 +142,7 @@ public final class ApiMessages {
     public static final String CANNOT_WITHDRAW_STATUS =
             "cannot withdraw a membership with status %s.";
     public static final String MEMBERSHIP_REQUIRED = "membership is required.";
+    public static final String MEMBERSHIP_ID_REQUIRED = "memberId is required.";
 
     public static final String CANNOT_REQUEST_PUBLICATION_FROM =
             "cannot request publication from %s.";
@@ -138,6 +154,10 @@ public final class ApiMessages {
             "membershipStatus must be ACTIVE.";
     public static final String ROLE_MUST_BE_OWNER_OR_ADMIN =
             "role must be OWNER or ADMIN.";
+    public static final String PROJECT_LIFECYCLE_CONFLICT_TITLE =
+            "Project state conflict";
+    public static final String PROJECT_LIFECYCLE_CONFLICT_DETAIL =
+            "The project state changed before the action completed.";
 
     public static final String AUTHENTICATED_PROFILE_REQUIRED =
             "authenticatedProfileId is required.";
@@ -149,9 +169,11 @@ public final class ApiMessages {
     public static final String SECTOR_DUPLICATE =
             "preferredSectors must not contain duplicates: '%s'.";
     public static final String PROJECT_DRAFT_REQUIRED = "project draft is required.";
+    public static final String PROJECT_UPDATE_REQUIRED = "project update is required.";
     public static final String SECTOR_MUST_BE_ACTIVE =
             "sectorId must reference an active sector.";
     public static final String FIELD_NOT_ACCEPTED = "Field '%s' is not accepted.";
+    public static final String REQUEST_BODY_REQUIRED = "request body is required.";
 
     public static final String STORED_PREFERENCES_INVALID_JSON =
             "Stored onboarding preferences contain invalid JSON.";

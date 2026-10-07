@@ -46,6 +46,35 @@ export interface CreatedDraftProject {
   owner: CreatedProjectOwner
 }
 
+export interface ProjectUpdateFormValue {
+  name?: string
+  tagline?: string
+  description?: string | null
+  valueProposition?: string | null
+  stage?: ProjectStage
+  sectorId?: string
+  city?: string | null
+  department?: string | null
+}
+
+export interface UpdatedProject {
+  id: string
+  slug: string
+  name: string
+  tagline: string
+  description: string | null
+  valueProposition: string | null
+  sectorId: string
+  stage: ProjectStage
+  city: string | null
+  department: string | null
+  status: string
+  verificationStatus: string
+  createdByProfileId: string | null
+  createdAt: string
+  updatedAt: string
+}
+
 export interface ProjectStageOption {
   value: ProjectStage
   label: string

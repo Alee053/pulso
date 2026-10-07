@@ -11,113 +11,204 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 import com.pulso.backend.config.ProjectProperties;
-import com.pulso.backend.project.application.MemberInvitationConflictException;
+import com.pulso.backend.project.application.MemberInvitationAcceptanceRepository;
 import com.pulso.backend.project.application.MemberInvitationRepository;
-import com.pulso.backend.project.application.StoredMemberInvitation;
+import com.pulso.backend.project.application.PersistedMemberInvitation;
 import com.pulso.backend.project.domain.CreatedMemberInvitation;
 import com.pulso.backend.project.domain.DuplicateMemberInvitationException;
 import com.pulso.backend.project.domain.MemberInvitation;
 import com.pulso.backend.project.domain.MemberInvitationActor;
 
 @Repository
-public class JdbcMemberInvitationRepository implements MemberInvitationRepository {
-    private final JdbcClient jdbc;
-    private final MemberInvitation.Limits invitationLimits;
-    public JdbcMemberInvitationRepository(JdbcClient jdbc, ProjectProperties properties) {
-        this.jdbc = jdbc;
-        this.invitationLimits = new MemberInvitation.Limits(properties.inviteeEmailMaxLength());
+public class JdbcMemberInvitationRepository
+        implements MemberInvitationRepository, MemberInvitationAcceptanceRepository {
+
+    private final JdbcClient jdbcClient;
+    private final MemberInvitation.Limits limits;
+
+    public JdbcMemberInvitationRepository(
+            JdbcClient jdbcClient,
+            ProjectProperties properties) {
+        this.jdbcClient = jdbcClient;
+        this.limits = new MemberInvitation.Limits(properties.inviteeEmailMaxLength());
     }
 
-    @Override public boolean projectExists(UUID id) {
-        return jdbc.sql("select exists(select 1 from public.projects where id = :id)")
-                .param("id", id).query(Boolean.class).single();
-    }
-
-    @Override public Optional<MemberInvitationActor> findActor(UUID projectId, UUID profileId) {
-        return jdbc.sql("""
-                select project_id, profile_id, role, membership_status
-                from public.project_members where project_id = :projectId and profile_id = :profileId
-                """).param("projectId", projectId).param("profileId", profileId)
-                .query((r, i) -> new MemberInvitationActor(
-                        r.getObject("project_id", UUID.class), r.getObject("profile_id", UUID.class),
-                        r.getString("role"), r.getString("membership_status"))).optional();
-    }
-
-    @Override public List<MemberInvitation> findMembers(UUID projectId) {
-        return jdbc.sql("""
-                select project_id, invitee_email, profile_id, role, membership_status, created_by_profile_id
-                from public.project_members where project_id = :projectId
-                """).param("projectId", projectId).query((r, i) -> mapInvitation(r, i)).list();
-    }
-
-    // The default local/backend datasource is postgres, which can read auth.users.
-    // A restricted production database role needs a dedicated SECURITY DEFINER lookup instead.
-    @Override public boolean isActiveAccountEmail(UUID projectId, String email) {
-        return jdbc.sql("""
-                select exists (
-                  select 1 from public.project_members m
-                  join auth.users u on u.id = m.profile_id
-                  where m.project_id = :projectId and m.membership_status = 'ACTIVE'
-                    and lower(trim(u.email)) = :email
+    @Override
+    public boolean projectExists(UUID projectId) {
+        return jdbcClient.sql("""
+                select exists(
+                    select 1
+                    from public.projects
+                    where id = :projectId
                 )
-                """).param("projectId", projectId).param("email", email).query(Boolean.class).single();
+                """)
+                .param("projectId", projectId)
+                .query((resultSet, rowNumber) -> resultSet.getBoolean(1))
+                .single();
     }
 
-    @Override public UUID save(CreatedMemberInvitation created) {
-        MemberInvitation invitation = created.invitation();
+    @Override
+    public Optional<MemberInvitationActor> findActor(UUID projectId, UUID profileId) {
+        return jdbcClient.sql("""
+                select role, membership_status
+                from public.project_members
+                where project_id = :projectId
+                  and profile_id = :profileId
+                """)
+                .param("projectId", projectId)
+                .param("profileId", profileId)
+                .query((resultSet, rowNumber) -> new MemberInvitationActor(
+                        projectId,
+                        profileId,
+                        resultSet.getString("role"),
+                        resultSet.getString("membership_status")))
+                .list()
+                .stream()
+                .findFirst();
+    }
+
+    @Override
+    public List<MemberInvitation> findInvitations(UUID projectId) {
+        return jdbcClient.sql("""
+                select project_id, invitee_email, profile_id, role,
+                       membership_status, created_by_profile_id
+                from public.project_members
+                where project_id = :projectId
+                  and invitee_email is not null
+                order by id
+                """)
+                .param("projectId", projectId)
+                .query((resultSet, rowNumber) -> mapInvitation(resultSet, limits))
+                .list();
+    }
+
+    @Override
+    public PersistedMemberInvitation createInvitation(CreatedMemberInvitation created) {
         try {
-            return jdbc.sql("""
-                    insert into public.project_members
-                      (project_id, invitee_email, invite_token_digest, role, membership_status, created_by_profile_id)
-                    values (:projectId, :email, :digest, :role, :status, :actor)
-                    returning id
-                    """).param("projectId", invitation.projectId())
-                    .param("email", invitation.inviteeEmail())
-                    .param("digest", created.inviteTokenDigest())
-                    .param("role", invitation.role())
-                    .param("status", invitation.membershipStatus())
-                    .param("actor", invitation.createdByProfileId())
-                    .query(UUID.class).single();
-        } catch (DuplicateKeyException ex) { throw new DuplicateMemberInvitationException(); }
+            return jdbcClient.sql("""
+                    insert into public.project_members (
+                        project_id,
+                        invitee_email,
+                        invite_token_digest,
+                        role,
+                        membership_status,
+                        created_by_profile_id
+                    ) values (
+                        :projectId,
+                        :inviteeEmail,
+                        :inviteTokenDigest,
+                        'MEMBER',
+                        'INVITED',
+                        :createdByProfileId
+                    )
+                    returning
+                        id,
+                        project_id,
+                        invitee_email,
+                        profile_id,
+                        role,
+                        membership_status,
+                        created_by_profile_id
+                    """)
+                    .param("projectId", created.invitation().projectId())
+                    .param("inviteeEmail", created.invitation().inviteeEmail())
+                    .param("inviteTokenDigest", created.inviteTokenDigest())
+                    .param("createdByProfileId", created.invitation().createdByProfileId())
+                    .query((resultSet, rowNumber) -> mapPersistedInvitation(resultSet, limits))
+                    .single();
+        } catch (DuplicateKeyException exception) {
+            throw new DuplicateMemberInvitationException();
+        }
     }
 
-    @Override public Optional<StoredMemberInvitation> findByDigest(String digest) {
-        return jdbc.sql("""
-                select id, project_id, invitee_email, profile_id, role, membership_status, created_by_profile_id
-                from public.project_members where invite_token_digest = :digest
-                """).param("digest", digest).query((r,i) ->
-                        new StoredMemberInvitation(r.getObject("id", UUID.class), mapInvitation(r,i))).optional();
+    @Override
+    public Optional<PersistedMemberInvitation> findByInviteTokenDigest(String inviteTokenDigest) {
+        return jdbcClient.sql("""
+                select id, project_id, invitee_email, profile_id, role,
+                       membership_status, created_by_profile_id
+                from public.project_members
+                where invite_token_digest = :inviteTokenDigest
+                for update
+                """)
+                .param("inviteTokenDigest", inviteTokenDigest)
+                .query((resultSet, rowNumber) -> mapPersistedInvitation(resultSet, limits))
+                .list()
+                .stream()
+                .findFirst();
     }
 
-    @Override public boolean hasMembership(UUID projectId, UUID profileId) {
-        return jdbc.sql("""
-                select exists(select 1 from public.project_members
-                where project_id = :projectId and profile_id = :profileId)
-                """).param("projectId", projectId).param("profileId", profileId).query(Boolean.class).single();
+    @Override
+    public boolean hasMembership(UUID projectId, UUID profileId) {
+        return jdbcClient.sql("""
+                select exists(
+                    select 1
+                    from public.project_members
+                    where project_id = :projectId
+                      and profile_id = :profileId
+                )
+                """)
+                .param("projectId", projectId)
+                .param("profileId", profileId)
+                .query((resultSet, rowNumber) -> resultSet.getBoolean(1))
+                .single();
     }
 
-    @Override public boolean activate(UUID invitationId, UUID profileId) {
+    @Override
+    public Optional<PersistedMemberInvitation> acceptInvitation(
+            UUID invitationId,
+            String inviteTokenDigest,
+            UUID profileId) {
         try {
-            return !jdbc.sql("""
+            return jdbcClient.sql("""
                     update public.project_members
-                    set profile_id = :profileId, membership_status = 'ACTIVE',
-                        invite_token_digest = null, joined_at = timezone('utc', now())
-                    where id = :invitationId and membership_status = 'INVITED' and profile_id is null
-                    returning id
-                    """).param("invitationId", invitationId).param("profileId", profileId)
-                    .query(UUID.class).list().isEmpty();
-        } catch (DuplicateKeyException ex) { throw new MemberInvitationConflictException(); }
+                    set profile_id = :profileId,
+                        membership_status = 'ACTIVE',
+                        joined_at = timezone('utc', now()),
+                        invite_token_digest = null,
+                        updated_at = timezone('utc', now())
+                    where id = :invitationId
+                      and invite_token_digest = :inviteTokenDigest
+                      and membership_status = 'INVITED'
+                      and profile_id is null
+                    returning
+                        id,
+                        project_id,
+                        invitee_email,
+                        profile_id,
+                        role,
+                        membership_status,
+                        created_by_profile_id
+                    """)
+                    .param("invitationId", invitationId)
+                    .param("inviteTokenDigest", inviteTokenDigest)
+                    .param("profileId", profileId)
+                    .query((resultSet, rowNumber) -> mapPersistedInvitation(resultSet, limits))
+                    .list()
+                    .stream()
+                    .findFirst();
+        } catch (DuplicateKeyException exception) {
+            return Optional.empty();
+        }
     }
 
-    private MemberInvitation mapInvitation(ResultSet r, int i) throws SQLException {
+    private static PersistedMemberInvitation mapPersistedInvitation(
+            ResultSet resultSet,
+            MemberInvitation.Limits limits) throws SQLException {
+        return new PersistedMemberInvitation(
+                resultSet.getObject("id", UUID.class),
+                mapInvitation(resultSet, limits));
+    }
+
+    private static MemberInvitation mapInvitation(
+            ResultSet resultSet,
+            MemberInvitation.Limits limits) throws SQLException {
         return new MemberInvitation(
-            r.getObject("project_id", UUID.class),
-            r.getString("invitee_email"),
-            r.getObject("profile_id", UUID.class),
-            r.getString("role"),
-            r.getString("membership_status"),
-            r.getObject("created_by_profile_id", UUID.class),
-            invitationLimits
-        );
+                resultSet.getObject("project_id", UUID.class),
+                resultSet.getString("invitee_email"),
+                resultSet.getObject("profile_id", UUID.class),
+                resultSet.getString("role"),
+                resultSet.getString("membership_status"),
+                resultSet.getObject("created_by_profile_id", UUID.class),
+                limits);
     }
 }

@@ -7,17 +7,11 @@ import { commonStrings } from '../strings/common.strings'
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="flex items-center gap-3">
-      <span
-        class="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-[0.9rem] shadow-[0_0_2rem_rgba(105,190,242,0.24)]"
-        aria-hidden="true"
-      >
+    <div class="brand-mark">
+      <span class="brand-mark__symbol" aria-hidden="true">
         <img src="assets/pulso-logo.svg" alt="" class="size-full object-cover" />
       </span>
-      <span
-        *ngIf="!compact"
-        class="text-[0.72rem] font-semibold tracking-[0.2em] text-white/90"
-      >{{ brandName }}</span>
+      <span *ngIf="!compact" class="brand-mark__name">{{ brandName }}</span>
     </div>
   `,
 })

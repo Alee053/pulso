@@ -4,8 +4,8 @@
 `com.pulso.backend.project.domain.MembershipAdministration` and the interface
 action/error seam in
 `frontend/src/app/features/discovery/domain/membership-administration.ts`.
-**Target** for HTTP activate, change-role, and withdraw endpoints, and for a
-membership-administration screen.
+**Current** for the HTTP activate, change-role, and withdraw endpoint.
+**Target** for a membership-administration screen.
 
 S2.5 formalizes how existing `project_members` rows are administered. Roles
 are `OWNER`, `ADMIN`, and `MEMBER`. Membership statuses are `INVITED`,
@@ -64,17 +64,17 @@ Withdraw requires `INVITED` or `ACTIVE`.
 
 A project must keep at least one **active** `OWNER`. Withdrawing or demoting
 the last active owner is rejected, whether the actor is that owner or another
-admin.
+admin. The application locks the project row while it reads the actor,
+target, and current memberships, so concurrent administration requests for the
+same project cannot both approve a stale owner state.
 
-## Target HTTP contract
+## HTTP contract
 
-These routes are not implemented here. They are the contract later S2.5 slices
-must keep.
-
-`PATCH /api/v1/projects/{projectId}/members/{memberId}`
-
+The backend implements the three actions through one authenticated endpoint.
 The authenticated profile is the actor. The request body cannot set
 `profileId`, `membershipStatus`, or `createdByProfileId`.
+
+`PATCH /api/v1/projects/{projectId}/members/{memberId}`
 
 ```json
 {
@@ -106,6 +106,7 @@ The authenticated profile is the actor. The request body cannot set
 | Self-elevation | `MembershipPermissionException` | `403` | `membership_permission` | `cannot elevate own role.` | No puedes elevar tu propio rol. |
 | Status or identity that the action does not allow | `MembershipInvalidTransitionException` | `409` | `membership_invalid_transition` | `cannot {action} a membership with status {status}.` or `cannot activate a membership without a profile.` | Esa membresía no admite esta acción. |
 | Last active owner would be removed or demoted | `MembershipOwnerInvariantException` | `409` | `membership_owner_required` | `project must keep at least one active OWNER.` | El proyecto debe conservar al menos un owner activo. |
+| Concurrent membership change makes the expected row stale | `MembershipConflictException` | `409` | `membership_conflict` | `The membership changed before the action completed.` | |
 | Unknown role or membership status | `ProjectValidationException` | `400` | | Field-specific validation message | |
 
 The executable backend contract is `MembershipAdministration`. Callers supply

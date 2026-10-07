@@ -1,43 +1,57 @@
 package com.pulso.backend.project.application;
 
-import java.util.Locale;
 import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.pulso.backend.config.ApiMessages;
 import com.pulso.backend.project.domain.InviteTokenDigest;
 import com.pulso.backend.project.domain.MemberInvitation;
 import com.pulso.backend.project.domain.ProjectValidationException;
 
 @Service
 public class AcceptMemberInvitation {
-    private final MemberInvitationRepository repository;
 
-    public AcceptMemberInvitation(MemberInvitationRepository repository) { this.repository = repository; }
+    private final MemberInvitationAcceptanceRepository repository;
+
+    public AcceptMemberInvitation(MemberInvitationAcceptanceRepository repository) {
+        this.repository = repository;
+    }
 
     @Transactional
-    public AcceptedInvitationResult execute(UUID profileId, String authenticatedEmail, String token) {
-        if (profileId == null || authenticatedEmail == null || authenticatedEmail.isBlank()) {
-            throw new MemberInvitationIdentityException();
-        }
-        if (token == null || token.isBlank()) {
-            throw new ProjectValidationException("token is required.");
-        }
-        StoredMemberInvitation stored = repository.findByDigest(InviteTokenDigest.fromPlaintext(token))
+    public PersistedMemberInvitation execute(
+            UUID authenticatedProfileId,
+            String authenticatedEmail,
+            String token) {
+        requireAuthenticatedProfile(authenticatedProfileId);
+
+        String inviteTokenDigest = InviteTokenDigest.fromPlaintext(token);
+        PersistedMemberInvitation persisted = repository
+                .findByInviteTokenDigest(inviteTokenDigest)
                 .orElseThrow(MemberInvitationNotFoundException::new);
-        MemberInvitation pending = stored.invitation();
-        if (!"INVITED".equals(pending.membershipStatus())) {
+        MemberInvitation invitation = persisted.invitation();
+
+        if (!"INVITED".equals(invitation.membershipStatus())
+                || invitation.profileId() != null
+                || !invitation.matchesInviteeEmail(authenticatedEmail)) {
             throw new MemberInvitationNotFoundException();
         }
-        if (!pending.inviteeEmail().equals(authenticatedEmail.trim().toLowerCase(Locale.ROOT))) {
-            throw new MemberInvitationIdentityException();
-        }
-        if (repository.hasMembership(pending.projectId(), profileId)) {
-            throw new MemberInvitationConflictException();
-        }
-        MemberInvitation accepted = pending.accept(profileId);
-        if (!repository.activate(stored.id(), profileId)) {
+        if (repository.hasMembership(invitation.projectId(), authenticatedProfileId)) {
             throw new MemberInvitationNotFoundException();
         }
-        return new AcceptedInvitationResult(stored.id(), accepted);
+
+        invitation.accept(authenticatedProfileId);
+        return repository.acceptInvitation(
+                        persisted.id(),
+                        inviteTokenDigest,
+                        authenticatedProfileId)
+                .orElseThrow(MemberInvitationNotFoundException::new);
+    }
+
+    private static void requireAuthenticatedProfile(UUID authenticatedProfileId) {
+        if (authenticatedProfileId == null) {
+            throw new ProjectValidationException(ApiMessages.AUTHENTICATED_PROFILE_REQUIRED);
+        }
     }
 }

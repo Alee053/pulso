@@ -1,8 +1,8 @@
 # Member invitation
 
 **Status: Current** for the invitation policy in
-`com.pulso.backend.project.domain.MemberInvitation`. **Target** for HTTP create
-and accept endpoints, email delivery, and token lookup by digest.
+`com.pulso.backend.project.domain.MemberInvitation`, the protected HTTP create
+endpoint, authenticated acceptance endpoint, and SMTP email delivery.
 
 S2.4 uses the canonical `project_members` row as both membership and
 invitation. There is no separate invitation table. An invitation identifies a
@@ -43,6 +43,25 @@ The database enforces the active-duplicate rule with a partial unique index on
 `(project_id, invitee_email)` for `INVITED` rows. Emails are stored already
 normalized.
 
+## Email delivery
+
+The create use case persists the invitation digest and sends the plaintext
+accept token to the normalized invitee email. The mail contains a link to the
+frontend hash route `/#invite={token}`. The HTTP response and database row never
+include the plaintext token.
+
+SMTP is configured through `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`,
+`SMTP_PASSWORD`, `SMTP_AUTH`, and `SMTP_STARTTLS`. The link base URL comes from
+`PULSO_INVITATION_FRONTEND_URL`, and the sender address comes from
+`PULSO_INVITATION_FROM`. `SMTP_PORT` falls back to `PULSO_SMTP_PORT` and then
+to `54325`, the host port exposed for the repository's Mailpit service.
+
+Delivery runs inside the create operation's database transaction. A mail-send
+failure aborts the operation and rolls back the invitation row. SMTP cannot
+participate in that transaction, so a later database commit failure could
+still leave a delivered link without a persisted invitation; an outbox is the
+follow-up option if that failure mode needs stronger handling.
+
 ## Permissions
 
 Creating an invitation requires an **active** `OWNER` or `ADMIN` membership on
@@ -55,15 +74,18 @@ calls `invite` with `projectExists = false`, which raises
 `MemberInvitationProjectNotFoundException`. A null project id is a validation
 error, not a missing project.
 
-Acceptance is performed by the invitee, not by the inviter. This slice binds
-`profile_id` once a valid invited row has been selected; verifying the
-presented token against `invite_token_digest` belongs to the later accept
-adapter.
+Acceptance is performed by the invitee, not by the inviter. The accepting
+profile ID and email come from the validated JWT; request fields cannot choose
+either identity value. The accept adapter derives the same SHA-256 digest used
+at creation, locks the matching row, verifies the normalized email before
+binding `profile_id`, and updates the existing row in one transaction. It
+clears `invite_token_digest` when the row becomes active, so a successful token
+cannot be replayed by the same or another profile.
 
-## Target HTTP contract
+## HTTP contract
 
-These routes are not implemented here. They are the contract later S2.4 slices
-must keep.
+The backend implements the protected create and acceptance endpoints. Creating
+an invitation also sends the accept link through the configured SMTP transport.
 
 ### Create
 
@@ -110,7 +132,15 @@ in this response, in logs, or in `project_members`.
 ```
 
 The adapter hashes the token, loads the `INVITED` row by digest, and then calls
-`MemberInvitation.accept`.
+`MemberInvitation.accept`. A matching authenticated email is required before
+the profile is associated. The response is the active canonical membership
+representation without the token or digest.
+
+`INVITED` rows are claimed with a conditional update inside a transaction. The
+row lock and cleared digest make a retry or concurrent claim leave exactly one
+active association; invalid tokens, unavailable rows, already accepted rows,
+email mismatches, and profiles that already belong to the project are rejected
+without changing the invitation.
 
 ## Errors
 
@@ -119,9 +149,10 @@ The adapter hashes the token, loads the `INVITED` row by digest, and then calls
 | Missing project | `MemberInvitationProjectNotFoundException` | `404` | `project does not exist.` |
 | Missing or insufficient membership | `MemberInvitationPermissionException` | `403` | `active OWNER or ADMIN membership is required.` |
 | Active invitation duplicate | `DuplicateMemberInvitationException` | `409` | `an active invitation already exists for this project and email.` |
-| Invalid email or accept token | `ProjectValidationException` | `400` | Field-specific validation message |
+| Invalid, unavailable, already accepted, or email-mismatched invitation | `MemberInvitationNotFoundException` | `404` | `invitation not found or already used.` |
+| Invalid email or missing accept token | `ProjectValidationException` | `400` | Field-specific validation message |
 
-The executable contract is `MemberInvitation`. Callers supply whether the
-project exists, the actor for that project, the accept token, and the project's
-existing memberships; the policy hashes the token and does not read a clock or
-a repository of its own.
+The executable create contract is `MemberInvitation`. The acceptance use case
+receives the authenticated profile and email plus the presented token; it
+never accepts identity from the request body. Persistence performs the digest
+lookup and conditional row update without returning token material.

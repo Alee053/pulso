@@ -1,5 +1,10 @@
 package com.pulso.backend.project.application;
 
+import com.pulso.backend.config.ApiMessages;
+
 public class MemberInvitationNotFoundException extends RuntimeException {
-    public MemberInvitationNotFoundException() { super("invitation not found or already used."); }
+
+    public MemberInvitationNotFoundException() {
+        super(ApiMessages.INVITATION_NOT_FOUND_DETAIL);
+    }
 }

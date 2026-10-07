@@ -1,3 +1,7 @@
+logging:
+  level:
+    com.pulso.backend.ops.logging.ApplicationLogger: ${PULSO_LOG_LEVEL:INFO}
+
 spring:
   application:
     name: pulso-backend
@@ -9,7 +13,7 @@ spring:
       connection-timeout: ${DB_CONNECTION_TIMEOUT_MS:3000}
   mail:
       host: ${SMTP_HOST:localhost}
-      port: ${SMTP_PORT:1025}
+      port: ${SMTP_PORT:${PULSO_SMTP_PORT:54325}}
       username: ${SMTP_USERNAME:}
       password: ${SMTP_PASSWORD:}
       properties:

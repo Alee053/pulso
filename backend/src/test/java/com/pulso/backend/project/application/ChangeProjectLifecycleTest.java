@@ -12,6 +12,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.pulso.backend.project.domain.ProjectLifecycleActor;
 import com.pulso.backend.project.domain.ProjectLifecycleSnapshot;
@@ -153,6 +154,19 @@ class ChangeProjectLifecycleTest {
         assertThatThrownBy(() -> useCase.requestPublication(PROJECT_ID, PROFILE_ID))
                 .isInstanceOf(ProjectValidationException.class)
                 .hasMessage("cannot request publication from PUBLISHED.");
+        assertThat(repository.updatedState).isNull();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"ARCHIVED", "SUSPENDED"})
+    void rejectsArchiveFromArchivedOrSuspendedProjectsWithoutPersisting(String status) {
+        CapturingRepository repository = new CapturingRepository(
+                snapshot(PROJECT_ID, PROFILE_ID, status, "OWNER", "ACTIVE"));
+        ChangeProjectLifecycle useCase = new ChangeProjectLifecycle(repository, FIXED_CLOCK);
+
+        assertThatThrownBy(() -> useCase.archive(PROJECT_ID, PROFILE_ID))
+                .isInstanceOf(ProjectValidationException.class)
+                .hasMessage("cannot archive from " + status + ".");
         assertThat(repository.updatedState).isNull();
     }
 

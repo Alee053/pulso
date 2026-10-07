@@ -33,6 +33,7 @@ import { ProjectCreateFormComponent } from './features/discovery/ui/project-crea
     styleUrl: './app.css',
 })
 export class AppComponent implements OnInit {
+    readonly common = commonStrings
     readonly auth = inject(SupabaseAuthGateway)
     readonly session = inject(PulsoSession)
     readonly selectedStartup = signal<Startup | null>(null)

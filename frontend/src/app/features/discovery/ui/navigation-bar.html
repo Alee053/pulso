@@ -4,7 +4,8 @@
   </div>
 
   <div class="desktop-nav__section">
-    <nav class="desktop-nav__menu">
+    <p class="desktop-nav__eyebrow">{{ strings.menuLabel }}</p>
+    <nav class="desktop-nav__menu" [attr.aria-label]="strings.aria">
       <button
         *ngFor="let item of navigationItems"
         type="button"
@@ -28,21 +29,26 @@
     </span>
     <div class="min-w-0">
       <p class="desktop-nav__eyebrow">{{ strings.sessionEyebrow }}</p>
-      <p class="mt-1 truncate text-xs text-white/55">{{ strings.savedSignals(totalSaved) }}</p>
+      <p class="mt-1 text-sm text-[var(--color-muted)]">{{ strings.savedSignals(totalSaved) }}</p>
     </div>
   </div>
 </aside>
 
 <header class="mobile-topbar">
   <pulso-brand-mark />
+  <button type="button" class="reference-example" (click)="exampleRequested.emit()" [attr.aria-label]="common.exampleProject">
+    <pulso-icon name="arrow-up-right" [size]="18" />
+    <span>{{ strings.exampleShortLabel }}</span>
+  </button>
 </header>
 
-<nav class="mobile-nav fixed inset-x-4 bottom-4 z-40 items-center justify-around rounded-[1.35rem] border border-white/12 bg-[#131917]/85 p-1.5 shadow-2xl shadow-black/30 backdrop-blur-2xl">
+<nav class="mobile-nav" [attr.aria-label]="strings.aria">
   <button
     *ngFor="let item of navigationItems"
     type="button"
     class="mobile-nav__item"
     [class.mobile-nav__item--active]="item.id === activeView"
+    [attr.aria-current]="item.id === activeView ? 'page' : null"
     (click)="navigated.emit(item.id)"
   >
     <span class="relative">

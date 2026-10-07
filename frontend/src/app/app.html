@@ -53,9 +53,16 @@
         <pulso-navigation-bar [activeView]="session.activeView()"
                               [savedCount]="session.savedIds().length"
                               [interestedCount]="session.interestedIds().length"
-                              (navigated)="navigateTo($event)" />
+                              (navigated)="navigateTo($event)"
+                              (exampleRequested)="session.openProjectDetail('eco-pack')" />
 
         <div class="app-shell__content">
+            <header class="workspace-header">
+                <span>{{ common.workspaceLabel }}</span>
+                <button type="button" class="reference-example" (click)="session.openProjectDetail('eco-pack')">
+                    <pulso-icon name="arrow-up-right" [size]="16" />{{ common.exampleProject }}
+                </button>
+            </header>
             <ng-container [ngSwitch]="session.activeView()">
                 <pulso-discovery-view *ngSwitchCase="'discover'"
                                       [activeSignals]="session.activeSignals()"

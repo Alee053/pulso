@@ -120,6 +120,24 @@ class ProjectUpdateControllerTest {
     }
 
     @Test
+    void rejectsAClientSuppliedRoleBeforePersistence() throws Exception {
+        CapturingRepository repository = new CapturingRepository();
+
+        mockMvc(repository).perform(patch("/api/v1/projects/{projectId}", PROJECT_ID)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                          "name": "No debe persistir",
+                          "role": "OWNER"
+                        }
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value(ApiMessages.INVALID_REQUEST_TITLE));
+
+        assertThat(repository.patch).isNull();
+    }
+
+    @Test
     void rejectsInvalidValuesBeforePersistence() throws Exception {
         CapturingRepository repository = new CapturingRepository();
 

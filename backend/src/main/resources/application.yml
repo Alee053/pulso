@@ -1,3 +1,7 @@
+logging:
+  level:
+    com.pulso.backend.ops.logging.ApplicationLogger: ${PULSO_LOG_LEVEL:INFO}
+
 spring:
   application:
     name: pulso-backend

@@ -21,16 +21,18 @@ import type {
     PublicProjectState,
     Startup,
 } from '../domain/startup'
+import { IconComponent } from '../../../shared/icon/icon'
+import { detailStrings } from '../strings/detail.strings'
 import { StartupDetailModalComponent } from './startup-detail-modal'
 
 @Component({
     selector: 'pulso-public-project-detail',
     standalone: true,
-    imports: [CommonModule, StartupDetailModalComponent],
+    imports: [CommonModule, IconComponent, StartupDetailModalComponent],
     templateUrl: './public-project-detail.html',
-    styleUrls: ['./public-project-detail.css'],
 })
 export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterViewChecked, OnDestroy {
+    readonly strings = detailStrings
     @Input() projectId!: string
     @Input() recommendation = ''
     @Output() closed = new EventEmitter<void>()

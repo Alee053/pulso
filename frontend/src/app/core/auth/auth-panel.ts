@@ -5,7 +5,6 @@ import { SupabaseAuthGateway } from './supabase-auth.gateway'
 import { authStrings } from './strings/auth.strings'
 
 type AuthMode = 'sign-in' | 'sign-up'
-type FlipDirection = 'forward' | 'backward' | null
 
 @Component({
   selector: 'pulso-auth-panel',
@@ -18,16 +17,16 @@ export class AuthPanelComponent implements OnInit {
   readonly common = commonStrings
   readonly auth = inject(SupabaseAuthGateway)
   readonly mode = signal<AuthMode>('sign-in')
-  readonly flipDirection = signal<FlipDirection>(null)
   readonly isBusy = signal(false)
   readonly message = signal<string | null>(null)
+  readonly messageIsError = signal(false)
 
   email = ''
   password = ''
 
   ngOnInit(): void {
     void this.auth.initialize().catch(() => {
-      this.message.set(this.strings.initFailed)
+      this.setFeedback(this.strings.initFailed, 'error')
     })
   }
 
@@ -38,18 +37,18 @@ export class AuthPanelComponent implements OnInit {
       return
     }
     if (!email || !this.password) {
-      this.message.set(this.strings.missingCredentials)
+      this.setFeedback(this.strings.missingCredentials, 'error')
       return
     }
 
     this.isBusy.set(true)
-    this.message.set(null)
+    this.setFeedback(null)
     try {
       const result = this.mode() === 'sign-up'
         ? await this.auth.signUp(email, this.password)
         : await this.auth.signIn(email, this.password)
       this.password = ''
-      this.message.set(
+      this.setFeedback(
         result.requiresEmailConfirmation
           ? this.strings.confirmEmail
           : this.mode() === 'sign-up'
@@ -57,10 +56,11 @@ export class AuthPanelComponent implements OnInit {
             : this.strings.signInSuccess,
       )
     } catch {
-      this.message.set(
+      this.setFeedback(
         this.mode() === 'sign-up'
           ? this.strings.signUpFailed
           : this.strings.signInFailed,
+        'error',
       )
     } finally {
       this.isBusy.set(false)
@@ -73,23 +73,24 @@ export class AuthPanelComponent implements OnInit {
     }
 
     this.isBusy.set(true)
-    this.message.set(null)
+    this.setFeedback(null)
     try {
       await this.auth.signOut()
-      this.message.set(this.strings.signedOut)
+      this.setFeedback(this.strings.signedOut)
     } catch {
-      this.message.set(this.common.sessionCloseFailed)
+      this.setFeedback(this.common.sessionCloseFailed, 'error')
     } finally {
       this.isBusy.set(false)
     }
   }
 
+  private setFeedback(message: string | null, kind: 'status' | 'error' = 'status'): void {
+    this.message.set(message)
+    this.messageIsError.set(kind === 'error')
+  }
+
   toggleMode(): void {
-    this.mode.update((current) => {
-      const nextMode = current === 'sign-in' ? 'sign-up' : 'sign-in'
-      this.flipDirection.set(nextMode === 'sign-up' ? 'forward' : 'backward')
-      return nextMode
-    })
-    this.message.set(null)
+    this.mode.update((current) => current === 'sign-in' ? 'sign-up' : 'sign-in')
+    this.setFeedback(null)
   }
 }

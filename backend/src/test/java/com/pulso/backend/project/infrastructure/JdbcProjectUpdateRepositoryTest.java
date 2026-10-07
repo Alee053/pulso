@@ -12,6 +12,7 @@ import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
@@ -22,6 +23,11 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import com.pulso.backend.project.domain.ProjectUpdatePatch;
 import com.pulso.backend.project.domain.UpdatedProject;
 
+/**
+ * Tests backend-owned JDBC writes and persisted membership in isolated PostgreSQL.
+ * The minimal schema models the relevant Supabase columns and timestamp trigger;
+ * it does not validate deployed migrations, RLS, or direct Angular database access.
+ */
 @Testcontainers(disabledWithoutDocker = true)
 class JdbcProjectUpdateRepositoryTest {
 
@@ -47,6 +53,8 @@ class JdbcProjectUpdateRepositoryTest {
             "22222222-2222-2222-2222-222222222222");
     private static final UUID INACTIVE_SECTOR_ID = UUID.fromString(
             "aaaaaaaa-1111-1111-1111-111111111111");
+    private static final UUID SECOND_ACTIVE_SECTOR_ID = UUID.fromString(
+            "cccccccc-2222-2222-2222-222222222222");
     private static final UUID REVIEWER_ID = UUID.fromString(
             "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
     private static final OffsetDateTime CREATED_AT = OffsetDateTime.parse(
@@ -162,9 +170,11 @@ class JdbcProjectUpdateRepositoryTest {
         jdbcClient.sql("""
                 insert into public.sectors (id, is_active) values
                   (:activeSectorId, true),
+                  (:secondActiveSectorId, true),
                   (:inactiveSectorId, false)
                 """)
                 .param("activeSectorId", ACTIVE_SECTOR_ID)
+                .param("secondActiveSectorId", SECOND_ACTIVE_SECTOR_ID)
                 .param("inactiveSectorId", INACTIVE_SECTOR_ID)
                 .update();
         jdbcClient.sql("""
@@ -216,13 +226,19 @@ class JdbcProjectUpdateRepositoryTest {
                 .update();
     }
 
-    @Test
-    void updatesAllEditableFieldsAndPreservesServerManagedProjectData() {
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "11111111-1111-1111-1111-111111111111",
+            "55555555-5555-5555-5555-555555555555"
+    })
+    void updatesAllEditableFieldsAndPreservesServerManagedProjectData(UUID profileId) {
         ProjectRow before = project(PROJECT_ID);
+        ProjectRow otherProjectBefore = project(OTHER_PROJECT_ID);
+        assertThat(repository.hasActiveSector(SECOND_ACTIVE_SECTOR_ID)).isTrue();
 
         UpdatedProject updated = repository.updateInformation(
                 PROJECT_ID,
-                OWNER_ID,
+                profileId,
                 patch()).orElseThrow();
 
         assertThat(updated.id()).isEqualTo(before.id());
@@ -231,7 +247,7 @@ class JdbcProjectUpdateRepositoryTest {
         assertThat(updated.tagline()).isEqualTo("Envases nuevos");
         assertThat(updated.description()).isEqualTo("Descripción nueva");
         assertThat(updated.valueProposition()).isEqualTo("Menos residuos");
-        assertThat(updated.sectorId()).isEqualTo(ACTIVE_SECTOR_ID);
+        assertThat(updated.sectorId()).isEqualTo(SECOND_ACTIVE_SECTOR_ID);
         assertThat(updated.stage()).isEqualTo("EARLY_STAGE");
         assertThat(updated.city()).isEqualTo("Santa Cruz");
         assertThat(updated.department()).isEqualTo("Santa Cruz");
@@ -247,14 +263,13 @@ class JdbcProjectUpdateRepositoryTest {
         assertThat(updated.updatedAt()).isAfter(before.updatedAt());
 
         ProjectRow persisted = project(PROJECT_ID);
-        assertThat(persisted.name()).isEqualTo("EcoPack actualizado");
-        assertThat(persisted.valueProposition()).isEqualTo("Menos residuos");
-        assertThat(persisted.status()).isEqualTo(before.status());
-        assertThat(persisted.reviewNote()).isEqualTo(before.reviewNote());
+        assertThat(persisted).usingRecursiveComparison().isEqualTo(updated);
+        assertThat(project(OTHER_PROJECT_ID)).isEqualTo(otherProjectBefore);
     }
 
     @Test
     void permitsAnActiveAdminAndPreservesOmittedColumns() {
+        ProjectRow before = project(PROJECT_ID);
         UpdatedProject updated = repository.updateInformation(
                 PROJECT_ID,
                 ADMIN_ID,
@@ -276,10 +291,15 @@ class JdbcProjectUpdateRepositoryTest {
         assertThat(updated.stage()).isEqualTo("MVP");
         assertThat(updated.city()).isEqualTo("Cochabamba");
         assertThat(updated.department()).isEqualTo("Cochabamba");
+        assertThat(project(PROJECT_ID)).usingRecursiveComparison()
+                .ignoringFields("name", "updatedAt")
+                .isEqualTo(before);
+        assertThat(project(PROJECT_ID).updatedAt()).isAfter(before.updatedAt());
     }
 
     @Test
     void clearsNullableEditableFieldsOnlyWhenTheyAreExplicitlyProvidedAsNull() {
+        ProjectRow before = project(PROJECT_ID);
         UpdatedProject updated = repository.updateInformation(
                 PROJECT_ID,
                 OWNER_ID,
@@ -307,6 +327,11 @@ class JdbcProjectUpdateRepositoryTest {
         assertThat(updated.department()).isNull();
         assertThat(updated.city()).isEqualTo("Cochabamba");
         assertThat(updated.name()).isEqualTo("EcoPack Bolivia");
+        assertThat(project(PROJECT_ID)).usingRecursiveComparison().isEqualTo(updated);
+        assertThat(project(PROJECT_ID)).usingRecursiveComparison()
+                .ignoringFields("description", "valueProposition", "department", "updatedAt")
+                .isEqualTo(before);
+        assertThat(updated.updatedAt()).isAfter(before.updatedAt());
     }
 
     @ParameterizedTest
@@ -318,27 +343,63 @@ class JdbcProjectUpdateRepositoryTest {
             "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
     })
     void rejectsMemberInactiveOrExternalProfiles(UUID profileId) {
+        ProjectRow before = project(PROJECT_ID);
+
         assertThat(repository.updateInformation(PROJECT_ID, profileId, patch())).isEmpty();
-        assertThat(project(PROJECT_ID).name()).isEqualTo("EcoPack Bolivia");
+        assertThat(project(PROJECT_ID)).isEqualTo(before);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "OWNER,INVITED", "OWNER,LEFT", "OWNER,REMOVED",
+            "ADMIN,INVITED", "ADMIN,LEFT", "ADMIN,REMOVED"
+    })
+    void rejectsEveryInactivePrivilegedMembership(String role, String membershipStatus) {
+        jdbcClient.sql("""
+                update public.project_members
+                set role = :role, membership_status = :membershipStatus
+                where project_id = :projectId and profile_id = :profileId
+                """)
+                .param("role", role)
+                .param("membershipStatus", membershipStatus)
+                .param("projectId", PROJECT_ID)
+                .param("profileId", ADMIN_ID)
+                .update();
+        ProjectRow before = project(PROJECT_ID);
+
+        assertThat(repository.updateInformation(PROJECT_ID, ADMIN_ID, patch())).isEmpty();
+        assertThat(project(PROJECT_ID)).isEqualTo(before);
     }
 
     @Test
     void requiresTheRequestedProjectMembershipAndDoesNotUpdateAnotherProject() {
+        ProjectRow before = project(OTHER_PROJECT_ID);
+        ProjectRow authorizedProjectBefore = project(PROJECT_ID);
+
         assertThat(repository.updateInformation(OTHER_PROJECT_ID, OWNER_ID, patch())).isEmpty();
-        assertThat(project(OTHER_PROJECT_ID).name()).isEqualTo("Otro proyecto");
+        assertThat(project(OTHER_PROJECT_ID)).isEqualTo(before);
+        assertThat(project(PROJECT_ID)).isEqualTo(authorizedProjectBefore);
     }
 
     @Test
     void treatsAnUnknownProjectAsAnAuthorizationFailureWithoutInsertingRows() {
         UUID unknownProjectId = UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
         int projectsBefore = count("public.projects");
+        ProjectRow before = project(PROJECT_ID);
+        ProjectRow otherProjectBefore = project(OTHER_PROJECT_ID);
 
         assertThat(repository.updateInformation(unknownProjectId, OWNER_ID, patch())).isEmpty();
         assertThat(count("public.projects")).isEqualTo(projectsBefore);
+        assertThat(project(PROJECT_ID)).isEqualTo(before);
+        assertThat(project(OTHER_PROJECT_ID)).isEqualTo(otherProjectBefore);
     }
 
-    @Test
-    void refusesAnInactiveSectorWithoutChangingTheProject() {
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "aaaaaaaa-1111-1111-1111-111111111111",
+            "dddddddd-3333-3333-3333-333333333333"
+    })
+    void refusesInactiveOrNonexistentSectorsWithoutChangingTheProject(UUID sectorId) {
         ProjectRow before = project(PROJECT_ID);
         ProjectUpdatePatch invalidSectorPatch = new ProjectUpdatePatch(
                 "No debe persistir",
@@ -346,14 +407,14 @@ class JdbcProjectUpdateRepositoryTest {
                 null,
                 null,
                 null,
-                INACTIVE_SECTOR_ID,
+                sectorId,
                 null,
                 null,
                 LIMITS);
 
+        assertThat(repository.hasActiveSector(sectorId)).isFalse();
         assertThat(repository.updateInformation(PROJECT_ID, OWNER_ID, invalidSectorPatch)).isEmpty();
-        assertThat(project(PROJECT_ID).name()).isEqualTo(before.name());
-        assertThat(project(PROJECT_ID).sectorId()).isEqualTo(before.sectorId());
+        assertThat(project(PROJECT_ID)).isEqualTo(before);
     }
 
     private static ProjectUpdatePatch patch() {
@@ -363,7 +424,7 @@ class JdbcProjectUpdateRepositoryTest {
                 "Descripción nueva",
                 "Menos residuos",
                 "EARLY_STAGE",
-                ACTIVE_SECTOR_ID,
+                SECOND_ACTIVE_SECTOR_ID,
                 "Santa Cruz",
                 "Santa Cruz",
                 LIMITS);

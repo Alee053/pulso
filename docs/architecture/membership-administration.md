@@ -98,6 +98,28 @@ The authenticated profile is the actor. The request body cannot set
 `200 OK` returns the same membership row, still identified by `id` and
 `profileId` when one was bound.
 
+## MVP audit
+
+Each accepted administration action publishes a `MembershipAdministrationAccepted`
+event containing the authenticated actor profile ID, normalized action, project
+ID, membership ID, and previous/next role and status. The infrastructure listener
+uses `ApplicationLogger` only after the surrounding transaction commits. Rejected
+actions, stale updates, failed commits, and transactions rolled back by a caller
+do not emit a successful-change audit.
+
+The one-line JSON event has module `project`, operation `administerMembership`,
+actor in `userId`, and action/target/transition fields in `metadata`. It contains
+no request body, JWT, invitation token or digest, invitee email, or profile data.
+This is the MVP's operational audit at `INFO`, subject to `PULSO_LOG_LEVEL` and
+the deployment's log retention. The logical `admin_audit_logs` table in the DBML
+has not been implemented by migrations; this change does not add a persistent
+audit store or a delivery guarantee across process failure after commit.
+
+PostgreSQL integration tests exercise the Spring-proxied use case, project lock,
+competing owner demotions/withdrawals, rollback, and protected fields. Testcontainers
+uses an isolated disposable database; these checks do not reset the local Supabase
+stack or prove a live browser flow.
+
 ## Errors
 
 | Case | Type | Target HTTP | `code` | Endpoint message | Interface message |

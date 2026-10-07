@@ -1,5 +1,6 @@
 package com.pulso.backend.project.api;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -9,6 +10,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -71,6 +75,9 @@ class ProjectMembershipControllerTest {
                 .andExpect(jsonPath("$.code").value("membership_permission"))
                 .andExpect(jsonPath("$.detail")
                         .value("active OWNER or ADMIN membership is required."));
+
+        assertEquals(0, repository.updateCalls);
+        assertEquals("ACTIVE", repository.target.membershipStatus());
     }
 
     @Test
@@ -84,16 +91,110 @@ class ProjectMembershipControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.title").value("Invalid membership transition"))
                 .andExpect(jsonPath("$.code").value("membership_invalid_transition"));
+
+        assertEquals(0, repository.updateCalls);
+        assertEquals(target, repository.target);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"activate,REMOVED,ACTIVE", "withdraw,ACTIVE,REMOVED"})
+    void appliesStatusActionsWithoutChangingIdentityOrRole(
+            String action, String previousStatus, String nextStatus) throws Exception {
+        ProjectMember target = member("MEMBER", previousStatus);
+        CapturingRepository repository = repository(target);
+
+        mockMvc(repository).perform(patch(path())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"action\":\"" + action + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(MEMBER_ID.toString()))
+                .andExpect(jsonPath("$.projectId").value(PROJECT_ID.toString()))
+                .andExpect(jsonPath("$.profileId").value(TARGET_PROFILE_ID.toString()))
+                .andExpect(jsonPath("$.createdByProfileId").value(PROFILE_ID.toString()))
+                .andExpect(jsonPath("$.role").value("MEMBER"))
+                .andExpect(jsonPath("$.membershipStatus").value(nextStatus));
+
+        assertEquals(target.withRoleAndStatus("MEMBER", nextStatus), repository.target);
+        assertEquals(1, repository.updateCalls);
     }
 
     @Test
-    void rejectsClientControlledMembershipFields() throws Exception {
-        mockMvc(repository(member("MEMBER", "ACTIVE"))).perform(patch(path())
+    void mapsTheLastOwnerInvariantToConflictWithoutPersisting() throws Exception {
+        CapturingRepository repository = repository(member("OWNER", "ACTIVE"));
+        repository.members = List.of(repository.target);
+
+        mockMvc(repository).perform(patch(path())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"action\":\"withdraw\",\"profileId\":\""
-                        + PROFILE_ID + "\"}"))
+                .content("{\"action\":\"withdraw\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.title").value("Membership owner required"))
+                .andExpect(jsonPath("$.code").value("membership_owner_required"));
+
+        assertEquals(0, repository.updateCalls);
+        assertEquals("ACTIVE", repository.target.membershipStatus());
+    }
+
+    @Test
+    void mapsAnUnsuccessfulConditionalUpdateToConflict() throws Exception {
+        CapturingRepository repository = repository(member("MEMBER", "ACTIVE"));
+        ProjectMember original = repository.target;
+        repository.updatedRows = 0;
+
+        mockMvc(repository).perform(patch(path())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"action\":\"withdraw\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.title").value("Membership conflict"))
+                .andExpect(jsonPath("$.code").value("membership_conflict"));
+
+        assertEquals(1, repository.updateCalls);
+        assertEquals(original, repository.target);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "", "null", "{}", "{\"action\":null}", "{\"action\":\"   \"}",
+            "{\"action\":\"promote\"}", "{\"action\":\"withdraw\"",
+            "{\"action\":{}}", "{\"action\":\"changeRole\"}",
+            "{\"action\":\"changeRole\",\"role\":null}",
+            "{\"action\":\"changeRole\",\"role\":\"   \"}",
+            "{\"action\":\"changeRole\",\"role\":\"SUPER_ADMIN\"}",
+            "{\"action\":\"changeRole\",\"role\":{}}"
+    })
+    void rejectsMissingMalformedOrInvalidActionsAndRolesWithoutPersisting(String body) throws Exception {
+        CapturingRepository repository = repository(member("MEMBER", "ACTIVE"));
+        ProjectMember original = repository.target;
+
+        mockMvc(repository).perform(patch(path())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+                .andExpect(status().isBadRequest());
+
+        assertEquals(0, repository.updateCalls);
+        assertEquals(original, repository.target);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "id", "projectId", "profileId", "createdByProfileId", "membershipStatus",
+            "inviteeEmail", "inviteTokenDigest", "displayTitle", "isFeatured", "isPublic",
+            "joinedAt", "createdAt", "updatedAt",
+            "project_id", "profile_id", "created_by_profile_id", "membership_status",
+            "invitee_email", "invite_token_digest", "display_title", "is_featured", "is_public",
+            "joined_at", "created_at", "updated_at"
+    })
+    void rejectsClientControlledMembershipFieldsWithoutPersisting(String field) throws Exception {
+        CapturingRepository repository = repository(member("MEMBER", "ACTIVE"));
+        ProjectMember original = repository.target;
+
+        mockMvc(repository).perform(patch(path())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"action\":\"withdraw\",\"" + field + "\":null}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.title").value("Invalid request"));
+
+        assertEquals(0, repository.updateCalls);
+        assertEquals(original, repository.target);
     }
 
     private static String path() {
@@ -103,7 +204,8 @@ class ProjectMembershipControllerTest {
     private static MockMvc mockMvc(CapturingRepository repository) {
         return MockMvcBuilders
                 .standaloneSetup(new ProjectMembershipController(
-                        new AdministerProjectMembership(repository)))
+                        new AdministerProjectMembership(repository, event -> {
+                        })))
                 .setControllerAdvice(new ApiExceptionHandler())
                 .setCustomArgumentResolvers(new JwtArgumentResolver())
                 .build();
@@ -171,6 +273,8 @@ class ProjectMembershipControllerTest {
         private MembershipActor actor = owner();
         private ProjectMember target;
         private List<ProjectMember> members = List.of();
+        private int updateCalls;
+        private int updatedRows = 1;
 
         @Override
         public void lockProject(UUID projectId) {
@@ -199,8 +303,13 @@ class ProjectMembershipControllerTest {
                 String expectedMembershipStatus,
                 String nextRole,
                 String nextMembershipStatus) {
-            target = target.withRoleAndStatus(nextRole, nextMembershipStatus);
-            return 1;
+            updateCalls++;
+            assertEquals(target.role(), expectedRole);
+            assertEquals(target.membershipStatus(), expectedMembershipStatus);
+            if (updatedRows == 1) {
+                target = target.withRoleAndStatus(nextRole, nextMembershipStatus);
+            }
+            return updatedRows;
         }
     }
 }

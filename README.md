@@ -248,6 +248,24 @@ The current logical MVP model is in
 [Pulso class diagram](docs/diagrams/pulso-class-diagram.mmd).
 For endpoint contracts and curl examples, see [`docs/api.md`](docs/api.md).
 
+## Pull request checks
+
+The [test workflow](.github/workflows/tests.yml) runs whenever a pull request is
+opened, updated, or reopened. Each suite has an independent check: **Frontend
+tests**, **Backend tests**, and **Database tests**. A failed command fails its
+check without preventing the other suites from running.
+
+All jobs use Ubuntu 24.04, Node from `.nvmrc`, pnpm from `packageManager`, and
+`pnpm install --frozen-lockfile`. The backend job uses Java 21 and Docker for
+Testcontainers. The database job starts a fresh local Supabase instance with the
+repository's migrations and seed, runs `pnpm db:test`, and stops it even after a
+failure. Startup credentials are kept out of the job log. No hosted Supabase
+credentials or local `.env` files are required.
+
+These checks run the existing suites; they do not deploy the application or run
+the browser smoke test. Requiring the checks before merging is a separate
+repository branch-protection setting.
+
 ## Commands
 
 | Command | Purpose |

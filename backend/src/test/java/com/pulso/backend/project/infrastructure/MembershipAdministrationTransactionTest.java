@@ -38,6 +38,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import com.pulso.backend.project.application.AdministerProjectMembership;
+import com.pulso.backend.project.application.ChangeProjectLifecycle;
+import com.pulso.backend.project.application.ProjectLifecycleAuthorizationException;
 import com.pulso.backend.project.domain.MembershipOwnerInvariantException;
 import com.pulso.backend.project.domain.MembershipPermissionException;
 
@@ -64,6 +66,7 @@ class MembershipAdministrationTransactionTest {
     private AnnotationConfigApplicationContext context;
     private JdbcClient jdbcClient;
     private AdministerProjectMembership service;
+    private ChangeProjectLifecycle lifecycle;
     private TransactionTemplate transactions;
 
     @BeforeEach
@@ -72,7 +75,14 @@ class MembershipAdministrationTransactionTest {
                 POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
         jdbcClient = JdbcClient.create(dataSource);
         jdbcClient.sql("drop table if exists public.project_members, public.projects, public.profiles cascade").update();
-        jdbcClient.sql("create table public.projects (id uuid primary key)").update();
+        jdbcClient.sql("""
+                create table public.projects (
+                  id uuid primary key,
+                  status text not null default 'DRAFT',
+                  published_at timestamptz,
+                  archived_at timestamptz
+                )
+                """).update();
         jdbcClient.sql("create table public.profiles (id uuid primary key)").update();
         jdbcClient.sql("insert into public.profiles (id) values (:owner), (:member), (:admin)")
                 .param("owner", OWNER_ID).param("member", MEMBER_ID).param("admin", ADMIN_ID).update();
@@ -115,9 +125,13 @@ class MembershipAdministrationTransactionTest {
         context.registerBean(JdbcMembershipAdministrationRepository.class,
                 () -> new JdbcMembershipAdministrationRepository(jdbcClient));
         context.registerBean(AdministerProjectMembership.class);
+        context.registerBean(JdbcProjectLifecycleRepository.class,
+                () -> new JdbcProjectLifecycleRepository(jdbcClient));
+        context.registerBean(ChangeProjectLifecycle.class);
         context.registerBean(MembershipAdministrationAuditLogger.class);
         context.refresh();
         service = context.getBean(AdministerProjectMembership.class);
+        lifecycle = context.getBean(ChangeProjectLifecycle.class);
         transactions = new TransactionTemplate(context.getBean(DataSourceTransactionManager.class));
     }
 
@@ -275,13 +289,59 @@ class MembershipAdministrationTransactionTest {
         });
     }
 
+    @ParameterizedTest
+    @CsvSource({"publication-request, withdraw", "archive, withdraw",
+            "publication-request, changeRole", "archive, changeRole"})
+    void revokedAdminCannotChangeLifecycleWhileWaitingForMembershipCommit(
+            String lifecycleAction, String membershipAction) throws Exception {
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch revoked = new CountDownLatch(1);
+        CountDownLatch commitRevocation = new CountDownLatch(1);
+        try {
+            Future<?> first = executor.submit(() -> transactions.executeWithoutResult(status -> {
+                service.execute(PROJECT_ID, ADMIN_MEMBERSHIP_ID, OWNER_ID, membershipAction,
+                        "changeRole".equals(membershipAction) ? "MEMBER" : null);
+                revoked.countDown();
+                await(commitRevocation);
+            }));
+            assertThat(revoked.await(10, TimeUnit.SECONDS)).isTrue();
+            Future<?> second = executor.submit(() -> {
+                assertThatThrownBy(() -> {
+                    if ("archive".equals(lifecycleAction)) {
+                        lifecycle.archive(PROJECT_ID, ADMIN_ID);
+                    } else {
+                        lifecycle.requestPublication(PROJECT_ID, ADMIN_ID);
+                    }
+                })
+                        .isInstanceOf(ProjectLifecycleAuthorizationException.class);
+            });
+            awaitProjectLockWaiter();
+            commitRevocation.countDown();
+            first.get(15, TimeUnit.SECONDS);
+            second.get(15, TimeUnit.SECONDS);
+        } finally {
+            commitRevocation.countDown();
+            executor.shutdownNow();
+            assertThat(executor.awaitTermination(15, TimeUnit.SECONDS)).isTrue();
+        }
+
+        var snapshot = context.getBean(JdbcProjectLifecycleRepository.class)
+                .findForActor(PROJECT_ID, ADMIN_ID).orElseThrow();
+        assertThat(snapshot.state().status()).isEqualTo("DRAFT");
+        assertThat(snapshot.state().archivedAt()).isNull();
+        assertThat(snapshot.actor().role()).isEqualTo(
+                "changeRole".equals(membershipAction) ? "MEMBER" : "ADMIN");
+        assertThat(snapshot.actor().membershipStatus()).isEqualTo(
+                "withdraw".equals(membershipAction) ? "REMOVED" : "ACTIVE");
+    }
+
     private void awaitProjectLockWaiter() throws InterruptedException {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
         while (System.nanoTime() < deadline) {
             long waiters = jdbcClient.sql("""
                     select count(*) from pg_stat_activity
                     where datname = current_database() and wait_event_type = 'Lock'
-                      and query like '%from public.projects%' and query like '%for update%'
+                      and query like '%public.projects%'
                     """).query(Long.class).single();
             if (waiters > 0) {
                 return;

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import javax.sql.DataSource;
@@ -214,9 +215,11 @@ class JdbcProjectUpdateRepositoryTest {
                   ('10000000-0000-0000-0000-000000000003', :projectId, :memberId, 'MEMBER', 'ACTIVE'),
                   ('10000000-0000-0000-0000-000000000004', :projectId, :invitedId, 'ADMIN', 'INVITED'),
                   ('10000000-0000-0000-0000-000000000005', :projectId, :leftId, 'OWNER', 'LEFT'),
-                  ('10000000-0000-0000-0000-000000000006', :projectId, :removedId, 'ADMIN', 'REMOVED')
+                  ('10000000-0000-0000-0000-000000000006', :projectId, :removedId, 'ADMIN', 'REMOVED'),
+                  ('10000000-0000-0000-0000-000000000007', :otherProjectId, :memberId, 'OWNER', 'ACTIVE')
                 """)
                 .param("projectId", PROJECT_ID)
+                .param("otherProjectId", OTHER_PROJECT_ID)
                 .param("ownerId", OWNER_ID)
                 .param("adminId", ADMIN_ID)
                 .param("memberId", MEMBER_ID)
@@ -234,6 +237,7 @@ class JdbcProjectUpdateRepositoryTest {
     void updatesAllEditableFieldsAndPreservesServerManagedProjectData(UUID profileId) {
         ProjectRow before = project(PROJECT_ID);
         ProjectRow otherProjectBefore = project(OTHER_PROJECT_ID);
+        List<MemberRow> membersBefore = members();
         assertThat(repository.hasActiveSector(SECOND_ACTIVE_SECTOR_ID)).isTrue();
 
         UpdatedProject updated = repository.updateInformation(
@@ -265,11 +269,13 @@ class JdbcProjectUpdateRepositoryTest {
         ProjectRow persisted = project(PROJECT_ID);
         assertThat(persisted).usingRecursiveComparison().isEqualTo(updated);
         assertThat(project(OTHER_PROJECT_ID)).isEqualTo(otherProjectBefore);
+        assertThat(members()).isEqualTo(membersBefore);
     }
 
     @Test
     void permitsAnActiveAdminAndPreservesOmittedColumns() {
         ProjectRow before = project(PROJECT_ID);
+        List<MemberRow> membersBefore = members();
         UpdatedProject updated = repository.updateInformation(
                 PROJECT_ID,
                 ADMIN_ID,
@@ -295,11 +301,13 @@ class JdbcProjectUpdateRepositoryTest {
                 .ignoringFields("name", "updatedAt")
                 .isEqualTo(before);
         assertThat(project(PROJECT_ID).updatedAt()).isAfter(before.updatedAt());
+        assertThat(members()).isEqualTo(membersBefore);
     }
 
     @Test
     void clearsNullableEditableFieldsOnlyWhenTheyAreExplicitlyProvidedAsNull() {
         ProjectRow before = project(PROJECT_ID);
+        List<MemberRow> membersBefore = members();
         UpdatedProject updated = repository.updateInformation(
                 PROJECT_ID,
                 OWNER_ID,
@@ -332,6 +340,7 @@ class JdbcProjectUpdateRepositoryTest {
                 .ignoringFields("description", "valueProposition", "department", "updatedAt")
                 .isEqualTo(before);
         assertThat(updated.updatedAt()).isAfter(before.updatedAt());
+        assertThat(members()).isEqualTo(membersBefore);
     }
 
     @ParameterizedTest
@@ -344,9 +353,11 @@ class JdbcProjectUpdateRepositoryTest {
     })
     void rejectsMemberInactiveOrExternalProfiles(UUID profileId) {
         ProjectRow before = project(PROJECT_ID);
+        List<MemberRow> membersBefore = members();
 
         assertThat(repository.updateInformation(PROJECT_ID, profileId, patch())).isEmpty();
         assertThat(project(PROJECT_ID)).isEqualTo(before);
+        assertThat(members()).isEqualTo(membersBefore);
     }
 
     @ParameterizedTest
@@ -366,19 +377,23 @@ class JdbcProjectUpdateRepositoryTest {
                 .param("profileId", ADMIN_ID)
                 .update();
         ProjectRow before = project(PROJECT_ID);
+        List<MemberRow> membersBefore = members();
 
         assertThat(repository.updateInformation(PROJECT_ID, ADMIN_ID, patch())).isEmpty();
         assertThat(project(PROJECT_ID)).isEqualTo(before);
+        assertThat(members()).isEqualTo(membersBefore);
     }
 
     @Test
     void requiresTheRequestedProjectMembershipAndDoesNotUpdateAnotherProject() {
         ProjectRow before = project(OTHER_PROJECT_ID);
         ProjectRow authorizedProjectBefore = project(PROJECT_ID);
+        List<MemberRow> membersBefore = members();
 
         assertThat(repository.updateInformation(OTHER_PROJECT_ID, OWNER_ID, patch())).isEmpty();
         assertThat(project(OTHER_PROJECT_ID)).isEqualTo(before);
         assertThat(project(PROJECT_ID)).isEqualTo(authorizedProjectBefore);
+        assertThat(members()).isEqualTo(membersBefore);
     }
 
     @Test
@@ -387,11 +402,13 @@ class JdbcProjectUpdateRepositoryTest {
         int projectsBefore = count("public.projects");
         ProjectRow before = project(PROJECT_ID);
         ProjectRow otherProjectBefore = project(OTHER_PROJECT_ID);
+        List<MemberRow> membersBefore = members();
 
         assertThat(repository.updateInformation(unknownProjectId, OWNER_ID, patch())).isEmpty();
         assertThat(count("public.projects")).isEqualTo(projectsBefore);
         assertThat(project(PROJECT_ID)).isEqualTo(before);
         assertThat(project(OTHER_PROJECT_ID)).isEqualTo(otherProjectBefore);
+        assertThat(members()).isEqualTo(membersBefore);
     }
 
     @ParameterizedTest
@@ -401,6 +418,7 @@ class JdbcProjectUpdateRepositoryTest {
     })
     void refusesInactiveOrNonexistentSectorsWithoutChangingTheProject(UUID sectorId) {
         ProjectRow before = project(PROJECT_ID);
+        List<MemberRow> membersBefore = members();
         ProjectUpdatePatch invalidSectorPatch = new ProjectUpdatePatch(
                 "No debe persistir",
                 null,
@@ -415,6 +433,7 @@ class JdbcProjectUpdateRepositoryTest {
         assertThat(repository.hasActiveSector(sectorId)).isFalse();
         assertThat(repository.updateInformation(PROJECT_ID, OWNER_ID, invalidSectorPatch)).isEmpty();
         assertThat(project(PROJECT_ID)).isEqualTo(before);
+        assertThat(members()).isEqualTo(membersBefore);
     }
 
     private static ProjectUpdatePatch patch() {
@@ -442,6 +461,21 @@ class JdbcProjectUpdateRepositoryTest {
                 .param("projectId", projectId)
                 .query(JdbcProjectUpdateRepositoryTest::mapProject)
                 .single();
+    }
+
+    private List<MemberRow> members() {
+        return jdbcClient.sql("""
+                select id, project_id, profile_id, role, membership_status
+                from public.project_members
+                order by id
+                """)
+                .query((resultSet, rowNumber) -> new MemberRow(
+                        resultSet.getObject("id", UUID.class),
+                        resultSet.getObject("project_id", UUID.class),
+                        resultSet.getObject("profile_id", UUID.class),
+                        resultSet.getString("role"),
+                        resultSet.getString("membership_status")))
+                .list();
     }
 
     private int count(String table) {
@@ -472,6 +506,14 @@ class JdbcProjectUpdateRepositoryTest {
                 resultSet.getObject("created_at", OffsetDateTime.class),
                 resultSet.getObject("updated_at", OffsetDateTime.class),
                 resultSet.getObject("archived_at", OffsetDateTime.class));
+    }
+
+    private record MemberRow(
+            UUID id,
+            UUID projectId,
+            UUID profileId,
+            String role,
+            String membershipStatus) {
     }
 
     private record ProjectRow(

@@ -11,6 +11,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -59,7 +62,14 @@ class ProjectUpdateControllerTest {
                 .andExpect(jsonPath("$.project.status").value("DRAFT"))
                 .andExpect(jsonPath("$.project.verificationStatus").value("UNVERIFIED"))
                 .andExpect(jsonPath("$.project.createdByProfileId")
-                        .value(PROFILE_ID.toString()));
+                        .value(PROFILE_ID.toString()))
+                .andExpect(jsonPath("$.project.createdAt").value("2026-09-01T12:00:00Z"))
+                .andExpect(jsonPath("$.project.updatedAt").value("2026-09-08T12:00:00Z"))
+                .andExpect(jsonPath("$.project.reviewedByProfileId").doesNotExist())
+                .andExpect(jsonPath("$.project.reviewNote").doesNotExist())
+                .andExpect(jsonPath("$.project.reviewedAt").doesNotExist())
+                .andExpect(jsonPath("$.project.publishedAt").doesNotExist())
+                .andExpect(jsonPath("$.project.archivedAt").doesNotExist());
 
         assertThat(repository.projectId).isEqualTo(PROJECT_ID);
         assertThat(repository.authenticatedProfileId).isEqualTo(PROFILE_ID);
@@ -95,28 +105,56 @@ class ProjectUpdateControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {
-                          "description": null
+                          "description": null,
+                          "valueProposition": null,
+                          "department": null
                         }
                         """))
                 .andExpect(status().isOk());
 
         assertThat(repository.patch.description()).isNull();
         assertThat(repository.patch.descriptionProvided()).isTrue();
+        assertThat(repository.patch.valueProposition()).isNull();
+        assertThat(repository.patch.valuePropositionProvided()).isTrue();
+        assertThat(repository.patch.department()).isNull();
+        assertThat(repository.patch.departmentProvided()).isTrue();
+        assertThat(repository.patch.nameProvided()).isFalse();
+        assertThat(repository.patch.cityProvided()).isFalse();
     }
 
-    @Test
-    void rejectsProtectedOrUnknownFieldsAtTheHttpBoundary() throws Exception {
-        mockMvc(new CapturingRepository()).perform(patch(
+    @ParameterizedTest
+    @CsvSource({
+            "id,aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "slug,other-project",
+            "createdByProfileId,aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "createdAt,2026-09-08T12:00:00Z",
+            "updatedAt,2026-09-08T12:00:00Z",
+            "status,PUBLISHED",
+            "verificationStatus,VERIFIED",
+            "reviewedByProfileId,aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "reviewNote,Changed review note",
+            "reviewedAt,2026-09-08T12:00:00Z",
+            "publishedAt,2026-09-08T12:00:00Z",
+            "archivedAt,2026-09-08T12:00:00Z",
+            "profileId,aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "projectId,aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "membershipStatus,ACTIVE",
+            "unknownField,unexpected",
+            "created_by_profile_id,aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "updated_at,2026-09-08T12:00:00Z"
+    })
+    void rejectsProtectedOrUnknownFieldsAtTheHttpBoundary(String field, String value) throws Exception {
+        CapturingRepository repository = new CapturingRepository();
+
+        mockMvc(repository).perform(patch(
                 "/api/v1/projects/{projectId}",
                 PROJECT_ID)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {
-                          "status": "PUBLISHED"
-                        }
-                        """))
+                .content("{\"name\":\"No debe persistir\",\"%s\":\"%s\"}".formatted(field, value)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.title").value(ApiMessages.INVALID_REQUEST_TITLE));
+
+        assertThat(repository.patch).isNull();
     }
 
     @Test
@@ -150,6 +188,69 @@ class ProjectUpdateControllerTest {
                         """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.title").value("Invalid project"));
+
+        assertThat(repository.patch).isNull();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "name", "tagline", "stage", "sectorId", "city" })
+    void rejectsExplicitNullForRequiredFieldsBeforePersistence(String field) throws Exception {
+        CapturingRepository repository = new CapturingRepository();
+
+        mockMvc(repository).perform(patch("/api/v1/projects/{projectId}", PROJECT_ID)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"%s\":null}".formatted(field)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Invalid project"))
+                .andExpect(jsonPath("$.detail").value(field + " is required."));
+
+        assertThat(repository.patch).isNull();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "name", "tagline", "stage", "city" })
+    void rejectsBlankRequiredTextBeforePersistence(String field) throws Exception {
+        CapturingRepository repository = new CapturingRepository();
+
+        mockMvc(repository).perform(patch("/api/v1/projects/{projectId}", PROJECT_ID)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"%s\":\"  \"}".formatted(field)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value(field + " must not be blank."));
+
+        assertThat(repository.patch).isNull();
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "name,160", "tagline,240", "description,5000", "valueProposition,5000",
+            "city,120", "department,120", "stage,40"
+    })
+    void rejectsOverlongFieldsBeforePersistence(String field, int maxLength) throws Exception {
+        CapturingRepository repository = new CapturingRepository();
+
+        mockMvc(repository).perform(patch("/api/v1/projects/{projectId}", PROJECT_ID)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"%s\":\"%s\"}".formatted(field, "x".repeat(maxLength + 1))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail")
+                        .value(field + " must not exceed " + maxLength + " characters."));
+
+        assertThat(repository.patch).isNull();
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "not-a-uuid,22222222-2222-2222-2222-222222222222",
+            "33333333-3333-3333-3333-333333333333,not-a-uuid"
+    })
+    void rejectsMalformedIdentifiersBeforePersistence(String projectId, String sectorId) throws Exception {
+        CapturingRepository repository = new CapturingRepository();
+
+        mockMvc(repository).perform(patch("/api/v1/projects/{projectId}", projectId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"sectorId\":\"%s\"}".formatted(sectorId)))
+                .andExpect(status().isBadRequest());
 
         assertThat(repository.patch).isNull();
     }
@@ -276,7 +377,8 @@ class ProjectUpdateControllerTest {
     }
 
     private static UpdatedProject project() {
-        OffsetDateTime timestamp = OffsetDateTime.parse("2026-09-08T12:00:00Z");
+        OffsetDateTime createdAt = OffsetDateTime.parse("2026-09-01T12:00:00Z");
+        OffsetDateTime updatedAt = OffsetDateTime.parse("2026-09-08T12:00:00Z");
         return new UpdatedProject(
                 PROJECT_ID,
                 "eco-pack",
@@ -291,12 +393,12 @@ class ProjectUpdateControllerTest {
                 "DRAFT",
                 "UNVERIFIED",
                 PROFILE_ID,
-                null,
-                null,
-                null,
-                null,
-                timestamp,
-                timestamp,
-                null);
+                UUID.fromString("55555555-5555-5555-5555-555555555555"),
+                "Private review note",
+                createdAt.plusDays(1),
+                createdAt.plusDays(2),
+                createdAt,
+                updatedAt,
+                createdAt.plusDays(3));
     }
 }

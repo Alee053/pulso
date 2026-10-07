@@ -43,7 +43,24 @@ class UpdateProjectInformationTest {
         assertThat(repository.projectId).isEqualTo(PROJECT_ID);
         assertThat(repository.authenticatedProfileId).isEqualTo(PROFILE_ID);
         assertThat(repository.patch).isSameAs(patch);
+        assertThat(repository.checkedSectorId).isEqualTo(SECTOR_ID);
         assertThat(result.name()).isEqualTo("EcoPack actualizado");
+    }
+
+    @Test
+    void allowsPartialEditsWithoutLookingUpAnOmittedSector() {
+        CapturingRepository repository = new CapturingRepository();
+        repository.activeSector = false;
+        ProjectUpdatePatch patch = new ProjectUpdatePatch(
+                "Solo nombre", null, null, null, null, null, null, null,
+                new ProjectUpdatePatch.Limits(160, 240, 5000, 120, 40));
+
+        UpdatedProject result = new UpdateProjectInformation(repository, PROPERTIES)
+                .execute(PROJECT_ID, PROFILE_ID, patch);
+
+        assertThat(repository.checkedSectorId).isNull();
+        assertThat(repository.patch).isSameAs(patch);
+        assertThat(result).isEqualTo(project());
     }
 
     @Test
@@ -57,6 +74,7 @@ class UpdateProjectInformationTest {
                 .hasMessage("sectorId must reference an active sector.");
 
         assertThat(repository.patch).isNull();
+        assertThat(repository.checkedSectorId).isEqualTo(SECTOR_ID);
     }
 
     @Test
@@ -132,9 +150,11 @@ class UpdateProjectInformationTest {
         private UUID projectId;
         private UUID authenticatedProfileId;
         private ProjectUpdatePatch patch;
+        private UUID checkedSectorId;
 
         @Override
         public boolean hasActiveSector(UUID sectorId) {
+            checkedSectorId = sectorId;
             return activeSector;
         }
 

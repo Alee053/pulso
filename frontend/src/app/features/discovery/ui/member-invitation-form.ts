@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common'
-import { Component, effect, inject, Input, OnChanges, OnDestroy, signal } from '@angular/core'
+import { Component, effect, EventEmitter, inject, Input, OnChanges, OnDestroy, Output, signal } from '@angular/core'
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms'
 import { Subscription } from 'rxjs'
 import { SupabaseAuthGateway } from '../../../core/auth/supabase-auth.gateway'
@@ -16,6 +16,7 @@ import { invitationStrings } from '../strings/invitation.strings'
 })
 export class MemberInvitationFormComponent implements OnChanges, OnDestroy {
   @Input({ required: true }) project!: CurrentProjectMembership
+  @Output() invited = new EventEmitter<void>()
   readonly strings = invitationStrings
   readonly auth = inject(SupabaseAuthGateway)
   private readonly api = inject(MemberInvitationsApi)
@@ -55,6 +56,7 @@ export class MemberInvitationFormComponent implements OnChanges, OnDestroy {
         this.submitting.set(false)
         this.registered.set(true)
         this.email.reset()
+        this.invited.emit()
       },
       error: (failure: InvitationFailure) => {
         this.submitting.set(false)

@@ -4,8 +4,8 @@
 `com.pulso.backend.project.domain.MembershipAdministration` and the interface
 action/error seam in
 `frontend/src/app/features/discovery/domain/membership-administration.ts`.
-**Current** for the HTTP activate, change-role, and withdraw endpoint.
-**Target** for a membership-administration screen.
+**Current** for the HTTP activate, change-role, withdraw, and protected team-list endpoints.
+**Current** for the membership-administration screen in Mis equipos.
 
 S2.5 formalizes how existing `project_members` rows are administered. Roles
 are `OWNER`, `ADMIN`, and `MEMBER`. Membership statuses are `INVITED`,
@@ -67,6 +67,34 @@ the last active owner is rejected, whether the actor is that owner or another
 admin. The application locks the project row while it reads the actor,
 target, and current memberships, so concurrent administration requests for the
 same project cannot both approve a stale owner state.
+
+## Protected team read
+
+`GET /api/v1/projects/{projectId}/members` is a separate query controller/use
+case behind `ProjectMembersReader`; it does not change the existing PATCH port
+or mutation policy. The JDBC reader selects the persisted active actor and its
+bounded page in one parameterized statement, so the permission decision and
+returned rows share a PostgreSQL snapshot. A left lateral join distinguishes
+an authorized empty page from absent authorization.
+
+An active owner/admin reads all existing rows and lifecycle states. An active
+member reads only public active memberships whose linked profile is active,
+public, and not soft-deleted. Missing, invited, left, removed, or other-project
+actors are forbidden. No project-role JWT claim participates in authorization.
+
+For every role, names and titles are populated only when the row satisfies
+that same public predicate. Administrative rows preserve membership/profile
+IDs and role/status but mask private names/titles. Unaccepted invitations have
+nullable profile IDs. Email, tokens/digests, inviter fields, and timestamps are
+never projected by the query or its DTOs. See [API contract](../api.md#get-apiv1projectsprojectidmembers--team-administration-list-pul-85)
+for response shape, bounds, and errors.
+
+The read page includes authoritative actor role/status so Angular can refresh
+its local permission state following a self-demotion. The UI owns roster state
+within each project team, consumes only the backend HTTP adapter, and offers
+administration controls only to owner/admin actors. It confirms changes before
+sending the existing PATCH action and merges responses by membership ID.
+Persisted backend authorization and invariants remain authoritative.
 
 ## HTTP contract
 

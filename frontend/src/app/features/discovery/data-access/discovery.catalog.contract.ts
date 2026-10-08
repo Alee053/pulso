@@ -16,5 +16,9 @@ export const apiPaths = {
   catalogs: '/api/v1/catalogs',
   profile: '/api/v1/me',
   preferences: '/api/v1/me/preferences',
+  discoveryFeed: '/api/v1/me/discovery-feed',
+  savedProjects: '/api/v1/me/saved-projects',
+  interestedProjects: '/api/v1/me/interested-projects',
+  projectFeedback: '/api/v1/me/project-feedback',
   projects: '/api/v1/projects',
 } as const;

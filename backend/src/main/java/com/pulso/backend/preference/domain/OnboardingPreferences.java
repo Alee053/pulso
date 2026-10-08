@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -16,6 +17,9 @@ public record OnboardingPreferences(
         List<String> intentions,
         List<String> preferredSectors,
         List<String> preferredStages,
+        List<String> preferredTags,
+        List<String> preferredSkills,
+        Map<String, Double> recommendationWeights,
         Limits limits) {
 
     private static final Pattern UUID_PATTERN = Pattern.compile(
@@ -73,10 +77,52 @@ public record OnboardingPreferences(
                         "preferredStages",
                         ALLOWED_STAGE_SET,
                         limits.maxTokenLength()));
+        preferredTags = normalizeList(
+                preferredTags,
+                "preferredTags",
+                limits.maxItemsPerField(),
+                value -> normalizeCatalogId(value, "preferredTags"));
+        preferredSkills = normalizeList(
+                preferredSkills,
+                "preferredSkills",
+                limits.maxItemsPerField(),
+                value -> normalizeCatalogId(value, "preferredSkills"));
+        recommendationWeights = RecommendationWeights.normalize(recommendationWeights);
+    }
+
+    public OnboardingPreferences(
+            UUID profileId,
+            List<String> intentions,
+            List<String> preferredSectors,
+            List<String> preferredStages,
+            Limits limits) {
+        this(profileId, intentions, preferredSectors, preferredStages, List.of(), List.of(), Map.of(), limits);
     }
 
     public static OnboardingPreferences empty(UUID profileId, Limits limits) {
-        return new OnboardingPreferences(profileId, List.of(), List.of(), List.of(), limits);
+        return new OnboardingPreferences(
+                profileId,
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                Map.of(),
+                limits);
+    }
+
+    private static String normalizeCatalogId(String value, String field) {
+        String trimmed = value.trim();
+        if (!UUID_PATTERN.matcher(trimmed).matches()) {
+            throw new OnboardingPreferencesValidationException(
+                    String.format(ApiMessages.PREFERENCES_CATALOG_ID_INVALID, field));
+        }
+        try {
+            return UUID.fromString(trimmed).toString();
+        } catch (IllegalArgumentException exception) {
+            throw new OnboardingPreferencesValidationException(
+                    String.format(ApiMessages.PREFERENCES_CATALOG_ID_INVALID, field));
+        }
     }
 
     private static List<String> normalizeList(

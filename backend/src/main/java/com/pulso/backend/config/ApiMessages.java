@@ -67,6 +67,12 @@ public final class ApiMessages {
             "preferredSectors contains an invalid identifier.";
     public static final String PREFERENCES_SECTORS_INVALID_VALUE =
             "preferredSectors contains an invalid identifier '%s'.";
+    public static final String PREFERENCES_CATALOG_ID_INVALID =
+            "%s must contain valid catalog UUIDs.";
+    public static final String PREFERENCES_WEIGHTS_INVALID =
+            "recommendationWeights contains an invalid value.";
+    public static final String PREFERENCES_WEIGHTS_TOO_MANY =
+            "recommendationWeights contains too many entries.";
 
     public static final String PROJECT_SLUG_MIN_LENGTH =
             "slug must be at least %d characters.";
@@ -169,6 +175,10 @@ public final class ApiMessages {
             "preferredSectors contains unknown or inactive sector '%s'.";
     public static final String SECTOR_DUPLICATE =
             "preferredSectors must not contain duplicates: '%s'.";
+    public static final String TAG_UNKNOWN =
+            "preferredTags contains an unknown or inactive tag.";
+    public static final String SKILL_UNKNOWN =
+            "preferredSkills contains an unknown or inactive skill.";
     public static final String PROJECT_DRAFT_REQUIRED = "project draft is required.";
     public static final String PROJECT_UPDATE_REQUIRED = "project update is required.";
     public static final String SECTOR_MUST_BE_ACTIVE =

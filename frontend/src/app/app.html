@@ -54,12 +54,16 @@
         </div>
 
         <pulso-navigation-bar [activeView]="session.activeView()"
-                              [savedCount]="session.savedIds().length"
-                              [interestedCount]="session.interestedIds().length"
+                              [savedCount]="session.savedCount()"
+                              [interestedCount]="session.interestedCount()"
                               (navigated)="navigateTo($event)"
                               (exampleRequested)="session.openProjectDetail('eco-pack')" />
 
         <div class="app-shell__content">
+            <div *ngIf="session.interactionErrorMessage() as interactionError" class="status-message status-message--error mb-4 flex flex-wrap items-center gap-3" role="alert">
+                <p>{{ interactionError }}</p>
+                <button type="button" class="contact-button" [disabled]="session.isSavingInteraction()" (click)="session.retryInteraction()">{{ common.retry }}</button>
+            </div>
             <header class="workspace-header">
                 <span>{{ common.workspaceLabel }}</span>
                 <button type="button" class="reference-example" (click)="session.openProjectDetail('eco-pack')">
@@ -73,6 +77,7 @@
                                       [errorMessage]="session.errorMessage()"
                                       [feedRemaining]="session.feed().length"
                                       [isLoading]="session.isLoading()"
+                                      [isSavingInteraction]="session.isSavingInteraction()"
                                       [isModalOpen]="selectedStartup() !== null"
                                       [totalStartups]="session.catalog().length"
                                       [savedIds]="session.savedIds()"
@@ -93,7 +98,21 @@
                 <pulso-saved-view *ngSwitchCase="'saved'"
                                   [savedStartups]="session.savedStartups()"
                                   [interestedStartups]="session.interestedStartups()"
-                                  (startupSelected)="selectStartup($event)" />
+                                  [savedCount]="session.savedCount()"
+                                  [interestedCount]="session.interestedCount()"
+                                  [savedHasMore]="session.savedHasMore()"
+                                  [interestedHasMore]="session.interestedHasMore()"
+                                  [hasLoadedSavedProjects]="session.hasLoadedSavedProjects()"
+                                  [hasLoadedInterestedProjects]="session.hasLoadedInterestedProjects()"
+                                  [isLoadingSavedProjects]="session.isLoadingSavedProjects()"
+                                  [isLoadingInterestedProjects]="session.isLoadingInterestedProjects()"
+                                  [savedProjectsErrorMessage]="session.savedProjectsErrorMessage()"
+                                  [interestedProjectsErrorMessage]="session.interestedProjectsErrorMessage()"
+                                  (startupSelected)="selectStartup($event)"
+                                  (retrySavedRequested)="session.retrySavedProjects()"
+                                  (retryInterestedRequested)="session.retryInterestedProjects()"
+                                  (loadMoreSavedRequested)="session.loadMoreSavedProjects()"
+                                  (loadMoreInterestedRequested)="session.loadMoreInterestedProjects()" />
 
                 <pulso-profile-view *ngSwitchCase="'profile'"
                                     [interestOptions]="session.interestOptions"

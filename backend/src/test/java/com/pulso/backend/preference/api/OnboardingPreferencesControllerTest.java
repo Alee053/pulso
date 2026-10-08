@@ -7,7 +7,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -26,6 +28,7 @@ import com.pulso.backend.catalog.application.ActiveSectorLookup;
 import com.pulso.backend.config.PreferenceProperties;
 import com.pulso.backend.discovery.api.ApiExceptionHandler;
 import com.pulso.backend.preference.application.GetOnboardingPreferences;
+import com.pulso.backend.preference.application.ActivePreferenceCatalogLookup;
 import com.pulso.backend.preference.application.OnboardingPreferencesRepository;
 import com.pulso.backend.preference.application.SaveOnboardingPreferences;
 import com.pulso.backend.preference.domain.OnboardingPreferences;
@@ -36,6 +39,10 @@ class OnboardingPreferencesControllerTest {
             "11111111-1111-1111-1111-111111111111");
     private static final UUID SECTOR_ID = UUID.fromString(
             "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+    private static final UUID TAG_ID = UUID.fromString(
+            "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+    private static final UUID SKILL_ID = UUID.fromString(
+            "cccccccc-cccc-cccc-cccc-cccccccccccc");
     private static final PreferenceProperties PROPERTIES =
             new PreferenceProperties(10, 40, 120);
     private static final OnboardingPreferences.Limits LIMITS =
@@ -55,7 +62,9 @@ class OnboardingPreferencesControllerTest {
                 .andExpect(jsonPath("$.intentions[0]").value("DISCOVER"))
                 .andExpect(jsonPath("$.intentions[1]").value("COLLABORATE"))
                 .andExpect(jsonPath("$.preferredSectors[0]").value("sostenibilidad"))
-                .andExpect(jsonPath("$.preferredStages[0]").value("MVP"));
+                .andExpect(jsonPath("$.preferredStages[0]").value("MVP"))
+                .andExpect(jsonPath("$.preferredTags[0]").value(TAG_ID.toString()))
+                .andExpect(jsonPath("$.preferredSkills[0]").value(SKILL_ID.toString()));
     }
 
     @Test
@@ -71,17 +80,23 @@ class OnboardingPreferencesControllerTest {
                         {
                           "intentions": ["discover", "collaborate"],
                           "preferredSectors": [" SOSTENIBILIDAD "],
-                          "preferredStages": ["mvp"]
+                          "preferredStages": ["mvp"],
+                          "preferredTags": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"],
+                          "preferredSkills": ["cccccccc-cccc-cccc-cccc-cccccccccccc"]
                         }
                         """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.profileId").value(PROFILE_ID.toString()))
                 .andExpect(jsonPath("$.intentions[0]").value("DISCOVER"))
                 .andExpect(jsonPath("$.preferredSectors[0]").value("sostenibilidad"))
-                .andExpect(jsonPath("$.preferredStages[0]").value("MVP"));
+                .andExpect(jsonPath("$.preferredStages[0]").value("MVP"))
+                .andExpect(jsonPath("$.preferredTags[0]").value(TAG_ID.toString()))
+                .andExpect(jsonPath("$.preferredSkills[0]").value(SKILL_ID.toString()));
 
         assertThat(repository.saved.profileId())
                 .isEqualTo(PROFILE_ID);
+        assertThat(repository.saved.preferredTags()).containsExactly(TAG_ID.toString());
+        assertThat(repository.saved.preferredSkills()).containsExactly(SKILL_ID.toString());
     }
 
     @Test
@@ -183,6 +198,11 @@ class OnboardingPreferencesControllerTest {
             public OnboardingPreferences upsert(OnboardingPreferences preferences) {
                 throw new DataAccessResourceFailureException("password=secret host=database");
             }
+
+            @Override
+            public void saveRecommendationWeights(UUID profileId, Map<String, Double> weights) {
+                throw new UnsupportedOperationException();
+            }
         };
         MockMvc mockMvc = mockMvc(unavailableRepository, identifier -> Optional.of(SECTOR_ID));
 
@@ -212,10 +232,25 @@ class OnboardingPreferencesControllerTest {
     private static MockMvc mockMvc(
             OnboardingPreferencesRepository repository,
             ActiveSectorLookup activeSectorLookup) {
+        ActivePreferenceCatalogLookup activePreferenceCatalogLookup = new ActivePreferenceCatalogLookup() {
+            @Override
+            public Set<UUID> findActiveTagIds(List<UUID> ids) {
+                return Set.copyOf(ids);
+            }
+
+            @Override
+            public Set<UUID> findActiveSkillIds(List<UUID> ids) {
+                return Set.copyOf(ids);
+            }
+        };
         return MockMvcBuilders
                 .standaloneSetup(new OnboardingPreferencesController(
                         new GetOnboardingPreferences(repository, PROPERTIES),
-                        new SaveOnboardingPreferences(repository, activeSectorLookup, PROPERTIES)))
+                        new SaveOnboardingPreferences(
+                                repository,
+                                activeSectorLookup,
+                                activePreferenceCatalogLookup,
+                                PROPERTIES)))
                 .setControllerAdvice(new ApiExceptionHandler())
                 .setCustomArgumentResolvers(new JwtArgumentResolver())
                 .build();
@@ -225,7 +260,15 @@ class OnboardingPreferencesControllerTest {
             List<String> intentions,
             List<String> sectors,
             List<String> stages) {
-        return new OnboardingPreferences(PROFILE_ID, intentions, sectors, stages, LIMITS);
+        return new OnboardingPreferences(
+                PROFILE_ID,
+                intentions,
+                sectors,
+                stages,
+                List.of(TAG_ID.toString()),
+                List.of(SKILL_ID.toString()),
+                Map.of(),
+                LIMITS);
     }
 
     private static Jwt authenticatedJwt() {
@@ -271,6 +314,10 @@ class OnboardingPreferencesControllerTest {
         public OnboardingPreferences upsert(OnboardingPreferences preferences) {
             return preferences;
         }
+
+        @Override
+        public void saveRecommendationWeights(UUID profileId, Map<String, Double> weights) {
+        }
     }
 
     private static final class CapturingRepository implements OnboardingPreferencesRepository {
@@ -286,6 +333,10 @@ class OnboardingPreferencesControllerTest {
         public OnboardingPreferences upsert(OnboardingPreferences preferences) {
             saved = preferences;
             return preferences;
+        }
+
+        @Override
+        public void saveRecommendationWeights(UUID profileId, Map<String, Double> weights) {
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.pulso.backend.preference.application;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -19,14 +20,17 @@ public class SaveOnboardingPreferences {
 
     private final OnboardingPreferencesRepository repository;
     private final ActiveSectorLookup activeSectorLookup;
+    private final ActivePreferenceCatalogLookup activePreferenceCatalogLookup;
     private final PreferenceProperties properties;
 
     public SaveOnboardingPreferences(
             OnboardingPreferencesRepository repository,
             ActiveSectorLookup activeSectorLookup,
+            ActivePreferenceCatalogLookup activePreferenceCatalogLookup,
             PreferenceProperties properties) {
         this.repository = repository;
         this.activeSectorLookup = activeSectorLookup;
+        this.activePreferenceCatalogLookup = activePreferenceCatalogLookup;
         this.properties = properties;
     }
 
@@ -64,6 +68,24 @@ public class SaveOnboardingPreferences {
                         String.format(ApiMessages.SECTOR_DUPLICATE, sector));
             }
         }
+
+        Set<UUID> selectedTagIds = toUuidSet(preferences.preferredTags());
+        if (!activePreferenceCatalogLookup.findActiveTagIds(List.copyOf(selectedTagIds))
+                .containsAll(selectedTagIds)) {
+            throw new OnboardingPreferencesValidationException(ApiMessages.TAG_UNKNOWN);
+        }
+
+        Set<UUID> selectedSkillIds = toUuidSet(preferences.preferredSkills());
+        if (!activePreferenceCatalogLookup.findActiveSkillIds(List.copyOf(selectedSkillIds))
+                .containsAll(selectedSkillIds)) {
+            throw new OnboardingPreferencesValidationException(ApiMessages.SKILL_UNKNOWN);
+        }
         return repository.upsert(preferences);
+    }
+
+    private static Set<UUID> toUuidSet(java.util.List<String> ids) {
+        Set<UUID> result = new HashSet<>();
+        ids.forEach(id -> result.add(UUID.fromString(id)));
+        return result;
     }
 }

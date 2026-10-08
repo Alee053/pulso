@@ -35,5 +35,8 @@ function toOnboardingPreferences(
     intentions: dto.intentions as OnboardingPreferences['intentions'],
     preferredSectors: [...dto.preferredSectors],
     preferredStages: dto.preferredStages as OnboardingPreferences['preferredStages'],
+    preferredTags: [...dto.preferredTags],
+    preferredSkills: [...dto.preferredSkills],
+    recommendationWeights: { ...dto.recommendationWeights },
   }
 }

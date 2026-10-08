@@ -59,6 +59,7 @@ Table profile_preferences {
   intentions jsonb [not null, default: `'[]'::jsonb`, note: "Valores controlados como descubrir, comprar, colaborar, trabajar, invertir, buscar socios, clientes o proveedores"]
   preferred_sectors jsonb [not null, default: `'[]'::jsonb`, note: "IDs o slugs de sectors; se puede normalizar a una tabla de relación cuando el matching lo requiera"]
   preferred_stages jsonb [not null, default: `'[]'::jsonb`]
+  recommendation_weights jsonb [not null, default: `'{}'::jsonb`, note: "Pesos acotados derivados de decisiones persistidas del feed"]
   updated_at timestamptz [not null, default: `now()`]
 
   Note: "Mantiene simple el onboarding. Intereses y habilidades que sí se consultan con frecuencia tienen tablas relacionales propias."

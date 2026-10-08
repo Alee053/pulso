@@ -28,6 +28,9 @@ describe('PreferencesApi', () => {
       intentions: ['DISCOVER', 'COLLABORATE'],
       preferredSectors: ['sector-1'],
       preferredStages: ['MVP'],
+      preferredTags: ['tag-1'],
+      preferredSkills: ['skill-1'],
+      recommendationWeights: { sustainability: 2.5 },
     })
 
     await expect(responsePromise).resolves.toEqual({
@@ -35,6 +38,9 @@ describe('PreferencesApi', () => {
       intentions: ['DISCOVER', 'COLLABORATE'],
       preferredSectors: ['sector-1'],
       preferredStages: ['MVP'],
+      preferredTags: ['tag-1'],
+      preferredSkills: ['skill-1'],
+      recommendationWeights: { sustainability: 2.5 },
     })
     controller.verify()
   })
@@ -50,6 +56,8 @@ describe('PreferencesApi', () => {
       intentions: ['DISCOVER', 'INVEST'],
       preferredSectors: ['sector-1'],
       preferredStages: ['MVP'],
+      preferredTags: ['tag-1'],
+      preferredSkills: ['skill-1'],
     }
     const responsePromise = firstValueFrom(api.save(payload))
     const request = controller.expectOne(
@@ -63,6 +71,9 @@ describe('PreferencesApi', () => {
       intentions: ['DISCOVER', 'INVEST'],
       preferredSectors: ['sector-1'],
       preferredStages: ['MVP'],
+      preferredTags: ['tag-1'],
+      preferredSkills: ['skill-1'],
+      recommendationWeights: { sustainability: 2.5 },
     })
 
     await expect(responsePromise).resolves.toEqual({
@@ -70,6 +81,9 @@ describe('PreferencesApi', () => {
       intentions: ['DISCOVER', 'INVEST'],
       preferredSectors: ['sector-1'],
       preferredStages: ['MVP'],
+      preferredTags: ['tag-1'],
+      preferredSkills: ['skill-1'],
+      recommendationWeights: { sustainability: 2.5 },
     })
     controller.verify()
   })

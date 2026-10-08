@@ -12,7 +12,9 @@ import com.pulso.backend.preference.domain.OnboardingPreferences;
 public record OnboardingPreferencesRequest(
         List<String> intentions,
         List<String> preferredSectors,
-        List<String> preferredStages) {
+        List<String> preferredStages,
+        List<String> preferredTags,
+        List<String> preferredSkills) {
 
     @JsonAnySetter
     public void rejectUnknownField(String fieldName, Object value) {
@@ -28,6 +30,9 @@ public record OnboardingPreferencesRequest(
                 intentions,
                 preferredSectors == null ? List.of() : preferredSectors,
                 preferredStages,
+                preferredTags == null ? List.of() : preferredTags,
+                preferredSkills == null ? List.of() : preferredSkills,
+                java.util.Map.of(),
                 limits);
     }
 }

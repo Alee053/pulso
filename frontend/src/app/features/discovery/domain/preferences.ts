@@ -30,12 +30,17 @@ export interface OnboardingPreferences {
   intentions: OnboardingIntention[]
   preferredSectors: string[]
   preferredStages: ProjectStage[]
+  preferredTags: string[]
+  preferredSkills: string[]
+  recommendationWeights: Record<string, number>
 }
 
 export interface OnboardingPreferencesPayload {
   intentions: OnboardingIntention[]
   preferredSectors: string[]
   preferredStages: ProjectStage[]
+  preferredTags: string[]
+  preferredSkills: string[]
 }
 
 export const projectStageOptions: readonly ProjectStageOption[] = [
@@ -71,11 +76,15 @@ export function toOnboardingPreferencesPayload(
   interests: readonly InterestId[],
   preferredSectors: readonly string[],
   preferredStages: readonly ProjectStage[],
+  preferredTags: readonly string[] = [],
+  preferredSkills: readonly string[] = [],
 ): OnboardingPreferencesPayload {
   return {
     intentions: interests.map((interest) => intentionByInterest[interest]),
     preferredSectors: [...preferredSectors],
     preferredStages: [...preferredStages],
+    preferredTags: [...preferredTags],
+    preferredSkills: [...preferredSkills],
   }
 }
 

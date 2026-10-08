@@ -553,7 +553,8 @@ team endpoint that accepts a direct `PUBLISHED` transition.
 Returns the onboarding preferences of the authenticated profile. The profile
 ID is always derived from the validated JWT subject; there is no profile ID
 parameter that a client can use to read another person's preferences. If the
-profile has not saved preferences yet, the endpoint returns three empty arrays.
+profile has not saved preferences yet, the endpoint returns empty preference
+arrays and an empty recommendation-weight object.
 
 ```sh
 curl \
@@ -568,7 +569,10 @@ Response `200 OK`:
   "profileId": "11111111-1111-1111-1111-111111111111",
   "intentions": ["DISCOVER", "COLLABORATE"],
   "preferredSectors": ["sostenibilidad"],
-  "preferredStages": ["MVP"]
+  "preferredStages": ["MVP"],
+  "preferredTags": ["aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"],
+  "preferredSkills": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"],
+  "recommendationWeights": {"sostenibilidad": 2.5}
 }
 ```
 
@@ -580,8 +584,12 @@ the same request is safe and keeps one row in
 repository uses an upsert.
 
 The request does not accept `profileId`; the server takes it from the JWT.
-`preferredSectors` is optional and defaults to `[]`; the other preference
-properties must be arrays, although an empty array is valid.
+`preferredSectors`, `preferredTags`, and `preferredSkills` are optional arrays
+that default to `[]`; `intentions` and `preferredStages` must be arrays,
+although an empty array is valid. Tags and skills must reference active catalog
+UUIDs. The backend replaces their profile relationship rows in the same
+transaction as the JSON preferences. `recommendationWeights` is server-managed
+and returned by this endpoint; this request cannot overwrite it.
 
 ```sh
 curl -X PUT \
@@ -590,7 +598,9 @@ curl -X PUT \
   -d '{
     "intentions": ["discover", "collaborate"],
     "preferredSectors": ["sostenibilidad"],
-    "preferredStages": ["mvp"]
+    "preferredStages": ["mvp"],
+    "preferredTags": ["aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"],
+    "preferredSkills": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"]
   }' \
   http://localhost:8080/api/v1/me/preferences
 ```
@@ -604,8 +614,8 @@ and `EXPLORE_ECOSYSTEM`. Supported project stage codes are `IDEA`,
 `PROTOTYPE`, `MVP`, `EARLY_STAGE`, `GROWING`, and `ESTABLISHED`.
 
 Each preference array accepts at most 10 items. Blank, malformed, unknown or
-inactive values, and duplicates after normalization or active-sector resolution
-return `400 Bad Request`:
+inactive values, and duplicates after normalization or active catalog
+resolution return `400 Bad Request`:
 
 ```json
 {
@@ -618,6 +628,41 @@ return `400 Bad Request`:
 
 Database failures return the sanitized `503 Service Unavailable` response
 documented above. Missing or invalid bearer tokens return `401 Unauthorized`.
+
+## Persisted discovery interactions
+
+These endpoints use the authenticated JWT subject as the profile ID. Project
+summaries include only published projects. Feed pagination uses the same
+bounded `offset` and `limit` contract as the public catalog; `meta.totalCount`
+reports the remaining feed size for the profile.
+
+- `GET /api/v1/me/discovery-feed` returns published projects not marked
+  `INTERESTED` or `DISMISSED`, with each item's current `saved` state.
+- `GET /api/v1/me/saved-projects` and
+  `GET /api/v1/me/interested-projects` return the account's paginated lists
+  with `meta.totalCount`.
+- `PUT /api/v1/me/saved-projects/{projectId}` saves a published project.
+- `DELETE /api/v1/me/saved-projects/{projectId}` removes it from saved items.
+- `PUT /api/v1/me/project-feedback/{projectId}` records an `INTERESTED` or
+  `DISMISSED` decision and can include updated recommendation weights.
+
+```json
+{
+  "feedbackType": "INTERESTED",
+  "recommendationWeights": {"sostenibilidad": 2.5}
+}
+```
+
+Saved state is upserted in `public.saved_projects`; current decision state is
+upserted in `public.project_feedback`. Changed actions append one row to
+`public.interaction_events` in the same transaction. Repeating an unchanged
+action does not duplicate an event. The backend validates that mutation targets
+are published projects, and the browser accesses this data only through these
+HTTP endpoints. Feedback weights are optional; when supplied, their keys must
+be lowercase slugs and each value must be finite and between `-100` and `100`,
+with at most 50 keys. Omitting weights leaves the saved weights unchanged.
+Unknown or unpublished projects return `404`; invalid feedback or weights
+return `400`.
 
 ## `GET /api/v1/me`
 

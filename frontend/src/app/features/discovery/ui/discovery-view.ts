@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common'
-import { Component, EventEmitter, HostListener, Input, OnDestroy, Output } from '@angular/core'
+import { Component, EventEmitter, HostListener, Input, OnChanges, OnDestroy, Output, SimpleChanges } from '@angular/core'
 import { IconComponent } from '../../../shared/icon/icon'
 import { commonStrings } from '../../../shared/strings/common.strings'
 import type { Decision, Startup } from '../domain/startup'
@@ -12,7 +12,7 @@ import { StartupCardComponent } from './startup-card'
   imports: [CommonModule, IconComponent, StartupCardComponent],
   templateUrl: './discovery-view.html',
 })
-export class DiscoveryViewComponent implements OnDestroy {
+export class DiscoveryViewComponent implements OnChanges, OnDestroy {
   @Input() activeSignals: string[] = []
   @Input() currentStartup: Startup | undefined
   @Input() errorMessage: string | null = null
@@ -21,6 +21,7 @@ export class DiscoveryViewComponent implements OnDestroy {
   @Input() isModalOpen = false
   @Input() totalStartups = 0
   @Input() savedIds: string[] = []
+  @Input() isSavingInteraction = false
   @Output() decisionMade = new EventEmitter<Decision>()
   @Output() restarted = new EventEmitter<void>()
   @Output() retryRequested = new EventEmitter<void>()
@@ -36,6 +37,20 @@ export class DiscoveryViewComponent implements OnDestroy {
   dragOffset = { x: 0, y: 0 }
   private toastTimeout: number | undefined
   private transitionTimeout: number | undefined
+  private pendingSaveAction: { startupId: string; shouldSave: boolean } | null = null
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!changes['savedIds'] || !this.pendingSaveAction) {
+      return
+    }
+
+    const { startupId, shouldSave } = this.pendingSaveAction
+    if (this.currentStartup?.id === startupId
+      && this.savedIds.includes(startupId) === shouldSave) {
+      this.showToast(shouldSave ? this.strings.toastSaved : this.strings.toastRemoved)
+      this.pendingSaveAction = null
+    }
+  }
 
   get isSaved(): boolean {
     return this.currentStartup
@@ -100,7 +115,7 @@ export class DiscoveryViewComponent implements OnDestroy {
   }
 
   showCurrentStartup(): void {
-    if (!this.currentStartup || this.isTransitioning) {
+    if (!this.currentStartup || this.isTransitioning || this.isSavingInteraction) {
       return
     }
 
@@ -108,7 +123,7 @@ export class DiscoveryViewComponent implements OnDestroy {
   }
 
   handleDecision(decision: Decision): void {
-    if (!this.currentStartup || this.isTransitioning) {
+    if (!this.currentStartup || this.isTransitioning || this.isSavingInteraction) {
       return
     }
 
@@ -121,13 +136,16 @@ export class DiscoveryViewComponent implements OnDestroy {
   }
 
   handleSave(): void {
-    if (!this.currentStartup || this.isTransitioning) {
+    if (!this.currentStartup || this.isTransitioning || this.isSavingInteraction) {
       return
     }
 
     const wasSaved = this.isSaved
+    this.pendingSaveAction = {
+      startupId: this.currentStartup.id,
+      shouldSave: !wasSaved,
+    }
     this.startupSaved.emit(this.currentStartup.id)
-    this.showToast(wasSaved ? this.strings.toastRemoved : this.strings.toastSaved)
   }
 
   updateDragOffset(offset: { x: number; y: number }): void {

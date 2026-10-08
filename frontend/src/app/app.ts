@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common'
-import { Component, effect, inject, OnInit, signal } from '@angular/core'
+import { Component, effect, inject, isDevMode, OnInit, signal } from '@angular/core'
 import { AuthPageComponent } from './core/auth/auth-page'
 import { SupabaseAuthGateway } from './core/auth/supabase-auth.gateway'
 import { DiscoveryViewComponent } from './features/discovery/ui/discovery-view'
@@ -16,6 +16,7 @@ import { InvitationLink } from './features/discovery/application/invitation-link
 import { InvitationAcceptanceComponent } from './features/discovery/ui/invitation-acceptance'
 import { ProjectTeamsComponent } from './features/discovery/ui/project-teams'
 import { ProjectCreateFormComponent } from './features/discovery/ui/project-create-form'
+import { LogDemoPanelComponent } from './features/log-demo/ui/log-demo-panel'
 
 @Component({
     selector: 'pulso-root',
@@ -32,12 +33,14 @@ import { ProjectCreateFormComponent } from './features/discovery/ui/project-crea
         ProjectCreateFormComponent,
         SavedViewComponent,
         PublicProjectDetailComponent,
+        LogDemoPanelComponent,
         IconComponent,
     ],
     templateUrl: './app.html',
     styleUrl: './app.css',
 })
 export class AppComponent implements OnInit {
+    readonly showLogDemo = isDevMode()
     readonly invitation = inject(InvitationLink)
     readonly common = commonStrings
     readonly auth = inject(SupabaseAuthGateway)

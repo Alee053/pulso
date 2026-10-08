@@ -1,0 +1,66 @@
+<div class="log-demo">
+  <button
+    type="button"
+    class="log-demo__launcher"
+    data-action="toggle"
+    [attr.aria-expanded]="isOpen()"
+    aria-controls="pulso-log-demo-panel"
+    (click)="toggle()"
+  >
+    <span class="log-demo__indicator" aria-hidden="true"></span>
+    <span>{{ strings.launcher }}</span>
+    <span class="log-demo__badge">{{ strings.environment }}</span>
+  </button>
+
+  <section
+    *ngIf="isOpen()"
+    id="pulso-log-demo-panel"
+    class="log-demo__panel"
+    role="region"
+    aria-labelledby="pulso-log-demo-title"
+  >
+    <header class="log-demo__header">
+      <span class="eyebrow">{{ strings.eyebrow }}</span>
+      <button
+        type="button"
+        class="log-demo__close"
+        [attr.aria-label]="strings.close"
+        (click)="close()"
+      >
+        <pulso-icon name="x" [size]="18" />
+      </button>
+    </header>
+
+    <h2 id="pulso-log-demo-title" class="log-demo__title">{{ strings.title }}</h2>
+    <p class="log-demo__description">{{ strings.description }}</p>
+    <p class="log-demo__local">{{ strings.localOnly }}</p>
+
+    <button
+      type="button"
+      class="solid-button log-demo__trigger"
+      data-action="trigger"
+      [disabled]="state() === 'sending'"
+      (click)="triggerFailure()"
+    >
+      <span *ngIf="state() === 'sending'" class="spinner" aria-hidden="true"></span>
+      {{ state() === 'sending' ? strings.sending : strings.trigger }}
+    </button>
+
+    <div *ngIf="state() === 'logged'" class="status-message status-message--success log-demo__result" role="status" aria-live="polite">
+      <h3>{{ strings.resultTitle }}</h3>
+      <div class="log-demo__event">
+        <div><span>{{ strings.level }}</span><code>ERROR</code></div>
+        <div><span>{{ strings.operation }}</span><code>dataStoreUnavailable</code></div>
+        <div><span>{{ strings.status }}</span><code>503</code></div>
+      </div>
+      <p>{{ strings.resultMessage }}</p>
+    </div>
+
+    <p *ngIf="state() === 'failed'" class="status-message status-message--error log-demo__result" role="alert">
+      {{ strings.failure }}
+    </p>
+    <p *ngIf="state() === 'unexpected'" class="status-message status-message--error log-demo__result" role="alert">
+      {{ strings.unexpectedSuccess }}
+    </p>
+  </section>
+</div>

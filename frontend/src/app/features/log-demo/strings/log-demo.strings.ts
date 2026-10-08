@@ -1,0 +1,18 @@
+export const logDemoStrings = {
+  launcher: 'Demo de logs',
+  environment: 'DEV',
+  eyebrow: 'Prueba local',
+  title: 'Provocar un error controlado',
+  description: 'La API registrará el fallo y responderá con un error seguro.',
+  localOnly: 'Disponible en el perfil local de demostración.',
+  trigger: 'Generar evento ERROR',
+  sending: 'Enviando solicitud…',
+  close: 'Cerrar demo de logs',
+  resultTitle: 'Evento de error generado',
+  resultMessage: 'La API respondió HTTP 503. Revisa ahora la terminal del backend.',
+  level: 'Nivel',
+  operation: 'Operación',
+  status: 'Respuesta',
+  failure: 'No se recibió el 503 esperado. Verifica que el backend inició con el perfil log-demo.',
+  unexpectedSuccess: 'La API respondió sin error. Verifica que el backend inició con el perfil log-demo.',
+} as const

@@ -19,6 +19,9 @@ set_env_if_unset() {
     SERVER_PORT)
       if [ -z "${SERVER_PORT+x}" ]; then export "SERVER_PORT=$value"; fi
       ;;
+    SPRING_PROFILES_ACTIVE)
+      if [ -z "${SPRING_PROFILES_ACTIVE+x}" ]; then export "SPRING_PROFILES_ACTIVE=$value"; fi
+      ;;
     PULSO_LOG_LEVEL)
       if [ -z "${PULSO_LOG_LEVEL+x}" ]; then export "PULSO_LOG_LEVEL=$value"; fi
       ;;

@@ -1,3 +1,4 @@
+<pulso-log-demo-panel *ngIf="showLogDemo" />
 <pulso-invitation-acceptance *ngIf="invitation.requested(); else regularApplication" />
 
 <ng-template #regularApplication>

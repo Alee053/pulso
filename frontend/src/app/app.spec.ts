@@ -39,7 +39,7 @@ describe('AppComponent', () => {
     http.verify()
   })
 
-  it('shows the standalone Auth page before the authenticated application', () => {
+  it('shows the standalone Auth page and local log demo before the authenticated application', () => {
     const session = createSessionStub()
     const auth = createAuthStub()
 
@@ -56,6 +56,7 @@ describe('AppComponent', () => {
     fixture.detectChanges()
 
     expect(fixture.nativeElement.querySelector('pulso-auth-page')).not.toBeNull()
+    expect(fixture.nativeElement.querySelector('pulso-log-demo-panel')).not.toBeNull()
     expect(session.loadReferenceCatalogs).not.toHaveBeenCalled()
     expect(auth.initialize).toHaveBeenCalled()
   })

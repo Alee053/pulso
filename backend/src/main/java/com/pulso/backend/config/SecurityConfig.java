@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -49,37 +51,45 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            CorsConfigurationSource corsConfigurationSource) throws Exception {
+            CorsConfigurationSource corsConfigurationSource,
+            Environment environment) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(
-                                "/api/health",
-                                "/actuator/health",
-                                "/actuator/health/liveness",
-                                "/actuator/health/readiness",
-                                "/actuator/info")
-                        .permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/startups").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/projects/*/members").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/projects/*").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/catalogs").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/me/projects").authenticated()
-                        .requestMatchers("/api/v1/me", "/api/v1/me/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/projects").authenticated()
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/projects/*/members/*")
-                        .authenticated()
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/projects/*").authenticated()
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/v1/projects/*/members",
-                                "/api/v1/project-members/accept",
-                                "/api/v1/projects/*/publication-request",
-                                "/api/v1/projects/*/archive")
-                        .authenticated()
-                        .anyRequest().denyAll())
+                .authorizeHttpRequests(authorize -> {
+                    authorize.requestMatchers(
+                                    "/api/health",
+                                    "/actuator/health",
+                                    "/actuator/health/liveness",
+                                    "/actuator/health/readiness",
+                                    "/actuator/info")
+                            .permitAll();
+                    if (environment.acceptsProfiles(Profiles.of("log-demo"))) {
+                        authorize.requestMatchers(
+                                        HttpMethod.POST,
+                                        "/api/dev/log-demo/data-store-failure")
+                                .permitAll();
+                    }
+                    authorize.requestMatchers(HttpMethod.GET, "/api/v1/startups").permitAll()
+                            .requestMatchers(HttpMethod.GET, "/api/v1/projects/*/members").authenticated()
+                            .requestMatchers(HttpMethod.GET, "/api/v1/projects/*").permitAll()
+                            .requestMatchers(HttpMethod.GET, "/api/v1/catalogs").authenticated()
+                            .requestMatchers(HttpMethod.GET, "/api/v1/me/projects").authenticated()
+                            .requestMatchers("/api/v1/me", "/api/v1/me/**").authenticated()
+                            .requestMatchers(HttpMethod.POST, "/api/v1/projects").authenticated()
+                            .requestMatchers(HttpMethod.PATCH, "/api/v1/projects/*/members/*")
+                            .authenticated()
+                            .requestMatchers(HttpMethod.PATCH, "/api/v1/projects/*").authenticated()
+                            .requestMatchers(
+                                    HttpMethod.POST,
+                                    "/api/v1/projects/*/members",
+                                    "/api/v1/project-members/accept",
+                                    "/api/v1/projects/*/publication-request",
+                                    "/api/v1/projects/*/archive")
+                            .authenticated()
+                            .anyRequest().denyAll();
+                })
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {
                 }));
 

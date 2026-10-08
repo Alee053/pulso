@@ -392,6 +392,7 @@ Ambiente de todo el copy de discovery: `all`.
 | Clase | Nombre | Ubicación actual | Valor | Consumidor | Fuente destino | Ambiente |
 | --- | --- | --- | --- | --- | --- | --- |
 | environment | `SERVER_PORT` | `application.yml` `server.port` | `8080` | proceso Spring | `application.yml` ← env | local default |
+| environment | `SPRING_PROFILES_ACTIVE` | `run-backend.sh` / perfiles Spring | vacío | proceso Spring | env de proceso | local demo only |
 | environment | `SPRING_DATASOURCE_URL` | `application.yml` | `jdbc:postgresql://127.0.0.1:54322/postgres` | Hikari | `application.yml` ← env | local default |
 | environment | `SPRING_DATASOURCE_USERNAME` | `application.yml` | `postgres` | Hikari | `application.yml` ← env | local default |
 | environment | `SPRING_DATASOURCE_PASSWORD` | `application.yml` | nombre solamente | Hikari | secret / env | all |
@@ -403,6 +404,7 @@ Ambiente de todo el copy de discovery: `all`.
 | environment | `CORS_ALLOWED_ORIGINS` | `pulso.cors.allowed-origins` | `http://localhost:4200` (YAML); ejemplo también `http://127.0.0.1:4200` | `SecurityConfig` | ya en YAML | local / hosted |
 | environment | `spring.application.name` | `application.yml` | `pulso-backend` | health / info | `application.yml` | all |
 | api-rule | `ops.healthPath` | `HealthController` | `/api/health` | orquestación | controller | all |
+| api-rule | `ops.logDemoPath` | `LogDemoController` | `POST /api/dev/log-demo/data-store-failure` | panel local de demo | controller | perfil `log-demo` |
 | api-rule | `ops.actuatorHealth` | `application.yml` | `/actuator/health`, liveness, readiness | Compose / probes | Spring Actuator | all |
 | environment | `jwt.oneSource` | `SecurityConfig` | `Configure exactly one of SUPABASE_JWT_JWK_SET_URI or SUPABASE_JWT_SECRET.` | arranque | permanece en config | all |
 | environment | `jwt.missingSource` | `SecurityConfig` | `Configure SUPABASE_JWT_JWK_SET_URI … or SUPABASE_JWT_SECRET …` | arranque | permanece en config | all |

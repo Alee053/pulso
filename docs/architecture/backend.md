@@ -131,6 +131,27 @@ exception)`. The helper includes the exception type, a redacted message, stack
 frames, and its cause chain. The shared API exception handler uses this path
 for data-store failures.
 
+The helper writes to the backend logging system (the console by default), so
+events appear in the terminal running the backend or in the backend container's
+logs. The HTTP response is separate: the caller receives a safe problem detail,
+while the browser's developer tools show the response under Network rather than
+the backend log event under Console. StartupControllerTest simulates a
+data-store failure and checks both the 503 response and the emitted, redacted
+ERROR event using captured backend output.
+
+For an interactive defense demo, the `LogDemoController` is active only with
+the Spring `log-demo` profile. It raises a synthetic data-store exception
+without reading or changing database data; the normal backend still needs its
+local dependencies running. Start the Compose stack as described in the
+repository README, then run `SPRING_PROFILES_ACTIVE=log-demo pnpm backend:run`
+in one terminal and `pnpm dev` in another. Open `http://localhost:4200`, choose
+**Demo de logs**, then **Generar evento ERROR**. The page shows the expected
+`ERROR` operation and `503`; the backend terminal shows the structured log,
+including the redacted exception. Browser developer tools show the HTTP
+response under Network, not the backend log under Console. The panel is
+development-only, and the endpoint and its anonymous security rule are absent
+unless the backend profile is active.
+
 Set `PULSO_LOG_LEVEL` to `INFO` (default), `WARN`, `ERROR`, or `OFF` to control
 the helper's output without changing calling modules. Request and user
 identifiers are optional context supplied by the caller when available.

@@ -22,3 +22,7 @@ export const apiPaths = {
   projectFeedback: '/api/v1/me/project-feedback',
   projects: '/api/v1/projects',
 } as const;
+
+export const preferenceContract = {
+  maxItemsPerField: 10,
+} as const

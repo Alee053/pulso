@@ -5,12 +5,12 @@ export const onboardingStrings = {
   startEyebrow: 'Para empezar',
   startTitle: '¿Qué estás buscando?',
   startHintLine1: 'Elige todo lo que te mueva.',
-  startHintLine2: 'Selecciona al menos un interés.',
+  startHintLine2: 'Selecciona al menos una intención.',
   selectedAria: 'Seleccionado',
   optionalEyebrow: 'Opcional',
   catalogTitle: 'Afina lo que quieres encontrar',
   catalogLead:
-    'Tus sectores y etapas se guardan en tu perfil. Los temas y habilidades se usan en esta sesión.',
+    'Tus intenciones, sectores, etapas, intereses y habilidades se guardan en tu perfil y puedes editarlos cuando quieras.',
   preferencesLoading: 'Cargando tus preferencias guardadas...',
   catalogsLoading: 'Cargando sectores, temas y habilidades...',
   sectorsTitle: 'Sectores preferidos',
@@ -19,18 +19,26 @@ export const onboardingStrings = {
   stagesTitle: 'Etapas de proyecto',
   stagesHint: 'Elige las etapas que quieres conocer.',
   stagesEmpty: 'No hay etapas disponibles.',
-  tagsTitle: 'Temas de interés',
+  tagsTitle: 'Tags e intereses',
   tagsHint: 'Elige los temas que despiertan tu curiosidad.',
   tagsEmpty: 'No hay tags activos disponibles.',
   skillsTitle: 'Habilidades',
   skillsHint: 'Selecciona capacidades que puedes aportar.',
   skillsEmpty: 'No hay habilidades activas disponibles.',
-  needInterest: 'Selecciona al menos un interés para personalizar tu pulso.',
-  oneInterest: '1 interés seleccionado.',
-  nInterests: (n: number): string => `${n} intereses seleccionados.`,
+  needInterest: 'Selecciona al menos una intención para personalizar tu pulso.',
+  oneInterest: '1 intención seleccionada.',
+  nInterests: (n: number): string => `${n} intenciones seleccionadas.`,
   saveRetry: 'Reintentar guardado',
   savingPreferences: 'Guardando preferencias...',
   enter: 'Entrar a Pulso',
+  editTitle: 'Actualiza lo que buscas y lo que puedes aportar.',
+  saveChanges: 'Guardar selecciones',
+  cancel: 'Cancelar edición',
+  intentionsEmpty: 'No hay intenciones disponibles.',
+  proficiencyLabel: (name: string): string => `Nivel de dominio de ${name}`,
+  chooseProficiency: 'Selecciona tu nivel',
+  proficiencyRequired: 'Selecciona un nivel para cada habilidad.',
+  selectionLimit: (limit: number): string => `Puedes seleccionar hasta ${limit} opciones por categoría.`,
   catalogsFailed:
     'No pudimos cargar sectores, temas y habilidades. Inténtalo de nuevo.',
   preferencesLoadFailed: 'No pudimos cargar tus preferencias. Inténtalo de nuevo.',
@@ -56,3 +64,14 @@ export const interestStrings = {
   inspirationShort: 'Inspirarme',
   inspirationDescription: 'Historias locales que abren nuevas posibilidades.',
 } as const;
+
+export const intentionStrings = {
+  DISCOVER: 'Descubrir proyectos', BUY: 'Comprar', COLLABORATE: 'Colaborar',
+  WORK: 'Trabajar', INVEST: 'Invertir', FIND_PARTNERS: 'Encontrar socios',
+  FIND_CUSTOMERS: 'Encontrar clientes', FIND_PROVIDERS: 'Encontrar proveedores',
+  EXPLORE_ECOSYSTEM: 'Explorar el ecosistema',
+} as const
+
+export const proficiencyStrings = {
+  BEGINNER: 'Principiante', INTERMEDIATE: 'Intermedio', ADVANCED: 'Avanzado', EXPERT: 'Experto',
+} as const

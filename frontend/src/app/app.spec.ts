@@ -10,8 +10,7 @@ import type { AuthenticatedUser } from './core/auth/supabase-auth.gateway'
 import { AppComponent } from './app'
 import { PulsoSession } from './features/discovery/application/pulso-session'
 import { emptyReferenceCatalogs } from './features/discovery/domain/catalog'
-import { interestOptions } from './features/discovery/data-access/interests'
-import { projectStageOptions, type ProjectStage } from './features/discovery/domain/preferences'
+import { intentionOptions, projectStageOptions, type OnboardingIntention, type ProjectStage } from './features/discovery/domain/preferences'
 
 afterEach(() => history.replaceState(null, '', '/'))
 
@@ -125,16 +124,21 @@ describe('AppComponent', () => {
 
 function createSessionStub() {
   return {
-    interestOptions,
+    intentionOptions: signal(intentionOptions),
     referenceCatalogs: signal(emptyReferenceCatalogs()),
     areCatalogsLoading: signal(false),
     hasLoadedReferenceCatalogs: signal(false),
     catalogsErrorMessage: signal<string | null>(null),
     selectedInterests: signal([]),
+    selectedIntentions: signal<OnboardingIntention[]>([]),
+    selectedTags: signal([]),
+    selectedSkills: signal([]),
+    isEditingPreferences: signal(false),
+    preferenceValidationMessage: signal<string | null>(null),
     selectedSectorIds: signal<string[]>([]),
     selectedTagIds: signal<string[]>([]),
     selectedSkillIds: signal<string[]>([]),
-    stageOptions: projectStageOptions,
+    stageOptions: signal(projectStageOptions),
     selectedStageIds: signal<ProjectStage[]>([]),
     arePreferencesLoading: signal(false),
     hasLoadedPreferences: signal(false),
@@ -185,7 +189,10 @@ function createSessionStub() {
     retryInterestedProjects: vi.fn(),
     loadMoreSavedProjects: vi.fn(),
     loadMoreInterestedProjects: vi.fn(),
-    toggleInterest: vi.fn(),
+    toggleIntention: vi.fn(),
+    changeSkillProficiency: vi.fn(),
+    editPreferences: vi.fn(),
+    cancelPreferencesEditing: vi.fn(),
     toggleSector: vi.fn(),
     toggleTag: vi.fn(),
     toggleSkill: vi.fn(),

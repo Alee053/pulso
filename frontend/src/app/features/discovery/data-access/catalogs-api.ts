@@ -14,6 +14,7 @@ import type {
   SkillCatalogItemDto,
   TagCatalogItemDto,
 } from './catalogs-dto'
+import { isIntention, isProjectStage } from '../domain/preferences'
 import { apiPaths } from './discovery.catalog.contract'
 
 @Injectable({ providedIn: 'root' })
@@ -24,11 +25,19 @@ export class CatalogsApi {
     return this.http.get<CatalogsResponseDto>(
       `${appConfig.apiBaseUrl}${apiPaths.catalogs}`,
     ).pipe(
-      map((response) => ({
-        sectors: response.data.sectors.map(toSectorCatalogItem),
-        tags: response.data.tags.map(toTagCatalogItem),
-        skills: response.data.skills.map(toSkillCatalogItem),
-      })),
+      map((response) => {
+        if (!Array.isArray(response.data.intentions) || !response.data.intentions.every(isIntention)
+          || !Array.isArray(response.data.stages) || !response.data.stages.every(isProjectStage)) {
+          throw new Error('Invalid onboarding catalogs response')
+        }
+        return {
+          intentions: response.data.intentions.filter(isIntention),
+          stages: response.data.stages.filter(isProjectStage),
+          sectors: response.data.sectors.map(toSectorCatalogItem),
+          tags: response.data.tags.map(toTagCatalogItem),
+          skills: response.data.skills.map(toSkillCatalogItem),
+        }
+      }),
     )
   }
 }

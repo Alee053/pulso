@@ -189,7 +189,7 @@ class ProjectInteractionControllerTest {
         }
 
         @Override
-        public OnboardingPreferences upsert(OnboardingPreferences preferences) {
+        public OnboardingPreferences upsert(OnboardingPreferences preferences, boolean completeOnboarding) {
             return preferences;
         }
 

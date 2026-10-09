@@ -179,6 +179,14 @@ public final class ApiMessages {
             "preferredTags contains an unknown or inactive tag.";
     public static final String SKILL_UNKNOWN =
             "preferredSkills contains an unknown or inactive skill.";
+    public static final String SKILL_PROFICIENCY_INVALID =
+            "skills proficiency must be BEGINNER, INTERMEDIATE, ADVANCED or EXPERT.";
+    public static final String SKILL_PROFICIENCY_REQUIRED =
+            "Every selected skill must have a proficiency level.";
+    public static final String SKILL_SELECTION_REQUIRED = "skills must contain skill selections.";
+    public static final String SKILL_SELECTION_AMBIGUOUS = "Use either skills or preferredSkills, not both.";
+    public static final String ONBOARDING_INTENTION_REQUIRED =
+            "At least one intention is required to complete onboarding.";
     public static final String PROJECT_DRAFT_REQUIRED = "project draft is required.";
     public static final String PROJECT_UPDATE_REQUIRED = "project update is required.";
     public static final String SECTOR_MUST_BE_ACTIVE =

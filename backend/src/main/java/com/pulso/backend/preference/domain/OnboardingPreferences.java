@@ -1,5 +1,6 @@
 package com.pulso.backend.preference.domain;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -18,30 +19,16 @@ public record OnboardingPreferences(
         List<String> preferredSectors,
         List<String> preferredStages,
         List<String> preferredTags,
-        List<String> preferredSkills,
+        List<ProfileSkill> skills,
         Map<String, Double> recommendationWeights,
+        OffsetDateTime onboardingCompletedAt,
         Limits limits) {
 
     private static final Pattern UUID_PATTERN = Pattern.compile(
             "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
     private static final Pattern SLUG_PATTERN = Pattern.compile("[a-z0-9]+(?:-[a-z0-9]+)*");
-    private static final Set<String> ALLOWED_INTENTION_SET = Set.of(
-            "DISCOVER",
-            "BUY",
-            "COLLABORATE",
-            "WORK",
-            "INVEST",
-            "FIND_PARTNERS",
-            "FIND_CUSTOMERS",
-            "FIND_PROVIDERS",
-            "EXPLORE_ECOSYSTEM");
-    private static final Set<String> ALLOWED_STAGE_SET = Set.of(
-            "IDEA",
-            "PROTOTYPE",
-            "MVP",
-            "EARLY_STAGE",
-            "GROWING",
-            "ESTABLISHED");
+    private static final Set<String> ALLOWED_INTENTION_SET = Set.copyOf(OnboardingOptions.INTENTIONS);
+    private static final Set<String> ALLOWED_STAGE_SET = Set.copyOf(OnboardingOptions.STAGES);
 
     public record Limits(
             int maxItemsPerField,
@@ -82,12 +69,64 @@ public record OnboardingPreferences(
                 "preferredTags",
                 limits.maxItemsPerField(),
                 value -> normalizeCatalogId(value, "preferredTags"));
-        preferredSkills = normalizeList(
-                preferredSkills,
-                "preferredSkills",
-                limits.maxItemsPerField(),
-                value -> normalizeCatalogId(value, "preferredSkills"));
+        skills = normalizeSkills(skills, limits.maxItemsPerField());
         recommendationWeights = RecommendationWeights.normalize(recommendationWeights);
+    }
+
+    public OnboardingPreferences(
+            UUID profileId,
+            List<String> intentions,
+            List<String> preferredSectors,
+            List<String> preferredStages,
+            List<String> preferredTags,
+            List<String> preferredSkills,
+            Map<String, Double> recommendationWeights,
+            Limits limits) {
+        this(profileId, intentions, preferredSectors, preferredStages, preferredTags,
+                legacySkills(preferredSkills), recommendationWeights, null, limits);
+    }
+
+    public List<String> preferredSkills() {
+        return skills.stream().map(ProfileSkill::skillId).toList();
+    }
+
+    public void requireCompleteSelections() {
+        if (intentions.isEmpty()) {
+            throw new OnboardingPreferencesValidationException(ApiMessages.ONBOARDING_INTENTION_REQUIRED);
+        }
+        if (skills.stream().anyMatch(skill -> skill.proficiency() == null)) {
+            throw new OnboardingPreferencesValidationException(ApiMessages.SKILL_PROFICIENCY_REQUIRED);
+        }
+    }
+
+    private static List<ProfileSkill> legacySkills(List<String> skillIds) {
+        if (skillIds == null) {
+            throw new OnboardingPreferencesValidationException(
+                    String.format(ApiMessages.PREFERENCES_MUST_BE_ARRAY, "preferredSkills"));
+        }
+        return skillIds.stream().map(id -> new ProfileSkill(id, null)).toList();
+    }
+
+    private static List<ProfileSkill> normalizeSkills(List<ProfileSkill> skills, int maxItems) {
+        if (skills == null) {
+            throw new OnboardingPreferencesValidationException(
+                    String.format(ApiMessages.PREFERENCES_MUST_BE_ARRAY, "skills"));
+        }
+        if (skills.size() > maxItems) {
+            throw new OnboardingPreferencesValidationException(
+                    String.format(ApiMessages.PREFERENCES_MAX_ITEMS, "skills", maxItems));
+        }
+        Set<String> seen = new HashSet<>();
+        for (ProfileSkill skill : skills) {
+            if (skill == null) {
+                throw new OnboardingPreferencesValidationException(ApiMessages.SKILL_SELECTION_REQUIRED);
+            }
+            if (!seen.add(skill.skillId())) {
+                throw new OnboardingPreferencesValidationException(
+                        String.format(ApiMessages.PREFERENCES_DUPLICATE, "skills", skill.skillId()));
+            }
+        }
+        return List.copyOf(skills);
     }
 
     public OnboardingPreferences(

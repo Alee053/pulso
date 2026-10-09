@@ -63,7 +63,7 @@ class OnboardingPreferencesApplicationTest {
                     }
 
                     @Override
-                    public OnboardingPreferences upsert(OnboardingPreferences preferences) {
+                    public OnboardingPreferences upsert(OnboardingPreferences preferences, boolean completeOnboarding) {
                         throw new UnsupportedOperationException();
                     }
 
@@ -177,7 +177,7 @@ class OnboardingPreferencesApplicationTest {
             }
 
             @Override
-            public OnboardingPreferences upsert(OnboardingPreferences preferences) {
+            public OnboardingPreferences upsert(OnboardingPreferences preferences, boolean completeOnboarding) {
                 throw new DataAccessResourceFailureException("database unavailable");
             }
 
@@ -263,7 +263,7 @@ class OnboardingPreferencesApplicationTest {
         }
 
         @Override
-        public OnboardingPreferences upsert(OnboardingPreferences preferences) {
+        public OnboardingPreferences upsert(OnboardingPreferences preferences, boolean completeOnboarding) {
             saved = preferences;
             return preferences;
         }

@@ -10,16 +10,18 @@
 </ng-template>
 
 <ng-template #authenticatedApplication>
-    <ng-container *ngIf="!session.hasStarted(); else applicationShell">
-        <pulso-onboarding [interestOptions]="session.interestOptions"
-                          [selectedInterests]="session.selectedInterests()"
+    <ng-container *ngIf="!session.hasStarted() || session.isEditingPreferences(); else applicationShell">
+        <pulso-onboarding [intentionOptions]="session.intentionOptions()"
+                          [selectedIntentions]="session.selectedIntentions()"
+                          [editing]="session.isEditingPreferences()"
+                          [validationMessage]="session.preferenceValidationMessage()"
                           [sectors]="session.referenceCatalogs().sectors"
                           [tags]="session.referenceCatalogs().tags"
                           [skills]="session.referenceCatalogs().skills"
                           [selectedSectorIds]="session.selectedSectorIds()"
                           [selectedTagIds]="session.selectedTagIds()"
-                          [selectedSkillIds]="session.selectedSkillIds()"
-                          [stages]="session.stageOptions"
+                          [selectedSkills]="session.selectedSkills()"
+                          [stages]="session.stageOptions()"
                           [selectedStageIds]="session.selectedStageIds()"
                           [catalogsLoading]="session.areCatalogsLoading()"
                           [catalogsLoaded]="session.hasLoadedReferenceCatalogs()"
@@ -29,7 +31,9 @@
                           [preferencesErrorMessage]="session.preferencesErrorMessage()"
                           [preferencesSaving]="session.arePreferencesSaving()"
                           [preferencesSaveErrorMessage]="session.preferencesSaveErrorMessage()"
-                          (interestToggled)="session.toggleInterest($event)"
+                          (intentionToggled)="session.toggleIntention($event)"
+                          (proficiencyChanged)="session.changeSkillProficiency($event)"
+                          (cancelled)="session.cancelPreferencesEditing()"
                           (sectorToggled)="session.toggleSector($event)"
                           (tagToggled)="session.toggleTag($event)"
                           (skillToggled)="session.toggleSkill($event)"
@@ -115,8 +119,11 @@
                                   (loadMoreInterestedRequested)="session.loadMoreInterestedProjects()" />
 
                 <pulso-profile-view *ngSwitchCase="'profile'"
-                                    [interestOptions]="session.interestOptions"
-                                    [selectedInterests]="session.selectedInterests()" />
+                                    [intentionOptions]="session.intentionOptions()"
+                                    [selectedIntentions]="session.selectedIntentions()"
+                                    [selectedTags]="session.selectedTags()"
+                                    [preferencesBusy]="session.arePreferencesSaving() || session.arePreferencesLoading()"
+                                    (preferencesEditRequested)="session.editPreferences()" />
 
                 <pulso-public-project-detail *ngSwitchCase="'detail'"
                                              [projectId]="session.selectedProjectId() || ''"

@@ -1,7 +1,7 @@
-import { computed, inject, Injectable, signal } from '@angular/core'
+import { computed, inject, Injectable, signal, type WritableSignal } from '@angular/core'
 import { firstValueFrom } from 'rxjs'
 import { CatalogsApi } from '../data-access/catalogs-api'
-import { interestOptions } from '../data-access/interests'
+import { preferenceContract } from '../data-access/discovery.catalog.contract'
 import { PreferencesApi } from '../data-access/preferences-api'
 import { ProjectInteractionsApi } from '../data-access/project-interactions-api'
 
@@ -16,14 +16,18 @@ import {
 } from '../domain/recommendations'
 import { emptyReferenceCatalogs } from '../domain/catalog'
 import {
+    intentionOptions,
+    isProficiency,
     projectStageOptions,
     toInterestIds,
     toOnboardingPreferencesPayload,
     toProjectStages,
     type OnboardingPreferences,
     type ProjectStage,
+    type OnboardingIntention,
+    type ProfileSkill,
 } from '../domain/preferences'
-import type { AppView, Decision, InterestId, Startup } from '../domain/startup'
+import type { AppView, Decision, Startup } from '../domain/startup'
 import { feedStrings } from '../strings/feed.strings'
 import { onboardingStrings } from '../strings/onboarding.strings'
 import { savedStrings } from '../strings/saved.strings'
@@ -35,8 +39,12 @@ export class PulsoSession {
     private readonly preferencesApi = inject(PreferencesApi)
     private readonly auth = inject(SupabaseAuthGateway)
 
-    readonly interestOptions = interestOptions
-    readonly stageOptions = projectStageOptions
+    readonly intentionOptions = computed(() => intentionOptions.filter(
+        (option) => this.referenceCatalogs().intentions.includes(option.id),
+    ))
+    readonly stageOptions = computed(() => projectStageOptions.filter(
+        (option) => this.referenceCatalogs().stages.includes(option.id),
+    ))
 
     readonly referenceCatalogs = signal(emptyReferenceCatalogs())
     readonly areCatalogsLoading = signal(false)
@@ -44,7 +52,11 @@ export class PulsoSession {
     readonly hasLoadedReferenceCatalogs = signal(false)
     readonly selectedSectorIds = signal<string[]>([])
     readonly selectedTagIds = signal<string[]>([])
-    readonly selectedSkillIds = signal<string[]>([])
+    readonly selectedTags = computed(() => this.referenceCatalogs().tags.filter(
+        (tag) => this.selectedTagIds().includes(tag.id),
+    ))
+    readonly selectedSkills = signal<ProfileSkill[]>([])
+    readonly selectedSkillIds = computed(() => this.selectedSkills().map((skill) => skill.skillId))
     readonly selectedStageIds = signal<ProjectStage[]>([])
     readonly arePreferencesLoading = signal(false)
     readonly preferencesErrorMessage = signal<string | null>(null)
@@ -53,7 +65,12 @@ export class PulsoSession {
     readonly preferencesSaveErrorMessage = signal<string | null>(null)
     readonly preferencesSavedMessage = signal<string | null>(null)
 
-    readonly selectedInterests = signal<InterestId[]>([])
+    readonly selectedIntentions = signal<OnboardingIntention[]>([])
+    readonly selectedInterests = computed(() => toInterestIds(this.selectedIntentions()))
+    readonly onboardingCompletedAt = signal<string | null>(null)
+    readonly isEditingPreferences = signal(false)
+    readonly preferenceValidationMessage = signal<string | null>(null)
+    private savedPreferences: OnboardingPreferences | null = null
     readonly hasStarted = signal(false)
     readonly activeView = signal<AppView>('discover')
     readonly feed = signal<Startup[]>([])
@@ -108,7 +125,7 @@ export class PulsoSession {
         this.hasLoadedReferenceCatalogs.set(false)
         this.selectedSectorIds.set([])
         this.selectedTagIds.set([])
-        this.selectedSkillIds.set([])
+        this.selectedSkills.set([])
         this.selectedStageIds.set([])
         this.arePreferencesLoading.set(false)
         this.preferencesErrorMessage.set(null)
@@ -116,7 +133,11 @@ export class PulsoSession {
         this.arePreferencesSaving.set(false)
         this.preferencesSaveErrorMessage.set(null)
         this.clearPreferencesSavedMessage()
-        this.selectedInterests.set([])
+        this.selectedIntentions.set([])
+        this.onboardingCompletedAt.set(null)
+        this.isEditingPreferences.set(false)
+        this.preferenceValidationMessage.set(null)
+        this.savedPreferences = null
         this.hasStarted.set(false)
         this.activeView.set('discover')
         this.feed.set([])
@@ -257,19 +278,27 @@ export class PulsoSession {
     }
 
     toggleSector(sectorId: string): void {
-        this.selectedSectorIds.update((current) => toggleId(current, sectorId))
+        if (this.canEditPreferences()) this.toggleSelection(this.selectedSectorIds, sectorId)
     }
 
     toggleTag(tagId: string): void {
-        this.selectedTagIds.update((current) => toggleId(current, tagId))
+        if (this.canEditPreferences()) this.toggleSelection(this.selectedTagIds, tagId)
     }
 
     toggleSkill(skillId: string): void {
-        this.selectedSkillIds.update((current) => toggleId(current, skillId))
+        if (!this.canEditPreferences()) return
+        if (!this.selectedSkillIds().includes(skillId) && this.selectedSkills().length >= preferenceContract.maxItemsPerField) {
+            this.preferenceValidationMessage.set(onboardingStrings.selectionLimit(preferenceContract.maxItemsPerField))
+            return
+        }
+        this.selectedSkills.update((current) => current.some((skill) => skill.skillId === skillId)
+            ? current.filter((skill) => skill.skillId !== skillId)
+            : [...current, { skillId, proficiency: null }])
+        this.preferenceValidationMessage.set(null)
     }
 
     toggleStage(stageId: ProjectStage): void {
-        this.selectedStageIds.update((current) => toggleId(current, stageId))
+        if (this.canEditPreferences()) this.toggleSelection(this.selectedStageIds, stageId)
     }
 
     async loadReferenceCatalogs(): Promise<void> {
@@ -325,9 +354,10 @@ export class PulsoSession {
             if (generation !== this.requestGeneration) {
                 return
             }
+            this.savedPreferences = preferences
             this.applyPreferences(preferences)
             this.hasLoadedPreferences.set(true)
-            if (preferences.intentions.length > 0) {
+            if (preferences.onboardingCompletedAt) {
                 this.hasStarted.set(true)
                 await this.loadCatalog()
             }
@@ -352,12 +382,48 @@ export class PulsoSession {
         void this.loadOnboardingPreferences()
     }
 
-    toggleInterest(interest: InterestId): void {
-        this.selectedInterests.update((current) =>
-            current.includes(interest)
-                ? current.filter((item) => item !== interest)
-                : [...current, interest],
-        )
+    toggleIntention(intention: OnboardingIntention): void {
+        if (this.canEditPreferences()) this.toggleSelection(this.selectedIntentions, intention)
+    }
+
+    changeSkillProficiency(change: { skillId: string; proficiency: string }): void {
+        if (!this.canEditPreferences() || !isProficiency(change.proficiency)) return
+        const proficiency = change.proficiency
+        this.selectedSkills.update((current) => current.map((skill) => skill.skillId === change.skillId
+            ? { ...skill, proficiency } : skill))
+        this.preferenceValidationMessage.set(null)
+    }
+
+    editPreferences(): void {
+        if (!this.savedPreferences || this.arePreferencesSaving()) return
+        this.applyPreferences(this.savedPreferences)
+        this.preferencesSaveErrorMessage.set(null)
+        this.preferenceValidationMessage.set(null)
+        this.isEditingPreferences.set(true)
+        void this.loadReferenceCatalogs()
+    }
+
+    cancelPreferencesEditing(): void {
+        if (this.arePreferencesSaving() || !this.savedPreferences) return
+        this.applyPreferences(this.savedPreferences)
+        this.preferencesSaveErrorMessage.set(null)
+        this.preferenceValidationMessage.set(null)
+        this.isEditingPreferences.set(false)
+        this.activeView.set('profile')
+    }
+
+    private canEditPreferences(): boolean {
+        return this.hasLoadedPreferences() && this.hasLoadedReferenceCatalogs()
+            && !this.arePreferencesLoading() && !this.areCatalogsLoading() && !this.arePreferencesSaving()
+    }
+
+    private toggleSelection<T>(selection: WritableSignal<T[]>, id: T): void {
+        if (!selection().includes(id) && selection().length >= preferenceContract.maxItemsPerField) {
+            this.preferenceValidationMessage.set(onboardingStrings.selectionLimit(preferenceContract.maxItemsPerField))
+            return
+        }
+        selection.update((current) => toggleId(current, id))
+        this.preferenceValidationMessage.set(null)
     }
 
     async startDiscovery(): Promise<void> {
@@ -366,11 +432,18 @@ export class PulsoSession {
             this.arePreferencesLoading() ||
             this.arePreferencesSaving() ||
             !this.hasLoadedPreferences() ||
-            this.selectedInterests().length === 0
+            !this.hasLoadedReferenceCatalogs() || this.areCatalogsLoading() ||
+            this.selectedIntentions().length === 0
         ) {
             return
         }
 
+        if (this.selectedSkills().some((skill) => !isProficiency(skill.proficiency))) {
+            this.preferenceValidationMessage.set(onboardingStrings.proficiencyRequired)
+            return
+        }
+        this.preferenceValidationMessage.set(null)
+        const editing = this.isEditingPreferences()
         const generation = this.requestGeneration
         this.arePreferencesSaving.set(true)
         this.preferencesSaveErrorMessage.set(null)
@@ -380,21 +453,24 @@ export class PulsoSession {
             const savedPreferences = await firstValueFrom(
                 this.preferencesApi.save(
                     toOnboardingPreferencesPayload(
-                        this.selectedInterests(),
+                        this.selectedIntentions(),
                         this.selectedSectorIds(),
                         this.selectedStageIds(),
                         this.selectedTagIds(),
-                        this.selectedSkillIds(),
+                        this.selectedSkills(),
                     ),
                 ),
             )
             if (generation !== this.requestGeneration) {
                 return
             }
+            if (!savedPreferences.onboardingCompletedAt) throw new Error('Onboarding completion was not confirmed')
+            this.savedPreferences = savedPreferences
             this.applyPreferences(savedPreferences)
+            this.isEditingPreferences.set(false)
             this.showPreferencesSavedMessage()
             this.hasStarted.set(true)
-            this.activeView.set('discover')
+            this.activeView.set(editing ? 'profile' : 'discover')
             await this.loadCatalog()
         } catch {
             if (generation === this.requestGeneration) {
@@ -579,17 +655,18 @@ export class PulsoSession {
         this.selectedTagIds.update((current) =>
             current.filter((id) => tagIds.has(id)),
         )
-        this.selectedSkillIds.update((current) =>
-            current.filter((id) => skillIds.has(id)),
-        )
+        this.selectedSkills.update((current) => current.filter((skill) => skillIds.has(skill.skillId)))
+        this.selectedIntentions.update((current) => current.filter((id) => catalogs.intentions.includes(id)))
+        this.selectedStageIds.update((current) => current.filter((id) => catalogs.stages.includes(id)))
     }
 
     private applyPreferences(preferences: OnboardingPreferences): void {
-        this.selectedInterests.set(toInterestIds(preferences.intentions))
+        this.selectedIntentions.set([...preferences.intentions])
+        this.onboardingCompletedAt.set(preferences.onboardingCompletedAt)
         this.selectedSectorIds.set([...preferences.preferredSectors])
         this.selectedStageIds.set(toProjectStages(preferences.preferredStages))
         this.selectedTagIds.set([...preferences.preferredTags])
-        this.selectedSkillIds.set([...preferences.preferredSkills])
+        this.selectedSkills.set(preferences.skills.map((skill) => ({ ...skill })))
         this.preferenceWeights.set({ ...preferences.recommendationWeights })
 
         if (this.hasLoadedReferenceCatalogs()) {

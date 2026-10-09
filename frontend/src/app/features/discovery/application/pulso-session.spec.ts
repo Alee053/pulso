@@ -5,6 +5,7 @@ import { CatalogsApi } from '../data-access/catalogs-api'
 import { PreferencesApi } from '../data-access/preferences-api'
 import { ProjectInteractionsApi } from '../data-access/project-interactions-api'
 import { toStartupViewModel } from '../data-access/startup-view-model'
+import { onboardingIntentions } from '../domain/preferences'
 import { PulsoSession } from './pulso-session'
 
 describe('PulsoSession', () => {
@@ -28,7 +29,8 @@ describe('PulsoSession', () => {
     const session = createSession({ loadDiscoveryFeed, saveProject })
 
     await session.loadOnboardingPreferences()
-    session.toggleInterest('collaborate')
+    await session.loadReferenceCatalogs()
+    session.toggleIntention('COLLABORATE')
     await session.startDiscovery()
 
     expect(loadDiscoveryFeed).toHaveBeenCalledOnce()
@@ -54,7 +56,8 @@ describe('PulsoSession', () => {
     const session = createSession({ loadDiscoveryFeed })
 
     await session.loadOnboardingPreferences()
-    session.toggleInterest('discover')
+    await session.loadReferenceCatalogs()
+    session.toggleIntention('DISCOVER')
     await session.startDiscovery()
 
     expect(session.catalog()).toEqual([])
@@ -66,6 +69,8 @@ describe('PulsoSession', () => {
 
   it('loads reference catalogs into onboarding state and keeps selections by backend id', async () => {
     const loadCatalogs = vi.fn().mockReturnValue(of({
+      intentions: [...onboardingIntentions],
+      stages: ['IDEA', 'MVP', 'EARLY_STAGE'],
       sectors: [{
         id: 'sector-1',
         slug: 'sostenibilidad',
@@ -88,6 +93,7 @@ describe('PulsoSession', () => {
     const session = createSession({ loadCatalogs })
 
     await session.loadReferenceCatalogs()
+    await session.loadOnboardingPreferences()
     session.toggleSector('sector-1')
     session.toggleTag('tag-1')
     session.toggleSkill('skill-1')
@@ -103,6 +109,8 @@ describe('PulsoSession', () => {
 
   it('restores saved onboarding selections and learned recommendation weights', async () => {
     const loadCatalogs = vi.fn().mockReturnValue(of({
+      intentions: [...onboardingIntentions],
+      stages: ['IDEA', 'MVP', 'EARLY_STAGE'],
       sectors: [{
         id: 'sector-1',
         slug: 'sostenibilidad',
@@ -129,11 +137,14 @@ describe('PulsoSession', () => {
       preferredStages: ['mvp', 'EARLY_STAGE'],
       preferredTags: ['tag-1'],
       preferredSkills: ['skill-1'],
+      skills: [{ skillId: 'skill-1', proficiency: 'ADVANCED' }],
+      onboardingCompletedAt: '2026-10-09T12:00:00Z',
       recommendationWeights: { sustainability: 2.5 },
     }))
     const session = createSession({ loadCatalogs, loadPreferences })
 
     await session.loadOnboardingPreferences()
+    await session.loadReferenceCatalogs()
     await session.loadReferenceCatalogs()
 
     expect(session.selectedInterests()).toEqual(['discover', 'invest'])
@@ -149,15 +160,19 @@ describe('PulsoSession', () => {
   it('saves the current onboarding selections before entering discovery', async () => {
     const savePreferences = vi.fn().mockImplementation((payload) => of({
       profileId: 'user-1',
+      preferredSkills: payload.skills.map((skill: { skillId: string }) => skill.skillId),
+      onboardingCompletedAt: '2026-10-09T12:00:00Z',
       ...payload,
     }))
     const session = createSession({ savePreferences })
 
     await session.loadOnboardingPreferences()
-    session.toggleInterest('discover')
+    await session.loadReferenceCatalogs()
+    session.toggleIntention('DISCOVER')
     session.toggleSector('sector-1')
     session.toggleTag('tag-1')
     session.toggleSkill('skill-1')
+    session.changeSkillProficiency({ skillId: 'skill-1', proficiency: 'ADVANCED' })
     session.toggleStage('MVP')
 
     await session.startDiscovery()
@@ -167,7 +182,8 @@ describe('PulsoSession', () => {
       preferredSectors: ['sector-1'],
       preferredStages: ['MVP'],
       preferredTags: ['tag-1'],
-      preferredSkills: ['skill-1'],
+      skills: [{ skillId: 'skill-1', proficiency: 'ADVANCED' }],
+      completeOnboarding: true,
     })
     expect(session.hasStarted()).toBe(true)
     expect(session.preferencesSaveErrorMessage()).toBeNull()
@@ -178,12 +194,15 @@ describe('PulsoSession', () => {
       .mockReturnValueOnce(throwError(() => new Error('503')))
       .mockImplementation((payload) => of({
         profileId: 'user-1',
+        preferredSkills: payload.skills.map((skill: { skillId: string }) => skill.skillId),
+        onboardingCompletedAt: '2026-10-09T12:00:00Z',
         ...payload,
       }))
     const session = createSession({ savePreferences })
 
     await session.loadOnboardingPreferences()
-    session.toggleInterest('collaborate')
+    await session.loadReferenceCatalogs()
+    session.toggleIntention('COLLABORATE')
 
     await session.startDiscovery()
 
@@ -198,6 +217,78 @@ describe('PulsoSession', () => {
     expect(savePreferences).toHaveBeenCalledTimes(2)
     expect(session.hasStarted()).toBe(true)
     expect(session.preferencesSaveErrorMessage()).toBeNull()
+  })
+
+  it('does not infer completion from saved intentions', async () => {
+    const session = createSession({ loadPreferences: vi.fn().mockReturnValue(of(savedPreferences({
+      onboardingCompletedAt: null,
+    }))) })
+    await session.loadOnboardingPreferences()
+    expect(session.selectedIntentions()).toEqual(['BUY'])
+    expect(session.hasStarted()).toBe(false)
+  })
+
+  it('requires a skill level and leaves the form open without sending an invalid save', async () => {
+    const savePreferences = vi.fn()
+    const session = createSession({ savePreferences })
+    await session.loadOnboardingPreferences()
+    await session.loadReferenceCatalogs()
+    session.toggleIntention('BUY')
+    session.toggleSkill('skill-1')
+    await session.startDiscovery()
+    expect(savePreferences).not.toHaveBeenCalled()
+    expect(session.preferenceValidationMessage()).toContain('nivel para cada habilidad')
+    expect(session.hasStarted()).toBe(false)
+  })
+
+  it('cancels a draft and saves later edits with the same validation and completion date', async () => {
+    const savePreferences = vi.fn().mockImplementation((payload) => of(savedPreferences({ ...payload })))
+    const session = createSession({
+      loadPreferences: vi.fn().mockReturnValue(of(savedPreferences())), savePreferences,
+    })
+    await session.loadOnboardingPreferences()
+    await session.loadReferenceCatalogs()
+    session.goToView('profile')
+    session.editPreferences()
+    await Promise.resolve()
+    session.toggleIntention('FIND_CUSTOMERS')
+    session.changeSkillProficiency({ skillId: 'skill-1', proficiency: 'EXPERT' })
+    session.cancelPreferencesEditing()
+    expect(session.selectedIntentions()).toEqual(['BUY'])
+    expect(session.selectedSkills()).toEqual([{ skillId: 'skill-1', proficiency: 'ADVANCED' }])
+    expect(savePreferences).not.toHaveBeenCalled()
+    session.editPreferences()
+    await Promise.resolve()
+    session.toggleIntention('FIND_CUSTOMERS')
+    session.changeSkillProficiency({ skillId: 'skill-1', proficiency: 'EXPERT' })
+    await session.startDiscovery()
+    expect(savePreferences).toHaveBeenCalledWith({ intentions: ['BUY', 'FIND_CUSTOMERS'],
+      preferredSectors: [], preferredStages: [], preferredTags: ['tag-1'],
+      skills: [{ skillId: 'skill-1', proficiency: 'EXPERT' }], completeOnboarding: true })
+    expect(session.isEditingPreferences()).toBe(false)
+    expect(session.activeView()).toBe('profile')
+    expect(session.onboardingCompletedAt()).toBe('2026-10-09T12:00:00Z')
+    expect(session.preferenceWeights()).toEqual({ sustainability: 2.5 })
+  })
+
+  it('locks the draft while saving and discards a save result after the account changes', async () => {
+    const response = new Subject<ReturnType<typeof savedPreferences>>()
+    const session = createSession({ savePreferences: vi.fn().mockReturnValue(response) })
+    await session.loadOnboardingPreferences()
+    await session.loadReferenceCatalogs()
+    session.toggleIntention('BUY')
+    const saving = session.startDiscovery()
+    session.toggleIntention('INVEST')
+    expect(session.selectedIntentions()).toEqual(['BUY'])
+    session.resetForUserChange()
+    response.next(savedPreferences())
+    response.complete()
+    await saving
+    expect(session.selectedIntentions()).toEqual([])
+    expect(session.selectedSkills()).toEqual([])
+    expect(session.onboardingCompletedAt()).toBeNull()
+    expect(session.hasStarted()).toBe(false)
+    expect(session.isEditingPreferences()).toBe(false)
   })
 
   it('persists interested and dismissed decisions with recommendation weights', async () => {
@@ -215,7 +306,8 @@ describe('PulsoSession', () => {
     const session = createSession({ loadDiscoveryFeed, setFeedback })
 
     await session.loadOnboardingPreferences()
-    session.toggleInterest('discover')
+    await session.loadReferenceCatalogs()
+    session.toggleIntention('DISCOVER')
     await session.startDiscovery()
     await session.makeDecision('interested')
 
@@ -256,7 +348,8 @@ describe('PulsoSession', () => {
     const session = createSession({ loadPreferences, savePreferences })
 
     await session.loadOnboardingPreferences()
-    session.toggleInterest('discover')
+    await session.loadReferenceCatalogs()
+    session.toggleIntention('DISCOVER')
     await session.startDiscovery()
 
     expect(savePreferences).not.toHaveBeenCalled()
@@ -266,6 +359,8 @@ describe('PulsoSession', () => {
 
   it('keeps a valid empty reference catalog visible as a loaded state', async () => {
     const loadCatalogs = vi.fn().mockReturnValue(of({
+      intentions: [...onboardingIntentions],
+      stages: ['IDEA', 'MVP', 'EARLY_STAGE'],
       sectors: [],
       tags: [],
       skills: [],
@@ -275,6 +370,8 @@ describe('PulsoSession', () => {
     await session.loadReferenceCatalogs()
 
     expect(session.referenceCatalogs()).toEqual({
+      intentions: [...onboardingIntentions],
+      stages: ['IDEA', 'MVP', 'EARLY_STAGE'],
       sectors: [],
       tags: [],
       skills: [],
@@ -288,7 +385,9 @@ describe('PulsoSession', () => {
     const loadCatalogs = vi.fn()
       .mockReturnValueOnce(throwError(() => new Error('503')))
       .mockReturnValueOnce(of({
-        sectors: [{
+        intentions: [...onboardingIntentions],
+      stages: ['IDEA', 'MVP', 'EARLY_STAGE'],
+      sectors: [{
           id: 'sector-1',
           slug: 'tecnologia',
           name: 'Tecnología',
@@ -301,11 +400,7 @@ describe('PulsoSession', () => {
 
     await session.loadReferenceCatalogs()
 
-    expect(session.referenceCatalogs()).toEqual({
-      sectors: [],
-      tags: [],
-      skills: [],
-    })
+    expect(session.referenceCatalogs()).toEqual({ intentions: [], stages: [], sectors: [], tags: [], skills: [] })
     expect(session.hasLoadedReferenceCatalogs()).toBe(false)
     expect(session.catalogsErrorMessage()).toContain('No pudimos cargar')
 
@@ -345,9 +440,11 @@ function createSession(overrides: {
   const unsaveProject = overrides.unsaveProject ?? vi.fn().mockReturnValue(of({}))
   const setFeedback = overrides.setFeedback ?? vi.fn().mockReturnValue(of({}))
   const loadCatalogs = overrides.loadCatalogs ?? vi.fn().mockReturnValue(of({
-    sectors: [],
-    tags: [],
-    skills: [],
+    intentions: [...onboardingIntentions],
+    stages: ['IDEA', 'MVP', 'EARLY_STAGE'],
+    sectors: [{ id: 'sector-1', slug: 'sostenibilidad', name: 'Sostenibilidad', description: null }],
+    tags: [{ id: 'tag-1', slug: 'ia', name: 'IA', type: 'TOPIC' }],
+    skills: [{ id: 'skill-1', slug: 'java', name: 'Java', category: null }],
   }))
   const loadPreferences = overrides.loadPreferences ?? vi.fn().mockReturnValue(of({
     profileId: 'user-1',
@@ -356,10 +453,14 @@ function createSession(overrides: {
     preferredStages: [],
     preferredTags: [],
     preferredSkills: [],
+    skills: [],
+    onboardingCompletedAt: null,
     recommendationWeights: {},
   }))
   const savePreferences = overrides.savePreferences ?? vi.fn().mockImplementation((payload) => of({
     profileId: 'user-1',
+    preferredSkills: payload.skills.map((skill: { skillId: string }) => skill.skillId),
+    onboardingCompletedAt: '2026-10-09T12:00:00Z',
     ...payload,
     recommendationWeights: {},
   }))
@@ -393,4 +494,11 @@ function startup(id: string, name: string, sector: string, city: string) {
     city,
     stage: 'MVP',
   })
+}
+
+function savedPreferences(overrides = {}) {
+  return { profileId: 'user-1', intentions: ['BUY'], preferredSectors: [], preferredStages: [],
+    preferredTags: ['tag-1'], preferredSkills: ['skill-1'],
+    skills: [{ skillId: 'skill-1', proficiency: 'ADVANCED' }],
+    onboardingCompletedAt: '2026-10-09T12:00:00Z', recommendationWeights: { sustainability: 2.5 }, ...overrides }
 }

@@ -90,6 +90,22 @@ class ProjectInteractionControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value("cursor is invalid."));
 
+        mockMvc.perform(get("/api/v1/me/saved-projects")
+                        .param("offset", "0")
+                        .param("limit", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].id").value(PROJECT_ID.toString()))
+                .andExpect(jsonPath("$.meta.totalCount").value(1));
+        assertThat(repository.lastProfileId).isEqualTo(PROFILE_ID);
+        mockMvc.perform(get("/api/v1/me/saved-projects")
+                        .param("offset", "-1")
+                        .param("limit", "1"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/v1/me/saved-projects")
+                        .param("offset", "0")
+                        .param("limit", "51"))
+                .andExpect(status().isBadRequest());
+
         mockMvc.perform(put("/api/v1/me/saved-projects/{projectId}", PROJECT_ID))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.saved").value(true));
@@ -209,11 +225,13 @@ class ProjectInteractionControllerTest {
 
         @Override
         public List<ProjectSummary> findSavedProjects(UUID profileId, int offset, int limit) {
+            lastProfileId = profileId;
             return List.of(summary);
         }
 
         @Override
         public long countSavedProjects(UUID profileId) {
+            lastProfileId = profileId;
             return 1;
         }
 

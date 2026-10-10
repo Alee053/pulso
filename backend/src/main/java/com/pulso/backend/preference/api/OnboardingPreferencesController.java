@@ -46,7 +46,8 @@ public class OnboardingPreferencesController {
                 profileId,
                 request == null ? null : request.toPreferences(
                         profileId,
-                        saveOnboardingPreferences.limits()));
+                        saveOnboardingPreferences.limits()),
+                request != null && Boolean.TRUE.equals(request.completeOnboarding()));
         return OnboardingPreferencesResponse.from(preferences);
     }
 

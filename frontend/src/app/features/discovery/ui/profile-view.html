@@ -125,11 +125,14 @@
           </div>
           <div class="mt-5 flex flex-wrap gap-2">
             <span *ngFor="let interest of selectedOptions" class="interest-pill">
-              <pulso-icon [name]="interest.icon" [size]="14" />
-              {{ interest.shortLabel }}
+              {{ interest.label }}
             </span>
             <p *ngIf="selectedOptions.length === 0" class="text-sm leading-6 text-slate-400">{{ strings.noInterests }}</p>
           </div>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <span *ngFor="let tag of selectedTags" class="interest-pill">{{ tag.name }}</span>
+          </div>
+          <button type="button" class="contact-button mt-5" [disabled]="isSaving() || preferencesBusy" (click)="preferencesEditRequested.emit()">{{ strings.editPreferences }}</button>
         </section>
         <section class="panel p-5 sm:p-6">
           <span class="eyebrow">{{ strings.noteEyebrow }}</span>

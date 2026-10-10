@@ -42,9 +42,15 @@ public class SaveOnboardingPreferences {
     }
 
     @Transactional
+    public OnboardingPreferences execute(UUID authenticatedProfileId, OnboardingPreferences preferences) {
+        return execute(authenticatedProfileId, preferences, false);
+    }
+
+    @Transactional
     public OnboardingPreferences execute(
             UUID authenticatedProfileId,
-            OnboardingPreferences preferences) {
+            OnboardingPreferences preferences,
+            boolean completeOnboarding) {
         if (authenticatedProfileId == null) {
             throw new OnboardingPreferencesValidationException(
                     ApiMessages.AUTHENTICATED_PROFILE_REQUIRED);
@@ -55,6 +61,9 @@ public class SaveOnboardingPreferences {
         if (!authenticatedProfileId.equals(preferences.profileId())) {
             throw new OnboardingPreferencesValidationException(
                     ApiMessages.PREFERENCES_WRONG_PROFILE);
+        }
+        if (completeOnboarding) {
+            preferences.requireCompleteSelections();
         }
         Set<UUID> selectedSectorIds = new HashSet<>();
         for (String sector : preferences.preferredSectors()) {
@@ -80,7 +89,7 @@ public class SaveOnboardingPreferences {
                 .containsAll(selectedSkillIds)) {
             throw new OnboardingPreferencesValidationException(ApiMessages.SKILL_UNKNOWN);
         }
-        return repository.upsert(preferences);
+        return repository.upsert(preferences, completeOnboarding);
     }
 
     private static Set<UUID> toUuidSet(java.util.List<String> ids) {

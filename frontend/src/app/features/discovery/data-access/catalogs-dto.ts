@@ -21,6 +21,8 @@ export interface SkillCatalogItemDto {
 
 export interface CatalogsResponseDto {
   data: {
+    intentions: string[]
+    stages: string[]
     sectors: SectorCatalogItemDto[]
     tags: TagCatalogItemDto[]
     skills: SkillCatalogItemDto[]

@@ -8,7 +8,7 @@
     <div class="onboarding-page__content">
       <div class="page-header fade-in-up">
         <span class="eyebrow">{{ common.eyebrowComingMap }}</span>
-        <h1 class="page-title mt-3 text-balance">{{ strings.title }}</h1>
+        <h1 class="page-title mt-3 text-balance">{{ editing ? strings.editTitle : strings.title }}</h1>
         <p class="page-lead mt-4 max-w-2xl">{{ strings.lead }}</p>
       </div>
 
@@ -21,29 +21,22 @@
           <p class="text-sm leading-6 text-slate-400">{{ strings.startHintLine1 }} {{ strings.startHintLine2 }}</p>
         </div>
 
-        <div class="onboarding-page__choices">
+        <fieldset class="onboarding-page__choices" [disabled]="controlsDisabled" aria-labelledby="interest-options-title">
           <button
-            *ngFor="let interest of interestOptions"
+            *ngFor="let intention of intentionOptions"
             type="button"
             class="choice-card relative text-left"
-            [class.choice-card--selected]="isSelected(interest)"
-            [attr.aria-pressed]="isSelected(interest)"
-            (click)="interestToggled.emit(interest.id)"
+            [class.choice-card--selected]="isSelected(intention)"
+            [attr.aria-pressed]="isSelected(intention)"
+            (click)="intentionToggled.emit(intention.id)"
           >
-            <span class="flex size-10 items-center justify-center rounded-xl bg-sky-400/10 text-sky-300" aria-hidden="true">
-              <pulso-icon [name]="interest.icon" />
-            </span>
-            <span class="mt-4 block pr-5 text-sm font-semibold leading-5 text-slate-50">{{ interest.label }}</span>
-            <span class="mt-2 block text-sm leading-6 text-slate-400">{{ interest.description }}</span>
-            <span
-              *ngIf="isSelected(interest)"
-              class="absolute right-4 top-4 flex size-6 items-center justify-center rounded-full bg-sky-300 text-slate-950"
-              aria-hidden="true"
-            >
+            <span class="block pr-5 text-sm font-semibold leading-5 text-slate-50">{{ intention.label }}</span>
+            <span *ngIf="isSelected(intention)" class="absolute right-4 top-4 text-sky-300" aria-hidden="true">
               <pulso-icon name="check" [size]="14" [strokeWidth]="3" />
             </span>
           </button>
-        </div>
+        </fieldset>
+        <p *ngIf="catalogsLoaded && intentionOptions.length === 0" class="field-hint" role="status">{{ strings.intentionsEmpty }}</p>
       </section>
 
       <section class="mt-8" aria-labelledby="catalog-preferences-title">
@@ -68,6 +61,7 @@
         </div>
 
         <div *ngIf="!catalogsLoading && !catalogsErrorMessage && catalogsLoaded" class="grid gap-4 md:grid-cols-2">
+          <fieldset class="contents" [disabled]="controlsDisabled">
           <section class="panel p-5" aria-labelledby="sector-options-title">
             <h3 id="sector-options-title" class="text-base font-semibold text-slate-100">{{ strings.sectorsTitle }}</h3>
             <p class="field-hint mt-1">{{ strings.sectorsHint }}</p>
@@ -116,29 +110,39 @@
           <section class="panel p-5" aria-labelledby="skill-options-title">
             <h3 id="skill-options-title" class="text-base font-semibold text-slate-100">{{ strings.skillsTitle }}</h3>
             <p class="field-hint mt-1">{{ strings.skillsHint }}</p>
-            <div *ngIf="skills.length > 0; else emptySkills" class="mt-4 flex flex-wrap gap-2">
-              <button
-                *ngFor="let skill of skills"
-                type="button"
-                class="contact-button"
-                [attr.aria-pressed]="isSkillSelected(skill)"
-                (click)="skillToggled.emit(skill.id)"
-              >{{ skill.name }}</button>
+            <div *ngIf="skills.length > 0; else emptySkills" class="mt-4 flex flex-col gap-3">
+              <div *ngFor="let skill of skills" class="min-w-0">
+                <button type="button" class="contact-button" [attr.aria-pressed]="isSkillSelected(skill)"
+                  (click)="skillToggled.emit(skill.id)">{{ skill.name }}</button>
+                <div *ngIf="isSkillSelected(skill)" class="mt-2">
+                  <label class="field-label" [for]="'proficiency-' + skill.id">{{ strings.proficiencyLabel(skill.name) }}</label>
+                  <select class="field-input" [id]="'proficiency-' + skill.id"
+                    [attr.aria-invalid]="validationMessage && !proficiencyFor(skill.id) ? 'true' : null"
+                    [attr.aria-describedby]="validationMessage ? 'onboarding-validation' : null"
+                    (change)="changeProficiency(skill.id, $event)" required>
+                    <option value="" disabled [selected]="!proficiencyFor(skill.id)">{{ strings.chooseProficiency }}</option>
+                    <option *ngFor="let level of proficiencyOptions" [value]="level.id" [selected]="proficiencyFor(skill.id) === level.id">{{ level.label }}</option>
+                  </select>
+                </div>
+              </div>
             </div>
             <ng-template #emptySkills><p class="field-hint mt-4" role="status">{{ strings.skillsEmpty }}</p></ng-template>
           </section>
+          </fieldset>
         </div>
       </section>
 
       <div class="onboarding-page__footer mt-6">
         <p class="text-sm leading-6 text-slate-400" role="status">
-          <ng-container [ngSwitch]="selectedInterests.length">
+          <ng-container [ngSwitch]="selectedIntentions.length">
             <span *ngSwitchCase="0">{{ strings.needInterest }}</span>
             <span *ngSwitchCase="1">{{ strings.oneInterest }}</span>
-            <span *ngSwitchDefault>{{ strings.nInterests(selectedInterests.length) }}</span>
+            <span *ngSwitchDefault>{{ strings.nInterests(selectedIntentions.length) }}</span>
           </ng-container>
         </p>
         <div class="flex w-full flex-col items-start gap-3 sm:w-auto sm:items-end">
+          <p *ngIf="validationMessage" id="onboarding-validation" class="field-error" role="alert">{{ validationMessage }}</p>
+          <button *ngIf="editing" type="button" class="contact-button" [disabled]="preferencesSaving" (click)="cancelled.emit()">{{ strings.cancel }}</button>
           <div *ngIf="preferencesSaveErrorMessage" class="status-message status-message--error flex flex-wrap items-center gap-3" role="alert">
             <p>{{ preferencesSaveErrorMessage }}</p>
             <button
@@ -151,12 +155,12 @@
           <button
             type="button"
             class="solid-button w-full sm:w-auto"
-            [disabled]="selectedInterests.length === 0 || preferencesLoading || !preferencesLoaded || preferencesSaving"
+            [disabled]="selectedIntentions.length === 0 || controlsDisabled"
             [attr.aria-busy]="preferencesSaving"
             (click)="started.emit()"
           >
             <ng-container *ngIf="preferencesSaving; else readyToStart">{{ strings.savingPreferences }}</ng-container>
-            <ng-template #readyToStart>{{ strings.enter }} <pulso-icon name="arrow-right" [size]="17" /></ng-template>
+            <ng-template #readyToStart>{{ editing ? strings.saveChanges : strings.enter }} <pulso-icon name="arrow-right" [size]="17" /></ng-template>
           </button>
         </div>
       </div>

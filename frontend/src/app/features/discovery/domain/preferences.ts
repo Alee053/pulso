@@ -1,16 +1,8 @@
 import type { InterestId } from './startup'
+import { intentionStrings, proficiencyStrings } from '../strings/onboarding.strings'
 import { projectStageStrings } from '../strings/project.strings'
 
-export type OnboardingIntention =
-  | 'DISCOVER'
-  | 'BUY'
-  | 'COLLABORATE'
-  | 'WORK'
-  | 'INVEST'
-  | 'FIND_PARTNERS'
-  | 'FIND_CUSTOMERS'
-  | 'FIND_PROVIDERS'
-  | 'EXPLORE_ECOSYSTEM'
+export type OnboardingIntention = typeof onboardingIntentions[number]
 
 export type ProjectStage =
   | 'IDEA'
@@ -32,6 +24,8 @@ export interface OnboardingPreferences {
   preferredStages: ProjectStage[]
   preferredTags: string[]
   preferredSkills: string[]
+  skills: ProfileSkill[]
+  onboardingCompletedAt: string | null
   recommendationWeights: Record<string, number>
 }
 
@@ -40,7 +34,8 @@ export interface OnboardingPreferencesPayload {
   preferredSectors: string[]
   preferredStages: ProjectStage[]
   preferredTags: string[]
-  preferredSkills: string[]
+  skills: { skillId: string; proficiency: SkillProficiency }[]
+  completeOnboarding: true
 }
 
 export const projectStageOptions: readonly ProjectStageOption[] = [
@@ -51,14 +46,6 @@ export const projectStageOptions: readonly ProjectStageOption[] = [
   { id: 'GROWING', label: projectStageStrings.GROWING },
   { id: 'ESTABLISHED', label: projectStageStrings.ESTABLISHED },
 ]
-
-const intentionByInterest: Readonly<Record<InterestId, OnboardingIntention>> = {
-  discover: 'DISCOVER',
-  invest: 'INVEST',
-  collaborate: 'COLLABORATE',
-  opportunities: 'WORK',
-  inspiration: 'EXPLORE_ECOSYSTEM',
-}
 
 const interestByIntention: Readonly<Partial<Record<OnboardingIntention, InterestId>>> = {
   DISCOVER: 'discover',
@@ -72,19 +59,59 @@ const projectStages = new Set<ProjectStage>(
   projectStageOptions.map((option) => option.id),
 )
 
+export const onboardingIntentions = [
+  'DISCOVER', 'BUY', 'COLLABORATE', 'WORK', 'INVEST', 'FIND_PARTNERS',
+  'FIND_CUSTOMERS', 'FIND_PROVIDERS', 'EXPLORE_ECOSYSTEM',
+] as const
+
+export interface IntentionOption {
+  id: OnboardingIntention
+  label: string
+}
+
+export const intentionOptions: readonly IntentionOption[] = onboardingIntentions.map(
+  (id) => ({ id, label: intentionStrings[id] }),
+)
+
+export const skillProficiencies = ['BEGINNER', 'INTERMEDIATE', 'ADVANCED', 'EXPERT'] as const
+export type SkillProficiency = typeof skillProficiencies[number]
+export interface ProfileSkill {
+  skillId: string
+  proficiency: SkillProficiency | null
+}
+export const proficiencyOptions = skillProficiencies.map(
+  (id) => ({ id, label: proficiencyStrings[id] }),
+)
+
+export function isIntention(value: unknown): value is OnboardingIntention {
+  return onboardingIntentions.some((id) => id === value)
+}
+
+export function isProjectStage(value: unknown): value is ProjectStage {
+  return projectStageOptions.some((option) => option.id === value)
+}
+
+export function isProficiency(value: unknown): value is SkillProficiency {
+  return skillProficiencies.some((id) => id === value)
+}
+
 export function toOnboardingPreferencesPayload(
-  interests: readonly InterestId[],
+  intentions: readonly OnboardingIntention[],
   preferredSectors: readonly string[],
   preferredStages: readonly ProjectStage[],
-  preferredTags: readonly string[] = [],
-  preferredSkills: readonly string[] = [],
+  preferredTags: readonly string[],
+  skills: readonly ProfileSkill[],
 ): OnboardingPreferencesPayload {
   return {
-    intentions: interests.map((interest) => intentionByInterest[interest]),
+    intentions: [...intentions],
     preferredSectors: [...preferredSectors],
     preferredStages: [...preferredStages],
     preferredTags: [...preferredTags],
-    preferredSkills: [...preferredSkills],
+    skills: skills.map((skill) => {
+      if (!isProficiency(skill.proficiency)) throw new Error('Skill proficiency is required')
+      return { skillId: skill.skillId, proficiency: skill.proficiency }
+    }),
+    completeOnboarding: true,
   }
 }
 

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common'
-import { Component, inject, Input, OnInit, signal } from '@angular/core'
+import { Component, EventEmitter, inject, Input, OnInit, Output, signal } from '@angular/core'
 import { firstValueFrom } from 'rxjs'
 import { SupabaseAuthGateway } from '../../../core/auth/supabase-auth.gateway'
 import { IconComponent } from '../../../shared/icon/icon'
@@ -10,7 +10,8 @@ import {
     type ProfilePatchRequest,
 } from '../data-access/profile-api'
 import { profileContract } from '../data-access/project.contract'
-import type { InterestId, InterestOption } from '../domain/startup'
+import type { IntentionOption, OnboardingIntention } from '../domain/preferences'
+import type { TagCatalogItem } from '../domain/catalog'
 import { profileStrings } from '../strings/profile.strings'
 
 @Component({
@@ -24,8 +25,11 @@ export class ProfileViewComponent implements OnInit {
     readonly common = commonStrings
     readonly profileContract = profileContract
 
-    @Input() interestOptions: readonly InterestOption[] = []
-    @Input() selectedInterests: InterestId[] = []
+    @Input() intentionOptions: readonly IntentionOption[] = []
+    @Input() selectedIntentions: OnboardingIntention[] = []
+    @Input() preferencesBusy = false
+    @Input() selectedTags: readonly TagCatalogItem[] = []
+    @Output() preferencesEditRequested = new EventEmitter<void>()
 
     readonly auth = inject(SupabaseAuthGateway)
     private readonly profileApi = inject(ProfileApi)
@@ -45,9 +49,9 @@ export class ProfileViewComponent implements OnInit {
         void this.loadProfile()
     }
 
-    get selectedOptions(): readonly InterestOption[] {
-        return this.interestOptions.filter((option) =>
-            this.selectedInterests.includes(option.id),
+    get selectedOptions(): readonly IntentionOption[] {
+        return this.intentionOptions.filter((option) =>
+            this.selectedIntentions.includes(option.id),
         )
     }
 

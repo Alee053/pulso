@@ -208,6 +208,8 @@ Response `200 OK`:
 ```json
 {
   "data": {
+    "intentions": ["DISCOVER", "BUY", "COLLABORATE", "WORK", "INVEST", "FIND_PARTNERS", "FIND_CUSTOMERS", "FIND_PROVIDERS", "EXPLORE_ECOSYSTEM"],
+    "stages": ["IDEA", "PROTOTYPE", "MVP", "EARLY_STAGE", "GROWING", "ESTABLISHED"],
     "sectors": [
       {
         "id": "11111111-1111-1111-1111-111111111111",
@@ -235,6 +237,11 @@ Response `200 OK`:
   }
 }
 ```
+
+`intentions` and `stages` are backend-controlled supported codes, shared with
+preference validation. They have no separate table or inactive state in the MVP;
+all supported codes are available. The browser supplies their Spanish labels.
+Sectors, tags, and skills continue to include only `is_active = true` rows.
 
 An existing catalog with no active entries is represented by an empty array;
 for example, `"tags": []`. If PostgreSQL cannot be read, the endpoint returns
@@ -554,7 +561,10 @@ Returns the onboarding preferences of the authenticated profile. The profile
 ID is always derived from the validated JWT subject; there is no profile ID
 parameter that a client can use to read another person's preferences. If the
 profile has not saved preferences yet, the endpoint returns empty preference
-arrays and an empty recommendation-weight object.
+arrays, an empty recommendation-weight object, and a nullable
+`onboardingCompletedAt` read from the profile. Completion is not inferred from
+nonempty intentions. `skills` includes selected skill IDs and proficiency;
+legacy selections can have a null proficiency.
 
 ```sh
 curl \
@@ -572,6 +582,8 @@ Response `200 OK`:
   "preferredStages": ["MVP"],
   "preferredTags": ["aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"],
   "preferredSkills": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"],
+  "skills": [{"skillId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "proficiency": "ADVANCED"}],
+  "onboardingCompletedAt": "2026-10-09T12:00:00Z",
   "recommendationWeights": {"sostenibilidad": 2.5}
 }
 ```
@@ -584,12 +596,27 @@ the same request is safe and keeps one row in
 repository uses an upsert.
 
 The request does not accept `profileId`; the server takes it from the JWT.
-`preferredSectors`, `preferredTags`, and `preferredSkills` are optional arrays
-that default to `[]`; `intentions` and `preferredStages` must be arrays,
-although an empty array is valid. Tags and skills must reference active catalog
-UUIDs. The backend replaces their profile relationship rows in the same
-transaction as the JSON preferences. `recommendationWeights` is server-managed
-and returned by this endpoint; this request cannot overwrite it.
+`preferredSectors` and `preferredTags` are optional arrays that default to `[]`;
+`intentions` and `preferredStages` must be arrays. Tags and skills must reference
+active catalog UUIDs. Interests are selected tags stored in `profile_tags`.
+
+New clients send `skills` as objects with `skillId` and `proficiency`:
+`BEGINNER`, `INTERMEDIATE`, `ADVANCED`, or `EXPERT`. A selected explicit skill
+requires a level. Legacy `preferredSkills` UUID arrays remain accepted; unchanged
+skills retain their recorded proficiency and `is_primary`. Sending both fields,
+including empty arrays, is rejected. Omitting both clears the skill selection.
+The response retains legacy `preferredSkills` IDs alongside `skills` details.
+
+`completeOnboarding` defaults to `false` for compatibility. When `true`, at least
+one intention and a recorded proficiency for every selected skill are required.
+A valid save writes `profiles.onboarding_completed_at` with server time in the
+same transaction as preferences, tags, and skills. Repeating a request or editing
+later preserves the first completion timestamp and one relation per catalog ID.
+Clients cannot supply a completion date through this endpoint. Existing
+`PATCH /api/v1/me` behavior remains unchanged.
+
+`recommendationWeights` is server-managed, returned by this endpoint, and
+preserved during onboarding and later edits. This request cannot overwrite it.
 
 ```sh
 curl -X PUT \
@@ -600,7 +627,8 @@ curl -X PUT \
     "preferredSectors": ["sostenibilidad"],
     "preferredStages": ["mvp"],
     "preferredTags": ["aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"],
-    "preferredSkills": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"]
+    "skills": [{"skillId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "proficiency": "ADVANCED"}],
+    "completeOnboarding": true
   }' \
   http://localhost:8080/api/v1/me/preferences
 ```

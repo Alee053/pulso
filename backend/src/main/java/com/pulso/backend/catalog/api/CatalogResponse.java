@@ -7,6 +7,7 @@ import com.pulso.backend.catalog.domain.ActiveCatalogs;
 import com.pulso.backend.catalog.domain.SectorCatalogItem;
 import com.pulso.backend.catalog.domain.SkillCatalogItem;
 import com.pulso.backend.catalog.domain.TagCatalogItem;
+import com.pulso.backend.preference.domain.OnboardingOptions;
 
 public record CatalogResponse(Data data) {
 
@@ -14,13 +15,17 @@ public record CatalogResponse(Data data) {
         return new CatalogResponse(new Data(
                 catalogs.sectors().stream().map(SectorResponse::from).toList(),
                 catalogs.tags().stream().map(TagResponse::from).toList(),
-                catalogs.skills().stream().map(SkillResponse::from).toList()));
+                catalogs.skills().stream().map(SkillResponse::from).toList(),
+                OnboardingOptions.INTENTIONS,
+                OnboardingOptions.STAGES));
     }
 
     public record Data(
             List<SectorResponse> sectors,
             List<TagResponse> tags,
-            List<SkillResponse> skills) {
+            List<SkillResponse> skills,
+            List<String> intentions,
+            List<String> stages) {
     }
 
     public record SectorResponse(

@@ -52,7 +52,12 @@ class CatalogControllerTest {
                 .andExpect(jsonPath("$.data.tags[0].slug").value("inteligencia-artificial"))
                 .andExpect(jsonPath("$.data.tags[0].type").value("TOPIC"))
                 .andExpect(jsonPath("$.data.skills[0].slug").value("java"))
-                .andExpect(jsonPath("$.data.skills[0].category").value("DESARROLLO"));
+                .andExpect(jsonPath("$.data.skills[0].category").value("DESARROLLO"))
+                .andExpect(jsonPath("$.data.intentions").value(org.hamcrest.Matchers.contains(
+                        "DISCOVER", "BUY", "COLLABORATE", "WORK", "INVEST", "FIND_PARTNERS",
+                        "FIND_CUSTOMERS", "FIND_PROVIDERS", "EXPLORE_ECOSYSTEM")))
+                .andExpect(jsonPath("$.data.stages").value(org.hamcrest.Matchers.contains(
+                        "IDEA", "PROTOTYPE", "MVP", "EARLY_STAGE", "GROWING", "ESTABLISHED")));
     }
 
     @Test

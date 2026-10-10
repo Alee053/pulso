@@ -13,6 +13,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.pulso.backend.config.ApiMessages;
 import com.pulso.backend.ops.logging.ApplicationLogger;
 import com.pulso.backend.ops.logging.LogContext;
+import com.pulso.backend.opportunity.application.ProjectOpportunityConflictException;
+import com.pulso.backend.opportunity.application.ProjectOpportunityNotFoundException;
+import com.pulso.backend.opportunity.application.ProjectOpportunityPermissionException;
+import com.pulso.backend.opportunity.domain.OpportunityConflictException;
+import com.pulso.backend.opportunity.domain.OpportunityValidationException;
 import com.pulso.backend.preference.domain.OnboardingPreferencesValidationException;
 import com.pulso.backend.profile.application.InvalidAuthenticatedSubjectException;
 import com.pulso.backend.profile.application.ProfileNotFoundException;
@@ -86,6 +91,24 @@ public class ApiExceptionHandler {
                 HttpStatus.BAD_REQUEST,
                 exception.getMessage());
         problem.setTitle(ApiMessages.INVALID_PROJECT_TITLE);
+        return problem;
+    }
+
+    @ExceptionHandler(OpportunityValidationException.class)
+    ProblemDetail invalidOpportunity(OpportunityValidationException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                exception.getMessage());
+        problem.setTitle(ApiMessages.INVALID_OPPORTUNITY_TITLE);
+        return problem;
+    }
+
+    @ExceptionHandler(OpportunityConflictException.class)
+    ProblemDetail invalidOpportunityTransition(OpportunityConflictException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                exception.getMessage());
+        problem.setTitle(ApiMessages.OPPORTUNITY_STATE_CONFLICT_TITLE);
         return problem;
     }
 
@@ -187,6 +210,33 @@ public class ApiExceptionHandler {
                 HttpStatus.FORBIDDEN,
                 exception.getMessage());
         problem.setTitle(ApiMessages.MEMBERSHIP_PERMISSION_TITLE);
+        return problem;
+    }
+
+    @ExceptionHandler(ProjectOpportunityPermissionException.class)
+    ProblemDetail projectOpportunityPermission(ProjectOpportunityPermissionException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.FORBIDDEN,
+                exception.getMessage());
+        problem.setTitle(ApiMessages.MEMBERSHIP_PERMISSION_TITLE);
+        return problem;
+    }
+
+    @ExceptionHandler(ProjectOpportunityNotFoundException.class)
+    ProblemDetail projectOpportunityNotFound(ProjectOpportunityNotFoundException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND,
+                exception.getMessage());
+        problem.setTitle(ApiMessages.OPPORTUNITY_NOT_FOUND_TITLE);
+        return problem;
+    }
+
+    @ExceptionHandler(ProjectOpportunityConflictException.class)
+    ProblemDetail projectOpportunityConflict(ProjectOpportunityConflictException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                exception.getMessage());
+        problem.setTitle(ApiMessages.OPPORTUNITY_CONFLICT_TITLE);
         return problem;
     }
 

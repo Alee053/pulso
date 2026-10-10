@@ -119,9 +119,17 @@ classDiagram
     +UUID projectId
     +text opportunityType
     +text title
+    +text description
     +text status
     +text city
+    +text department
     +boolean remoteAllowed
+    +UUID createdByProfileId
+    +timestamp startsAt
+    +timestamp endsAt
+    +timestamp closedAt
+    +timestamp createdAt
+    +timestamp updatedAt
   }
 
   class OpportunitySkill {

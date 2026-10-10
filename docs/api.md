@@ -313,6 +313,100 @@ Conflict`; other PostgreSQL failures return the sanitized `503 Service
 Unavailable` response. Missing, invalid, or `service_role` bearer tokens
 return `401 Unauthorized`.
 
+## Project opportunities (PUL-18)
+
+All opportunity management endpoints require an access token and an active
+`OWNER` or `ADMIN` membership on the requested project. The actor profile ID
+comes from the validated JWT subject; project roles and creator IDs in request
+bodies are rejected. An active `MEMBER`, inactive membership, external profile,
+unknown project, and cross-project access receive the same `403` membership
+permission response.
+
+`project_opportunities` is accessed through the backend only. PostgreSQL keeps
+the project and creator foreign keys, enables RLS, and revokes direct
+`anon`/`authenticated` table grants. The project ID, creator, status updates,
+and audit timestamps are controlled by the server.
+
+### `GET /api/v1/projects/{projectId}/opportunities`
+
+Lists opportunities for an authorized project owner or admin. `offset` defaults
+to `0` and is bounded at `100000`; `limit` defaults to `20` and is bounded from
+`1` to `50`. Results use stable `created_at DESC, id DESC` ordering and return
+at most `limit` rows with a `hasMore` flag.
+
+### `POST /api/v1/projects/{projectId}/opportunities`
+
+Creates an opportunity in the canonical table. `opportunityType` accepts the
+DBML values `TALENT`, `COLLABORATION`, `CUSTOMER`, `BETA_TESTER`, `INVESTMENT`,
+`MENTOR`, `SUPPLIER`, `PARTNERSHIP`, and `OTHER`. Title, description,
+`remoteAllowed`, and either city or department for in-person opportunities are
+required. City and department may be omitted when remote work is allowed.
+
+`status` accepts `DRAFT` or `OPEN` and defaults to `OPEN` when omitted. An
+`OPEN` opportunity requires a `PUBLISHED` project with an active sector,
+matching the public project detail contract. Creating a `DRAFT` opportunity
+does not require the project to be public.
+
+```sh
+curl -X POST \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "opportunityType": "TALENT",
+    "title": "Buscamos una persona de producto",
+    "description": "Apoyo para validar la experiencia del prototipo.",
+    "city": "La Paz",
+    "department": "La Paz",
+    "remoteAllowed": true,
+    "status": "DRAFT"
+  }' \
+  http://localhost:8080/api/v1/projects/33333333-3333-3333-3333-333333333333/opportunities
+```
+
+Response `201 Created` returns only management fields:
+
+```json
+{
+  "id": "55555555-5555-5555-5555-555555555555",
+  "projectId": "33333333-3333-3333-3333-333333333333",
+  "opportunityType": "TALENT",
+  "title": "Buscamos una persona de producto",
+  "description": "Apoyo para validar la experiencia del prototipo.",
+  "status": "DRAFT",
+  "city": "La Paz",
+  "department": "La Paz",
+  "remoteAllowed": true,
+  "createdAt": "2026-10-10T12:00:00Z",
+  "updatedAt": "2026-10-10T12:00:00Z"
+}
+```
+
+### `PUT /api/v1/projects/{projectId}/opportunities/{opportunityId}`
+
+Replaces the editable content fields: `opportunityType`, `title`,
+`description`, `city`, `department`, and `remoteAllowed`. It rejects unknown or
+protected fields, including `projectId`, `createdByProfileId`, `status`, and
+timestamps. Archived opportunities cannot be edited. A stale `updated_at`
+returns `409 Conflict`; a missing opportunity within the project returns
+`404 Not Found`.
+
+### `POST /api/v1/projects/{projectId}/opportunities/{opportunityId}/actions`
+
+Accepts one action: `OPEN`, `PAUSE`, `CLOSE`, or `ARCHIVE`. `OPEN` is allowed
+from `DRAFT` or `PAUSED`; `PAUSE` from `OPEN`; `CLOSE` from `OPEN` or `PAUSED`;
+`ARCHIVE` from any model state except `ARCHIVED`. Invalid transitions return
+`409 Conflict`, and closing sets `closed_at` on the server.
+
+If a project stops being `PUBLISHED` or its sector becomes inactive, a database
+trigger pauses its `OPEN` opportunities in the same transaction. An authorized
+owner or admin must explicitly reopen a paused opportunity after the project
+becomes publicly visible again.
+
+Invalid content or attempts to open an opportunity for a non-public project
+return `400 Bad Request`. Missing, invalid, or `service_role` bearer tokens
+return `401 Unauthorized`; insufficient project membership returns `403`.
+Database errors use the sanitized `503 Service Unavailable` response.
+
 ## `GET /api/v1/projects/{projectId}/members` — team administration list (PUL-85)
 
 Requires a valid user bearer token and an `ACTIVE` membership on the requested

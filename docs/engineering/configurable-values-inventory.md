@@ -76,6 +76,7 @@ Prefijos previstos, aún sin extraer:
 pulso.security.supabase.*     # ya existe
 pulso.cors.*                  # ya existe
 pulso.discovery.*             # paginación del catálogo
+pulso.project-opportunities.* # ya existe: paginación de oportunidades del proyecto
 pulso.catalogs.*              # tope de lectura
 pulso.preferences.*           # tamaños de lista
 pulso.profile.*               # longitudes de campo
@@ -420,6 +421,10 @@ Compose local (`compose.yaml`) también nombra `SITE_URL`, `API_EXTERNAL_URL`, `
 | api-rule | `pulso.discovery.default-limit` | `StartupController` `defaultValue = "20"` | `20` | igual | `application.yml` | all |
 | api-rule | `pulso.discovery.max-limit` | `MAX_LIMIT` | `50` | igual | `application.yml` | all |
 | api-rule | `pulso.discovery.max-offset` | `MAX_OFFSET` | `100000` | igual | `application.yml` | all |
+| api-rule | `pulso.project-opportunities.default-offset` | `ProjectOpportunityProperties` | `0` | `GET /api/v1/projects/{projectId}/opportunities` | `application.yml` | all |
+| api-rule | `pulso.project-opportunities.default-limit` | `ProjectOpportunityProperties` | `20` | igual | `application.yml` | all |
+| api-rule | `pulso.project-opportunities.max-limit` | `ProjectOpportunityProperties` | `50` | igual | `application.yml` | all |
+| api-rule | `pulso.project-opportunities.max-offset` | `ProjectOpportunityProperties` | `100000` | igual | `application.yml` | all |
 | api-rule | `discovery.path` | `@RequestMapping` | `/api/v1/startups` | Angular + curl | contrato; no env | all |
 | presentation | `api.invalid-request.title` | `ApiExceptionHandler` | `Invalid request` | clientes HTTP | `messages.properties` | all |
 | presentation | `api.discovery.offset.detail` | `StartupController` | `offset must be between 0 and 100000.` | `400` | `messages.properties` | all |

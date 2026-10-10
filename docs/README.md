@@ -15,12 +15,13 @@ This directory is the durable reference for the codebase: what is deployed in th
 9. [Project lifecycle](./architecture/project-lifecycle.md) — team publication-request and archive matrix, audit timestamps, and explicit errors.
 10. [Member invitation](./architecture/member-invitation.md) — invitation model on `project_members`, digest-only tokens, duplicates, and explicit errors.
 11. [Membership administration](./architecture/membership-administration.md) — role and membership-status matrix, owner invariant, and endpoint/UI errors.
-12. [Scalability](./architecture/scalability.md) — default decisions and triggers for adding complexity.
-13. [Working agreements](./engineering/working-agreements.md) — team workflow, review standards, and definition of done.
-14. [Architecture decisions](./adr/0001-monorepo-project-seams.md) — decisions that are costly or surprising to reverse.
-15. [Supabase decision](./adr/0003-supabase-database-and-auth.md) — database, migrations, RLS, and Auth boundaries.
-16. [Project/startup compatibility](./adr/0004-project-startup-compatibility.md) — canonical domain naming, current baseline, and migration order.
-17. [Agent workflows](./engineering/agent-workflows.md) — shared skills, commit/PR conventions, and Codex, OpenCode, and Claude Code entry points.
+12. [Project opportunities](./architecture/project-opportunities.md) — opportunity fields, permission boundary, public-project requirement, and status transitions.
+13. [Scalability](./architecture/scalability.md) — default decisions and triggers for adding complexity.
+14. [Working agreements](./engineering/working-agreements.md) — team workflow, review standards, and definition of done.
+15. [Architecture decisions](./adr/0001-monorepo-project-seams.md) — decisions that are costly or surprising to reverse.
+16. [Supabase decision](./adr/0003-supabase-database-and-auth.md) — database, migrations, RLS, and Auth boundaries.
+17. [Project/startup compatibility](./adr/0004-project-startup-compatibility.md) — canonical domain naming, current baseline, and migration order.
+18. [Agent workflows](./engineering/agent-workflows.md) — shared skills, commit/PR conventions, and Codex, OpenCode, and Claude Code entry points.
 
 The database-specific workflow starts at [`database/README.md`](../database/README.md).
 

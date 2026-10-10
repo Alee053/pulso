@@ -20,6 +20,7 @@ import com.pulso.backend.interaction.application.ListDiscoveryFeed;
 import com.pulso.backend.interaction.application.ListProjectCollection;
 import com.pulso.backend.interaction.application.SetProjectFeedback;
 import com.pulso.backend.interaction.application.SetSavedProject;
+import com.pulso.backend.interaction.domain.DiscoveryFeedCursor;
 import com.pulso.backend.interaction.domain.ProjectPage;
 import com.pulso.backend.interaction.domain.ProjectSummary;
 import com.pulso.backend.profile.application.InvalidAuthenticatedSubjectException;
@@ -50,11 +51,24 @@ public class ProjectInteractionController {
     @GetMapping("/discovery-feed")
     public DiscoveryFeedResponse discoveryFeed(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestParam(defaultValue = "${pulso.discovery.default-offset}") int offset,
+            @RequestParam(required = false) Integer offset,
+            @RequestParam(required = false) String cursor,
             @RequestParam(defaultValue = "${pulso.discovery.default-limit}") int limit) {
-        validateWindow(offset, limit);
+        int requestedOffset = offset == null ? 0 : offset;
+        validateWindow(requestedOffset, limit);
+        if (cursor != null && offset != null) {
+            throw new InvalidRequestException(ApiMessages.INVALID_DISCOVERY_CURSOR);
+        }
+        DiscoveryFeedCursor decodedCursor = null;
+        if (cursor != null) {
+            try {
+                decodedCursor = DiscoveryFeedCursor.decode(cursor);
+            } catch (IllegalArgumentException exception) {
+                throw new InvalidRequestException(ApiMessages.INVALID_DISCOVERY_CURSOR);
+            }
+        }
         return DiscoveryFeedResponse.from(
-                listDiscoveryFeed.execute(authenticatedProfileId(jwt), offset, limit));
+                listDiscoveryFeed.execute(authenticatedProfileId(jwt), requestedOffset, decodedCursor, limit));
     }
 
     @GetMapping("/saved-projects")

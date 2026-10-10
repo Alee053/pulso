@@ -11,7 +11,6 @@ import {
     adjustPreferenceWeights,
     getActiveSignals,
     getRecommendationReason,
-    rankStartups,
     type PreferenceWeights,
 } from '../domain/recommendations'
 import { emptyReferenceCatalogs } from '../domain/catalog'
@@ -105,6 +104,7 @@ export class PulsoSession {
     private preferencesSavedMessageTimeout: number | undefined
     private pendingInteractionAction: (() => Promise<void>) | null = null
     private requestGeneration = 0
+    private feedNextCursor: string | null = null
     private savedProjectsRevision = 0
     private interestedProjectsRevision = 0
 
@@ -149,6 +149,7 @@ export class PulsoSession {
         this.interestedIds.set([])
         this.dismissedIds.set([])
         this.feedHasMore.set(false)
+        this.feedNextCursor = null
         this.savedProjects.set([])
         this.interestedProjects.set([])
         this.savedCount.set(0)
@@ -471,6 +472,7 @@ export class PulsoSession {
             this.showPreferencesSavedMessage()
             this.hasStarted.set(true)
             this.activeView.set(editing ? 'profile' : 'discover')
+            this.feedNextCursor = null
             await this.loadCatalog()
         } catch {
             if (generation === this.requestGeneration) {
@@ -502,13 +504,9 @@ export class PulsoSession {
         }
 
         this.feed.set(
-            rankStartups(
-                this.catalog().filter(
-                    (startup) => !this.interestedIds().includes(startup.id)
-                        && !this.dismissedIds().includes(startup.id),
-                ),
-                this.selectedInterests(),
-                this.preferenceWeights(),
+            this.catalog().filter(
+                (startup) => !this.interestedIds().includes(startup.id)
+                    && !this.dismissedIds().includes(startup.id),
             ),
         )
         this.activeView.set('discover')
@@ -592,11 +590,7 @@ export class PulsoSession {
                 this.dismissedIds.update((current) => unique([...current, currentStartup.id]))
             }
             this.feed.set(
-                rankStartups(
-                    this.feed().filter((startup) => startup.id !== currentStartup.id),
-                    this.selectedInterests(),
-                    nextWeights,
-                ),
+                this.feed().filter((startup) => startup.id !== currentStartup.id),
             )
             if (this.feed().length === 0 && this.feedHasMore()) {
                 void this.loadCatalog()
@@ -704,7 +698,7 @@ export class PulsoSession {
 
         try {
             const response = await firstValueFrom(
-                this.projectInteractionsApi.loadDiscoveryFeed(),
+                this.projectInteractionsApi.loadDiscoveryFeed(undefined, this.feedNextCursor),
             )
             if (generation !== this.requestGeneration) {
                 return
@@ -715,10 +709,9 @@ export class PulsoSession {
                 ...current,
                 ...response.data.filter((item) => item.saved).map((item) => item.startup.id),
             ]))
-            this.feed.set(
-                rankStartups(catalog, this.selectedInterests(), this.preferenceWeights()),
-            )
+            this.feed.set(catalog)
             this.feedHasMore.set(response.meta.hasMore)
+            this.feedNextCursor = response.meta.nextCursor
             this.hasLoadedCatalog.set(true)
         } catch {
             if (generation === this.requestGeneration) {

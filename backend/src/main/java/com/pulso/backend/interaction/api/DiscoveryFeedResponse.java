@@ -4,18 +4,21 @@ import java.util.List;
 import java.util.UUID;
 
 import com.pulso.backend.interaction.domain.DiscoveryFeedItem;
+import com.pulso.backend.interaction.domain.DiscoveryFeedPage;
 import com.pulso.backend.interaction.domain.ProjectFeedbackType;
-import com.pulso.backend.interaction.domain.ProjectPage;
 
 public record DiscoveryFeedResponse(
         List<Item> data,
-        ProjectCollectionResponse.PageMetadata meta) {
+        PageMetadata meta) {
 
-    static DiscoveryFeedResponse from(ProjectPage<DiscoveryFeedItem> page) {
+    static DiscoveryFeedResponse from(DiscoveryFeedPage page) {
         return new DiscoveryFeedResponse(
                 page.data().stream().map(Item::from).toList(),
-                new ProjectCollectionResponse.PageMetadata(
-                        page.offset(), page.limit(), page.hasMore(), page.totalCount()));
+                new PageMetadata(
+                        page.offset(), page.limit(), page.hasMore(), page.totalCount(), page.nextCursor()));
+    }
+
+    public record PageMetadata(int offset, int limit, boolean hasMore, long totalCount, String nextCursor) {
     }
 
     public record Item(

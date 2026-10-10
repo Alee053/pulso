@@ -19,6 +19,10 @@ export interface ProjectPage<T> {
   }
 }
 
+export interface DiscoveryFeedPage<T> extends ProjectPage<T> {
+  meta: ProjectPage<T>['meta'] & { nextCursor: string | null }
+}
+
 export interface DiscoveryFeedItem {
   startup: ReturnType<typeof toStartupViewModel>
   saved: boolean
@@ -37,7 +41,7 @@ interface DiscoveryFeedItemDto extends StartupSummaryDto {
 
 interface DiscoveryFeedPageDto {
   data: DiscoveryFeedItemDto[]
-  meta: ProjectPage<never>['meta']
+  meta: ProjectPage<never>['meta'] & { nextCursor: string | null }
 }
 
 interface ProjectInteractionMutationDto {
@@ -52,9 +56,11 @@ export class ProjectInteractionsApi {
 
   loadDiscoveryFeed(
     limit: number = discoveryCatalogContract.defaultLimit,
-    offset: number = discoveryCatalogContract.defaultOffset,
-  ): Observable<ProjectPage<DiscoveryFeedItem>> {
-    const params = this.pageParams(limit, offset)
+    cursor: string | null = null,
+  ): Observable<DiscoveryFeedPage<DiscoveryFeedItem>> {
+    this.validateLimit(limit)
+    let params = new HttpParams().set('limit', limit)
+    if (cursor !== null) params = params.set('cursor', cursor)
     return this.http.get<DiscoveryFeedPageDto>(
       `${appConfig.apiBaseUrl}${apiPaths.discoveryFeed}`,
       { params },
@@ -121,17 +127,21 @@ export class ProjectInteractionsApi {
   }
 
   private pageParams(limit: number, offset: number): HttpParams {
-    if (!Number.isInteger(limit)
-      || limit < discoveryCatalogContract.minLimit
-      || limit > discoveryCatalogContract.maxLimit) {
-      throw new RangeError(discoveryCatalogContract.invalidLimitMessage(discoveryCatalogContract.maxLimit))
-    }
+    this.validateLimit(limit)
     if (!Number.isInteger(offset)
       || offset < discoveryCatalogContract.minOffset
       || offset > discoveryCatalogContract.maxOffset) {
       throw new RangeError(discoveryCatalogContract.invalidOffsetMessage(discoveryCatalogContract.maxOffset))
     }
     return new HttpParams().set('offset', offset).set('limit', limit)
+  }
+
+  private validateLimit(limit: number): void {
+    if (!Number.isInteger(limit)
+      || limit < discoveryCatalogContract.minLimit
+      || limit > discoveryCatalogContract.maxLimit) {
+      throw new RangeError(discoveryCatalogContract.invalidLimitMessage(discoveryCatalogContract.maxLimit))
+    }
   }
 }
 

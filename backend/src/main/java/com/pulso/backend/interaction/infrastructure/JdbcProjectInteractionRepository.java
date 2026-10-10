@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import com.pulso.backend.interaction.application.ProjectInteractionRepository;
 import com.pulso.backend.interaction.domain.DiscoveryFeedItem;
+import com.pulso.backend.interaction.domain.DiscoveryFeedCursor;
 import com.pulso.backend.interaction.domain.ProjectFeedbackType;
 import com.pulso.backend.interaction.domain.ProjectSummary;
 import com.pulso.backend.project.application.PublicProjectNotFoundException;
@@ -34,31 +35,72 @@ public class JdbcProjectInteractionRepository implements ProjectInteractionRepos
     }
 
     @Override
-    public List<DiscoveryFeedItem> findDiscoveryFeed(UUID profileId, int offset, int limit) {
-        return jdbcClient.sql("""
-                select %s,
+    public List<DiscoveryFeedItem> findDiscoveryFeed(
+            UUID profileId,
+            List<String> preferredSectors,
+            List<String> preferredStages,
+            int offset,
+            DiscoveryFeedCursor cursor,
+            int limit) {
+        String sectorMatch = preferredSectors.isEmpty()
+                ? "false"
+                : "(s.id::text in (:preferredSectors) or s.slug in (:preferredSectors))";
+        String stageMatch = preferredStages.isEmpty() ? "false" : "p.stage in (:preferredStages)";
+        String cursorCondition = cursor == null
+                ? ""
+                : "where (r.preference_score, r.published_at, r.id) "
+                        + "< (:cursorScore, :cursorPublishedAt, :cursorProjectId)";
+        String offsetClause = cursor == null ? "offset :offset" : "";
+        var statement = jdbcClient.sql("""
+                with ranked_projects as (
+                    select %s,
+                           (case when %s then 1 else 0 end
+                             + case when %s then 1 else 0 end) as preference_score,
+                           coalesce(p.published_at, p.created_at) as published_at
+                    from public.projects p
+                    join public.sectors s on s.id = p.sector_id
+                    where p.status = 'PUBLISHED'
+                      and not exists (
+                          select 1
+                          from public.project_feedback excluded
+                          where excluded.profile_id = :profileId
+                            and excluded.project_id = p.id
+                            and excluded.feedback_type in ('INTERESTED', 'DISMISSED')
+                      )
+                )
+                select r.id, r.slug, r.name, r.tagline, r.sector, r.city, r.stage,
+                       r.preference_score, r.published_at,
                        (sp.project_id is not null) as saved,
                        pf.feedback_type
-                from public.projects p
-                join public.sectors s on s.id = p.sector_id
+                from ranked_projects r
                 left join public.saved_projects sp
-                  on sp.project_id = p.id
+                  on sp.project_id = r.id
                  and sp.profile_id = :profileId
                  and sp.unsaved_at is null
                 left join public.project_feedback pf
-                  on pf.project_id = p.id
+                  on pf.project_id = r.id
                  and pf.profile_id = :profileId
-                where p.status = 'PUBLISHED'
-                  and coalesce(pf.feedback_type, 'NONE') not in ('INTERESTED', 'DISMISSED')
-                order by p.published_at desc, p.id desc
-                offset :offset
+                %s
+                order by r.preference_score desc, r.published_at desc, r.id desc
+                %s
                 limit :limit
-                """.formatted(PROJECT_COLUMNS))
+                """.formatted(PROJECT_COLUMNS, sectorMatch, stageMatch, cursorCondition, offsetClause))
                 .param("profileId", profileId)
-                .param("offset", offset)
-                .param("limit", limit)
-                .query(JdbcProjectInteractionRepository::mapFeedItem)
-                .list();
+                .param("limit", limit);
+        if (!preferredSectors.isEmpty()) {
+            statement.param("preferredSectors", preferredSectors);
+        }
+        if (!preferredStages.isEmpty()) {
+            statement.param("preferredStages", preferredStages);
+        }
+        if (cursor == null) {
+            statement.param("offset", offset);
+        } else {
+            statement.param("cursorScore", cursor.preferenceScore())
+                    .param("cursorPublishedAt", cursor.publishedAt())
+                    .param("cursorProjectId", cursor.projectId());
+        }
+        return statement.query(JdbcProjectInteractionRepository::mapFeedItem).list();
     }
 
     @Override
@@ -246,7 +288,9 @@ public class JdbcProjectInteractionRepository implements ProjectInteractionRepos
                 resultSet.getBoolean("saved"),
                 feedbackType == null || "NONE".equals(feedbackType)
                         ? null
-                        : ProjectFeedbackType.valueOf(feedbackType));
+                        : ProjectFeedbackType.valueOf(feedbackType),
+                resultSet.getInt("preference_score"),
+                resultSet.getObject("published_at", java.time.OffsetDateTime.class));
     }
 
     private static ProjectSummary mapProjectSummary(ResultSet resultSet, int rowNumber)

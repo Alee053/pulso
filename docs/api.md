@@ -660,12 +660,23 @@ documented above. Missing or invalid bearer tokens return `401 Unauthorized`.
 ## Persisted discovery interactions
 
 These endpoints use the authenticated JWT subject as the profile ID. Project
-summaries include only published projects. Feed pagination uses the same
-bounded `offset` and `limit` contract as the public catalog; `meta.totalCount`
-reports the remaining feed size for the profile.
+summaries include only published projects. The discovery feed ranks projects
+with one point for a preferred sector and one for a preferred stage, then sorts
+by publication date and project ID descending. With no preferences, recent
+projects come first. Preferred sectors match by sector ID or slug.
+`meta.totalCount` reports eligible published projects not yet marked
+`INTERESTED` or `DISMISSED` for the profile.
+
+Use `GET /api/v1/me/discovery-feed?limit=20` for the first page, then pass its
+`meta.nextCursor` as `cursor` to load the next page. The cursor follows the same
+preference, publication-date, and project-ID ordering, so projects do not repeat
+between pages. The response keeps `offset`, `limit`, `hasMore`, and `totalCount`;
+`nextCursor` is `null` on the last page. Existing callers can continue to use a
+bounded `offset` with `limit`, but `offset` and `cursor` cannot be combined.
 
 - `GET /api/v1/me/discovery-feed` returns published projects not marked
-  `INTERESTED` or `DISMISSED`, with each item's current `saved` state.
+  `INTERESTED` or `DISMISSED`, ordered by preferred sector/stage matches and
+  then recency, with each item's current `saved` state.
 - `GET /api/v1/me/saved-projects` and
   `GET /api/v1/me/interested-projects` return the account's paginated lists
   with `meta.totalCount`.

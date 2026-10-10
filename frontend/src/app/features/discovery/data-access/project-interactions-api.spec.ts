@@ -23,7 +23,7 @@ describe('ProjectInteractionsApi', () => {
 
     expect(request.request.method).toBe('GET')
     expect(request.request.params.get('limit')).toBe('20')
-    expect(request.request.params.get('offset')).toBe('0')
+    expect(request.request.params.has('offset')).toBe(false)
     request.flush({
       data: [{
         id: 'project-1',
@@ -36,7 +36,7 @@ describe('ProjectInteractionsApi', () => {
         saved: true,
         feedbackType: null,
       }],
-      meta: { offset: 0, limit: 20, hasMore: true, totalCount: 28 },
+      meta: { offset: 0, limit: 20, hasMore: true, totalCount: 28, nextCursor: 'next-page' },
     })
 
     const page = await responsePromise
@@ -44,6 +44,27 @@ describe('ProjectInteractionsApi', () => {
     expect(page.data[0]?.saved).toBe(true)
     expect(page.data[0]?.feedbackType).toBeNull()
     expect(page.meta.totalCount).toBe(28)
+    expect(page.meta.nextCursor).toBe('next-page')
+    controller.verify()
+  })
+
+  it('sends the cursor returned by the previous discovery page', async () => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    })
+
+    const api = TestBed.inject(ProjectInteractionsApi)
+    const controller = TestBed.inject(HttpTestingController)
+    const responsePromise = firstValueFrom(api.loadDiscoveryFeed(10, 'cursor-1'))
+    const request = controller.expectOne(
+      (candidate) => candidate.url === 'http://localhost:8080/api/v1/me/discovery-feed',
+    )
+
+    expect(request.request.params.get('cursor')).toBe('cursor-1')
+    expect(request.request.params.has('offset')).toBe(false)
+    request.flush({ data: [], meta: { offset: 10, limit: 10, hasMore: false, totalCount: 10, nextCursor: null } })
+
+    await expect(responsePromise).resolves.toMatchObject({ meta: { nextCursor: null } })
     controller.verify()
   })
 

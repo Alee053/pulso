@@ -5,12 +5,19 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.pulso.backend.interaction.domain.DiscoveryFeedItem;
+import com.pulso.backend.interaction.domain.DiscoveryFeedCursor;
 import com.pulso.backend.interaction.domain.ProjectFeedbackType;
 import com.pulso.backend.interaction.domain.ProjectSummary;
 
 public interface ProjectInteractionRepository {
 
-    List<DiscoveryFeedItem> findDiscoveryFeed(UUID profileId, int offset, int limit);
+    List<DiscoveryFeedItem> findDiscoveryFeed(
+            UUID profileId,
+            List<String> preferredSectors,
+            List<String> preferredStages,
+            int offset,
+            DiscoveryFeedCursor cursor,
+            int limit);
 
     long countDiscoveryFeed(UUID profileId);
 

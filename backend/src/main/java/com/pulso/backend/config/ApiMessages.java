@@ -38,6 +38,7 @@ public final class ApiMessages {
             "limit must be between 1 and %d.";
     public static final String INVALID_OFFSET_DETAIL =
             "offset must be between 0 and %d.";
+    public static final String INVALID_DISCOVERY_CURSOR = "cursor is invalid.";
 
     public static final String PROFILE_BLANK = "%s must not be blank.";
     public static final String PROFILE_MAX_LENGTH =

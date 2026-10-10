@@ -23,7 +23,7 @@ describe('PulsoSession', () => {
           feedbackType: null,
         },
       ],
-      meta: { offset: 0, limit: 20, hasMore: false, totalCount: 2 },
+      meta: { offset: 0, limit: 20, hasMore: false, totalCount: 2, nextCursor: null },
     }))
     const saveProject = vi.fn().mockReturnValue(of({ projectId: 'project-1', saved: true }))
     const session = createSession({ loadDiscoveryFeed, saveProject })
@@ -47,6 +47,46 @@ describe('PulsoSession', () => {
     expect(saveProject).toHaveBeenCalledWith('project-1')
     expect(session.savedStartups().map((startup) => startup.id)).toEqual(['project-1'])
     expect(session.savedIds()).toEqual(['project-1'])
+  })
+
+  it('loads the next server-ranked page with its cursor after the current page is consumed', async () => {
+    const nextPage = new Subject<{
+      data: { startup: ReturnType<typeof startup>; saved: boolean; feedbackType: null }[]
+      meta: { offset: number; limit: number; hasMore: boolean; totalCount: number; nextCursor: string | null }
+    }>()
+    const loadDiscoveryFeed = vi.fn().mockImplementation((_limit: number, cursor: string | null) => {
+      if (cursor === 'cursor-2') return nextPage
+      return of({
+        data: [{
+          startup: startup('project-1', 'First project', 'Sostenibilidad', 'La Paz'),
+          saved: false,
+          feedbackType: null,
+        }],
+        meta: { offset: 0, limit: 20, hasMore: true, totalCount: 2, nextCursor: 'cursor-2' },
+      })
+    })
+    const session = createSession({ loadDiscoveryFeed })
+
+    await session.loadOnboardingPreferences()
+    await session.loadReferenceCatalogs()
+    session.toggleIntention('DISCOVER')
+    await session.startDiscovery()
+    await session.makeDecision('skip')
+
+    expect(loadDiscoveryFeed).toHaveBeenNthCalledWith(2, undefined, 'cursor-2')
+    nextPage.next({
+      data: [{
+        startup: startup('project-2', 'Second project', 'Tecnología', 'La Paz'),
+        saved: false,
+        feedbackType: null,
+      }],
+      meta: { offset: 1, limit: 20, hasMore: false, totalCount: 1, nextCursor: null },
+    })
+    nextPage.complete()
+    await Promise.resolve()
+
+    expect(session.catalog().map((item) => item.id)).toEqual(['project-2'])
+    expect(session.currentStartup()?.id).toBe('project-2')
   })
 
   it('exposes a discovery error state without replacing an API failure with mock data', async () => {
@@ -300,7 +340,7 @@ describe('PulsoSession', () => {
           feedbackType: null,
         },
       ],
-      meta: { offset: 0, limit: 20, hasMore: false, totalCount: 1 },
+      meta: { offset: 0, limit: 20, hasMore: false, totalCount: 1, nextCursor: null },
     }))
     const setFeedback = vi.fn().mockReturnValue(of({ projectId: 'project-1', feedbackType: 'INTERESTED' }))
     const session = createSession({ loadDiscoveryFeed, setFeedback })
@@ -426,7 +466,7 @@ function createSession(overrides: {
 } = {}): PulsoSession {
   const loadDiscoveryFeed = overrides.loadDiscoveryFeed ?? vi.fn().mockReturnValue(of({
     data: [],
-    meta: { offset: 0, limit: 20, hasMore: false, totalCount: 0 },
+    meta: { offset: 0, limit: 20, hasMore: false, totalCount: 0, nextCursor: null },
   }))
   const loadSavedProjects = overrides.loadSavedProjects ?? vi.fn().mockReturnValue(of({
     data: [],

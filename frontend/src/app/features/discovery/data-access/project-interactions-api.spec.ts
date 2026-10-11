@@ -107,6 +107,18 @@ describe('ProjectInteractionsApi', () => {
     })
     feedbackRequest.flush({ projectId: 'project-1', saved: null, feedbackType: 'DISMISSED' })
     await expect(feedbackPromise).resolves.toMatchObject({ feedbackType: 'DISMISSED' })
+
+    const getPromise = firstValueFrom(api.getFeedback('project-1'))
+    const getRequest = controller.expectOne('http://localhost:8080/api/v1/me/project-feedback/project-1')
+    expect(getRequest.request.method).toBe('GET')
+    getRequest.flush({ projectId: 'project-1', saved: null, feedbackType: 'DISMISSED' })
+    await expect(getPromise).resolves.toMatchObject({ feedbackType: 'DISMISSED' })
+
+    const clearPromise = firstValueFrom(api.clearFeedback('project-1'))
+    const clearRequest = controller.expectOne('http://localhost:8080/api/v1/me/project-feedback/project-1')
+    expect(clearRequest.request.method).toBe('DELETE')
+    clearRequest.flush({ projectId: 'project-1', saved: null, feedbackType: null })
+    await expect(clearPromise).resolves.toMatchObject({ feedbackType: null })
     controller.verify()
   })
 })

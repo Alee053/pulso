@@ -1,0 +1,49 @@
+.share-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.share-button:hover:not(:disabled) {
+  background: rgba(169, 225, 255, 0.1);
+  border-color: rgba(169, 225, 255, 0.3);
+  color: #a9e1ff;
+}
+
+.share-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.share-button:focus-visible {
+  outline: 2px solid #a9e1ff;
+  outline-offset: 2px;
+}
+
+.share-feedback {
+  position: absolute;
+  bottom: -2rem;
+  right: 0;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  background: #a9e1ff;
+  color: #17201c;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

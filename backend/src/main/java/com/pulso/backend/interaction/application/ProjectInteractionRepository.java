@@ -7,6 +7,7 @@ import com.pulso.backend.interaction.domain.DiscoveryFeedCursor;
 import com.pulso.backend.interaction.domain.DiscoveryFeedItem;
 import com.pulso.backend.interaction.domain.ProjectFeedbackType;
 import com.pulso.backend.interaction.domain.ProjectSummary;
+import com.pulso.backend.project.domain.ProjectShareOrigin;
 
 public interface ProjectInteractionRepository {
 
@@ -35,4 +36,6 @@ public interface ProjectInteractionRepository {
     void setFeedback(UUID profileId, UUID projectId, ProjectFeedbackType feedbackType);
 
     void clearFeedback(UUID profileId, UUID projectId);
+
+    void insertSharedEvent(UUID profileId, UUID projectId, ProjectShareOrigin origin);
 }

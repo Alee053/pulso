@@ -61,7 +61,7 @@
                               [savedCount]="session.savedCount()"
                               [interestedCount]="session.interestedCount()"
                               (navigated)="navigateTo($event)"
-                              (exampleRequested)="session.openProjectDetail('eco-pack')" />
+                              (exampleRequested)="session.openProjectDetail(session.catalog()[0]?.id || 'eco-pack')" />
 
         <div class="app-shell__content">
             <div *ngIf="session.interactionErrorMessage() as interactionError" class="status-message status-message--error mb-4 flex flex-wrap items-center gap-3" role="alert">
@@ -70,7 +70,7 @@
             </div>
             <header class="workspace-header">
                 <span>{{ common.workspaceLabel }}</span>
-                <button type="button" class="reference-example" (click)="session.openProjectDetail('eco-pack')">
+                <button type="button" class="reference-example" (click)="session.openProjectDetail(session.catalog()[0]?.id || 'eco-pack')">
                     <pulso-icon name="arrow-up-right" [size]="16" />{{ common.exampleProject }}
                 </button>
             </header>

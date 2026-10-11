@@ -37,6 +37,7 @@ import com.pulso.backend.interaction.domain.ProjectFeedbackType;
 import com.pulso.backend.interaction.domain.ProjectSummary;
 import com.pulso.backend.preference.application.OnboardingPreferencesRepository;
 import com.pulso.backend.preference.domain.OnboardingPreferences;
+import com.pulso.backend.project.domain.ProjectShareOrigin;
 
 class ProjectInteractionControllerTest {
 
@@ -277,6 +278,11 @@ class ProjectInteractionControllerTest {
         public void setFeedback(UUID profileId, UUID projectId, ProjectFeedbackType feedbackType) {
             lastProfileId = profileId;
             lastFeedbackType = feedbackType;
+        }
+
+        @Override
+        public void insertSharedEvent(UUID profileId, UUID projectId, ProjectShareOrigin origin) {
+            // No-op para tests
         }
     }
 

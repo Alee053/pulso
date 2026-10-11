@@ -14,6 +14,7 @@ import com.pulso.backend.interaction.domain.DiscoveryFeedItem;
 import com.pulso.backend.interaction.domain.ProjectFeedbackType;
 import com.pulso.backend.interaction.domain.ProjectSummary;
 import com.pulso.backend.project.application.PublicProjectNotFoundException;
+import com.pulso.backend.project.domain.ProjectShareOrigin;
 
 @Repository
 public class JdbcProjectInteractionRepository implements ProjectInteractionRepository {
@@ -345,4 +346,17 @@ public class JdbcProjectInteractionRepository implements ProjectInteractionRepos
                 resultSet.getString("city"),
                 resultSet.getString("stage"));
     }
+
+    @Override
+public void insertSharedEvent(UUID profileId, UUID projectId, ProjectShareOrigin origin) {
+    requirePublicProject(projectId);
+    jdbcClient.sql("""
+            insert into public.interaction_events (profile_id, project_id, event_type, source)
+            values (:profileId, :projectId, 'SHARED', :source)
+            """)
+            .param("profileId", profileId)
+            .param("projectId", projectId)
+            .param("source", origin.name())
+            .update();
+}
 }

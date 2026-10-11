@@ -23,13 +23,12 @@ import type {
 } from '../domain/startup'
 import { IconComponent } from '../../../shared/icon/icon'
 import { detailStrings } from '../strings/detail.strings'
-import { StartupDetailModalComponent } from './startup-detail-modal'
 import { ShareButtonComponent } from './share-button'
 
 @Component({
     selector: 'pulso-public-project-detail',
     standalone: true,
-    imports: [CommonModule, ShareButtonComponent],
+    imports: [CommonModule, IconComponent, ShareButtonComponent],
     templateUrl: './public-project-detail.html',
 })
 export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterViewChecked, OnDestroy {

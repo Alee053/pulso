@@ -29,7 +29,7 @@ describe('ProjectShareApi', () => {
       api.generate('eco-pack').subscribe({ next: resolve, error: reject })
     })
 
-    const req = httpMock.expectOne('/api/v1/projects/eco-pack/share')
+    const req = httpMock.expectOne('http://localhost:8080/api/v1/projects/eco-pack/share')
     expect(req.request.method).toBe('GET')
     req.flush({
       projectId: '33333333-3333-3333-3333-333333333333',
@@ -47,7 +47,7 @@ describe('ProjectShareApi', () => {
       api.register('eco-pack', 'FEED').subscribe({ next: resolve, error: reject })
     })
 
-    const req = httpMock.expectOne('/api/v1/projects/eco-pack/share')
+    const req = httpMock.expectOne('http://localhost:8080/api/v1/projects/eco-pack/share')
     expect(req.request.method).toBe('POST')
     expect(req.request.body).toEqual({ origin: 'FEED' })
     req.flush({

@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.pulso.backend.config.ApiMessages;
 import com.pulso.backend.config.DiscoveryProperties;
 import com.pulso.backend.discovery.api.InvalidRequestException;
+import com.pulso.backend.interaction.application.GetProjectFeedback;
 import com.pulso.backend.interaction.application.ListDiscoveryFeed;
 import com.pulso.backend.interaction.application.ListProjectCollection;
 import com.pulso.backend.interaction.application.SetProjectFeedback;
@@ -33,6 +34,7 @@ public class ProjectInteractionController {
     private final ListProjectCollection listProjectCollection;
     private final SetSavedProject setSavedProject;
     private final SetProjectFeedback setProjectFeedback;
+    private final GetProjectFeedback getProjectFeedback;
     private final DiscoveryProperties properties;
 
     public ProjectInteractionController(
@@ -40,11 +42,13 @@ public class ProjectInteractionController {
             ListProjectCollection listProjectCollection,
             SetSavedProject setSavedProject,
             SetProjectFeedback setProjectFeedback,
+            GetProjectFeedback getProjectFeedback,
             DiscoveryProperties properties) {
         this.listDiscoveryFeed = listDiscoveryFeed;
         this.listProjectCollection = listProjectCollection;
         this.setSavedProject = setSavedProject;
         this.setProjectFeedback = setProjectFeedback;
+        this.getProjectFeedback = getProjectFeedback;
         this.properties = properties;
     }
 
@@ -118,6 +122,23 @@ public class ProjectInteractionController {
                 type,
                 request.weightsOrNull());
         return ProjectInteractionMutationResponse.feedback(projectId, type.name());
+    }
+
+    @GetMapping("/project-feedback/{projectId}")
+    public ProjectInteractionMutationResponse currentProjectFeedback(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID projectId) {
+        var type = getProjectFeedback.execute(authenticatedProfileId(jwt), projectId);
+        return ProjectInteractionMutationResponse.feedback(
+                projectId, type == null ? null : type.name());
+    }
+
+    @DeleteMapping("/project-feedback/{projectId}")
+    public ProjectInteractionMutationResponse clearProjectFeedback(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID projectId) {
+        setProjectFeedback.clear(authenticatedProfileId(jwt), projectId);
+        return ProjectInteractionMutationResponse.feedback(projectId, null);
     }
 
     private ProjectCollectionResponse listCollection(

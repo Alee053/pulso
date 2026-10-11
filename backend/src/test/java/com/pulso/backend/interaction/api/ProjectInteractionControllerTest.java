@@ -1,24 +1,23 @@
 package com.pulso.backend.interaction.api;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
@@ -26,6 +25,7 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 
 import com.pulso.backend.config.DiscoveryProperties;
 import com.pulso.backend.discovery.api.ApiExceptionHandler;
+import com.pulso.backend.interaction.application.GetProjectFeedback;
 import com.pulso.backend.interaction.application.ListDiscoveryFeed;
 import com.pulso.backend.interaction.application.ListProjectCollection;
 import com.pulso.backend.interaction.application.ProjectInteractionRepository;
@@ -127,6 +127,15 @@ class ProjectInteractionControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.feedbackType").value("INTERESTED"));
         assertThat(repository.lastFeedbackType).isEqualTo(ProjectFeedbackType.INTERESTED);
+
+        mockMvc.perform(get("/api/v1/me/project-feedback/{projectId}", PROJECT_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.feedbackType").value("INTERESTED"));
+        mockMvc.perform(delete("/api/v1/me/project-feedback/{projectId}", PROJECT_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.projectId").value(PROJECT_ID.toString()))
+                .andExpect(jsonPath("$.feedbackType").value(org.hamcrest.Matchers.nullValue()));
+        assertThat(repository.lastFeedbackType).isNull();
         assertThat(preferencesRepository.savedWeights).containsEntry("impact", 2.5);
     }
 
@@ -138,6 +147,7 @@ class ProjectInteractionControllerTest {
                 new ListProjectCollection(repository),
                 new SetSavedProject(repository),
                 new SetProjectFeedback(repository, preferencesRepository),
+                new GetProjectFeedback(repository),
                 new DiscoveryProperties(0, 20, 50, 100_000)))
                 .setControllerAdvice(new ApiExceptionHandler())
                 .setCustomArgumentResolvers(new JwtArgumentResolver())
@@ -249,6 +259,18 @@ class ProjectInteractionControllerTest {
         public void setSaved(UUID profileId, UUID projectId, boolean saved) {
             lastProfileId = profileId;
             lastSaved = saved;
+        }
+
+        @Override
+        public ProjectFeedbackType findFeedback(UUID profileId, UUID projectId) {
+            lastProfileId = profileId;
+            return lastFeedbackType;
+        }
+
+        @Override
+        public void clearFeedback(UUID profileId, UUID projectId) {
+            lastProfileId = profileId;
+            lastFeedbackType = null;
         }
 
         @Override

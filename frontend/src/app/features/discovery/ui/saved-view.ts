@@ -17,6 +17,7 @@ export class SavedViewComponent {
   readonly common = commonStrings
   @Input() savedStartups: Startup[] = []
   @Input() interestedStartups: Startup[] = []
+  @Input() isSavingInteraction = false
   @Input() savedCount = 0
   @Input() interestedCount = 0
   @Input() savedHasMore = false
@@ -28,6 +29,7 @@ export class SavedViewComponent {
   @Input() savedProjectsErrorMessage: string | null = null
   @Input() interestedProjectsErrorMessage: string | null = null
   @Output() startupSelected = new EventEmitter<Startup>()
+  @Output() interestCleared = new EventEmitter<string>()
   @Output() retrySavedRequested = new EventEmitter<void>()
   @Output() retryInterestedRequested = new EventEmitter<void>()
   @Output() loadMoreSavedRequested = new EventEmitter<void>()

@@ -357,6 +357,32 @@ describe('PulsoSession', () => {
     expect(session.interestedCount()).toBe(1)
   })
 
+  it('clears interested feedback from the collection and refreshes the feed', async () => {
+    const project = startup('project-1', 'EcoPack Bolivia', 'Sostenibilidad', 'Cochabamba')
+    const loadInterestedProjects = vi.fn().mockReturnValue(of({
+      data: [project],
+      meta: { offset: 0, limit: 20, hasMore: false, totalCount: 1 },
+    }))
+    const loadDiscoveryFeed = vi.fn().mockReturnValue(of({
+      data: [{ startup: project, saved: false, feedbackType: null }],
+      meta: { offset: 0, limit: 20, hasMore: false, totalCount: 1, nextCursor: null },
+    }))
+    const clearFeedback = vi.fn().mockReturnValue(of({
+      projectId: 'project-1', feedbackType: null,
+    }))
+    const session = createSession({ loadInterestedProjects, loadDiscoveryFeed, clearFeedback })
+
+    await session.loadInterestedProjects()
+    expect(session.interestedCount()).toBe(1)
+    await session.clearInterest('project-1')
+
+    expect(clearFeedback).toHaveBeenCalledExactlyOnceWith('project-1')
+    expect(session.interestedCount()).toBe(0)
+    expect(session.interestedIds()).toEqual([])
+    expect(session.interestedStartups()).toEqual([])
+    expect(loadDiscoveryFeed).toHaveBeenCalledWith(undefined, null)
+  })
+
   it('discards a collection response from the previous authenticated account', async () => {
     const response = new Subject<{
       data: ReturnType<typeof startup>[]
@@ -460,6 +486,7 @@ function createSession(overrides: {
   saveProject?: ReturnType<typeof vi.fn>
   unsaveProject?: ReturnType<typeof vi.fn>
   setFeedback?: ReturnType<typeof vi.fn>
+  clearFeedback?: ReturnType<typeof vi.fn>
   loadCatalogs?: ReturnType<typeof vi.fn>
   loadPreferences?: ReturnType<typeof vi.fn>
   savePreferences?: ReturnType<typeof vi.fn>
@@ -479,6 +506,7 @@ function createSession(overrides: {
   const saveProject = overrides.saveProject ?? vi.fn().mockReturnValue(of({}))
   const unsaveProject = overrides.unsaveProject ?? vi.fn().mockReturnValue(of({}))
   const setFeedback = overrides.setFeedback ?? vi.fn().mockReturnValue(of({}))
+  const clearFeedback = overrides.clearFeedback ?? vi.fn().mockReturnValue(of({}))
   const loadCatalogs = overrides.loadCatalogs ?? vi.fn().mockReturnValue(of({
     intentions: [...onboardingIntentions],
     stages: ['IDEA', 'MVP', 'EARLY_STAGE'],
@@ -515,6 +543,7 @@ function createSession(overrides: {
         saveProject,
         unsaveProject,
         setFeedback,
+        clearFeedback,
       } },
       { provide: CatalogsApi, useValue: { load: loadCatalogs } },
       { provide: PreferencesApi, useValue: { load: loadPreferences, save: savePreferences } },

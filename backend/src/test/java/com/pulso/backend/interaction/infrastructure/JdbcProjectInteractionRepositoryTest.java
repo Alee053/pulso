@@ -1,8 +1,5 @@
 package com.pulso.backend.interaction.infrastructure;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -14,6 +11,8 @@ import java.util.concurrent.TimeUnit;
 
 import javax.sql.DataSource;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -21,9 +20,9 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.jdbc.support.JdbcTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import com.pulso.backend.interaction.domain.DiscoveryFeedCursor;
 import com.pulso.backend.interaction.domain.DiscoveryFeedItem;
@@ -156,6 +155,74 @@ class JdbcProjectInteractionRepositoryTest {
                 new InteractionSignal(PROFILE_ID, SAVED_PROJECT_ID, "SAVED", "FEED"),
                 new InteractionSignal(PROFILE_ID, SAVED_PROJECT_ID, "INTERESTED", "FEED"),
                 new InteractionSignal(PROFILE_ID, DISMISSED_PROJECT_ID, "DISMISSED", "FEED"));
+    }
+
+    @Test
+    void readsOnlyOwnFeedbackAndClearsIdempotentlyWithAppendOnlyEvents() {
+        assertThat(repository.findFeedback(PROFILE_ID, SAVED_PROJECT_ID)).isNull();
+        repository.clearFeedback(PROFILE_ID, SAVED_PROJECT_ID);
+        assertThat(eventTypes()).isEmpty();
+
+        repository.setFeedback(PROFILE_ID, SAVED_PROJECT_ID, ProjectFeedbackType.INTERESTED);
+        repository.setFeedback(OTHER_PROFILE_ID, SAVED_PROJECT_ID, ProjectFeedbackType.DISMISSED);
+        assertThat(repository.findFeedback(PROFILE_ID, SAVED_PROJECT_ID))
+                .isEqualTo(ProjectFeedbackType.INTERESTED);
+        assertThat(repository.findFeedback(OTHER_PROFILE_ID, SAVED_PROJECT_ID))
+                .isEqualTo(ProjectFeedbackType.DISMISSED);
+
+        repository.clearFeedback(PROFILE_ID, SAVED_PROJECT_ID);
+        repository.clearFeedback(PROFILE_ID, SAVED_PROJECT_ID);
+        assertThat(repository.findFeedback(PROFILE_ID, SAVED_PROJECT_ID)).isNull();
+        assertThat(repository.findFeedback(OTHER_PROFILE_ID, SAVED_PROJECT_ID))
+                .isEqualTo(ProjectFeedbackType.DISMISSED);
+        assertThat(repository.countInterestedProjects(PROFILE_ID)).isZero();
+        assertThat(repository.countDiscoveryFeed(PROFILE_ID)).isEqualTo(3);
+        assertThat(jdbcClient.sql("""
+                select count(*) from public.project_feedback
+                where profile_id = :profileId and project_id = :projectId
+                """)
+                .param("profileId", PROFILE_ID)
+                .param("projectId", SAVED_PROJECT_ID)
+                .query(Integer.class).single()).isEqualTo(1);
+        assertThat(interactionSignals()).containsExactly(
+                new InteractionSignal(PROFILE_ID, SAVED_PROJECT_ID, "INTERESTED", "FEED"),
+                new InteractionSignal(OTHER_PROFILE_ID, SAVED_PROJECT_ID, "DISMISSED", "FEED"),
+                new InteractionSignal(PROFILE_ID, SAVED_PROJECT_ID, "FEEDBACK_CLEARED", "FEED"));
+
+        repository.setFeedback(PROFILE_ID, SAVED_PROJECT_ID, ProjectFeedbackType.DISMISSED);
+        assertThat(repository.findFeedback(PROFILE_ID, SAVED_PROJECT_ID))
+                .isEqualTo(ProjectFeedbackType.DISMISSED);
+        assertThat(interactionSignals()).hasSize(4);
+    }
+
+    @Test
+    void rejectsFeedbackOnUnpublishedAndUnknownProjectsWithoutEvents() {
+        assertThatThrownBy(() -> repository.setFeedback(PROFILE_ID, DRAFT_PROJECT_ID,
+                ProjectFeedbackType.INTERESTED)).isInstanceOf(PublicProjectNotFoundException.class);
+        assertThatThrownBy(() -> repository.clearFeedback(PROFILE_ID, DRAFT_PROJECT_ID))
+                .isInstanceOf(PublicProjectNotFoundException.class);
+        assertThatThrownBy(() -> repository.findFeedback(PROFILE_ID, DRAFT_PROJECT_ID))
+                .isInstanceOf(PublicProjectNotFoundException.class);
+        assertThatThrownBy(() -> repository.setFeedback(PROFILE_ID, UNKNOWN_PROJECT_ID,
+                ProjectFeedbackType.DISMISSED)).isInstanceOf(PublicProjectNotFoundException.class);
+        assertThatThrownBy(() -> repository.clearFeedback(PROFILE_ID, UNKNOWN_PROJECT_ID))
+                .isInstanceOf(PublicProjectNotFoundException.class);
+        assertThat(eventTypes()).isEmpty();
+    }
+
+    @Test
+    void rollsBackFeedbackWhenClearEventCannotBeRecorded() {
+        repository.setFeedback(PROFILE_ID, SAVED_PROJECT_ID, ProjectFeedbackType.INTERESTED);
+        jdbcClient.sql("""
+                alter table public.interaction_events
+                add constraint interaction_events_reject_clear check (event_type <> 'FEEDBACK_CLEARED')
+                """).update();
+        assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status ->
+                repository.clearFeedback(PROFILE_ID, SAVED_PROJECT_ID)))
+                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThat(repository.findFeedback(PROFILE_ID, SAVED_PROJECT_ID))
+                .isEqualTo(ProjectFeedbackType.INTERESTED);
+        assertThat(eventTypes()).containsExactly("INTERESTED");
     }
 
     @Test

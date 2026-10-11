@@ -284,7 +284,7 @@ Table interaction_events {
   anonymous_session_id uuid
   project_id uuid
   opportunity_id uuid
-  event_type text [not null, note: "PROJECT_VIEWED, PROJECT_OPENED, MEMBER_VIEWED, OPPORTUNITY_VIEWED, SAVED, UNSAVED, INTERESTED, DISMISSED, SHARED, CONTACT_STARTED o MESSAGE_STARTED"]
+  event_type text [not null, note: "PROJECT_VIEWED, PROJECT_OPENED, MEMBER_VIEWED, OPPORTUNITY_VIEWED, SAVED, UNSAVED, INTERESTED, DISMISSED, FEEDBACK_CLEARED, SHARED, CONTACT_STARTED o MESSAGE_STARTED"]
   source text [not null, note: "FEED, SEARCH, PROJECT_DETAIL, OPPORTUNITY, MESSAGE o EXTERNAL_SHARE"]
   position int
   duration_ms int

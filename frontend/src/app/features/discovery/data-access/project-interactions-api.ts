@@ -112,6 +112,18 @@ export class ProjectInteractionsApi {
     )
   }
 
+  getFeedback(projectId: string): Observable<ProjectInteractionMutationDto> {
+    return this.http.get<ProjectInteractionMutationDto>(
+      `${appConfig.apiBaseUrl}${apiPaths.projectFeedback}/${encodeURIComponent(projectId)}`,
+    )
+  }
+
+  clearFeedback(projectId: string): Observable<ProjectInteractionMutationDto> {
+    return this.http.delete<ProjectInteractionMutationDto>(
+      `${appConfig.apiBaseUrl}${apiPaths.projectFeedback}/${encodeURIComponent(projectId)}`,
+    )
+  }
+
   private loadCollection(
     path: string,
     limit: number,

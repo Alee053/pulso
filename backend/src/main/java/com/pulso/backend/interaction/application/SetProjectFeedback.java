@@ -7,9 +7,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.pulso.backend.interaction.domain.ProjectFeedbackType;
-import com.pulso.backend.project.domain.ProjectValidationException;
 import com.pulso.backend.preference.application.OnboardingPreferencesRepository;
 import com.pulso.backend.preference.domain.RecommendationWeights;
+import com.pulso.backend.project.domain.ProjectValidationException;
 
 @Service
 public class SetProjectFeedback {
@@ -22,6 +22,14 @@ public class SetProjectFeedback {
             OnboardingPreferencesRepository preferencesRepository) {
         this.repository = repository;
         this.preferencesRepository = preferencesRepository;
+    }
+
+    @Transactional
+    public void clear(UUID profileId, UUID projectId) {
+        if (profileId == null || projectId == null) {
+            throw new ProjectValidationException("profileId and projectId are required.");
+        }
+        repository.clearFeedback(profileId, projectId);
     }
 
     @Transactional

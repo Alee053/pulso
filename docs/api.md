@@ -778,6 +778,10 @@ bounded `offset` with `limit`, but `offset` and `cursor` cannot be combined.
 - `DELETE /api/v1/me/saved-projects/{projectId}` removes it from saved items.
 - `PUT /api/v1/me/project-feedback/{projectId}` records an `INTERESTED` or
   `DISMISSED` decision and can include updated recommendation weights.
+- `GET /api/v1/me/project-feedback/{projectId}` returns **only the JWT owner's**
+  current decision (`feedbackType: null` when it has not been set or was cleared).
+- `DELETE /api/v1/me/project-feedback/{projectId}` clears that decision and
+  returns `feedbackType: null`. Clearing twice is idempotent.
 
 ```json
 {
@@ -787,9 +791,13 @@ bounded `offset` with `limit`, but `offset` and `cursor` cannot be combined.
 ```
 
 Saved state is upserted in `public.saved_projects`; current decision state is
-upserted in `public.project_feedback`. Changed actions append one row to
+upserted in `public.project_feedback`, with one row per profile/project. Clearing
+changes its state to `NONE` (without deleting the row); an unassigned project
+remains without a feedback row. Changes to `INTERESTED`, `DISMISSED`, and `NONE`
+append respectively `INTERESTED`, `DISMISSED`, and `FEEDBACK_CLEARED` events to
 `public.interaction_events` in the same transaction. Repeating an unchanged
-action does not duplicate an event. The backend validates that mutation targets
+action does not duplicate an event. The interested and saved collection counts
+belong to the signed-in profile only; there are no public likes or counts. The backend validates that mutation targets
 are published projects, and the browser accesses this data only through these
 HTTP endpoints. Feedback weights are optional; when supplied, their keys must
 be lowercase slugs and each value must be finite and between `-100` and `100`,

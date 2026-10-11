@@ -77,22 +77,29 @@
         </section>
         <ng-container *ngIf="!interestedProjectsErrorMessage && hasLoadedInterestedProjects">
           <div *ngIf="interestedStartups.length > 0; else noInterested" class="space-y-3">
-            <button *ngFor="let startup of interestedStartups" type="button" class="collection-card group" (click)="startupSelected.emit(startup)">
-              <pulso-startup-thumb [startup]="startup" />
-              <span class="collection-card__content">
-                <span class="flex items-start justify-between gap-3">
-                  <span class="min-w-0">
-                    <span class="collection-card__title">{{ startup.name }}</span>
-                    <span class="collection-card__meta">{{ startup.city }} · {{ startup.sector }}</span>
+            <div *ngFor="let startup of interestedStartups" class="space-y-2">
+              <button type="button" class="collection-card group" (click)="startupSelected.emit(startup)">
+                <pulso-startup-thumb [startup]="startup" />
+                <span class="collection-card__content">
+                  <span class="flex items-start justify-between gap-3">
+                    <span class="min-w-0">
+                      <span class="collection-card__title">{{ startup.name }}</span>
+                      <span class="collection-card__meta">{{ startup.city }} · {{ startup.sector }}</span>
+                    </span>
+                    <pulso-icon name="chevron-right" [size]="18" class="mt-1 shrink-0 text-slate-400" />
                   </span>
-                  <pulso-icon name="chevron-right" [size]="18" class="mt-1 shrink-0 text-slate-400" />
+                  <span class="collection-card__pitch">{{ startup.pitch }}</span>
+                  <span class="mt-3 flex flex-wrap gap-1.5">
+                    <span *ngFor="let badge of startup.badges | slice:0:2" class="mini-badge">{{ badge }}</span>
+                  </span>
                 </span>
-                <span class="collection-card__pitch">{{ startup.pitch }}</span>
-                <span class="mt-3 flex flex-wrap gap-1.5">
-                  <span *ngFor="let badge of startup.badges | slice:0:2" class="mini-badge">{{ badge }}</span>
-                </span>
-              </span>
-            </button>
+              </button>
+              <button type="button" class="contact-button" [disabled]="isSavingInteraction"
+                      [attr.aria-label]="strings.clearInterest + ': ' + startup.name"
+                      (click)="interestCleared.emit(startup.id)">
+                {{ strings.clearInterest }}
+              </button>
+            </div>
           </div>
           <ng-template #noInterested><p class="state-panel text-sm">{{ strings.noneInterested }}</p></ng-template>
           <button *ngIf="interestedHasMore" type="button" class="contact-button mt-4" [disabled]="isLoadingInterestedProjects" (click)="loadMoreInterestedRequested.emit()">

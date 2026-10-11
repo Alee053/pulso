@@ -598,6 +598,27 @@ export class PulsoSession {
         }, feedStrings.interactionFeedbackFailed)
     }
 
+    async clearInterest(projectId: string): Promise<void> {
+        if (this.isSavingInteraction() || !this.interestedIds().includes(projectId)) {
+            return
+        }
+        const generation = this.requestGeneration
+        await this.runInteraction(async () => {
+            await firstValueFrom(this.projectInteractionsApi.clearFeedback(projectId))
+            if (generation !== this.requestGeneration) {
+                return
+            }
+            this.interestedProjectsRevision += 1
+            this.interestedIds.update((current) => current.filter((id) => id !== projectId))
+            this.interestedProjects.update((current) => current.filter((item) => item.id !== projectId))
+            this.interestedCount.update((count) => Math.max(0, count - 1))
+            this.feedNextCursor = null
+            // A cleared project becomes eligible for discovery again.
+            // The next feed request must start from the beginning, not an old cursor.
+            void this.loadCatalog()
+        }, savedStrings.clearInterestFailed)
+    }
+
     retryInteraction(): void {
         if (this.pendingInteractionAction) {
             void this.runInteraction(

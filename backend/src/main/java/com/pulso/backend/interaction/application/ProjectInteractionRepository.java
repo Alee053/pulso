@@ -1,13 +1,13 @@
 package com.pulso.backend.interaction.application;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
-import com.pulso.backend.interaction.domain.DiscoveryFeedItem;
 import com.pulso.backend.interaction.domain.DiscoveryFeedCursor;
+import com.pulso.backend.interaction.domain.DiscoveryFeedItem;
 import com.pulso.backend.interaction.domain.ProjectFeedbackType;
 import com.pulso.backend.interaction.domain.ProjectSummary;
+import com.pulso.backend.project.domain.ProjectShareOrigin;
 
 public interface ProjectInteractionRepository {
 
@@ -31,7 +31,11 @@ public interface ProjectInteractionRepository {
 
     void setSaved(UUID profileId, UUID projectId, boolean saved);
 
+    ProjectFeedbackType findFeedback(UUID profileId, UUID projectId);
+
     void setFeedback(UUID profileId, UUID projectId, ProjectFeedbackType feedbackType);
 
-void insertSharedEvent(UUID profileId, UUID projectId, com.pulso.backend.project.domain.ProjectShareOrigin origin);
+    void clearFeedback(UUID profileId, UUID projectId);
+
+    void insertSharedEvent(UUID profileId, UUID projectId, ProjectShareOrigin origin);
 }

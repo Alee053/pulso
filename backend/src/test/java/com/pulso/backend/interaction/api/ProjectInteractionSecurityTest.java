@@ -1,11 +1,5 @@
 package com.pulso.backend.interaction.api;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
@@ -15,6 +9,7 @@ import java.util.UUID;
 
 import javax.crypto.spec.SecretKeySpec;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -22,6 +17,10 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -30,6 +29,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.pulso.backend.config.SecurityConfig;
 import com.pulso.backend.discovery.api.ApiExceptionHandler;
+import com.pulso.backend.interaction.application.GetProjectFeedback;
 import com.pulso.backend.interaction.application.ListDiscoveryFeed;
 import com.pulso.backend.interaction.application.ListProjectCollection;
 import com.pulso.backend.interaction.application.ProjectInteractionRepository;
@@ -102,6 +102,40 @@ class ProjectInteractionSecurityTest {
         assertThat(repository.lastProfileId).isEqualTo(PROFILE_ID);
     }
 
+    @Test
+    void feedbackOperationsRequireAuthenticationAndUseOnlyTheJwtSubject() throws Exception {
+        mockMvc.perform(get("/api/v1/me/project-feedback/{projectId}", PROJECT_ID))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(put("/api/v1/me/project-feedback/{projectId}", PROJECT_ID)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"feedbackType\":\"INTERESTED\"}"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(delete("/api/v1/me/project-feedback/{projectId}", PROJECT_ID))
+                .andExpect(status().isUnauthorized());
+
+        String accessToken = token(PROFILE_ID, "authenticated");
+        mockMvc.perform(put("/api/v1/me/project-feedback/{projectId}", PROJECT_ID)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .param("profileId", OTHER_PROFILE_ID.toString())
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"feedbackType\":\"DISMISSED\"}"))
+                .andExpect(status().isOk());
+        assertThat(repository.lastProfileId).isEqualTo(PROFILE_ID);
+        mockMvc.perform(get("/api/v1/me/project-feedback/{projectId}", PROJECT_ID)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .param("profileId", OTHER_PROFILE_ID.toString()))
+                .andExpect(status().isOk());
+        assertThat(repository.lastProfileId).isEqualTo(PROFILE_ID);
+        mockMvc.perform(delete("/api/v1/me/project-feedback/{projectId}", PROJECT_ID)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .param("profileId", OTHER_PROFILE_ID.toString()))
+                .andExpect(status().isOk());
+        assertThat(repository.lastProfileId).isEqualTo(PROFILE_ID);
+        mockMvc.perform(delete("/api/v1/me/project-feedback/{projectId}", PROJECT_ID)
+                        .header("Authorization", "Bearer " + token(PROFILE_ID, "service_role")))
+                .andExpect(status().isUnauthorized());
+    }
+
     private static String token(UUID subject, String role) throws Exception {
         Date issuedAt = new Date();
         Date expiresAt = new Date(issuedAt.getTime() + 300_000);
@@ -167,6 +201,11 @@ class ProjectInteractionSecurityTest {
         }
 
         @Bean
+        GetProjectFeedback getProjectFeedback(ProjectInteractionRepository repository) {
+            return new GetProjectFeedback(repository);
+        }
+
+        @Bean
         SetProjectFeedback setProjectFeedback(
                 ProjectInteractionRepository repository,
                 OnboardingPreferencesRepository preferencesRepository) {
@@ -221,6 +260,17 @@ class ProjectInteractionSecurityTest {
 
             @Override
             public void setSaved(UUID profileId, UUID projectId, boolean saved) {
+                lastProfileId = profileId;
+            }
+
+            @Override
+            public ProjectFeedbackType findFeedback(UUID profileId, UUID projectId) {
+                lastProfileId = profileId;
+                return null;
+            }
+
+            @Override
+            public void clearFeedback(UUID profileId, UUID projectId) {
                 lastProfileId = profileId;
             }
 

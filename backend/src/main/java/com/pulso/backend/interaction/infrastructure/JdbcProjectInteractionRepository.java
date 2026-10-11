@@ -9,8 +9,8 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 import com.pulso.backend.interaction.application.ProjectInteractionRepository;
-import com.pulso.backend.interaction.domain.DiscoveryFeedItem;
 import com.pulso.backend.interaction.domain.DiscoveryFeedCursor;
+import com.pulso.backend.interaction.domain.DiscoveryFeedItem;
 import com.pulso.backend.interaction.domain.ProjectFeedbackType;
 import com.pulso.backend.interaction.domain.ProjectSummary;
 import com.pulso.backend.project.application.PublicProjectNotFoundException;
@@ -231,6 +231,25 @@ public class JdbcProjectInteractionRepository implements ProjectInteractionRepos
     }
 
     @Override
+    public ProjectFeedbackType findFeedback(UUID profileId, UUID projectId) {
+        requirePublicProject(projectId);
+        List<String> states = jdbcClient.sql("""
+                select feedback_type
+                from public.project_feedback
+                where profile_id = :profileId
+                  and project_id = :projectId
+                """)
+                .param("profileId", profileId)
+                .param("projectId", projectId)
+                .query((resultSet, rowNumber) -> resultSet.getString("feedback_type"))
+                .list();
+        if (states.isEmpty() || "NONE".equals(states.getFirst())) {
+            return null;
+        }
+        return ProjectFeedbackType.valueOf(states.getFirst());
+    }
+
+    @Override
     public void setFeedback(UUID profileId, UUID projectId, ProjectFeedbackType feedbackType) {
         requirePublicProject(projectId);
         List<UUID> changed = jdbcClient.sql("""
@@ -251,6 +270,28 @@ public class JdbcProjectInteractionRepository implements ProjectInteractionRepos
 
         if (!changed.isEmpty()) {
             insertEvent(profileId, projectId, feedbackType.name());
+        }
+    }
+
+    @Override
+    public void clearFeedback(UUID profileId, UUID projectId) {
+        requirePublicProject(projectId);
+        List<UUID> changed = jdbcClient.sql("""
+                update public.project_feedback
+                set feedback_type = 'NONE',
+                    changed_at = timezone('utc', now())
+                where profile_id = :profileId
+                  and project_id = :projectId
+                  and feedback_type <> 'NONE'
+                returning project_id
+                """)
+                .param("profileId", profileId)
+                .param("projectId", projectId)
+                .query((resultSet, rowNumber) -> resultSet.getObject("project_id", UUID.class))
+                .list();
+
+        if (!changed.isEmpty()) {
+            insertEvent(profileId, projectId, "FEEDBACK_CLEARED");
         }
     }
 

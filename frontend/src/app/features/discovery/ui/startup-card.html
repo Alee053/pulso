@@ -1,30 +1,35 @@
 <article class="discovery-card" [class.discovery-card--dragging]="isDragging" [style.transform]="cardTransform"
-  (pointerdown)="onPointerDown($event)" (pointermove)="onPointerMove($event)" (pointerup)="onPointerUp($event)"
-  (pointercancel)="onPointerCancel($event)" (click)="onCardClick($event)" role="group" tabindex="-1" [attr.aria-label]="strings.openAria(startup.name)">
-  <div class="discovery-card__cover" [style.background]="'linear-gradient(130deg, ' + startup.accent + '55, #14273c)'">
-    <img *ngIf="startup.image && !hasImageError" [src]="startup.image" [alt]="startup.imageAlt" class="discovery-card__image" draggable="false" (error)="hasImageError = true" />
-    <div class="discovery-card__cover-shade" aria-hidden="true"></div>
-    <div class="discovery-card__header">
-      <span class="project-identity"><span class="project-identity__mark">{{ startup.logoMark }}</span><span>{{ startup.name }}</span></span>
-      <span class="project-stage">{{ startup.stage }}</span>
+         (pointerdown)="onPointerDown($event)" (pointermove)="onPointerMove($event)" (pointerup)="onPointerUp($event)"
+         (pointercancel)="onPointerCancel($event)" (click)="onCardClick($event)" role="group" tabindex="-1" [attr.aria-label]="strings.openAria(startup.name)">
+    <div class="discovery-card__cover" [style.background]="'linear-gradient(130deg, ' + startup.accent + '55, #14273c)'">
+        <img *ngIf="startup.image && !hasImageError" [src]="startup.image" [alt]="startup.imageAlt" class="discovery-card__image" draggable="false" (error)="hasImageError = true" />
+        <div class="discovery-card__cover-shade" aria-hidden="true"></div>
+        <div class="discovery-card__header">
+            <span class="project-identity"><span class="project-identity__mark">{{ startup.logoMark }}</span><span>{{ startup.name }}</span></span>
+            <span class="project-stage">{{ startup.stage }}</span>
+        </div>
     </div>
-  </div>
-  <div class="discovery-card__content">
-    <div class="discovery-card__metadata">
-      <span *ngIf="startup.city" class="inline-flex items-center gap-1.5"><pulso-icon name="map-pin" [size]="14" />{{ startup.city }}</span>
-      <span>{{ startup.sector }}</span>
+    <div class="discovery-card__content">
+        <div class="discovery-card__metadata">
+            <span *ngIf="startup.city" class="inline-flex items-center gap-1.5"><pulso-icon name="map-pin" [size]="14" />{{ startup.city }}</span>
+            <span>{{ startup.sector }}</span>
+        </div>
+        <div class="discovery-card__title-row">
+            <h2 class="discovery-card__title">{{ startup.name }}</h2>
+            <div class="flex items-center gap-2">
+                <pulso-share-button [projectRef]="startup.id"
+                                    [projectName]="startup.name"
+                                    origin="FEED" />
+                <button type="button" class="discovery-card__save" (pointerdown)="$event.stopPropagation()" (click)="saveFromButton($event)" [disabled]="disabled" [attr.aria-pressed]="isSaved" [attr.aria-label]="isSaved ? strings.unsaveAria : strings.saveAria">
+                    <pulso-icon name="bookmark" [size]="19" [strokeWidth]="isSaved ? 2.4 : 1.8" [filled]="isSaved" />
+                </button>
+            </div>
+        </div>
+        <p class="discovery-card__pitch">{{ startup.pitch }}</p>
+        <p *ngIf="startup.description" class="discovery-card__description">{{ startup.description }}</p>
+        <div *ngIf="startup.badges.length > 0" class="mt-4 flex flex-wrap gap-2"><span *ngFor="let badge of startup.badges" class="card-badge">{{ badge }}</span></div>
+        <button type="button" class="discovery-card__profile-link" [disabled]="disabled" (pointerdown)="$event.stopPropagation()" (click)="selectFromButton($event)">
+            {{ strings.openProfile }} <pulso-icon name="arrow-up-right" [size]="16" />
+        </button>
     </div>
-    <div class="discovery-card__title-row">
-      <h2 class="discovery-card__title">{{ startup.name }}</h2>
-      <button type="button" class="discovery-card__save" (pointerdown)="$event.stopPropagation()" (click)="saveFromButton($event)" [disabled]="disabled" [attr.aria-pressed]="isSaved" [attr.aria-label]="isSaved ? strings.unsaveAria : strings.saveAria">
-        <pulso-icon name="bookmark" [size]="19" [strokeWidth]="isSaved ? 2.4 : 1.8" [filled]="isSaved" />
-      </button>
-    </div>
-    <p class="discovery-card__pitch">{{ startup.pitch }}</p>
-    <p *ngIf="startup.description" class="discovery-card__description">{{ startup.description }}</p>
-    <div *ngIf="startup.badges.length > 0" class="mt-4 flex flex-wrap gap-2"><span *ngFor="let badge of startup.badges" class="card-badge">{{ badge }}</span></div>
-    <button type="button" class="discovery-card__profile-link" [disabled]="disabled" (pointerdown)="$event.stopPropagation()" (click)="selectFromButton($event)">
-      {{ strings.openProfile }} <pulso-icon name="arrow-up-right" [size]="16" />
-    </button>
-  </div>
 </article>

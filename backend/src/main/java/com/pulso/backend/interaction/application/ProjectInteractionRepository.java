@@ -25,4 +25,6 @@ public interface ProjectInteractionRepository {
     void setSaved(UUID profileId, UUID projectId, boolean saved);
 
     void setFeedback(UUID profileId, UUID projectId, ProjectFeedbackType feedbackType);
+
+void insertSharedEvent(UUID profileId, UUID projectId, com.pulso.backend.project.domain.ProjectShareOrigin origin);
 }

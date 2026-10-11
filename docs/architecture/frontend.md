@@ -151,3 +151,17 @@ The authenticated discovery feed and its profile collections use the backend API
 Do not create a shared TypeScript package for the first endpoint. Generate or share contract artifacts only after repeated cross-project duplication proves that it reduces rather than increases coupling.
 
 See the [Angular style guide](https://angular.dev/style-guide), [Angular file structure reference](https://angular.dev/reference/configs/file-structure), and [current stack](../stack.md).
+
+## Onboarding completion and editing
+
+The catalog adapter loads supported intentions/stages from the backend and active
+sectors/tags/skills from its catalog endpoint. Interests use selected tags, as in
+the existing domain model. `PulsoSession` owns the draft skill levels, validates
+that each selected skill has a level, and saves with `completeOnboarding: true`.
+The persisted `onboardingCompletedAt` determines whether onboarding is complete.
+
+The profile opens the same onboarding component for later edits. Cancelling
+restores the last persisted selections without a request; saving uses the same
+validation and returns to the profile. Controls are locked during load/save and
+responses from previous authenticated accounts are discarded. Legacy preference
+calls using skill IDs remain supported by the backend; see [API](../api.md).

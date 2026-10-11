@@ -48,6 +48,12 @@ startup-named route and `Startup*` DTOs are the temporary compatibility surface
 for the first vertical slice; the canonical domain/persistence naming and
 cutover sequence are in [ADR 0004](../adr/0004-project-startup-compatibility.md).
 
+The `opportunity/` feature package owns project opportunity contracts, lifecycle
+rules, and JDBC persistence. Its management endpoints derive identity from the
+validated JWT and read `OWNER`/`ADMIN` permissions from active project
+membership. See [project opportunities](./project-opportunities.md) for the
+state matrix and public-project invariant.
+
 ## Feature plus inward layers
 
 The first real product feature is organized by business capability. Add another

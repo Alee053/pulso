@@ -8,8 +8,7 @@ import type {
   SkillCatalogItem,
   TagCatalogItem,
 } from '../domain/catalog'
-import type { ProjectStage, ProjectStageOption } from '../domain/preferences'
-import type { InterestId, InterestOption } from '../domain/startup'
+import { proficiencyOptions, type IntentionOption, type OnboardingIntention, type ProfileSkill, type ProjectStage, type ProjectStageOption } from '../domain/preferences'
 import { onboardingStrings } from '../strings/onboarding.strings'
 
 @Component({
@@ -19,15 +18,17 @@ import { onboardingStrings } from '../strings/onboarding.strings'
   templateUrl: './onboarding.html',
 })
 export class OnboardingComponent {
-  @Input() interestOptions: readonly InterestOption[] = []
-  @Input() selectedInterests: InterestId[] = []
+  @Input() intentionOptions: readonly IntentionOption[] = []
+  @Input() selectedIntentions: OnboardingIntention[] = []
+  @Input() editing = false
+  @Input() validationMessage: string | null = null
 
   @Input() sectors: readonly SectorCatalogItem[] = []
   @Input() tags: readonly TagCatalogItem[] = []
   @Input() skills: readonly SkillCatalogItem[] = []
   @Input() selectedSectorIds: string[] = []
   @Input() selectedTagIds: string[] = []
-  @Input() selectedSkillIds: string[] = []
+  @Input() selectedSkills: ProfileSkill[] = []
   @Input() stages: readonly ProjectStageOption[] = []
   @Input() selectedStageIds: ProjectStage[] = []
   @Input() catalogsLoading = false
@@ -39,7 +40,9 @@ export class OnboardingComponent {
   @Input() preferencesSaving = false
   @Input() preferencesSaveErrorMessage: string | null = null
 
-  @Output() interestToggled = new EventEmitter<InterestId>()
+  @Output() intentionToggled = new EventEmitter<OnboardingIntention>()
+  @Output() cancelled = new EventEmitter<void>()
+  @Output() proficiencyChanged = new EventEmitter<{ skillId: string; proficiency: string }>()
   @Output() sectorToggled = new EventEmitter<string>()
   @Output() tagToggled = new EventEmitter<string>()
   @Output() skillToggled = new EventEmitter<string>()
@@ -52,8 +55,25 @@ export class OnboardingComponent {
   readonly strings = onboardingStrings
   readonly common = commonStrings
 
-  isSelected(interest: InterestOption): boolean {
-    return this.selectedInterests.includes(interest.id)
+  readonly proficiencyOptions = proficiencyOptions
+
+  get controlsDisabled(): boolean {
+    return this.preferencesLoading || !this.preferencesLoaded || this.preferencesSaving
+      || this.catalogsLoading || !this.catalogsLoaded
+  }
+
+  isSelected(intention: IntentionOption): boolean {
+    return this.selectedIntentions.includes(intention.id)
+  }
+
+  proficiencyFor(skillId: string): string {
+    return this.selectedSkills.find((skill) => skill.skillId === skillId)?.proficiency ?? ''
+  }
+
+  changeProficiency(skillId: string, event: Event): void {
+    if (event.target instanceof HTMLSelectElement) {
+      this.proficiencyChanged.emit({ skillId, proficiency: event.target.value })
+    }
   }
 
   isSectorSelected(sector: SectorCatalogItem): boolean {
@@ -65,7 +85,7 @@ export class OnboardingComponent {
   }
 
   isSkillSelected(skill: SkillCatalogItem): boolean {
-    return this.selectedSkillIds.includes(skill.id)
+    return this.selectedSkills.some((selected) => selected.skillId === skill.id)
   }
 
   isStageSelected(stage: ProjectStageOption): boolean {

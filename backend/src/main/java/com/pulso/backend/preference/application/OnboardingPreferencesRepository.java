@@ -10,7 +10,11 @@ public interface OnboardingPreferencesRepository {
 
     Optional<OnboardingPreferences> findByProfileId(UUID profileId);
 
-    OnboardingPreferences upsert(OnboardingPreferences preferences);
+    default OnboardingPreferences upsert(OnboardingPreferences preferences) {
+        return upsert(preferences, false);
+    }
+
+    OnboardingPreferences upsert(OnboardingPreferences preferences, boolean completeOnboarding);
 
     void saveRecommendationWeights(UUID profileId, Map<String, Double> weights);
 }

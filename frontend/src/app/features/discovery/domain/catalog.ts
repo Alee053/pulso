@@ -1,3 +1,5 @@
+import type { OnboardingIntention, ProjectStage } from './preferences'
+
 export interface SectorCatalogItem {
   id: string
   slug: string
@@ -20,12 +22,16 @@ export interface SkillCatalogItem {
 }
 
 export interface ReferenceCatalogs {
+  intentions: OnboardingIntention[]
+  stages: ProjectStage[]
   sectors: SectorCatalogItem[]
   tags: TagCatalogItem[]
   skills: SkillCatalogItem[]
 }
 
 export const emptyReferenceCatalogs = (): ReferenceCatalogs => ({
+  intentions: [],
+  stages: [],
   sectors: [],
   tags: [],
   skills: [],

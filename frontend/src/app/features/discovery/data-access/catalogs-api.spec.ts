@@ -24,6 +24,8 @@ describe('CatalogsApi', () => {
     expect(request.request.method).toBe('GET')
     request.flush({
       data: {
+        intentions: ['DISCOVER', 'BUY'],
+        stages: ['MVP'],
         sectors: [{
           id: 'sector-1',
           slug: 'sostenibilidad',
@@ -49,6 +51,8 @@ describe('CatalogsApi', () => {
     })
 
     await expect(responsePromise).resolves.toEqual({
+      intentions: ['DISCOVER', 'BUY'],
+      stages: ['MVP'],
       sectors: [{
         id: 'sector-1',
         slug: 'sostenibilidad',
@@ -85,6 +89,8 @@ describe('CatalogsApi', () => {
 
     request.flush({
       data: {
+        intentions: ['DISCOVER', 'BUY'],
+        stages: ['MVP'],
         sectors: [],
         tags: [],
         skills: [],
@@ -92,6 +98,8 @@ describe('CatalogsApi', () => {
     })
 
     await expect(responsePromise).resolves.toEqual({
+      intentions: ['DISCOVER', 'BUY'],
+      stages: ['MVP'],
       sectors: [],
       tags: [],
       skills: [],

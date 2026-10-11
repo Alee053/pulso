@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -13,6 +14,8 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.core.MethodParameter;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.http.MediaType;
@@ -32,6 +35,7 @@ import com.pulso.backend.preference.application.ActivePreferenceCatalogLookup;
 import com.pulso.backend.preference.application.OnboardingPreferencesRepository;
 import com.pulso.backend.preference.application.SaveOnboardingPreferences;
 import com.pulso.backend.preference.domain.OnboardingPreferences;
+import com.pulso.backend.preference.domain.ProfileSkill;
 
 class OnboardingPreferencesControllerTest {
 
@@ -97,6 +101,89 @@ class OnboardingPreferencesControllerTest {
                 .isEqualTo(PROFILE_ID);
         assertThat(repository.saved.preferredTags()).containsExactly(TAG_ID.toString());
         assertThat(repository.saved.preferredSkills()).containsExactly(SKILL_ID.toString());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"})
+    void acceptsSkillLevelsAndReturnsTheAdditiveContract(String proficiency) throws Exception {
+        CapturingRepository repository = new CapturingRepository();
+        MockMvc mockMvc = mockMvc(repository, identifier -> Optional.of(SECTOR_ID));
+
+        mockMvc.perform(put("/api/v1/me/preferences")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                          "intentions": ["collaborate"],
+                          "preferredStages": [],
+                          "skills": [{"skillId": "cccccccc-cccc-cccc-cccc-cccccccccccc", "proficiency": "%s"}],
+                          "completeOnboarding": true
+                        }
+                        """.formatted(proficiency.toLowerCase(java.util.Locale.ROOT))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.preferredSkills[0]").value(SKILL_ID.toString()))
+                .andExpect(jsonPath("$.skills[0].skillId").value(SKILL_ID.toString()))
+                .andExpect(jsonPath("$.skills[0].proficiency").value(proficiency));
+        assertThat(repository.completeOnboarding).isTrue();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "\"skills\": [], \"preferredSkills\": []",
+            "\"skills\": [{\"skillId\": \"cccccccc-cccc-cccc-cccc-cccccccccccc\", \"proficiency\": \"ADVANCED\", \"isPrimary\": true}]",
+            "\"skills\": [{\"skillId\": \"cccccccc-cccc-cccc-cccc-cccccccccccc\", \"proficiency\": null}]",
+            "\"skills\": [{\"skillId\": \"cccccccc-cccc-cccc-cccc-cccccccccccc\", \"proficiency\": \"MASTER\"}]",
+            "\"skills\": [{\"skillId\": \"invalid\", \"proficiency\": \"ADVANCED\"}]",
+            "\"skills\": [null]",
+            "\"skills\": [{\"skillId\": \"cccccccc-cccc-cccc-cccc-cccccccccccc\", \"proficiency\": \"ADVANCED\"}, {\"skillId\": \"CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCCCC\", \"proficiency\": \"EXPERT\"}]"
+    })
+    void rejectsInvalidSkillSelectionsBeforeWriting(String selection) throws Exception {
+        CapturingRepository repository = new CapturingRepository();
+        mockMvc(repository, identifier -> Optional.of(SECTOR_ID))
+                .perform(put("/api/v1/me/preferences")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"intentions\": [\"DISCOVER\"], \"preferredStages\": [], " + selection + "}"))
+                .andExpect(status().isBadRequest());
+        assertThat(repository.saved).isNull();
+    }
+
+    @Test
+    void returnsSavedSkillLevelsAndCompletionForEditing() throws Exception {
+        OnboardingPreferences saved = new OnboardingPreferences(PROFILE_ID,
+                List.of("COLLABORATE"), List.of(), List.of(), List.of(),
+                List.of(new ProfileSkill(SKILL_ID.toString(), "EXPERT")), Map.of(),
+                OffsetDateTime.parse("2026-10-09T12:00:00Z"), LIMITS);
+        mockMvc(new FixedRepository(saved), identifier -> Optional.of(SECTOR_ID))
+                .perform(get("/api/v1/me/preferences"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.skills[0].proficiency").value("EXPERT"))
+                .andExpect(jsonPath("$.onboardingCompletedAt").value("2026-10-09T12:00:00Z"));
+    }
+
+    @Test
+    void cannotCompleteWithALegacySkillWithoutALevel() throws Exception {
+        CapturingRepository repository = new CapturingRepository();
+        mockMvc(repository, identifier -> Optional.of(SECTOR_ID))
+                .perform(put("/api/v1/me/preferences")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"intentions": ["DISCOVER"], "preferredStages": [],
+                                 "preferredSkills": ["cccccccc-cccc-cccc-cccc-cccccccccccc"], "completeOnboarding": true}
+                                """))
+                .andExpect(status().isBadRequest());
+        assertThat(repository.saved).isNull();
+    }
+
+    @Test
+    void requiresAnIntentionToCompleteOnboarding() throws Exception {
+        CapturingRepository repository = new CapturingRepository();
+        mockMvc(repository, identifier -> Optional.of(SECTOR_ID))
+                .perform(put("/api/v1/me/preferences")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"intentions": [], "preferredStages": [], "skills": [], "completeOnboarding": true}
+                                """))
+                .andExpect(status().isBadRequest());
+        assertThat(repository.saved).isNull();
     }
 
     @Test
@@ -195,7 +282,7 @@ class OnboardingPreferencesControllerTest {
             }
 
             @Override
-            public OnboardingPreferences upsert(OnboardingPreferences preferences) {
+            public OnboardingPreferences upsert(OnboardingPreferences preferences, boolean completeOnboarding) {
                 throw new DataAccessResourceFailureException("password=secret host=database");
             }
 
@@ -311,7 +398,7 @@ class OnboardingPreferencesControllerTest {
         }
 
         @Override
-        public OnboardingPreferences upsert(OnboardingPreferences preferences) {
+        public OnboardingPreferences upsert(OnboardingPreferences preferences, boolean completeOnboarding) {
             return preferences;
         }
 
@@ -323,6 +410,7 @@ class OnboardingPreferencesControllerTest {
     private static final class CapturingRepository implements OnboardingPreferencesRepository {
 
         private OnboardingPreferences saved;
+        private boolean completeOnboarding;
 
         @Override
         public Optional<OnboardingPreferences> findByProfileId(UUID profileId) {
@@ -330,8 +418,9 @@ class OnboardingPreferencesControllerTest {
         }
 
         @Override
-        public OnboardingPreferences upsert(OnboardingPreferences preferences) {
+        public OnboardingPreferences upsert(OnboardingPreferences preferences, boolean completeOnboarding) {
             saved = preferences;
+            this.completeOnboarding = completeOnboarding;
             return preferences;
         }
 

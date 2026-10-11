@@ -30,6 +30,8 @@ describe('PreferencesApi', () => {
       preferredStages: ['MVP'],
       preferredTags: ['tag-1'],
       preferredSkills: ['skill-1'],
+      skills: [{ skillId: 'skill-1', proficiency: 'ADVANCED' }],
+      onboardingCompletedAt: '2026-10-09T12:00:00Z',
       recommendationWeights: { sustainability: 2.5 },
     })
 
@@ -40,6 +42,8 @@ describe('PreferencesApi', () => {
       preferredStages: ['MVP'],
       preferredTags: ['tag-1'],
       preferredSkills: ['skill-1'],
+      skills: [{ skillId: 'skill-1', proficiency: 'ADVANCED' }],
+      onboardingCompletedAt: '2026-10-09T12:00:00Z',
       recommendationWeights: { sustainability: 2.5 },
     })
     controller.verify()
@@ -57,7 +61,8 @@ describe('PreferencesApi', () => {
       preferredSectors: ['sector-1'],
       preferredStages: ['MVP'],
       preferredTags: ['tag-1'],
-      preferredSkills: ['skill-1'],
+      skills: [{ skillId: 'skill-1', proficiency: 'ADVANCED' }],
+      completeOnboarding: true,
     }
     const responsePromise = firstValueFrom(api.save(payload))
     const request = controller.expectOne(
@@ -73,6 +78,8 @@ describe('PreferencesApi', () => {
       preferredStages: ['MVP'],
       preferredTags: ['tag-1'],
       preferredSkills: ['skill-1'],
+      skills: [{ skillId: 'skill-1', proficiency: 'ADVANCED' }],
+      onboardingCompletedAt: '2026-10-09T12:00:00Z',
       recommendationWeights: { sustainability: 2.5 },
     })
 
@@ -83,6 +90,8 @@ describe('PreferencesApi', () => {
       preferredStages: ['MVP'],
       preferredTags: ['tag-1'],
       preferredSkills: ['skill-1'],
+      skills: [{ skillId: 'skill-1', proficiency: 'ADVANCED' }],
+      onboardingCompletedAt: '2026-10-09T12:00:00Z',
       recommendationWeights: { sustainability: 2.5 },
     })
     controller.verify()

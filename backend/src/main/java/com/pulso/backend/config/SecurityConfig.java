@@ -40,6 +40,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
         ProfileProperties.class,
         CurrentProjectsProperties.class,
         ProjectMembersProperties.class,
+        ProjectOpportunityProperties.class,
         ProjectProperties.class
 })
 public class SecurityConfig {
@@ -80,6 +81,10 @@ public class SecurityConfig {
                                 "/api/v1/project-members/accept",
                                 "/api/v1/projects/*/publication-request",
                                 "/api/v1/projects/*/archive")
+                        .authenticated()
+                        .requestMatchers(
+                                "/api/v1/projects/*/opportunities",
+                                "/api/v1/projects/*/opportunities/**")
                         .authenticated()
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {

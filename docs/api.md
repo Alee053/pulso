@@ -208,6 +208,8 @@ Response `200 OK`:
 ```json
 {
   "data": {
+    "intentions": ["DISCOVER", "BUY", "COLLABORATE", "WORK", "INVEST", "FIND_PARTNERS", "FIND_CUSTOMERS", "FIND_PROVIDERS", "EXPLORE_ECOSYSTEM"],
+    "stages": ["IDEA", "PROTOTYPE", "MVP", "EARLY_STAGE", "GROWING", "ESTABLISHED"],
     "sectors": [
       {
         "id": "11111111-1111-1111-1111-111111111111",
@@ -235,6 +237,11 @@ Response `200 OK`:
   }
 }
 ```
+
+`intentions` and `stages` are backend-controlled supported codes, shared with
+preference validation. They have no separate table or inactive state in the MVP;
+all supported codes are available. The browser supplies their Spanish labels.
+Sectors, tags, and skills continue to include only `is_active = true` rows.
 
 An existing catalog with no active entries is represented by an empty array;
 for example, `"tags": []`. If PostgreSQL cannot be read, the endpoint returns
@@ -305,6 +312,100 @@ fields return `400 Bad Request`. A duplicate project slug returns `409
 Conflict`; other PostgreSQL failures return the sanitized `503 Service
 Unavailable` response. Missing, invalid, or `service_role` bearer tokens
 return `401 Unauthorized`.
+
+## Project opportunities (PUL-18)
+
+All opportunity management endpoints require an access token and an active
+`OWNER` or `ADMIN` membership on the requested project. The actor profile ID
+comes from the validated JWT subject; project roles and creator IDs in request
+bodies are rejected. An active `MEMBER`, inactive membership, external profile,
+unknown project, and cross-project access receive the same `403` membership
+permission response.
+
+`project_opportunities` is accessed through the backend only. PostgreSQL keeps
+the project and creator foreign keys, enables RLS, and revokes direct
+`anon`/`authenticated` table grants. The project ID, creator, status updates,
+and audit timestamps are controlled by the server.
+
+### `GET /api/v1/projects/{projectId}/opportunities`
+
+Lists opportunities for an authorized project owner or admin. `offset` defaults
+to `0` and is bounded at `100000`; `limit` defaults to `20` and is bounded from
+`1` to `50`. Results use stable `created_at DESC, id DESC` ordering and return
+at most `limit` rows with a `hasMore` flag.
+
+### `POST /api/v1/projects/{projectId}/opportunities`
+
+Creates an opportunity in the canonical table. `opportunityType` accepts the
+DBML values `TALENT`, `COLLABORATION`, `CUSTOMER`, `BETA_TESTER`, `INVESTMENT`,
+`MENTOR`, `SUPPLIER`, `PARTNERSHIP`, and `OTHER`. Title, description,
+`remoteAllowed`, and either city or department for in-person opportunities are
+required. City and department may be omitted when remote work is allowed.
+
+`status` accepts `DRAFT` or `OPEN` and defaults to `OPEN` when omitted. An
+`OPEN` opportunity requires a `PUBLISHED` project with an active sector,
+matching the public project detail contract. Creating a `DRAFT` opportunity
+does not require the project to be public.
+
+```sh
+curl -X POST \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "opportunityType": "TALENT",
+    "title": "Buscamos una persona de producto",
+    "description": "Apoyo para validar la experiencia del prototipo.",
+    "city": "La Paz",
+    "department": "La Paz",
+    "remoteAllowed": true,
+    "status": "DRAFT"
+  }' \
+  http://localhost:8080/api/v1/projects/33333333-3333-3333-3333-333333333333/opportunities
+```
+
+Response `201 Created` returns only management fields:
+
+```json
+{
+  "id": "55555555-5555-5555-5555-555555555555",
+  "projectId": "33333333-3333-3333-3333-333333333333",
+  "opportunityType": "TALENT",
+  "title": "Buscamos una persona de producto",
+  "description": "Apoyo para validar la experiencia del prototipo.",
+  "status": "DRAFT",
+  "city": "La Paz",
+  "department": "La Paz",
+  "remoteAllowed": true,
+  "createdAt": "2026-10-10T12:00:00Z",
+  "updatedAt": "2026-10-10T12:00:00Z"
+}
+```
+
+### `PUT /api/v1/projects/{projectId}/opportunities/{opportunityId}`
+
+Replaces the editable content fields: `opportunityType`, `title`,
+`description`, `city`, `department`, and `remoteAllowed`. It rejects unknown or
+protected fields, including `projectId`, `createdByProfileId`, `status`, and
+timestamps. Archived opportunities cannot be edited. A stale `updated_at`
+returns `409 Conflict`; a missing opportunity within the project returns
+`404 Not Found`.
+
+### `POST /api/v1/projects/{projectId}/opportunities/{opportunityId}/actions`
+
+Accepts one action: `OPEN`, `PAUSE`, `CLOSE`, or `ARCHIVE`. `OPEN` is allowed
+from `DRAFT` or `PAUSED`; `PAUSE` from `OPEN`; `CLOSE` from `OPEN` or `PAUSED`;
+`ARCHIVE` from any model state except `ARCHIVED`. Invalid transitions return
+`409 Conflict`, and closing sets `closed_at` on the server.
+
+If a project stops being `PUBLISHED` or its sector becomes inactive, a database
+trigger pauses its `OPEN` opportunities in the same transaction. An authorized
+owner or admin must explicitly reopen a paused opportunity after the project
+becomes publicly visible again.
+
+Invalid content or attempts to open an opportunity for a non-public project
+return `400 Bad Request`. Missing, invalid, or `service_role` bearer tokens
+return `401 Unauthorized`; insufficient project membership returns `403`.
+Database errors use the sanitized `503 Service Unavailable` response.
 
 ## `GET /api/v1/projects/{projectId}/members` — team administration list (PUL-85)
 
@@ -554,7 +655,10 @@ Returns the onboarding preferences of the authenticated profile. The profile
 ID is always derived from the validated JWT subject; there is no profile ID
 parameter that a client can use to read another person's preferences. If the
 profile has not saved preferences yet, the endpoint returns empty preference
-arrays and an empty recommendation-weight object.
+arrays, an empty recommendation-weight object, and a nullable
+`onboardingCompletedAt` read from the profile. Completion is not inferred from
+nonempty intentions. `skills` includes selected skill IDs and proficiency;
+legacy selections can have a null proficiency.
 
 ```sh
 curl \
@@ -572,6 +676,8 @@ Response `200 OK`:
   "preferredStages": ["MVP"],
   "preferredTags": ["aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"],
   "preferredSkills": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"],
+  "skills": [{"skillId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "proficiency": "ADVANCED"}],
+  "onboardingCompletedAt": "2026-10-09T12:00:00Z",
   "recommendationWeights": {"sostenibilidad": 2.5}
 }
 ```
@@ -584,12 +690,27 @@ the same request is safe and keeps one row in
 repository uses an upsert.
 
 The request does not accept `profileId`; the server takes it from the JWT.
-`preferredSectors`, `preferredTags`, and `preferredSkills` are optional arrays
-that default to `[]`; `intentions` and `preferredStages` must be arrays,
-although an empty array is valid. Tags and skills must reference active catalog
-UUIDs. The backend replaces their profile relationship rows in the same
-transaction as the JSON preferences. `recommendationWeights` is server-managed
-and returned by this endpoint; this request cannot overwrite it.
+`preferredSectors` and `preferredTags` are optional arrays that default to `[]`;
+`intentions` and `preferredStages` must be arrays. Tags and skills must reference
+active catalog UUIDs. Interests are selected tags stored in `profile_tags`.
+
+New clients send `skills` as objects with `skillId` and `proficiency`:
+`BEGINNER`, `INTERMEDIATE`, `ADVANCED`, or `EXPERT`. A selected explicit skill
+requires a level. Legacy `preferredSkills` UUID arrays remain accepted; unchanged
+skills retain their recorded proficiency and `is_primary`. Sending both fields,
+including empty arrays, is rejected. Omitting both clears the skill selection.
+The response retains legacy `preferredSkills` IDs alongside `skills` details.
+
+`completeOnboarding` defaults to `false` for compatibility. When `true`, at least
+one intention and a recorded proficiency for every selected skill are required.
+A valid save writes `profiles.onboarding_completed_at` with server time in the
+same transaction as preferences, tags, and skills. Repeating a request or editing
+later preserves the first completion timestamp and one relation per catalog ID.
+Clients cannot supply a completion date through this endpoint. Existing
+`PATCH /api/v1/me` behavior remains unchanged.
+
+`recommendationWeights` is server-managed, returned by this endpoint, and
+preserved during onboarding and later edits. This request cannot overwrite it.
 
 ```sh
 curl -X PUT \
@@ -600,7 +721,8 @@ curl -X PUT \
     "preferredSectors": ["sostenibilidad"],
     "preferredStages": ["mvp"],
     "preferredTags": ["aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"],
-    "preferredSkills": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"]
+    "skills": [{"skillId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "proficiency": "ADVANCED"}],
+    "completeOnboarding": true
   }' \
   http://localhost:8080/api/v1/me/preferences
 ```
@@ -632,12 +754,23 @@ documented above. Missing or invalid bearer tokens return `401 Unauthorized`.
 ## Persisted discovery interactions
 
 These endpoints use the authenticated JWT subject as the profile ID. Project
-summaries include only published projects. Feed pagination uses the same
-bounded `offset` and `limit` contract as the public catalog; `meta.totalCount`
-reports the remaining feed size for the profile.
+summaries include only published projects. The discovery feed ranks projects
+with one point for a preferred sector and one for a preferred stage, then sorts
+by publication date and project ID descending. With no preferences, recent
+projects come first. Preferred sectors match by sector ID or slug.
+`meta.totalCount` reports eligible published projects not yet marked
+`INTERESTED` or `DISMISSED` for the profile.
+
+Use `GET /api/v1/me/discovery-feed?limit=20` for the first page, then pass its
+`meta.nextCursor` as `cursor` to load the next page. The cursor follows the same
+preference, publication-date, and project-ID ordering, so projects do not repeat
+between pages. The response keeps `offset`, `limit`, `hasMore`, and `totalCount`;
+`nextCursor` is `null` on the last page. Existing callers can continue to use a
+bounded `offset` with `limit`, but `offset` and `cursor` cannot be combined.
 
 - `GET /api/v1/me/discovery-feed` returns published projects not marked
-  `INTERESTED` or `DISMISSED`, with each item's current `saved` state.
+  `INTERESTED` or `DISMISSED`, ordered by preferred sector/stage matches and
+  then recency, with each item's current `saved` state.
 - `GET /api/v1/me/saved-projects` and
   `GET /api/v1/me/interested-projects` return the account's paginated lists
   with `meta.totalCount`.

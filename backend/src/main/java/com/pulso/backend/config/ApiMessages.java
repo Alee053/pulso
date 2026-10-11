@@ -13,6 +13,10 @@ public final class ApiMessages {
     public static final String INVALID_PROFILE_TITLE = "Invalid profile";
     public static final String INVALID_PREFERENCES_TITLE = "Invalid preferences";
     public static final String INVALID_PROJECT_TITLE = "Invalid project";
+    public static final String INVALID_OPPORTUNITY_TITLE = "Invalid opportunity";
+    public static final String OPPORTUNITY_NOT_FOUND_TITLE = "Project opportunity not found";
+    public static final String OPPORTUNITY_CONFLICT_TITLE = "Project opportunity conflict";
+    public static final String OPPORTUNITY_STATE_CONFLICT_TITLE = "Invalid opportunity transition";
     public static final String PROJECT_CONFLICT_TITLE = "Project conflict";
     public static final String PUBLIC_PROJECT_NOT_FOUND_TITLE = "Public project not found";
     public static final String PUBLIC_PROJECT_NOT_FOUND_DETAIL =
@@ -38,6 +42,7 @@ public final class ApiMessages {
             "limit must be between 1 and %d.";
     public static final String INVALID_OFFSET_DETAIL =
             "offset must be between 0 and %d.";
+    public static final String INVALID_DISCOVERY_CURSOR = "cursor is invalid.";
 
     public static final String PROFILE_BLANK = "%s must not be blank.";
     public static final String PROFILE_MAX_LENGTH =
@@ -179,6 +184,14 @@ public final class ApiMessages {
             "preferredTags contains an unknown or inactive tag.";
     public static final String SKILL_UNKNOWN =
             "preferredSkills contains an unknown or inactive skill.";
+    public static final String SKILL_PROFICIENCY_INVALID =
+            "skills proficiency must be BEGINNER, INTERMEDIATE, ADVANCED or EXPERT.";
+    public static final String SKILL_PROFICIENCY_REQUIRED =
+            "Every selected skill must have a proficiency level.";
+    public static final String SKILL_SELECTION_REQUIRED = "skills must contain skill selections.";
+    public static final String SKILL_SELECTION_AMBIGUOUS = "Use either skills or preferredSkills, not both.";
+    public static final String ONBOARDING_INTENTION_REQUIRED =
+            "At least one intention is required to complete onboarding.";
     public static final String PROJECT_DRAFT_REQUIRED = "project draft is required.";
     public static final String PROJECT_UPDATE_REQUIRED = "project update is required.";
     public static final String SECTOR_MUST_BE_ACTIVE =

@@ -214,7 +214,7 @@ Table project_opportunities {
   opportunity_type text [not null, note: "TALENT, COLLABORATION, CUSTOMER, BETA_TESTER, INVESTMENT, MENTOR, SUPPLIER, PARTNERSHIP u OTHER"]
   title text [not null]
   description text [not null]
-  status text [not null, default: 'OPEN', note: "DRAFT, OPEN, PAUSED, FILLED, CLOSED o ARCHIVED"]
+  status text [not null, default: 'OPEN', note: "DRAFT, OPEN, PAUSED, FILLED, CLOSED o ARCHIVED; OPEN requiere un proyecto PUBLISHED con sector activo"]
   city text
   department text
   remote_allowed boolean [not null, default: false]
@@ -230,7 +230,7 @@ Table project_opportunities {
     (opportunity_type, city, department)
   }
 
-  Note: "Necesidad estructurada para alimentar el matching, no una oferta laboral ni un ATS."
+  Note: "Necesidad estructurada para alimentar el matching, no una oferta laboral ni un ATS. Una oportunidad OPEN requiere un proyecto PUBLISHED con sector activo; se pausa si el proyecto deja de ser visible."
 }
 
 Table opportunity_skills {

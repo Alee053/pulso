@@ -59,7 +59,10 @@ describe('AppComponent', () => {
     expect(auth.initialize).toHaveBeenCalled()
   })
 
-  it.each(['discover', 'saved'])('opens server detail from %s without losing the feed or persisted decisions', (view) => {
+  it.each([
+    ['discover', 'close'], ['discover', 'backdrop'], ['discover', 'escape'],
+    ['saved', 'close'], ['saved', 'backdrop'], ['saved', 'escape'],
+  ])('opens server detail from %s and dismisses via %s without losing the feed or persisted decisions', (view, dismissal) => {
     const session = createSessionStub()
     const auth = createAuthStub()
     auth.session.set({ id: 'user-1', email: 'person@example.test' })
@@ -81,17 +84,23 @@ describe('AppComponent', () => {
       ? fixture.nativeElement.querySelector('pulso-saved-view button')
       : fixture.nativeElement.querySelector('pulso-startup-card .discovery-card__profile-link')
     expect(trigger).not.toBeNull()
+    trigger.focus()
     trigger.click()
     fixture.detectChanges()
     const http = TestBed.inject(HttpTestingController)
     http.expectOne(`http://localhost:8080/api/v1/projects/${mockStartups[0].id}`).flush({ data: MOCK_PUBLIC_PROJECTS['eco-pack'] })
     fixture.detectChanges()
     expect(fixture.nativeElement.querySelector('pulso-public-project-detail')).not.toBeNull()
-      const closeButton = fixture.nativeElement.querySelector('pulso-public-project-detail button[aria-label="Cerrar detalle del proyecto"]')
-      expect(closeButton).not.toBeNull()
-      closeButton.click()
-      fixture.detectChanges()
-      expect(fixture.nativeElement.querySelector('pulso-public-project-detail')).toBeNull()
+    expect(fixture.nativeElement.querySelector('[role="dialog"]')).not.toBeNull()
+    if (dismissal === 'escape') {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }))
+    } else {
+      const selector = dismissal === 'backdrop' ? '.modal-backdrop' : 'button[aria-label="Cerrar detalle del proyecto"]'
+      fixture.nativeElement.querySelector(`pulso-public-project-detail ${selector}`).click()
+    }
+    fixture.detectChanges()
+    expect(fixture.nativeElement.querySelector('pulso-public-project-detail')).toBeNull()
+    expect(document.activeElement).toBe(trigger)
     expect(session.activeView()).toBe(view)
     expect(session.feed()).toBe(feed)
     expect(session.savedIds()).toEqual([mockStartups[0].id])

@@ -1,5 +1,7 @@
 export const detailStrings = {
   closeAria: 'Cerrar detalle',
+  publicCloseAria: 'Cerrar detalle del proyecto',
+  publicTitle: 'Detalle del proyecto',
   founders: 'Equipo',
   foundersLead: 'Las personas detrás de la idea',
   why: '¿Por qué te lo recomendamos?',

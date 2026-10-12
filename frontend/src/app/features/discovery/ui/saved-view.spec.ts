@@ -16,10 +16,14 @@ describe('SavedViewComponent', () => {
     fixture.componentInstance.interestCleared.subscribe(cleared)
     fixture.detectChanges()
 
+    const card = fixture.nativeElement.querySelector('.collection-card--interested') as HTMLElement
     const button = Array.from<HTMLButtonElement>(
-      fixture.nativeElement.querySelectorAll('button'),
-    ).find((element) => element.textContent?.includes(savedStrings.clearInterest))
+      card.querySelectorAll('button'),
+    ).find((element) => element.classList.contains('collection-card__remove'))
+    expect(card).not.toBeNull()
     expect(button).toBeDefined()
+    expect(button!.getAttribute('aria-label')).toBe(`${savedStrings.clearInterest}: ${startup.name}`)
+    expect(fixture.nativeElement.querySelector('button button')).toBeNull()
     button!.click()
     expect(cleared).toHaveBeenCalledExactlyOnceWith(startup.id)
 

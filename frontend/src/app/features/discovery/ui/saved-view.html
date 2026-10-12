@@ -77,8 +77,8 @@
         </section>
         <ng-container *ngIf="!interestedProjectsErrorMessage && hasLoadedInterestedProjects">
           <div *ngIf="interestedStartups.length > 0; else noInterested" class="space-y-3">
-            <div *ngFor="let startup of interestedStartups" class="space-y-2">
-              <button type="button" class="collection-card group" (click)="startupSelected.emit(startup)">
+            <article *ngFor="let startup of interestedStartups" class="collection-card collection-card--interested group">
+              <button type="button" class="collection-card__select" (click)="startupSelected.emit(startup)">
                 <pulso-startup-thumb [startup]="startup" />
                 <span class="collection-card__content">
                   <span class="flex items-start justify-between gap-3">
@@ -94,12 +94,13 @@
                   </span>
                 </span>
               </button>
-              <button type="button" class="contact-button" [disabled]="isSavingInteraction"
+              <button type="button" class="collection-card__remove" [disabled]="isSavingInteraction"
                       [attr.aria-label]="strings.clearInterest + ': ' + startup.name"
                       (click)="interestCleared.emit(startup.id)">
+                <pulso-icon name="x" [size]="14" aria-hidden="true" />
                 {{ strings.clearInterest }}
               </button>
-            </div>
+            </article>
           </div>
           <ng-template #noInterested><p class="state-panel text-sm">{{ strings.noneInterested }}</p></ng-template>
           <button *ngIf="interestedHasMore" type="button" class="contact-button mt-4" [disabled]="isLoadingInterestedProjects" (click)="loadMoreInterestedRequested.emit()">

@@ -168,6 +168,10 @@ export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterVie
         this.closed.emit()
     }
 
+    handleBackdropClick(event: MouseEvent): void {
+        if (event.target === event.currentTarget) this.close()
+    }
+
     mapToStartup(project: PublicProjectDetail): Startup {
         return {
             id: project.id,

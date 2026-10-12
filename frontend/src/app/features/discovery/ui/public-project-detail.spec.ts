@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing'
 import { describe, expect, it, vi } from 'vitest'
 import { MOCK_PUBLIC_PROJECTS } from '../data-access/mock-public-projects'
 import { PublicProjectDetailComponent } from './public-project-detail'
+import { detailStrings } from '../strings/detail.strings'
 
 function createFixture() {
   TestBed.configureTestingModule({
@@ -17,6 +18,59 @@ function createFixture() {
 }
 
 describe('PublicProjectDetailComponent', () => {
+  it.each(['loading', 'loaded', 'empty', 'error'])('keeps a named dialog and all dismissal options in the %s state', (state) => {
+    const { fixture, http } = createFixture()
+    const request = http.expectOne('http://localhost:8080/api/v1/projects/eco-pack')
+    if (state === 'loaded') request.flush({ data: MOCK_PUBLIC_PROJECTS['eco-pack'] })
+    if (state === 'empty') request.flush({}, { status: 404, statusText: 'Not Found' })
+    if (state === 'error') request.flush({}, { status: 500, statusText: 'Unavailable' })
+    fixture.detectChanges()
+
+    const closed = vi.fn()
+    fixture.componentInstance.closed.subscribe(closed)
+    const dialog = fixture.nativeElement.querySelector('[role="dialog"]') as HTMLElement
+    expect(dialog).not.toBeNull()
+    expect(dialog.getAttribute('aria-modal')).toBe('true')
+    expect(document.getElementById(dialog.getAttribute('aria-labelledby')!)?.textContent).toBe(detailStrings.publicTitle)
+    dialog.click()
+    expect(closed).not.toHaveBeenCalled()
+    fixture.nativeElement.querySelector('.modal-backdrop').click()
+    expect(closed).toHaveBeenCalledOnce()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }))
+    expect(closed).toHaveBeenCalledTimes(2)
+    fixture.nativeElement.querySelector(`button[aria-label="${detailStrings.publicCloseAria}"]`).click()
+    expect(closed).toHaveBeenCalledTimes(3)
+
+    fixture.destroy()
+    http.verify()
+  })
+
+  it('focuses the close control while loading, traps Tab after loading, and restores focus and scrolling', () => {
+    const opener = document.createElement('button')
+    document.body.append(opener)
+    opener.focus()
+    const previousOverflow = document.body.style.overflow
+    const { fixture, http } = createFixture()
+    const close = fixture.nativeElement.querySelector(`button[aria-label="${detailStrings.publicCloseAria}"]`)
+    expect(document.activeElement).toBe(close)
+    expect(document.body.style.overflow).toBe('hidden')
+
+    http.expectOne('http://localhost:8080/api/v1/projects/eco-pack').flush({ data: MOCK_PUBLIC_PROJECTS['eco-pack'] })
+    fixture.detectChanges()
+    expect(document.activeElement).toBe(close)
+    const actions = fixture.nativeElement.querySelectorAll('button:not([disabled]), a[href]') as NodeListOf<HTMLElement>
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, cancelable: true }))
+    expect(document.activeElement).toBe(actions[actions.length - 1])
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', cancelable: true }))
+    expect(document.activeElement).toBe(close)
+
+    fixture.destroy()
+    expect(document.activeElement).toBe(opener)
+    expect(document.body.style.overflow).toBe(previousOverflow)
+    opener.remove()
+    http.verify()
+  })
+
   it('shows loading then renders the server project and public team', () => {
     const { fixture, http } = createFixture()
     expect(fixture.nativeElement.querySelector('[role="status"]').textContent).toContain('Cargando proyecto')

@@ -69,6 +69,8 @@ export interface StartupSummary {
   sector: string
   city: string
   stage: string
+  imageUrl?: string | null
+  imageAlt?: string | null
 }
 
 
@@ -115,6 +117,8 @@ export interface PublicProjectDetail {
     tags: PublicTag[]
     externalLinks: PublicExternalLink[]
     members: PublicMember[]
+    imageUrl?: string | null
+    imageAlt?: string | null
 }
 
 export type PublicProjectState =

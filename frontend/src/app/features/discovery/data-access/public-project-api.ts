@@ -2,6 +2,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http'
 import { inject, Injectable } from '@angular/core'
 import { catchError, map, Observable, throwError } from 'rxjs'
 import { appConfig } from '../../../core/config/app-config'
+import { projectImageUrl } from './project-image'
 import type {
     PublicExternalLink,
     PublicMember,
@@ -57,6 +58,8 @@ export class PublicProjectApi {
             tags: this.mapTags(raw.tags),
             externalLinks: this.mapExternalLinks(raw.externalLinks),
             members: this.mapMembers(raw.members),
+            imageUrl: projectImageUrl(raw.imageUrl),
+            imageAlt: this.sanitizeText(raw.imageAlt),
         }
     }
 

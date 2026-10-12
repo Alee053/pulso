@@ -26,7 +26,7 @@ describe('PublicProjectApi', () => {
       members: [{ ...MOCK_PUBLIC_PROJECTS['eco-pack'].members[0], email: 'private@example.test', invite_token_digest: 'private digest' }],
     } })
     const detail = await response
-    expect(detail).toEqual(MOCK_PUBLIC_PROJECTS['eco-pack'])
+    expect(detail).toEqual({ ...MOCK_PUBLIC_PROJECTS['eco-pack'], imageUrl: null, imageAlt: null })
     expect(JSON.stringify(detail)).not.toContain('private')
     http.verify()
   })

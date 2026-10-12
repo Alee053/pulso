@@ -26,7 +26,9 @@ public class JdbcProjectInteractionRepository implements ProjectInteractionRepos
             p.tagline,
             s.name as sector,
             coalesce(p.city, '') as city,
-            p.stage
+            p.stage,
+            jsonb_path_query_first(p.media, '$[*] ? (@.type == "COVER")') ->> 'url' as image_url,
+            jsonb_path_query_first(p.media, '$[*] ? (@.type == "COVER")') ->> 'alt' as image_alt
             """;
 
     private final JdbcClient jdbcClient;
@@ -70,6 +72,7 @@ public class JdbcProjectInteractionRepository implements ProjectInteractionRepos
                       )
                 )
                 select r.id, r.slug, r.name, r.tagline, r.sector, r.city, r.stage,
+                       r.image_url, r.image_alt,
                        r.preference_score, r.published_at,
                        (sp.project_id is not null) as saved,
                        pf.feedback_type
@@ -344,7 +347,9 @@ public class JdbcProjectInteractionRepository implements ProjectInteractionRepos
                 resultSet.getString("tagline"),
                 resultSet.getString("sector"),
                 resultSet.getString("city"),
-                resultSet.getString("stage"));
+                resultSet.getString("stage"),
+                resultSet.getString("image_url"),
+                resultSet.getString("image_alt"));
     }
 
     @Override

@@ -1,5 +1,6 @@
 import { cardStrings } from '../strings/feed.strings'
 import type { Startup, StartupSummary } from '../domain/startup'
+import { projectImageUrl } from './project-image'
 
 const sectorSignals: Record<string, string[]> = {
   agrotech: ['agriculture', 'technology'],
@@ -26,8 +27,8 @@ export function toStartupViewModel(summary: StartupSummary): Startup {
     stage: summary.stage,
     tags,
     badges: [summary.stage, summary.sector],
-    image: '',
-    imageAlt: '',
+    image: projectImageUrl(summary.imageUrl) ?? '',
+    imageAlt: summary.imageAlt?.trim() || summary.name,
     accent: '#a9e1ff',
     founders: [],
     lookingFor: [],

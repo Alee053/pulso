@@ -18,6 +18,25 @@ function createFixture() {
 }
 
 describe('PublicProjectDetailComponent', () => {
+  it('renders the API cover with alternative text and hides a failed image', () => {
+    const { fixture, http } = createFixture()
+    http.expectOne('http://localhost:8080/api/v1/projects/eco-pack').flush({ data: {
+      ...MOCK_PUBLIC_PROJECTS['eco-pack'],
+      imageUrl: 'https://example.test/cover.jpg',
+      imageAlt: 'Portada EcoPack',
+    } })
+    fixture.detectChanges()
+    const image = fixture.nativeElement.querySelector('img') as HTMLImageElement
+    expect(image.src).toBe('https://example.test/cover.jpg')
+    expect(image.alt).toBe('Portada EcoPack')
+    image.dispatchEvent(new Event('error'))
+    fixture.detectChanges()
+    expect(fixture.nativeElement.querySelector('img')).toBeNull()
+    expect(fixture.nativeElement.textContent).toContain(MOCK_PUBLIC_PROJECTS['eco-pack'].name)
+    fixture.destroy()
+    http.verify()
+  })
+
   it.each(['loading', 'loaded', 'empty', 'error'])('keeps a named dialog and all dismissal options in the %s state', (state) => {
     const { fixture, http } = createFixture()
     const request = http.expectOne('http://localhost:8080/api/v1/projects/eco-pack')

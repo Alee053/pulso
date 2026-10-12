@@ -13,6 +13,8 @@ export interface StartupSummaryDto {
   sector: string
   city: string
   stage: string
+  imageUrl?: string | null
+  imageAlt?: string | null
 }
 
 interface StartupListResponseDto {
@@ -73,5 +75,7 @@ function toStartupSummary(dto: StartupSummaryDto): StartupSummary {
     sector: dto.sector,
     city: dto.city,
     stage: dto.stage,
+    imageUrl: dto.imageUrl,
+    imageAlt: dto.imageAlt,
   }
 }

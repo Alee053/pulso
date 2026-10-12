@@ -23,7 +23,9 @@ public class JdbcStartupCatalog implements StartupCatalog {
     @Override
     public List<StartupSummary> findPublished(int offset, int limit) {
         return jdbcClient.sql("""
-                select p.id, p.slug, p.name, p.tagline, s.name as sector, p.city, p.stage
+                select p.id, p.slug, p.name, p.tagline, s.name as sector, p.city, p.stage,
+                       jsonb_path_query_first(p.media, '$[*] ? (@.type == "COVER")') ->> 'url' as image_url,
+                       jsonb_path_query_first(p.media, '$[*] ? (@.type == "COVER")') ->> 'alt' as image_alt
                 from public.projects p
                 join public.sectors s on s.id = p.sector_id
                 where p.status = 'PUBLISHED'
@@ -45,6 +47,8 @@ public class JdbcStartupCatalog implements StartupCatalog {
                 resultSet.getString("tagline"),
                 resultSet.getString("sector"),
                 resultSet.getString("city"),
-                resultSet.getString("stage"));
+                resultSet.getString("stage"),
+                resultSet.getString("image_url"),
+                resultSet.getString("image_alt"));
     }
 }

@@ -29,6 +29,8 @@ class StartupControllerTest {
         mockMvc.perform(get("/api/v1/startups").param("offset", "0").param("limit", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].slug").value("eco-pack"))
+                .andExpect(jsonPath("$.data[0].imageUrl").value("https://example.test/cover.jpg"))
+                .andExpect(jsonPath("$.data[0].imageAlt").value("Portada EcoPack"))
                 .andExpect(jsonPath("$.meta.offset").value(0))
                 .andExpect(jsonPath("$.meta.limit").value(1))
                 .andExpect(jsonPath("$.meta.hasMore").value(true));
@@ -85,7 +87,9 @@ class StartupControllerTest {
                         "Envases biodegradables",
                         "Sostenibilidad",
                         "Cochabamba",
-                        "MVP"),
+                        "MVP",
+                        "https://example.test/cover.jpg",
+                        "Portada EcoPack"),
                 new StartupSummary(
                         UUID.fromString("22222222-2222-2222-2222-222222222222"),
                         "ande-solar",

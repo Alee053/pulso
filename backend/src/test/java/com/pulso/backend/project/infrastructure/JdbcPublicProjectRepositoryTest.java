@@ -154,6 +154,7 @@ class JdbcPublicProjectRepositoryTest {
                   city text,
                   department text,
                   external_links jsonb,
+                  media jsonb,
                   sector_id uuid not null references public.sectors (id),
                   status text not null,
                   published_at timestamptz,
@@ -319,6 +320,20 @@ class JdbcPublicProjectRepositoryTest {
     }
 
     @Test
+    void exposesCoverInPublicDetail() throws Exception {
+        jdbcClient.sql("""
+                update public.projects set media = '[
+                  {"type":"COVER","url":"https://example.test/cover.jpg","alt":"Portada EcoPack"}
+                ]'::jsonb where id = :id
+                """).param("id", PROJECT_ID).update();
+
+        mockMvc.perform(get("/api/v1/projects/eco-pack"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.imageUrl").value("https://example.test/cover.jpg"))
+                .andExpect(jsonPath("$.data.imageAlt").value("Portada EcoPack"));
+    }
+
+    @Test
     void readsPublishedDetailsBySlugOrUuidAndFiltersPrivateData() {
         PublicProjectDetail bySlug = repository.findPublishedByReference("eco-pack").orElseThrow();
         PublicProjectDetail byId = repository.findPublishedByReference(PROJECT_ID.toString())
@@ -387,7 +402,8 @@ class JdbcPublicProjectRepositoryTest {
         assertFields(envelope, "data");
         JsonNode data = envelope.path("data");
         assertFields(data, "id", "slug", "name", "tagline", "description", "valueProposition",
-                "sector", "stage", "city", "department", "tags", "externalLinks", "members");
+                "sector", "stage", "city", "department", "tags", "externalLinks", "members",
+                "imageUrl", "imageAlt");
         assertFields(data.path("sector"), "id", "slug", "name");
         data.path("tags").forEach(tag -> assertFields(tag, "id", "slug", "name"));
         data.path("externalLinks").forEach(link -> assertFields(link, "type", "url", "label"));

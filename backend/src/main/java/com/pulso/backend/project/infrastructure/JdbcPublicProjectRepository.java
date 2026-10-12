@@ -33,6 +33,8 @@ public class JdbcPublicProjectRepository implements PublicProjectRepository {
                 p.stage,
                 p.city,
                 p.department,
+                jsonb_path_query_first(p.media, '$[*] ? (@.type == "COVER")') ->> 'url' as image_url,
+                jsonb_path_query_first(p.media, '$[*] ? (@.type == "COVER")') ->> 'alt' as image_alt,
                 s.id as sector_id,
                 s.slug as sector_slug,
                 s.name as sector_name,
@@ -140,7 +142,9 @@ public class JdbcPublicProjectRepository implements PublicProjectRepository {
                 resultSet.getString("department"),
                 parseTags(resultSet.getString("tags")),
                 parseExternalLinks(resultSet.getString("external_links")),
-                parseMembers(resultSet.getString("members")));
+                parseMembers(resultSet.getString("members")),
+                resultSet.getString("image_url"),
+                resultSet.getString("image_alt"));
     }
 
     private List<PublicProjectDetail.Tag> parseTags(String json) {

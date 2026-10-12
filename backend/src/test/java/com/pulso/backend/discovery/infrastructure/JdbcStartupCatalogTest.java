@@ -69,6 +69,7 @@ class JdbcStartupCatalogTest {
                   sector_id uuid not null references public.sectors (id),
                   city text,
                   stage text not null,
+                  media jsonb,
                   status text not null,
                   published_at timestamptz
                 )
@@ -102,6 +103,24 @@ class JdbcStartupCatalogTest {
                 .param("sectorId", SECTOR_ID)
                 .param("publishedAt", PUBLISHED_AT.atOffset(ZoneOffset.UTC))
                 .update();
+    }
+
+    @Test
+    void readsTheCoverInsteadOfOtherMediaAndPreservesMissingImages() {
+        jdbcClient.sql("""
+                update public.projects set media = '[
+                  {"type":"VIDEO","url":"https://example.test/video"},
+                  {"type":"COVER","url":"https://example.test/cover.jpg","alt":"Portada"}
+                ]'::jsonb where id = :id
+                """).param("id", PUBLISHED_PROJECT_ID).update();
+
+        StartupSummary project = catalog.findPublished(0, 10).getFirst();
+        assertThat(project.imageUrl()).isEqualTo("https://example.test/cover.jpg");
+        assertThat(project.imageAlt()).isEqualTo("Portada");
+
+        jdbcClient.sql("update public.projects set media = '[]'::jsonb where id = :id")
+                .param("id", PUBLISHED_PROJECT_ID).update();
+        assertThat(catalog.findPublished(0, 10).getFirst().imageUrl()).isNull();
     }
 
     @Test

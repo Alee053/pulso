@@ -49,6 +49,10 @@
 
     <!-- Estado: Cargado -->
     <article *ngIf="loadedProject as project" class="project-detail">
+        <img *ngIf="project.imageUrl && !hasImageError"
+             [src]="project.imageUrl" [alt]="project.imageAlt || project.name"
+             class="mb-6 aspect-video w-full rounded-xl object-cover"
+             decoding="async" (error)="hasImageError = true" />
         <!-- Header -->
         <header class="mb-6 flex flex-wrap justify-between items-start gap-4">
             <div>

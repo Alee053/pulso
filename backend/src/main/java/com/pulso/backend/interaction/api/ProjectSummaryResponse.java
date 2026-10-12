@@ -11,7 +11,9 @@ public record ProjectSummaryResponse(
         String tagline,
         String sector,
         String city,
-        String stage) {
+        String stage,
+        String imageUrl,
+        String imageAlt) {
 
     static ProjectSummaryResponse from(ProjectSummary project) {
         return new ProjectSummaryResponse(
@@ -21,6 +23,8 @@ public record ProjectSummaryResponse(
                 project.tagline(),
                 project.sector(),
                 project.city(),
-                project.stage());
+                project.stage(),
+                project.imageUrl(),
+                project.imageAlt());
     }
 }

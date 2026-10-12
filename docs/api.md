@@ -22,6 +22,14 @@ second writable model or a permanent SQL alias.
 Lists published projects through the temporary startup-named route. This is the
 first public endpoint and requires no access token.
 
+Project summaries and public details include nullable `imageUrl` and `imageAlt`
+fields from the first `COVER` item in `projects.media`. The authenticated feed,
+saved projects, and interested projects expose the same cover fields. Projects
+without a cover retain `null`; browser adapters accept HTTP(S) image URLs without
+credentials and preserve the existing no-image presentation when a URL is absent,
+unsafe, or fails to load. These additive fields do not change authorization or
+require a database migration.
+
 Query parameters:
 
 - `offset` — optional integer from `0` to `100000`; default `0`.

@@ -11,6 +11,8 @@ describe('toStartupViewModel', () => {
       sector: 'Sostenibilidad',
       city: 'Cochabamba',
       stage: 'MVP',
+      imageUrl: 'https://example.test/cover.jpg',
+      imageAlt: 'Portada EcoPack',
     })
 
     expect(startup).toMatchObject({
@@ -19,6 +21,8 @@ describe('toStartupViewModel', () => {
       pitch: 'Envases compostables.',
       sector: 'Sostenibilidad',
       tags: ['sustainability', 'impact'],
+      image: 'https://example.test/cover.jpg',
+      imageAlt: 'Portada EcoPack',
     })
     expect(startup).not.toHaveProperty('slug')
   })

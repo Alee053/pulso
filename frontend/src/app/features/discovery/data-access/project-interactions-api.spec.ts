@@ -33,6 +33,8 @@ describe('ProjectInteractionsApi', () => {
         sector: 'Sostenibilidad',
         city: 'Cochabamba',
         stage: 'MVP',
+        imageUrl: 'https://example.test/cover.jpg',
+        imageAlt: 'Portada EcoPack',
         saved: true,
         feedbackType: null,
       }],
@@ -41,6 +43,8 @@ describe('ProjectInteractionsApi', () => {
 
     const page = await responsePromise
     expect(page.data[0]?.startup.id).toBe('project-1')
+    expect(page.data[0]?.startup.image).toBe('https://example.test/cover.jpg')
+    expect(page.data[0]?.startup.imageAlt).toBe('Portada EcoPack')
     expect(page.data[0]?.saved).toBe(true)
     expect(page.data[0]?.feedbackType).toBeNull()
     expect(page.meta.totalCount).toBe(28)

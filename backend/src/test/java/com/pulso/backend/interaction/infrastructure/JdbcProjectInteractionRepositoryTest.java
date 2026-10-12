@@ -87,6 +87,7 @@ class JdbcProjectInteractionRepositoryTest {
                   sector_id uuid not null,
                   city text,
                   stage text not null,
+                  media jsonb,
                   status text not null,
                   published_at timestamptz,
                   created_at timestamptz not null default timezone('utc', now())
@@ -129,6 +130,28 @@ class JdbcProjectInteractionRepositoryTest {
         insertProject(DISMISSED_PROJECT_ID, "dismissed-project", "Dismissed project", "PUBLISHED", 2);
         insertProject(AVAILABLE_PROJECT_ID, "available-project", "Available project", "PUBLISHED", 1);
         insertProject(DRAFT_PROJECT_ID, "draft-project", "Draft project", "DRAFT", 4);
+    }
+
+    @Test
+    void includesCoverInFeedSavedAndInterestedCollections() {
+        jdbcClient.sql("""
+                update public.projects set media = '[
+                  {"type":"COVER","url":"https://example.test/cover.jpg","alt":"Portada"}
+                ]'::jsonb where id = :id
+                """).param("id", SAVED_PROJECT_ID).update();
+
+        assertThat(repository.findDiscoveryFeed(PROFILE_ID, List.of(), List.of(), 0, null, 20))
+                .filteredOn(item -> item.project().id().equals(SAVED_PROJECT_ID))
+                .singleElement().satisfies(item -> {
+                    assertThat(item.project().imageUrl()).isEqualTo("https://example.test/cover.jpg");
+                    assertThat(item.project().imageAlt()).isEqualTo("Portada");
+                });
+        repository.setSaved(PROFILE_ID, SAVED_PROJECT_ID, true);
+        repository.setFeedback(PROFILE_ID, SAVED_PROJECT_ID, ProjectFeedbackType.INTERESTED);
+        assertThat(repository.findSavedProjects(PROFILE_ID, 0, 20).getFirst().imageUrl())
+                .isEqualTo("https://example.test/cover.jpg");
+        assertThat(repository.findInterestedProjects(PROFILE_ID, 0, 20).getFirst().imageUrl())
+                .isEqualTo("https://example.test/cover.jpg");
     }
 
     @Test

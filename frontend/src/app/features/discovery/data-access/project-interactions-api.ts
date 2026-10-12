@@ -166,5 +166,7 @@ function toStartupSummary(dto: StartupSummaryDto): StartupSummary {
     sector: dto.sector,
     city: dto.city,
     stage: dto.stage,
+    imageUrl: dto.imageUrl,
+    imageAlt: dto.imageAlt,
   }
 }

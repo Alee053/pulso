@@ -16,7 +16,17 @@ public record PublicProjectDetail(
         String department,
         List<Tag> tags,
         List<ExternalLink> externalLinks,
-        List<Member> members) {
+        List<Member> members,
+        String imageUrl,
+        String imageAlt) {
+
+    public PublicProjectDetail(UUID id, String slug, String name, String tagline,
+            String description, String valueProposition, Sector sector, String stage,
+            String city, String department, List<Tag> tags, List<ExternalLink> externalLinks,
+            List<Member> members) {
+        this(id, slug, name, tagline, description, valueProposition, sector, stage,
+                city, department, tags, externalLinks, members, null, null);
+    }
 
     public PublicProjectDetail {
         tags = tags == null ? List.of() : List.copyOf(tags);

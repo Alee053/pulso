@@ -29,6 +29,8 @@ public record DiscoveryFeedResponse(
             String sector,
             String city,
             String stage,
+            String imageUrl,
+            String imageAlt,
             boolean saved,
             String feedbackType) {
 
@@ -43,6 +45,8 @@ public record DiscoveryFeedResponse(
                     project.sector(),
                     project.city(),
                     project.stage(),
+                    project.imageUrl(),
+                    project.imageAlt(),
                     item.saved(),
                     feedback == null ? null : feedback.name());
         }

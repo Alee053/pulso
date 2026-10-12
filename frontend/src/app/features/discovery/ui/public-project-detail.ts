@@ -44,6 +44,7 @@ export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterVie
     private originalOverflow = ''
 
     readonly state = signal<PublicProjectState>({ status: 'loading' })
+    hasImageError = false
 
     get isLoading(): boolean {
         return this.state().status === 'loading'
@@ -118,6 +119,7 @@ export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterVie
     }
 
     loadProject(): void {
+        this.hasImageError = false
         this.request?.unsubscribe()
         this.state.set({ status: 'loading' })
 
@@ -186,8 +188,8 @@ export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterVie
             stage: project.stage,
             tags: project.tags.map((t) => t.name),
             badges: project.tags.map((t) => t.name),
-            image: '',
-            imageAlt: project.name,
+            image: project.imageUrl ?? '',
+            imageAlt: project.imageAlt || project.name,
             accent: '#a9e1ff',
             founders: project.members.map((m) => ({
                 name: m.displayName,

@@ -11,7 +11,9 @@ public record StartupResponse(
         String tagline,
         String sector,
         String city,
-        String stage) {
+        String stage,
+        String imageUrl,
+        String imageAlt) {
 
     public static StartupResponse from(StartupSummary startup) {
         return new StartupResponse(
@@ -21,6 +23,8 @@ public record StartupResponse(
                 startup.tagline(),
                 startup.sector(),
                 startup.city(),
-                startup.stage());
+                startup.stage(),
+                startup.imageUrl(),
+                startup.imageAlt());
     }
 }

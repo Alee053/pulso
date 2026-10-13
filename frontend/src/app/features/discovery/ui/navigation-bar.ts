@@ -28,14 +28,17 @@ export class NavigationBarComponent {
 
   readonly common = commonStrings
   readonly strings = navigationStrings
+  readonly showProfile = false
 
-  readonly navigationItems: readonly NavigationItem[] = [
+  private readonly allNavigationItems: readonly NavigationItem[] = [
     { id: 'discover', label: navigationStrings.discover, icon: 'compass' },
     { id: 'create-project', label: navigationStrings.createProject, icon: 'sparkles' },
     { id: 'teams', label: navigationStrings.teams, icon: 'users-round' },
     { id: 'saved', label: navigationStrings.saved, icon: 'bookmark' },
     { id: 'profile', label: navigationStrings.profile, icon: 'user-round' },
   ]
+
+  readonly navigationItems = this.allNavigationItems.filter((item) => item.id !== 'profile' || this.showProfile)
 
   get totalSaved(): number {
     return this.savedCount + this.interestedCount

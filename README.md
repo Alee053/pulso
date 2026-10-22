@@ -7,8 +7,7 @@ local**, sin pedir credenciales de un proyecto Supabase alojado.
 
 Accesos rápidos: [primer arranque](#developer-onboarding),
 [uso diario](#uso-diario-y-actualización-del-código),
-[validación](#comandos-de-validación), [PUL-22 / S4.2](#pul-22-s42) y
-[problemas frecuentes](#problemas-frecuentes).
+[validación](#comandos-de-validación) y [problemas frecuentes](#problemas-frecuentes).
 
 | Parte | Ubicación | Tecnología | Cómo se ejecuta |
 | --- | --- | --- | --- |
@@ -304,14 +303,6 @@ El detalle de las variables soportadas por el runner está en
 | Frontend → backend | `PULSO_API_BASE_URL` en `frontend/.env.development`; URL base **sin** `/api/v1` |
 | Frontend → Auth | `PULSO_SUPABASE_URL`, `PULSO_SUPABASE_PUBLISHABLE_KEY` en `frontend/.env.development` |
 
-El runner `pnpm backend:run` requiere `SPRING_DATASOURCE_PASSWORD` y al menos
-uno de `SUPABASE_JWT_JWK_SET_URI` o `SUPABASE_JWT_SECRET`. Para la pila Compose,
-usa el issuer y el método de firma descritos por `.env.example`; para Supabase
-CLI, configura los valores del entorno CLI según `pnpm db:status` y no reutilices
-la configuración Auth de Compose. La URI JWK, el issuer y la clave pública del
-frontend deben pertenecer al mismo entorno. No copies valores de ejemplo locales
-a un entorno compartido ni documentes secretos.
-
 El frontend carga `frontend/.env.development` al ejecutar `dev`, `start`, `preview`
 y `build`; las variables de la terminal prevalecen. Puedes seleccionar otro
 archivo con `PULSO_FRONTEND_ENV_FILE` (usa una ruta absoluta para evitar confundir
@@ -414,48 +405,19 @@ no forman parte de la instalación local.
 | `sh` no se reconoce en Windows | Instala Git for Windows y ejecuta desde Git Bash, o agrega su `sh` al `PATH`; reabre la terminal. |
 | Java no se encuentra, `JAVA_HOME` es inválido o falta el compilador | Usa un JDK 21 completo; verifica `java --version`, `javac --version` y la ruta de `JAVA_HOME`. |
 | Docker no conecta o falta `dockerDesktopLinuxEngine` | Inicia Docker Desktop con motor Linux y espera a que `docker info` funcione. |
-| Puerto `8080` ocupado / `address already in use` | Identifica el proceso que escucha en ese puerto antes de detenerlo. Como alternativa, cambia `SERVER_PORT` y configura `PULSO_API_BASE_URL` con la misma URL base (sin `/api/v1`); reinicia backend y frontend. Revisa también `docker ps` si usas servicios locales. No arranques Compose y `pnpm db:up` simultáneamente. |
+| Puerto ocupado / `address already in use` | Revisa `docker ps` y tus terminales; detén la instancia que corresponda. No arranques Compose y `pnpm db:up` simultáneamente. |
 | `migrator` queda en `Exited (1)` o falla un servicio dependiente | Lee `docker compose logs --tail 100 migrator db auth`; corrige el error y vuelve a ejecutar el migrador. `Exited (0)` es el resultado correcto. |
 | `Set SPRING_DATASOURCE_PASSWORD` | Crea `.env` desde la plantilla y revisa qué archivo selecciona el runner y si la terminal tiene una variable vacía. |
 | `Unsupported environment value syntax` / `Invalid .env entry` | Guarda el archivo del backend con LF, UTF-8 sin BOM y valores sin comillas, espacios ni comentarios al final. |
 | `Unsupported variable in the selected environment file` | Usa solo las variables aceptadas por `run-backend.sh`; separa las exclusivas de Compose del archivo del backend. |
 | Cambiaste `.env` pero el backend sigue usando otra base | Revisa `PULSO_BACKEND_ENV_FILE`, los archivos bajo `backend/` y las variables de la terminal; tienen prioridad sobre `.env` raíz. |
-| Backend no arranca o readiness está `DOWN` | Comprueba que `.env` (o el archivo seleccionado por `PULSO_BACKEND_ENV_FILE`) incluya `SPRING_DATASOURCE_PASSWORD` y una configuración JWT válida: `SUPABASE_JWT_JWK_SET_URI` o `SUPABASE_JWT_SECRET`. Si `/api/health` da `UP` pero readiness está `DOWN` o discovery devuelve 503, revisa PostgreSQL, las credenciales de conexión y que el migrador haya terminado; liveness por sí sola no demuestra conexión a la base. |
-| Falla la conexión a Supabase Auth, login o el backend responde 401 con sesión | Confirma que Auth esté iniciado y saludable (`docker compose ps` en Compose o `pnpm db:status` en CLI), que `PULSO_SUPABASE_URL` apunte a su API local y que issuer, audiencia y método/JWK del backend sean del mismo entorno. Compose usa HS256 y la CLI ES256: no mezcles sus valores. Reinicia Angular tras editar su entorno. |
+| `/api/health` da UP, pero readiness está DOWN o discovery devuelve 503 | Verifica PostgreSQL, credenciales y migrador; liveness por sí sola no demuestra conexión a la base. |
+| Falla login o el backend responde 401 con sesión | Comprueba que frontend, issuer y claves del backend correspondan al mismo entorno; no mezcles Compose HS256 con CLI ES256. Reinicia Angular tras editar su entorno. |
 | Error CORS | Usa el origen configurado (`localhost:4200` o `127.0.0.1:4200` por defecto); si cambiaste el puerto, actualiza `CORS_ALLOWED_ORIGINS` y reinicia el backend. |
 | No aparece el correo de invitación | Revisa Mailpit en `54324`, el contenedor `mailpit` y SMTP del backend en `localhost:54325`. |
 | Faltan tablas o el seed está desactualizado | Con Compose activo ejecuta `pnpm db:compose:seed` y revisa el resultado. Un reset destructivo no es el paso habitual. |
 | `auth:verify` dice que Supabase no está disponible | Ese script exige el entorno de la CLI; sigue la sección anterior para cambiar de entorno. |
 | Smoke no encuentra Python o Chrome | Comprueba `python3`/`python` y el navegador desde la shell que ejecuta el script; configura `PULSO_SMOKE_BROWSER` si hace falta. |
-
-<a id="pul-22-s42"></a>
-
-## PUL-22 / S4.2
-
-Las oportunidades de un proyecto se administran en
-`/api/v1/projects/{projectId}/opportunities`; las habilidades asociadas tienen
-su propio recurso:
-
-| Método | Ruta | Operación |
-| --- | --- | --- |
-| `GET` | `/api/v1/projects/{projectId}/opportunities/{opportunityId}/skills` | Consultar las habilidades y su importancia |
-| `POST` | `/api/v1/projects/{projectId}/opportunities/{opportunityId}/skills` | Asociar una habilidad activa (`skillId`, `importance`) |
-| `PUT` | `/api/v1/projects/{projectId}/opportunities/{opportunityId}/skills/{skillId}` | Cambiar su importancia |
-| `DELETE` | `/api/v1/projects/{projectId}/opportunities/{opportunityId}/skills/{skillId}` | Quitar la asociación, no la habilidad del catálogo |
-
-Solo integrantes con rol `OWNER` o `ADMIN` pueden administrar estas asociaciones.
-Cada habilidad debe estar activa y su importancia debe ser `REQUIRED` o
-`PREFERRED`; la clave compuesta de `opportunity_skills` impide duplicados para
-una oportunidad y habilidad. El detalle público existente
-`GET /api/v1/projects/{projectRef}` incluye habilidades `REQUIRED` de
-oportunidades `OPEN`, sin incluir las `PREFERRED` en esa vista.
-
-La tabla se crea mediante la migración
-[`20261022021959_add_opportunity_skills.sql`](database/supabase/migrations/20261022021959_add_opportunity_skills.sql).
-La cobertura relacionada incluye `07_opportunity_skills.sql` (pgTAP),
-`ManageOpportunitySkillsTest`, `ProjectOpportunitySkillsSecurityTest`,
-`JdbcOpportunitySkillRepositoryTest`, `JdbcPublicProjectRepositoryTest` y
-`project-opportunity-skills.spec.ts` en Angular.
 
 ## Trabajo en equipo y documentación
 

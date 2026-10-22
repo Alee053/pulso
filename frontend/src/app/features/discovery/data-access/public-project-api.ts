@@ -6,6 +6,7 @@ import { projectImageUrl } from './project-image'
 import type {
     PublicExternalLink,
     PublicMember,
+    PublicOpenOpportunity,
     PublicProjectDetail,
     PublicSector,
     PublicTag,
@@ -58,6 +59,7 @@ export class PublicProjectApi {
             tags: this.mapTags(raw.tags),
             externalLinks: this.mapExternalLinks(raw.externalLinks),
             members: this.mapMembers(raw.members),
+            opportunities: this.mapOpportunities(raw.opportunities),
             imageUrl: projectImageUrl(raw.imageUrl),
             imageAlt: this.sanitizeText(raw.imageAlt),
         }
@@ -120,6 +122,23 @@ export class PublicProjectApi {
             displayTitle: this.sanitizeText(member?.displayTitle),
             isFeatured: Boolean(member?.isFeatured),
         }))
+    }
+
+    private mapOpportunities(raw: PublicOpenOpportunity[]): PublicOpenOpportunity[] {
+        if (!Array.isArray(raw)) return []
+        return raw.map((opportunity) => ({
+            title: this.sanitizeText(opportunity?.title) ?? '',
+            opportunityType: this.sanitizeText(opportunity?.opportunityType) ?? '',
+            description: this.sanitizeText(opportunity?.description) ?? '',
+            city: this.sanitizeText(opportunity?.city),
+            department: this.sanitizeText(opportunity?.department),
+            remoteAllowed: Boolean(opportunity?.remoteAllowed),
+            requiredSkills: Array.isArray(opportunity?.requiredSkills)
+                ? opportunity.requiredSkills
+                    .map((skill) => this.sanitizeText(skill))
+                    .filter((skill): skill is string => skill !== null)
+                : [],
+        })).filter((opportunity) => opportunity.title !== '')
     }
 
     private handleError(error: HttpErrorResponse): Observable<never> {

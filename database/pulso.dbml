@@ -243,6 +243,8 @@ Table opportunity_skills {
     (opportunity_id, skill_id) [pk]
     skill_id
   }
+
+  Note: "Una habilidad activa asociada una sola vez; REQUIRED o PREFERRED. La asociación se elimina con la oportunidad y protege la habilidad del catálogo ante borrado."
 }
 
 // -----------------------------------------------------------------------------

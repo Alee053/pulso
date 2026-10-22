@@ -24,9 +24,35 @@ describe('PublicProjectApi', () => {
       ...MOCK_PUBLIC_PROJECTS['eco-pack'],
       reviewNotes: 'private review',
       members: [{ ...MOCK_PUBLIC_PROJECTS['eco-pack'].members[0], email: 'private@example.test', invite_token_digest: 'private digest' }],
+      opportunities: [{
+        title: 'Desarrollador Frontend',
+        opportunityType: 'TALENT',
+        description: 'Implementa la experiencia web.',
+        city: 'Cochabamba',
+        department: 'Cochabamba',
+        remoteAllowed: true,
+        requiredSkills: ['Angular', 'TypeScript'],
+        id: 'private-opportunity-id',
+        status: 'OPEN',
+        importance: 'REQUIRED',
+        createdByProfileId: 'private-profile',
+      }],
     } })
     const detail = await response
-    expect(detail).toEqual({ ...MOCK_PUBLIC_PROJECTS['eco-pack'], imageUrl: null, imageAlt: null })
+    expect(detail).toEqual({
+      ...MOCK_PUBLIC_PROJECTS['eco-pack'],
+      imageUrl: null,
+      imageAlt: null,
+      opportunities: [{
+        title: 'Desarrollador Frontend',
+        opportunityType: 'TALENT',
+        description: 'Implementa la experiencia web.',
+        city: 'Cochabamba',
+        department: 'Cochabamba',
+        remoteAllowed: true,
+        requiredSkills: ['Angular', 'TypeScript'],
+      }],
+    })
     expect(JSON.stringify(detail)).not.toContain('private')
     http.verify()
   })

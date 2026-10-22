@@ -78,7 +78,37 @@ public class JdbcPublicProjectRepository implements PublicProjectRepository {
                       and profile.account_status = 'ACTIVE'
                       and profile.profile_visibility = 'PUBLIC'
                       and profile.deleted_at is null
-                ), '[]'::jsonb)::text as members
+                ), '[]'::jsonb)::text as members,
+                coalesce((
+                    select jsonb_agg(
+                        jsonb_build_object(
+                            'title', opportunity.title,
+                            'opportunityType', opportunity.opportunity_type,
+                            'description', opportunity.description,
+                            'city', opportunity.city,
+                            'department', opportunity.department,
+                            'remoteAllowed', opportunity.remote_allowed,
+                            'requiredSkills', coalesce((
+                                select jsonb_agg(skill.name order by skill.name asc, skill.id asc)
+                                from public.opportunity_skills association
+                                join public.skills skill on skill.id = association.skill_id
+                                where association.opportunity_id = opportunity.id
+                                  and association.importance = 'REQUIRED'
+                                  and skill.is_active = true
+                            ), '[]'::jsonb)
+                        )
+                        order by opportunity.created_at desc, opportunity.id desc
+                    )
+                    from (
+                        select id, project_id, opportunity_type, title, description,
+                               city, department, remote_allowed, created_at
+                        from public.project_opportunities
+                        where project_id = p.id
+                          and status = 'OPEN'
+                        order by created_at desc, id desc
+                        limit 50
+                    ) opportunity
+                ), '[]'::jsonb)::text as opportunities
             from public.projects p
             join public.sectors s on s.id = p.sector_id
                 and s.is_active = true
@@ -144,7 +174,8 @@ public class JdbcPublicProjectRepository implements PublicProjectRepository {
                 parseExternalLinks(resultSet.getString("external_links")),
                 parseMembers(resultSet.getString("members")),
                 resultSet.getString("image_url"),
-                resultSet.getString("image_alt"));
+                resultSet.getString("image_alt"),
+                parseOpportunities(resultSet.getString("opportunities")));
     }
 
     private List<PublicProjectDetail.Tag> parseTags(String json) {
@@ -223,6 +254,32 @@ public class JdbcPublicProjectRepository implements PublicProjectRepository {
                 text(node, "displayTitle"),
                 node.path("isFeatured").asBoolean(false))));
         return members;
+    }
+
+    private List<PublicProjectDetail.Opportunity> parseOpportunities(String json) {
+        List<PublicProjectDetail.Opportunity> opportunities = new ArrayList<>();
+        forEachObject(json, node -> opportunities.add(new PublicProjectDetail.Opportunity(
+                text(node, "title"),
+                text(node, "opportunityType"),
+                text(node, "description"),
+                text(node, "city"),
+                text(node, "department"),
+                node.path("remoteAllowed").asBoolean(false),
+                textArray(node.get("requiredSkills")))));
+        return opportunities;
+    }
+
+    private static List<String> textArray(JsonNode node) {
+        if (node == null || !node.isArray()) {
+            return List.of();
+        }
+        List<String> values = new ArrayList<>();
+        node.forEach(value -> {
+            if (value.isTextual() && !value.asText().isBlank()) {
+                values.add(value.asText());
+            }
+        });
+        return List.copyOf(values);
     }
 
     private void forEachObject(String json, java.util.function.Consumer<JsonNode> consumer) {

@@ -101,7 +101,15 @@ export interface PublicMember {
     isFeatured: boolean
 }
 
-
+export interface PublicOpenOpportunity {
+    title: string
+    opportunityType: string
+    description: string
+    city: string | null
+    department: string | null
+    remoteAllowed: boolean
+    requiredSkills: string[]
+}
 
 export interface PublicProjectDetail {
     id: string
@@ -117,6 +125,7 @@ export interface PublicProjectDetail {
     tags: PublicTag[]
     externalLinks: PublicExternalLink[]
     members: PublicMember[]
+    opportunities: PublicOpenOpportunity[]
     imageUrl?: string | null
     imageAlt?: string | null
 }

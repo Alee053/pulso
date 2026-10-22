@@ -97,7 +97,12 @@
                                            [catalogsLoaded]="session.hasLoadedReferenceCatalogs()"
                                            [catalogsErrorMessage]="session.catalogsErrorMessage()" />
 
-                <pulso-project-teams *ngSwitchCase="'teams'" />
+                <pulso-project-teams *ngSwitchCase="'teams'"
+                                     [skills]="session.referenceCatalogs().skills"
+                                     [catalogsLoaded]="session.hasLoadedReferenceCatalogs()"
+                                     [catalogsLoading]="session.areCatalogsLoading()"
+                                     [catalogsErrorMessage]="session.catalogsErrorMessage()"
+                                     (catalogsRetryRequested)="session.retryReferenceCatalogs()" />
 
                 <pulso-saved-view *ngSwitchCase="'saved'"
                                   [savedStartups]="session.savedStartups()"

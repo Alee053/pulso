@@ -30,6 +30,11 @@ frontend/src/
 
 [`membership-administration.ts`](../../frontend/src/app/features/discovery/domain/membership-administration.ts) is the interface seam for membership administration: which actions an owner, admin, or member may be offered, and the permission, invalid-transition, and owner-invariant copy. The backend remains the source of truth for transitions.
 
+`ProjectTeamsComponent` offers the opportunity-skill manager only for active
+project owners and admins. Its feature adapter calls the authenticated
+opportunity and catalog APIs; the public project detail has a separate DTO
+containing only open opportunities and active required-skill names.
+
 [`StartupsApi`](../../frontend/src/app/features/discovery/data-access/startups-api.ts) adapts the public `GET /api/v1/startups` catalog contract. Authenticated discovery and product state use [`ProjectInteractionsApi`](../../frontend/src/app/features/discovery/data-access/project-interactions-api.ts) and [`PreferencesApi`](../../frontend/src/app/features/discovery/data-access/preferences-api.ts), which read and write through the Spring API. [`SupabaseAuthGateway`](../../frontend/src/app/core/auth/supabase-auth.gateway.ts) hides the provider client, owns the current session, exposes sign-up/sign-in/sign-out operations, and returns only the current access token to data-access code. [`AuthPanelComponent`](../../frontend/src/app/core/auth/auth-panel.ts) is the small UI surface for local Auth. The global [`authInterceptor`](../../frontend/src/app/core/auth/auth.interceptor.ts) adds that token only to backend API requests without placing Auth or raw URLs in discovery UI components.
 
 [`app-config.ts`](../../frontend/src/app/core/config/app-config.ts) is compiled

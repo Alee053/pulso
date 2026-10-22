@@ -16,6 +16,8 @@ import com.pulso.backend.ops.logging.LogContext;
 import com.pulso.backend.opportunity.application.ProjectOpportunityConflictException;
 import com.pulso.backend.opportunity.application.ProjectOpportunityNotFoundException;
 import com.pulso.backend.opportunity.application.ProjectOpportunityPermissionException;
+import com.pulso.backend.opportunity.application.OpportunitySkillConflictException;
+import com.pulso.backend.opportunity.application.OpportunitySkillNotFoundException;
 import com.pulso.backend.opportunity.domain.OpportunityConflictException;
 import com.pulso.backend.opportunity.domain.OpportunityValidationException;
 import com.pulso.backend.preference.domain.OnboardingPreferencesValidationException;
@@ -237,6 +239,24 @@ public class ApiExceptionHandler {
                 HttpStatus.CONFLICT,
                 exception.getMessage());
         problem.setTitle(ApiMessages.OPPORTUNITY_CONFLICT_TITLE);
+        return problem;
+    }
+
+    @ExceptionHandler(OpportunitySkillNotFoundException.class)
+    ProblemDetail opportunitySkillNotFound(OpportunitySkillNotFoundException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND,
+                exception.getMessage());
+        problem.setTitle(ApiMessages.OPPORTUNITY_SKILL_NOT_FOUND_TITLE);
+        return problem;
+    }
+
+    @ExceptionHandler(OpportunitySkillConflictException.class)
+    ProblemDetail opportunitySkillConflict(OpportunitySkillConflictException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                exception.getMessage());
+        problem.setTitle(ApiMessages.OPPORTUNITY_SKILL_CONFLICT_TITLE);
         return problem;
     }
 

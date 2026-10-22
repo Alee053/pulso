@@ -1,5 +1,15 @@
 import { CommonModule } from '@angular/common'
-import { Component, effect, inject, OnDestroy, signal, untracked } from '@angular/core'
+import {
+  Component,
+  effect,
+  EventEmitter,
+  inject,
+  Input,
+  OnDestroy,
+  Output,
+  signal,
+  untracked,
+} from '@angular/core'
 import { Subscription } from 'rxjs'
 import { SupabaseAuthGateway } from '../../../core/auth/supabase-auth.gateway'
 import { CurrentProjectsApi } from '../data-access/current-projects-api'
@@ -7,14 +17,22 @@ import type { CurrentProjectMembership } from '../domain/member-invitation'
 import { invitationStrings } from '../strings/invitation.strings'
 import { ProjectMembersComponent } from './project-members'
 import type { UpdatedMembership } from '../domain/project-member'
+import type { SkillCatalogItem } from '../domain/catalog'
+import { ProjectOpportunitySkillsComponent } from './project-opportunity-skills'
 
 @Component({
   selector: 'pulso-project-teams',
   standalone: true,
-  imports: [CommonModule, ProjectMembersComponent],
+  imports: [CommonModule, ProjectMembersComponent, ProjectOpportunitySkillsComponent],
   templateUrl: './project-teams.html',
 })
 export class ProjectTeamsComponent implements OnDestroy {
+  @Input() skills: readonly SkillCatalogItem[] = []
+  @Input() catalogsLoaded = false
+  @Input() catalogsLoading = false
+  @Input() catalogsErrorMessage: string | null = null
+  @Output() catalogsRetryRequested = new EventEmitter<void>()
+
   readonly strings = invitationStrings
   private readonly auth = inject(SupabaseAuthGateway)
   private readonly api = inject(CurrentProjectsApi)

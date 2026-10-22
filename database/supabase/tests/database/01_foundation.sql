@@ -55,9 +55,14 @@ select has_index(
 );
 
 select is(
-  (select count(*) from public.projects where status = 'PUBLISHED'),
+  (select count(*) from public.projects
+    where id in (
+      '11111111-1111-1111-1111-111111111111',
+      '22222222-2222-2222-2222-222222222222'
+    )
+      and status = 'PUBLISHED'),
   2::bigint,
-  'local seed contains two published projects'
+  'original seeded projects remain published'
 );
 select is(
   (select count(*) from pg_policies

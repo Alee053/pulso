@@ -37,7 +37,7 @@ public class JdbcOpportunitySkillRepository implements OpportunitySkillRepositor
                 join public.skills skill on skill.id = association.skill_id
                 where opportunity.project_id = :projectId
                   and association.opportunity_id = :opportunityId
-                order by association.importance asc, skill.name asc, skill.id asc
+                order by (association.importance = 'REQUIRED') desc, skill.name asc, skill.id asc
                 """)
                 .param("projectId", projectId)
                 .param("opportunityId", opportunityId)

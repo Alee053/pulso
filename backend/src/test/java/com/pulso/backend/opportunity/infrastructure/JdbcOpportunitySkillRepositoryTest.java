@@ -80,6 +80,23 @@ class JdbcOpportunitySkillRepositoryTest {
     }
 
     @Test
+    void listsRequiredSkillsBeforePreferredOnes() {
+        UUID laterRequiredSkillId = UUID.fromString("99999999-9999-9999-9999-999999999999");
+        jdbcClient.sql("insert into public.skills (id, slug, name, is_active) "
+                        + "values (:id, 'zeta', 'Zeta', true)")
+                .param("id", laterRequiredSkillId)
+                .update();
+        repository.create(PROJECT_ID, OPPORTUNITY_ID, ACTIVE_SKILL_ID, "PREFERRED", OWNER_ID)
+                .orElseThrow();
+        repository.create(PROJECT_ID, OPPORTUNITY_ID, laterRequiredSkillId, "REQUIRED", OWNER_ID)
+                .orElseThrow();
+
+        assertThat(repository.list(PROJECT_ID, OPPORTUNITY_ID))
+                .extracting(skill -> skill.skillName() + ":" + skill.importance())
+                .containsExactly("Zeta:REQUIRED", "Angular:PREFERRED");
+    }
+
+    @Test
     void repeatsProjectMembershipAndOpportunityPredicatesForEveryWrite() {
         assertThat(repository.create(
                 PROJECT_ID, OPPORTUNITY_ID, ACTIVE_SKILL_ID, "REQUIRED", MEMBER_ID)).isEmpty();

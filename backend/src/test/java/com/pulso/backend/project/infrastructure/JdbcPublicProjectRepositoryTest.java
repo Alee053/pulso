@@ -77,6 +77,16 @@ class JdbcPublicProjectRepositoryTest {
             "14141414-1414-1414-1414-141414141414");
     private static final UUID SECOND_TAG_ID = UUID.fromString(
             "15151515-1515-1515-1515-151515151515");
+    private static final UUID OPEN_OPPORTUNITY_ID = UUID.fromString(
+            "16161616-1616-1616-1616-161616161616");
+    private static final UUID PAUSED_OPPORTUNITY_ID = UUID.fromString(
+            "17171717-1717-1717-1717-171717171717");
+    private static final UUID REQUIRED_SKILL_ID = UUID.fromString(
+            "18181818-1818-1818-1818-181818181818");
+    private static final UUID PREFERRED_SKILL_ID = UUID.fromString(
+            "19191919-1919-1919-1919-191919191919");
+    private static final UUID INACTIVE_SKILL_ID = UUID.fromString(
+            "20202020-2020-2020-2020-202020202020");
     private static final UUID PUBLIC_PROFILE_ID = UUID.fromString(
             "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private static final UUID PRIVATE_PROFILE_ID = UUID.fromString(
@@ -111,7 +121,8 @@ class JdbcPublicProjectRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        jdbcClient.sql("drop table if exists public.project_members, public.project_tags, "
+        jdbcClient.sql("drop table if exists public.opportunity_skills, public.project_opportunities, "
+                + "public.skills, public.project_members, public.project_tags, "
                 + "public.projects, public.tags, public.sectors, public.profiles cascade")
                 .update();
         jdbcClient.sql("""
@@ -184,6 +195,35 @@ class JdbcPublicProjectRepositoryTest {
                   invite_token_digest text
                 )
                 """).update();
+        jdbcClient.sql("""
+                create table public.skills (
+                  id uuid primary key,
+                  slug text not null,
+                  name text not null,
+                  is_active boolean not null
+                )
+                """).update();
+        jdbcClient.sql("""
+                create table public.project_opportunities (
+                  id uuid primary key,
+                  project_id uuid not null,
+                  opportunity_type text not null,
+                  title text not null,
+                  description text not null,
+                  status text not null,
+                  city text,
+                  department text,
+                  remote_allowed boolean not null,
+                  created_at timestamptz not null
+                )
+                """).update();
+        jdbcClient.sql("""
+                create table public.opportunity_skills (
+                  opportunity_id uuid not null,
+                  skill_id uuid not null,
+                  importance text not null
+                )
+                """).update();
 
         jdbcClient.sql("""
                 insert into public.sectors (id, slug, name, is_active)
@@ -206,6 +246,17 @@ class JdbcPublicProjectRepositoryTest {
                 .param("inactiveId", INACTIVE_TAG_ID)
                 .param("secondId", SECOND_TAG_ID)
                 .param("name", "Economía circular")
+                .update();
+        jdbcClient.sql("""
+                insert into public.skills (id, slug, name, is_active)
+                values
+                  (:requiredId, 'angular', 'Angular', true),
+                  (:preferredId, 'figma', 'Figma', true),
+                  (:inactiveId, 'internal-skill', 'Internal skill', false)
+                """)
+                .param("requiredId", REQUIRED_SKILL_ID)
+                .param("preferredId", PREFERRED_SKILL_ID)
+                .param("inactiveId", INACTIVE_SKILL_ID)
                 .update();
         jdbcClient.sql("""
                 insert into public.profiles (id, display_name, avatar_storage_path, account_status)
@@ -274,6 +325,36 @@ class JdbcPublicProjectRepositoryTest {
                         """)
                 .param("sectorId", SECTOR_ID)
                 .param("inactiveSector", INACTIVE_SECTOR_ID)
+                .update();
+        jdbcClient.sql("""
+                insert into public.project_opportunities (
+                  id, project_id, opportunity_type, title, description, status,
+                  city, department, remote_allowed, created_at
+                ) values
+                  (:openId, :projectId, 'TALENT', 'Desarrollador Frontend',
+                   'Implementa la experiencia web.', 'OPEN', 'Cochabamba',
+                   'Cochabamba', true, '2026-10-01T12:00:00Z'),
+                  (:pausedId, :projectId, 'MENTOR', 'Mentoría privada',
+                   'No debe mostrarse.', 'PAUSED', null, null, false,
+                   '2026-10-02T12:00:00Z')
+                """)
+                .param("openId", OPEN_OPPORTUNITY_ID)
+                .param("pausedId", PAUSED_OPPORTUNITY_ID)
+                .param("projectId", PROJECT_ID)
+                .update();
+        jdbcClient.sql("""
+                insert into public.opportunity_skills (opportunity_id, skill_id, importance)
+                values
+                  (:openId, :requiredId, 'REQUIRED'),
+                  (:openId, :preferredId, 'PREFERRED'),
+                  (:openId, :inactiveId, 'REQUIRED'),
+                  (:pausedId, :requiredId, 'REQUIRED')
+                """)
+                .param("openId", OPEN_OPPORTUNITY_ID)
+                .param("pausedId", PAUSED_OPPORTUNITY_ID)
+                .param("requiredId", REQUIRED_SKILL_ID)
+                .param("preferredId", PREFERRED_SKILL_ID)
+                .param("inactiveId", INACTIVE_SKILL_ID)
                 .update();
         jdbcClient.sql("""
                 insert into public.project_tags (project_id, tag_id)
@@ -361,6 +442,15 @@ class JdbcPublicProjectRepositoryTest {
                         null,
                         "Member",
                         false));
+        assertThat(bySlug.opportunities()).containsExactly(
+                new PublicProjectDetail.Opportunity(
+                        "Desarrollador Frontend",
+                        "TALENT",
+                        "Implementa la experiencia web.",
+                        "Cochabamba",
+                        "Cochabamba",
+                        true,
+                        java.util.List.of("Angular")));
     }
 
     @ParameterizedTest
@@ -403,14 +493,21 @@ class JdbcPublicProjectRepositoryTest {
         JsonNode data = envelope.path("data");
         assertFields(data, "id", "slug", "name", "tagline", "description", "valueProposition",
                 "sector", "stage", "city", "department", "tags", "externalLinks", "members",
-                "imageUrl", "imageAlt");
+                "imageUrl", "imageAlt", "opportunities");
         assertFields(data.path("sector"), "id", "slug", "name");
         data.path("tags").forEach(tag -> assertFields(tag, "id", "slug", "name"));
         data.path("externalLinks").forEach(link -> assertFields(link, "type", "url", "label"));
         data.path("members").forEach(member -> assertFields(member,
                 "profileId", "displayName", "avatarStoragePath", "displayTitle", "isFeatured"));
+        assertThat(data.path("opportunities")).hasSize(1);
+        JsonNode opportunity = data.path("opportunities").get(0);
+        assertFields(opportunity, "title", "opportunityType", "description", "city",
+                "department", "remoteAllowed", "requiredSkills");
+        assertThat(opportunity.path("requiredSkills").toString()).isEqualTo("[\"Angular\"]");
         assertThat(body).doesNotContain("private biography", "private review note",
-                "invited@example.test", "test-invite-digest", "test-token");
+                "invited@example.test", "test-invite-digest", "test-token",
+                OPEN_OPPORTUNITY_ID.toString(), REQUIRED_SKILL_ID.toString(),
+                "Figma", "Internal skill", "Mentoría privada");
     }
 
     @ParameterizedTest

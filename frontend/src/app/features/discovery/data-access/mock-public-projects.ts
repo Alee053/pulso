@@ -39,6 +39,7 @@ export const MOCK_PUBLIC_PROJECTS: Record<string, PublicProjectDetail> = {
                 isFeatured: true,
             },
         ],
+        opportunities: [],
     },
     '1': {
         id: '33333333-3333-3333-3333-333333333333',
@@ -78,6 +79,7 @@ export const MOCK_PUBLIC_PROJECTS: Record<string, PublicProjectDetail> = {
                 isFeatured: true,
             },
         ],
+        opportunities: [],
     },
 }
 

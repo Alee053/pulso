@@ -114,6 +114,15 @@ describe('PublicProjectDetailComponent', () => {
           isFeatured: false,
         },
       ],
+      opportunities: [{
+        title: 'Desarrollador Frontend',
+        opportunityType: 'TALENT',
+        description: 'Implementa la experiencia web.',
+        city: 'Cochabamba',
+        department: 'Cochabamba',
+        remoteAllowed: true,
+        requiredSkills: ['Angular', 'TypeScript'],
+      }],
     }
 
     http.expectOne('http://localhost:8080/api/v1/projects/eco-pack').flush({ data: project })
@@ -123,6 +132,10 @@ describe('PublicProjectDetailComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Reduce residuos')
     expect(fixture.nativeElement.textContent).toContain('Persona Uno')
     expect(fixture.nativeElement.textContent).toContain('Persona Dos')
+    expect(fixture.nativeElement.textContent).toContain('Desarrollador Frontend')
+    expect(fixture.nativeElement.textContent).toContain('Habilidades requeridas')
+    expect(fixture.nativeElement.textContent).toContain('Angular')
+    expect(fixture.nativeElement.textContent).toContain('TypeScript')
 
     // Cerrar con el botón
     const closeButton = fixture.nativeElement.querySelector('button[aria-label*="Cerrar"], button[aria-label*="Volver"]')

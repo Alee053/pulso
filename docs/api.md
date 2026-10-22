@@ -321,7 +321,7 @@ Conflict`; other PostgreSQL failures return the sanitized `503 Service
 Unavailable` response. Missing, invalid, or `service_role` bearer tokens
 return `401 Unauthorized`.
 
-## Project opportunities (PUL-18)
+## Project opportunities (PUL-18, PUL-22)
 
 All opportunity management endpoints require an access token and an active
 `OWNER` or `ADMIN` membership on the requested project. The actor profile ID
@@ -334,6 +334,12 @@ permission response.
 the project and creator foreign keys, enables RLS, and revokes direct
 `anon`/`authenticated` table grants. The project ID, creator, status updates,
 and audit timestamps are controlled by the server.
+
+`opportunity_skills` is also backend-only. The pair
+`(opportunity_id, skill_id)` is unique, importance is constrained to `REQUIRED`
+or `PREFERRED`, deleting an opportunity cascades to its associations, and
+deleting a referenced catalog skill is restricted. Only active catalog skills
+can be newly associated.
 
 ### `GET /api/v1/projects/{projectId}/opportunities`
 
@@ -414,6 +420,41 @@ Invalid content or attempts to open an opportunity for a non-public project
 return `400 Bad Request`. Missing, invalid, or `service_role` bearer tokens
 return `401 Unauthorized`; insufficient project membership returns `403`.
 Database errors use the sanitized `503 Service Unavailable` response.
+
+### `GET /api/v1/projects/{projectId}/opportunities/{opportunityId}/skills`
+
+Lists the associated catalog skills and their importance for an authorized
+owner or admin. The administrative response contains the skill ID, slug, name,
+importance, and active flag; it does not expose opportunity creator or audit
+fields.
+
+### `POST /api/v1/projects/{projectId}/opportunities/{opportunityId}/skills`
+
+Associates an active skill. The request body is `{"skillId":"<uuid>","importance":"REQUIRED"}`;
+importance may also be `PREFERRED`. Returns `201 Created`. A duplicate
+opportunity/skill pair returns `409 Conflict`; an unknown or inactive skill or
+invalid importance returns `400 Bad Request`.
+
+### `PUT /api/v1/projects/{projectId}/opportunities/{opportunityId}/skills/{skillId}`
+
+Changes the association's importance without creating a second association.
+The request body is `{"importance":"PREFERRED"}`. A missing association returns
+`404 Not Found`.
+
+### `DELETE /api/v1/projects/{projectId}/opportunities/{opportunityId}/skills/{skillId}`
+
+Removes the opportunity/skill link only and returns `204 No Content`; the
+catalog skill remains unchanged. A missing opportunity or association returns
+`404 Not Found`.
+
+### Public project opportunity details
+
+The public `GET /api/v1/projects/{projectRef}` contract retains its existing
+published-project and active-sector filters. Its `opportunities` array contains
+up to the 50 most recent `OPEN` opportunities. Each item exposes public title,
+type, description, location, remote availability, and names of active
+`REQUIRED` skills; it omits IDs, `PREFERRED` skills, creator/audit information,
+and non-open opportunities.
 
 ## `GET /api/v1/projects/{projectId}/members` — team administration list (PUL-85)
 

@@ -20,7 +20,10 @@ saved-project state, feedback state, and interaction history. PUL-18 adds the
 canonical `project_opportunities` table and then constrains
 `interaction_events.opportunity_id` to that table. Opportunity records are
 managed through the authenticated backend API; direct Supabase table grants
-remain revoked.
+remain revoked. PUL-22 adds `opportunity_skills` with a unique
+opportunity/skill key, constrained `REQUIRED`/`PREFERRED` importance, cascading
+opportunity deletion, restricted catalog-skill deletion, and the same
+backend-only RLS/grant boundary.
 
 For the complete developer onboarding flow, including the backend and Angular
 dev server, start at [`../README.md#developer-onboarding`](../README.md#developer-onboarding).

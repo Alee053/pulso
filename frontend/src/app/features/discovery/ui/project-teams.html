@@ -15,6 +15,16 @@
       <h2 class="text-xl font-semibold break-words">{{ project.name }}</h2>
       <p class="field-hint mt-2">{{ strings.role[project.role] }}</p>
       <pulso-project-members [project]="project" (ownMembershipChanged)="updateOwnMembership($event)" />
+      <pulso-project-opportunity-skills
+        *ngIf="project.role === 'OWNER' || project.role === 'ADMIN'"
+        [projectId]="project.projectId"
+        [projectName]="project.name"
+        [skills]="skills"
+        [catalogsLoaded]="catalogsLoaded"
+        [catalogsLoading]="catalogsLoading"
+        [catalogsErrorMessage]="catalogsErrorMessage"
+        (catalogsRetryRequested)="catalogsRetryRequested.emit()"
+      />
     </section>
   </div>
   <button *ngIf="hasMore() && !errorMessage()" type="button" class="contact-button mt-5" (click)="load()" [disabled]="loading()">{{ strings.more }}</button>

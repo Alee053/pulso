@@ -17,6 +17,8 @@ public final class ApiMessages {
     public static final String OPPORTUNITY_NOT_FOUND_TITLE = "Project opportunity not found";
     public static final String OPPORTUNITY_CONFLICT_TITLE = "Project opportunity conflict";
     public static final String OPPORTUNITY_STATE_CONFLICT_TITLE = "Invalid opportunity transition";
+    public static final String OPPORTUNITY_SKILL_CONFLICT_TITLE = "Opportunity skill conflict";
+    public static final String OPPORTUNITY_SKILL_NOT_FOUND_TITLE = "Opportunity skill not found";
     public static final String PROJECT_CONFLICT_TITLE = "Project conflict";
     public static final String PUBLIC_PROJECT_NOT_FOUND_TITLE = "Public project not found";
     public static final String PUBLIC_PROJECT_NOT_FOUND_DETAIL =

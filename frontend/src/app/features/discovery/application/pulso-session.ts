@@ -4,6 +4,7 @@ import { CatalogsApi } from '../data-access/catalogs-api'
 import { preferenceContract } from '../data-access/discovery.catalog.contract'
 import { PreferencesApi } from '../data-access/preferences-api'
 import { ProjectInteractionsApi } from '../data-access/project-interactions-api'
+import { ProjectSearchApi, type SearchFilters } from '../data-access/project-search-api'
 
 import { SupabaseAuthGateway } from '../../../core/auth/supabase-auth.gateway'
 
@@ -36,6 +37,7 @@ export class PulsoSession {
     private readonly projectInteractionsApi = inject(ProjectInteractionsApi)
     private readonly catalogsApi = inject(CatalogsApi)
     private readonly preferencesApi = inject(PreferencesApi)
+    private readonly projectSearchApi = inject(ProjectSearchApi)
     private readonly auth = inject(SupabaseAuthGateway)
 
     readonly intentionOptions = computed(() => intentionOptions.filter(
@@ -96,6 +98,14 @@ export class PulsoSession {
     readonly isSavingInteraction = signal(false)
     readonly interactionErrorMessage = signal<string | null>(null)
     readonly preferenceWeights = signal<PreferenceWeights>({})
+
+    // === Búsqueda y Filtros ===
+    readonly searchQuery = signal<string>('')
+    readonly isSearching = signal(false)
+    readonly searchResults = signal<Startup[]>([])
+    readonly searchHasMore = signal(false)
+    readonly searchError = signal<string | null>(null)
+    private searchOffset = 0
 
     readonly selectedProjectId = signal<string | null>(null)
 
@@ -167,6 +177,7 @@ export class PulsoSession {
         this.pendingInteractionAction = null
         this.preferenceWeights.set({})
         this.selectedProjectId.set(null)
+        this.clearSearch()
     }
 
     async loadProjectCollections(): Promise<void> {
@@ -427,6 +438,74 @@ export class PulsoSession {
         this.preferenceValidationMessage.set(null)
     }
 
+    async search(query: string, loadMore = false): Promise<void> {
+        this.searchQuery.set(query)
+
+        if (!query.trim()) {
+            this.isSearching.set(false)
+            this.searchResults.set([])
+            this.searchError.set(null)
+            return
+        }
+
+        this.isSearching.set(true)
+        this.searchError.set(null)
+
+        if (!loadMore) {
+            this.searchOffset = 0
+            this.searchResults.set([])
+        }
+
+        try {
+            const response = await firstValueFrom(
+                this.projectSearchApi.search({ query }, this.searchOffset, 20)
+            )
+
+            const mappedResults: Startup[] = response.data.map(item => ({
+                id: item.id,
+                name: item.name,
+                logoMark: item.name.charAt(0).toUpperCase(),
+                city: item.city ?? '',
+                sector: item.sector,
+                pitch: item.tagline,
+                description: '',
+                stage: item.stage,
+                tags: [],
+                badges: [],
+                image: item.imageUrl ?? '',
+                imageAlt: item.imageAlt ?? item.name,
+                accent: '#a9e1ff',
+                founders: [],
+                lookingFor: [],
+                founded: '',
+                teamSize: '',
+                traction: '',
+                website: '',
+                socials: [],
+                recommendation: '',
+                metrics: [],
+                popularity: 0,
+                exploration: 0
+            }))
+
+            this.searchResults.update(current => loadMore ? [...current, ...mappedResults] : mappedResults)
+            this.searchOffset += response.meta.limit
+            this.searchHasMore.set(this.searchResults().length < response.meta.totalCount)
+        } catch {
+            this.searchError.set('No pudimos realizar la búsqueda. Intenta de nuevo.')
+        } finally {
+            this.isSearching.set(false)
+        }
+    }
+
+    clearSearch(): void {
+        this.searchQuery.set('')
+        this.isSearching.set(false)
+        this.searchResults.set([])
+        this.searchError.set(null)
+        this.searchOffset = 0
+    }
+
     async startDiscovery(): Promise<void> {
         if (
             this.isLoading() ||
@@ -613,8 +692,6 @@ export class PulsoSession {
             this.interestedProjects.update((current) => current.filter((item) => item.id !== projectId))
             this.interestedCount.update((count) => Math.max(0, count - 1))
             this.feedNextCursor = null
-            // A cleared project becomes eligible for discovery again.
-            // The next feed request must start from the beginning, not an old cursor.
             void this.loadCatalog()
         }, savedStrings.clearInterestFailed)
     }

@@ -15,7 +15,10 @@ import {
     EventEmitter,
 } from '@angular/core'
 import { Subscription } from 'rxjs'
+import { SupabaseAuthGateway } from '../../../core/auth/supabase-auth.gateway'
+import { OpportunityMatchApi } from '../data-access/opportunity-match-api'
 import { PublicProjectApi } from '../data-access/public-project-api'
+import type { OpportunityMatch } from '../domain/opportunity-match'
 import type {
     PublicProjectDetail,
     PublicProjectState,
@@ -23,28 +26,39 @@ import type {
 } from '../domain/startup'
 import { IconComponent } from '../../../shared/icon/icon'
 import { detailStrings } from '../strings/detail.strings'
+import { matchStrings } from '../strings/match.strings'
+import { OpportunityMatchComponent } from './opportunity-match'
 import { ShareButtonComponent } from './share-button'
 
 @Component({
     selector: 'pulso-public-project-detail',
     standalone: true,
-    imports: [CommonModule, IconComponent, ShareButtonComponent],
+    imports: [CommonModule, IconComponent, OpportunityMatchComponent, ShareButtonComponent],
     templateUrl: './public-project-detail.html',
 })
 export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterViewChecked, OnDestroy {
     readonly strings = detailStrings
+    readonly matchStrings = matchStrings
     @Input() projectId!: string
     @Input() recommendation = ''
     @Output() closed = new EventEmitter<void>()
 
     private readonly api = inject(PublicProjectApi)
+    private readonly matchApi = inject(OpportunityMatchApi)
+    private readonly auth = inject(SupabaseAuthGateway)
     private request?: Subscription
+    private matchRequest?: Subscription
     private readonly element = inject<ElementRef<HTMLElement>>(ElementRef)
     private previousActiveElement: HTMLElement | null = null
     private originalOverflow = ''
 
     readonly state = signal<PublicProjectState>({ status: 'loading' })
+    readonly matches = signal<OpportunityMatch[]>([])
     hasImageError = false
+
+    get isSignedIn(): boolean {
+        return this.auth.session() !== null
+    }
 
     get isLoading(): boolean {
         return this.state().status === 'loading'
@@ -121,6 +135,8 @@ export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterVie
     loadProject(): void {
         this.hasImageError = false
         this.request?.unsubscribe()
+        this.matchRequest?.unsubscribe()
+        this.matches.set([])
         this.state.set({ status: 'loading' })
 
         this.request = this.api
@@ -131,6 +147,7 @@ export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterVie
                         this.state.set({ status: 'empty' })
                     } else {
                         this.state.set({ status: 'loaded', project })
+                        this.loadMatches(project)
                     }
                 },
                 error: (err) => {
@@ -157,6 +174,25 @@ export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterVie
                     this.state.set({ status: 'error', message, retryable })
                 },
             })
+    }
+
+    /**
+     * The public detail and the match list share the same order (newest first), so
+     * an opportunity is paired by position and only when the titles agree.
+     */
+    matchFor(index: number, opportunity: { title: string }): OpportunityMatch | null {
+        const match = this.matches()[index]
+        return match && match.title === opportunity.title ? match : null
+    }
+
+    private loadMatches(project: PublicProjectDetail): void {
+        if (!this.isSignedIn || project.opportunities.length === 0) return
+
+        this.matchRequest?.unsubscribe()
+        this.matchRequest = this.matchApi.list(project.id).subscribe({
+            next: (matches) => this.matches.set(matches),
+            error: () => this.matches.set([]),
+        })
     }
 
     retry(): void {
@@ -220,6 +256,7 @@ export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterVie
 
     ngOnDestroy(): void {
         this.request?.unsubscribe()
+        this.matchRequest?.unsubscribe()
         document.body.style.overflow = this.originalOverflow
         if (this.previousActiveElement?.isConnected) this.previousActiveElement.focus()
     }

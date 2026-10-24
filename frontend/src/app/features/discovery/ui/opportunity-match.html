@@ -1,0 +1,50 @@
+<section class="opportunity-match" [attr.aria-label]="strings.title">
+  <div class="opportunity-match__header">
+    <h4 class="field-label">{{ strings.title }}</h4>
+    <strong class="opportunity-match__score">{{ strings.scoreLabel(match.score) }}</strong>
+  </div>
+  <div class="opportunity-match__meter"
+       role="meter"
+       aria-valuemin="0"
+       aria-valuemax="100"
+       [attr.aria-valuenow]="match.score"
+       [attr.aria-label]="strings.scoreAria(match.title, match.score)">
+    <div class="opportunity-match__meter-fill" [style.width.%]="match.score"></div>
+  </div>
+
+  <p *ngIf="!match.onboardingCompleted || match.missingFactors.length > 0" class="field-hint">
+    {{ strings.incompleteProfile }}
+    <span *ngIf="missingLabels.length > 0">{{ strings.missingIntro }} {{ missingLabels.join(', ') }}.</span>
+  </p>
+
+  <button type="button"
+          class="opportunity-match__toggle"
+          [attr.aria-expanded]="expanded()"
+          [attr.aria-controls]="idPrefix + '-factors'"
+          (click)="toggle()">
+    {{ expanded() ? strings.hideDetails : strings.showDetails }}
+  </button>
+
+  <div *ngIf="expanded()" [id]="idPrefix + '-factors'" class="opportunity-match__details">
+    <p class="field-hint">{{ strings.explanation }}</p>
+    <ul class="opportunity-match__factors">
+      <li *ngFor="let factor of visibleFactors" class="opportunity-match__factor"
+          [attr.data-status]="factor.status">
+        <div class="opportunity-match__factor-header">
+          <span class="font-semibold">{{ strings.factors[factor.key] }}</span>
+          <span class="opportunity-match__status">{{ strings.statuses[factor.status] }}</span>
+          <span class="field-hint">{{ strings.points(factor.points, factor.weight) }}</span>
+        </div>
+        <p *ngIf="factor.matched.length > 0" class="field-hint">
+          {{ strings.matchedLabel }}:
+          <span *ngFor="let item of factor.matched; let last = last">{{ itemLabel(factor, item) }}<span *ngIf="!last">, </span></span>
+        </p>
+        <p *ngIf="factor.unmatched.length > 0" class="field-hint">
+          {{ factor.status === 'MISSING_PROFILE_DATA' ? strings.expectedLabel : strings.unmatchedLabel }}:
+          <span *ngFor="let item of factor.unmatched; let last = last">{{ itemLabel(factor, item) }}<span *ngIf="!last">, </span></span>
+        </p>
+        <p *ngIf="reasonLabel(factor) as reason" class="field-hint">{{ reason }}</p>
+      </li>
+    </ul>
+  </div>
+</section>

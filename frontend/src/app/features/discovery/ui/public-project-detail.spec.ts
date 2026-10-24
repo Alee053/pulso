@@ -1,10 +1,13 @@
 import { provideHttpClient } from '@angular/common/http'
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing'
+import { signal } from '@angular/core'
 import { TestBed } from '@angular/core/testing'
 import { describe, expect, it, vi } from 'vitest'
+import { SupabaseAuthGateway, type AuthenticatedUser } from '../../../core/auth/supabase-auth.gateway'
 import { MOCK_PUBLIC_PROJECTS } from '../data-access/mock-public-projects'
 import { PublicProjectDetailComponent } from './public-project-detail'
 import { detailStrings } from '../strings/detail.strings'
+import { matchStrings } from '../strings/match.strings'
 
 function createFixture() {
   TestBed.configureTestingModule({
@@ -245,5 +248,94 @@ describe('PublicProjectDetailComponent', () => {
     fixture.destroy()
     expect(request.cancelled).toBe(true)
     http.verify()
+  })
+
+  describe('opportunity match', () => {
+    const PROJECT_URL = 'http://localhost:8080/api/v1/projects/eco-pack'
+    const project = {
+      ...MOCK_PUBLIC_PROJECTS['eco-pack'],
+      opportunities: [{
+        title: 'Desarrollador Frontend',
+        opportunityType: 'TALENT',
+        description: 'Implementa la experiencia web.',
+        city: null,
+        department: null,
+        remoteAllowed: true,
+        requiredSkills: ['Angular'],
+      }],
+    }
+    const match = {
+      opportunityId: 'opportunity-1',
+      title: 'Desarrollador Frontend',
+      opportunityType: 'TALENT',
+      score: 72,
+      onboardingCompleted: true,
+      missingFactors: [],
+      factors: [],
+    }
+
+    function createWithUser(user: AuthenticatedUser | null) {
+      TestBed.configureTestingModule({
+        imports: [PublicProjectDetailComponent],
+        providers: [
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          { provide: SupabaseAuthGateway, useValue: { session: signal(user) } },
+        ],
+      })
+      const fixture = TestBed.createComponent(PublicProjectDetailComponent)
+      fixture.componentRef.setInput('projectId', 'eco-pack')
+      fixture.detectChanges()
+      const http = TestBed.inject(HttpTestingController)
+      http.expectOne(PROJECT_URL).flush({ data: project })
+      fixture.detectChanges()
+      return { fixture, http }
+    }
+
+    it('shows the explained match under each opportunity for a signed-in person', () => {
+      const { fixture, http } = createWithUser({ id: 'user-1', email: null })
+      http.expectOne('http://localhost:8080/api/v1/projects/' + project.id + '/opportunity-matches')
+        .flush({ data: [match] })
+      fixture.detectChanges()
+
+      const element = fixture.nativeElement as HTMLElement
+      expect(element.querySelector('pulso-opportunity-match')?.textContent)
+        .toContain(matchStrings.scoreLabel(72))
+      expect(element.textContent).not.toContain(matchStrings.signedOut)
+      fixture.destroy()
+      http.verify()
+    })
+
+    it('invites an anonymous visitor to sign in instead of requesting a personal match', () => {
+      const { fixture, http } = createWithUser(null)
+
+      expect((fixture.nativeElement as HTMLElement).textContent).toContain(matchStrings.signedOut)
+      expect(fixture.nativeElement.querySelector('pulso-opportunity-match')).toBeNull()
+      http.verify()
+      fixture.destroy()
+    })
+
+    it('keeps the project readable when the match cannot be loaded', () => {
+      const { fixture, http } = createWithUser({ id: 'user-1', email: null })
+      http.expectOne('http://localhost:8080/api/v1/projects/' + project.id + '/opportunity-matches')
+        .flush({}, { status: 500, statusText: 'Unavailable' })
+      fixture.detectChanges()
+
+      expect(fixture.nativeElement.querySelector('pulso-opportunity-match')).toBeNull()
+      expect((fixture.nativeElement as HTMLElement).textContent).toContain('Desarrollador Frontend')
+      fixture.destroy()
+      http.verify()
+    })
+
+    it('ignores a match whose title does not belong to the opportunity at that position', () => {
+      const { fixture, http } = createWithUser({ id: 'user-1', email: null })
+      http.expectOne('http://localhost:8080/api/v1/projects/' + project.id + '/opportunity-matches')
+        .flush({ data: [{ ...match, title: 'Otra oportunidad' }] })
+      fixture.detectChanges()
+
+      expect(fixture.nativeElement.querySelector('pulso-opportunity-match')).toBeNull()
+      fixture.destroy()
+      http.verify()
+    })
   })
 })

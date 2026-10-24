@@ -44,6 +44,27 @@ these transitions:
 only opportunity content and is unavailable for archived rows; project ID,
 creator, lifecycle status, and creation timestamps remain server managed.
 
+## Profile and opportunity match
+
+`GET /api/v1/projects/{projectRef}/opportunity-matches` explains how well each
+open opportunity fits the authenticated person. It lives in the `matching`
+module: `OpportunityMatcher` is a pure domain function over a `MatchProfile` and
+a `MatchOpportunity`, `GetOpportunityMatches` orchestrates it, and
+`JdbcOpportunityMatchRepository` reads the data. Nothing is written: the match
+is computed per request from `profile_preferences`, `profile_tags`,
+`profile_skills`, `project_opportunities`, `opportunity_skills`, `project_tags`,
+the project sector, and the profile and opportunity locations. There is no
+machine learning, no embeddings, and no `match_results` table.
+
+Only open opportunities of a published project with an active sector are
+returned, with the same visibility rules as the public project detail. The
+endpoint requires authentication because the result is personal; the profile
+always comes from the JWT subject. The weights and the intention-to-type mapping
+are domain rules in `OpportunityMatcher` and `MatchFactorKey`, documented in
+[`docs/api.md`](../api.md). A factor the person has no data for keeps its weight
+without credit and is reported as missing, so completing onboarding can only
+raise a score; a factor the opportunity does not state is left out.
+
 ## Public-project invariant
 
 The public project detail contract exposes a project only when its status is

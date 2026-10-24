@@ -665,6 +665,70 @@ textarea.field-input {
   background: var(--color-accent-surface);
   color: var(--color-accent);
 }
+.opportunity-match {
+  display: grid;
+  gap: 0.5rem;
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.75rem;
+}
+.opportunity-match__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.opportunity-match__score {
+  color: var(--color-accent);
+  font-size: 1.125rem;
+}
+.opportunity-match__meter {
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-border);
+}
+.opportunity-match__meter-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-accent);
+}
+.opportunity-match__toggle {
+  justify-self: start;
+  min-height: 2.75rem;
+  padding: 0 0.25rem;
+  color: var(--color-accent);
+  font-size: 0.875rem;
+  font-weight: 550;
+  text-decoration: underline;
+}
+.opportunity-match__details {
+  display: grid;
+  gap: 0.75rem;
+}
+.opportunity-match__factors {
+  display: grid;
+  gap: 0.75rem;
+}
+.opportunity-match__factor {
+  border-left: 3px solid var(--color-border);
+  padding-left: 0.75rem;
+}
+.opportunity-match__factor[data-status="MATCHED"] {
+  border-left-color: var(--color-accent);
+}
+.opportunity-match__factor[data-status="PARTIAL"] {
+  border-left-color: var(--color-muted);
+}
+.opportunity-match__factor-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+}
+.opportunity-match__status {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
 .search-bar {
   max-width: 28rem;
   margin-bottom: 1.5rem;

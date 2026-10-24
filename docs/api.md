@@ -145,6 +145,91 @@ Response `200 OK`:
 The Angular discovery screen currently sends only the text query (`q`); the other
 filters are available to API clients.
 
+## `GET /api/v1/projects/{projectRef}/opportunity-matches` — profile and opportunity match (S4.4)
+
+Returns, for the authenticated person, how well each open opportunity of a
+published project fits their profile. `projectRef` accepts the project UUID or
+slug. The profile comes from the JWT subject; no profile id is accepted from the
+client. An anonymous request receives `401`; a project that is missing, not
+`PUBLISHED`, or whose sector is inactive receives the same `404` as the public
+project detail. A project without open opportunities returns `"data": []`.
+
+Matches follow the order of the open opportunities in the public project detail
+(newest first, at most 50), so a client can pair them by position.
+
+Each match has a `score` from 0 to 100 and the factors behind it. The score is
+deterministic: it is computed only from stored data, with no machine learning,
+embeddings or persisted `match_results`.
+
+| Factor | Weight | Compared |
+| --- | --- | --- |
+| `SKILLS` | 35 | Profile skills against the opportunity skills; `REQUIRED` counts twice as much as `PREFERRED` |
+| `INTENTION` | 20 | Onboarding intentions against the opportunity type |
+| `INTERESTS` | 15 | Profile interest tags against the project tags |
+| `SECTOR` | 10 | Preferred sectors (id or slug) against the project sector |
+| `STAGE` | 10 | Preferred stages against the project stage |
+| `LOCATION` | 10 | Profile city and department against the opportunity location; remote opportunities always match |
+
+Each factor reports a `status`:
+
+- `MATCHED`, `PARTIAL`, `NOT_MATCHED` — the person provided data; `matched` and
+  `unmatched` list the compared items by name (intentions and stages by code).
+- `MISSING_PROFILE_DATA` — the person has not provided that data. It keeps its
+  weight in the score with no credit, and `unmatched` lists what the opportunity
+  asks for. The factor also appears in `missingFactors`.
+- `NOT_APPLICABLE` — the opportunity states nothing to compare (`weight` is 0
+  and the factor is left out of the score).
+
+A person without onboarding gets a valid response: `onboardingCompleted` is
+`false`, and every comparable factor is `MISSING_PROFILE_DATA`.
+
+Intentions map to opportunity types as follows: `WORK` → `TALENT`; `COLLABORATE`
+→ `COLLABORATION`, `PARTNERSHIP`, `MENTOR`; `INVEST` → `INVESTMENT`; `BUY` →
+`CUSTOMER`, `BETA_TESTER`; `FIND_PARTNERS` → `PARTNERSHIP`, `COLLABORATION`;
+`FIND_CUSTOMERS` → `SUPPLIER`; `FIND_PROVIDERS` → `CUSTOMER`, `BETA_TESTER`.
+`DISCOVER` and `EXPLORE_ECOSYSTEM` do not imply a type, and `OTHER` opportunities
+skip the factor.
+
+```json
+{
+  "data": [
+    {
+      "opportunityId": "55555555-5555-5555-5555-555555555555",
+      "title": "Desarrollador backend",
+      "opportunityType": "TALENT",
+      "score": 75,
+      "onboardingCompleted": true,
+      "missingFactors": ["STAGE"],
+      "factors": [
+        {
+          "key": "INTENTION",
+          "status": "MATCHED",
+          "weight": 20,
+          "points": 20,
+          "matched": ["WORK"],
+          "unmatched": [],
+          "reason": null
+        },
+        {
+          "key": "LOCATION",
+          "status": "MATCHED",
+          "weight": 10,
+          "points": 10,
+          "matched": [],
+          "unmatched": [],
+          "reason": "REMOTE_ALLOWED"
+        }
+      ]
+    }
+  ]
+}
+```
+
+`reason` qualifies the `LOCATION` factor: `REMOTE_ALLOWED`, `SAME_CITY`,
+`SAME_DEPARTMENT` (half credit when the opportunity also names a city) or
+`DIFFERENT_LOCATION`; it is `null` for the other factors. The response omits
+profile identifiers and private profile fields.
+
 ## `GET /api/v1/projects/{projectRef}` — public project detail (PUL-74)
 
 Returns the public detail of one canonical `Project`. `projectRef` accepts the

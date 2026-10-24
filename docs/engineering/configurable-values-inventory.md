@@ -38,9 +38,9 @@ frontend/src/app/features/discovery/strings/<surface>.strings.ts
 
 Reglas:
 
-- Exportar un objeto `as const` con claves en inglés camelCase y valores en español.
+- Un módulo sin traducción exporta un objeto `as const` con claves en inglés camelCase y valores en español. Un módulo traducible usa `defineStrings(es, en)` (PUL-108) y conserva las mismas claves; el inglés debe tener exactamente las claves del español.
 - Un feature importa solo su archivo y `shared/strings` cuando el copy es realmente compartido (`Reintentar`, pie de página, marca).
-- No introducir `@angular/localize` ni ngx-translate hasta que exista un segundo locale.
+- No introducir `@angular/localize` ni ngx-translate: el cambio de idioma en caliento se resuelve con `defineStrings` y `LanguageService`, sin dependencias nuevas (ver `docs/architecture/frontend.md`).
 - Las plantillas y los mensajes de sesión dejan de llevar literales una vez extraídos; este issue no hace esa extracción.
 
 Ejemplo de forma, no de extracción:

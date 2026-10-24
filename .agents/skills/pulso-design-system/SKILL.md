@@ -32,8 +32,12 @@ states are identified. There is no separate component-library dependency to add.
 - Keep feature presentation local. Promote a primitive to `shared/` only with
   demonstrated reuse. Do not move domain policy, HTTP requests, or session
   ownership into a template to simplify styling.
-- Keep Spanish copy in the established `strings/` modules and use the product
-  vocabulary in `CONTEXT.md`. Preserve compatibility identifiers intentionally.
+- Keep copy in the established `strings/` modules and use the product
+  vocabulary in `CONTEXT.md`. Spanish is the reference language; a module that
+  already uses `defineStrings` needs its English text too, and visible text must
+  not be copied into a field or constant at load time (see "Language support" in
+  `docs/architecture/frontend.md`). Preserve compatibility identifiers
+  intentionally.
 - Define loading, empty, error, retry, disabled, selected, and success states
   where relevant. Use semantic controls and persistent associated form labels,
   hints, validation errors, and visible focus.

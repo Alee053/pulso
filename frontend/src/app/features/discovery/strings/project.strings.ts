@@ -1,3 +1,5 @@
+import { defineStrings } from '../../../core/i18n/define-strings'
+
 export const projectStrings = {
   eyebrow: 'Nuevo proyecto',
   title: 'Crea tu proyecto',
@@ -34,11 +36,21 @@ export const projectStrings = {
     'No pudimos crear el proyecto. Revisa los datos e inténtalo nuevamente.',
 } as const;
 
-export const projectStageStrings = {
-  IDEA: 'Idea',
-  PROTOTYPE: 'Prototipo',
-  MVP: 'MVP',
-  EARLY_STAGE: 'Etapa temprana',
-  GROWING: 'En crecimiento',
-  ESTABLISHED: 'Establecido',
-} as const;
+export const projectStageStrings = defineStrings(
+  {
+    IDEA: 'Idea',
+    PROTOTYPE: 'Prototipo',
+    MVP: 'MVP',
+    EARLY_STAGE: 'Etapa temprana',
+    GROWING: 'En crecimiento',
+    ESTABLISHED: 'Establecido',
+  },
+  {
+    IDEA: 'Idea',
+    PROTOTYPE: 'Prototype',
+    MVP: 'MVP',
+    EARLY_STAGE: 'Early stage',
+    GROWING: 'Growing',
+    ESTABLISHED: 'Established',
+  },
+)

@@ -4,9 +4,8 @@ import type { Decision, InterestId, Startup } from './startup'
 
 export type PreferenceWeights = Record<string, number>
 
-export const signalLabels: Record<string, string> = {
-  ...recommendationStrings.signalLabels,
-}
+// Not copied: each label is read when used, so it follows the current language.
+export const signalLabels: Readonly<Record<string, string>> = recommendationStrings.signalLabels
 
 const interestSignals = new Map(
   interestOptions.map((interest) => [interest.id, interest.signals]),

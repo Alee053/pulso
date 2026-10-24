@@ -14,6 +14,10 @@ import { profileStrings } from './features/discovery/strings/profile.strings'
 import { projectStageStrings } from './features/discovery/strings/project.strings'
 import { recommendationStrings } from './features/discovery/strings/recommendations.strings'
 import { savedStrings } from './features/discovery/strings/saved.strings'
+import { interestOptions } from './features/discovery/data-access/interests'
+import { signalLabels } from './features/discovery/domain/recommendations'
+import { intentionOptions, proficiencyOptions, projectStageOptions as preferenceStageOptions } from './features/discovery/domain/preferences'
+import { projectStageOptions as formStageOptions } from './features/discovery/domain/project'
 import { commonStrings } from './shared/strings/common.strings'
 import { languageStrings } from './shared/strings/language.strings'
 
@@ -95,5 +99,34 @@ describe('translated string modules', () => {
     const unchanged = strings.filter(([path, text]) => english.get(path) === text)
 
     expect(unchanged.length / strings.length).toBeLessThan(0.1)
+  })
+})
+
+describe('option lists built from translated strings', () => {
+  afterEach(() => currentLanguage.set('es'))
+
+  it('follow the current language instead of the one active when the module loaded', () => {
+    const stage = preferenceStageOptions.find((option) => option.id === 'EARLY_STAGE')!
+    const formStage = formStageOptions.find((option) => option.value === 'EARLY_STAGE')!
+    const intention = intentionOptions.find((option) => option.id === 'WORK')!
+    const level = proficiencyOptions.find((option) => option.id === 'EXPERT')!
+    const interest = interestOptions.find((option) => option.id === 'invest')!
+    expect([stage.label, formStage.label, intention.label, level.label, interest.label, interest.shortLabel])
+      .toEqual(['Etapa temprana', 'Etapa temprana', 'Trabajar', 'Experto', 'Invertir', 'Invertir'])
+
+    currentLanguage.set('en')
+
+    expect([stage.label, formStage.label, intention.label, level.label])
+      .toEqual(['Early stage', 'Early stage', 'Work', 'Expert'])
+    expect(interest.label).toBe('Invest')
+    expect(interest.description).toBe('Teams with potential and a story to follow.')
+    expect(signalLabels['clean-energy']).toBe('Clean energy')
+  })
+
+  it('explains a recommendation in the current language', () => {
+    currentLanguage.set('en')
+
+    expect(recommendationStrings.matched('Technology', 'La Paz'))
+      .toBe('Your interests connect with Technology in La Paz.')
   })
 })

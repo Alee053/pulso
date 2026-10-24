@@ -80,11 +80,10 @@ export interface ProjectStageOption {
   label: string
 }
 
+// Labels are read when used, so the list follows the current language.
 export const projectStageOptions: readonly ProjectStageOption[] = [
-  { value: 'IDEA', label: projectStageStrings.IDEA },
-  { value: 'PROTOTYPE', label: projectStageStrings.PROTOTYPE },
-  { value: 'MVP', label: projectStageStrings.MVP },
-  { value: 'EARLY_STAGE', label: projectStageStrings.EARLY_STAGE },
-  { value: 'GROWING', label: projectStageStrings.GROWING },
-  { value: 'ESTABLISHED', label: projectStageStrings.ESTABLISHED },
-]
+  'IDEA', 'PROTOTYPE', 'MVP', 'EARLY_STAGE', 'GROWING', 'ESTABLISHED',
+].map((value) => ({
+  value: value as ProjectStage,
+  get label(): string { return projectStageStrings[value as ProjectStage] },
+}))

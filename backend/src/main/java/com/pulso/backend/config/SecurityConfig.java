@@ -67,6 +67,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/projects/search").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/projects/*/members").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/projects/*/share").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/projects/*/opportunity-matches")
+                        .authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/projects/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/catalogs").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/me/projects").authenticated()

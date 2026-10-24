@@ -3,6 +3,7 @@ package com.pulso.backend.project.infrastructure;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -57,16 +58,17 @@ public class JdbcProjectSearchRepository implements ProjectSearchRepository {
 
     private SearchQuery buildQuery(ProjectSearchFilters filters, boolean isSelect) {
         StringBuilder sql = new StringBuilder();
-        Map<String, Object> params = new java.util.HashMap<>();
+        Map<String, Object> params = new HashMap<>();
         List<String> conditions = new ArrayList<>();
 
         // 1. Filtro obligatorio de publicación
         conditions.add("p.status = 'PUBLISHED'");
 
         // 2. Búsqueda por texto
-         if (filters.query() != null && !filters.query().isBlank()) {
-            conditions.add("(p.name ilike :query or p.tagline ilike :query or p.description ilike :query or p.city ilike :query or p.department ilike :query)");
-            params.put("query", "%" + filters.query().trim() + "%");
+        if (filters.query() != null && !filters.query().isBlank()) {
+            conditions.add("(p.name ilike :query or p.tagline ilike :query or p.description ilike :query"
+                    + " or p.city ilike :query or p.department ilike :query)");
+            params.put("query", likePattern(filters.query()));
         }
 
         // 3. Filtro por sector
@@ -84,7 +86,7 @@ public class JdbcProjectSearchRepository implements ProjectSearchRepository {
         // 5. Filtro por ubicación
         if (filters.location() != null && !filters.location().isBlank()) {
             conditions.add("(p.city ilike :location or p.department ilike :location)");
-            params.put("location", "%" + filters.location().trim() + "%");
+            params.put("location", likePattern(filters.location()));
         }
 
         // 6. Filtro por tags
@@ -123,6 +125,14 @@ public class JdbcProjectSearchRepository implements ProjectSearchRepository {
         }
 
         return new SearchQuery(sql.toString(), params);
+    }
+
+    private static String likePattern(String value) {
+        String escaped = value.trim()
+                .replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
+        return "%" + escaped + "%";
     }
 
     private record SearchQuery(String sql, Map<String, Object> params) {}

@@ -52,3 +52,19 @@ export const cardStrings = {
   descriptionFallback: (city: string, sector: string): string =>
     `Proyecto publicado en ${city}, dentro del sector ${sector}.`,
 } as const;
+
+export const searchStrings = {
+  label: 'Buscar proyectos',
+  placeholder: 'Busca por nombre, sector o ciudad',
+  resultsAria: 'Resultados de la búsqueda',
+  loading: 'Buscando proyectos publicados.',
+  failed: 'No pudimos realizar la búsqueda. Inténtalo de nuevo.',
+  retry: 'Reintentar',
+  loadMore: 'Ver más resultados',
+  clear: 'Limpiar búsqueda',
+  resultsCount: (count: number, total: number): string =>
+    `${count} de ${total} ${total === 1 ? 'proyecto' : 'proyectos'}`,
+  emptyTitle: (query: string): string => `No encontramos proyectos para «${query}».`,
+  emptyLead: 'Prueba con otro nombre, sector o ciudad.',
+  openAria: (name: string): string => `Ver perfil de ${name}`,
+} as const;

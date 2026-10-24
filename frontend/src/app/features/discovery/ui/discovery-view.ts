@@ -3,13 +3,14 @@ import { Component, EventEmitter, HostListener, Input, OnChanges, OnDestroy, Out
 import { IconComponent } from '../../../shared/icon/icon'
 import { commonStrings } from '../../../shared/strings/common.strings'
 import type { Decision, Startup } from '../domain/startup'
-import { feedStrings } from '../strings/feed.strings'
+import { feedStrings, searchStrings } from '../strings/feed.strings'
 import { StartupCardComponent } from './startup-card'
+import { SearchBarComponent } from './search-bar'
 
 @Component({
   selector: 'pulso-discovery-view',
   standalone: true,
-  imports: [CommonModule, IconComponent, StartupCardComponent],
+  imports: [CommonModule, IconComponent, SearchBarComponent, StartupCardComponent],
   templateUrl: './discovery-view.html',
 })
 export class DiscoveryViewComponent implements OnChanges, OnDestroy {
@@ -22,13 +23,23 @@ export class DiscoveryViewComponent implements OnChanges, OnDestroy {
   @Input() totalStartups = 0
   @Input() savedIds: string[] = []
   @Input() isSavingInteraction = false
+  @Input() isSearching = false
+  @Input() searchError: string | null = null
+  @Input() searchHasMore = false
+  @Input() searchQuery = ''
+  @Input() searchResults: Startup[] = []
+  @Input() searchTotal = 0
   @Output() decisionMade = new EventEmitter<Decision>()
   @Output() restarted = new EventEmitter<void>()
   @Output() retryRequested = new EventEmitter<void>()
+  @Output() searchChanged = new EventEmitter<string>()
+  @Output() searchMoreRequested = new EventEmitter<void>()
+  @Output() searchRetried = new EventEmitter<void>()
   @Output() startupSaved = new EventEmitter<string>()
   @Output() startupSelected = new EventEmitter<Startup>()
 
   readonly strings = feedStrings
+  readonly search = searchStrings
   readonly common = commonStrings
 
   direction = 1
@@ -50,6 +61,10 @@ export class DiscoveryViewComponent implements OnChanges, OnDestroy {
       this.showToast(shouldSave ? this.strings.toastSaved : this.strings.toastRemoved)
       this.pendingSaveAction = null
     }
+  }
+
+  get isSearchActive(): boolean {
+    return this.searchQuery.trim().length > 0
   }
 
   get isSaved(): boolean {
@@ -92,6 +107,10 @@ export class DiscoveryViewComponent implements OnChanges, OnDestroy {
 
   @HostListener('window:keydown', ['$event'])
   handleKeyDown(event: KeyboardEvent): void {
+    if (isEditableTarget(event.target)) {
+      return
+    }
+
     if (this.isModalOpen || event.metaKey || event.ctrlKey || event.altKey || event.repeat) {
       return
     }
@@ -112,6 +131,10 @@ export class DiscoveryViewComponent implements OnChanges, OnDestroy {
       event.preventDefault()
       this.handleSave()
     }
+  }
+
+  trackById(_index: number, startup: Startup): string {
+    return startup.id
   }
 
   showCurrentStartup(): void {
@@ -171,4 +194,9 @@ export class DiscoveryViewComponent implements OnChanges, OnDestroy {
       window.clearTimeout(this.transitionTimeout)
     }
   }
+}
+
+function isEditableTarget(target: EventTarget | null): boolean {
+  return target instanceof HTMLElement
+    && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
 }

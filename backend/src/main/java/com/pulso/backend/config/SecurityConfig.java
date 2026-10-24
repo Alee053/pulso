@@ -64,6 +64,7 @@ public class SecurityConfig {
                                 "/actuator/info")
                         .permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/startups").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/projects/search").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/projects/*/members").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/projects/*/share").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/projects/*").permitAll()

@@ -4,6 +4,8 @@ import { CatalogsApi } from '../data-access/catalogs-api'
 import { preferenceContract } from '../data-access/discovery.catalog.contract'
 import { PreferencesApi } from '../data-access/preferences-api'
 import { ProjectInteractionsApi } from '../data-access/project-interactions-api'
+import { ProjectSearchApi } from '../data-access/project-search-api'
+import { toStartupViewModel } from '../data-access/startup-view-model'
 
 import { SupabaseAuthGateway } from '../../../core/auth/supabase-auth.gateway'
 
@@ -27,15 +29,19 @@ import {
     type ProfileSkill,
 } from '../domain/preferences'
 import type { AppView, Decision, Startup } from '../domain/startup'
-import { feedStrings } from '../strings/feed.strings'
+import { feedStrings, searchStrings } from '../strings/feed.strings'
 import { onboardingStrings } from '../strings/onboarding.strings'
 import { savedStrings } from '../strings/saved.strings'
+
+const searchDebounceMs = 300
+const searchPageSize = 20
 
 @Injectable({ providedIn: 'root' })
 export class PulsoSession {
     private readonly projectInteractionsApi = inject(ProjectInteractionsApi)
     private readonly catalogsApi = inject(CatalogsApi)
     private readonly preferencesApi = inject(PreferencesApi)
+    private readonly projectSearchApi = inject(ProjectSearchApi)
     private readonly auth = inject(SupabaseAuthGateway)
 
     readonly intentionOptions = computed(() => intentionOptions.filter(
@@ -97,6 +103,13 @@ export class PulsoSession {
     readonly interactionErrorMessage = signal<string | null>(null)
     readonly preferenceWeights = signal<PreferenceWeights>({})
 
+    readonly searchQuery = signal('')
+    readonly isSearching = signal(false)
+    readonly searchResults = signal<Startup[]>([])
+    readonly searchTotal = signal(0)
+    readonly searchError = signal<string | null>(null)
+    readonly searchHasMore = computed(() => this.searchResults().length < this.searchTotal())
+
     readonly selectedProjectId = signal<string | null>(null)
 
     readonly currentUser = computed(() => this.auth.session())
@@ -104,6 +117,8 @@ export class PulsoSession {
     private preferencesSavedMessageTimeout: number | undefined
     private pendingInteractionAction: (() => Promise<void>) | null = null
     private requestGeneration = 0
+    private searchTimeout: number | undefined
+    private searchGeneration = 0
     private feedNextCursor: string | null = null
     private savedProjectsRevision = 0
     private interestedProjectsRevision = 0
@@ -167,6 +182,7 @@ export class PulsoSession {
         this.pendingInteractionAction = null
         this.preferenceWeights.set({})
         this.selectedProjectId.set(null)
+        this.clearSearch()
     }
 
     async loadProjectCollections(): Promise<void> {
@@ -425,6 +441,84 @@ export class PulsoSession {
         }
         selection.update((current) => toggleId(current, id))
         this.preferenceValidationMessage.set(null)
+    }
+
+    search(query: string): void {
+        this.searchQuery.set(query)
+        this.cancelPendingSearch()
+
+        if (!query.trim()) {
+            this.clearSearch()
+            return
+        }
+
+        this.searchError.set(null)
+        this.isSearching.set(true)
+        this.searchTimeout = window.setTimeout(() => {
+            this.searchTimeout = undefined
+            void this.runSearch(false)
+        }, searchDebounceMs)
+    }
+
+    retrySearch(): void {
+        if (this.searchQuery().trim()) {
+            this.cancelPendingSearch()
+            void this.runSearch(false)
+        }
+    }
+
+    loadMoreSearch(): void {
+        if (!this.isSearching() && this.searchHasMore()) {
+            void this.runSearch(true)
+        }
+    }
+
+    clearSearch(): void {
+        this.cancelPendingSearch()
+        this.searchQuery.set('')
+        this.isSearching.set(false)
+        this.searchResults.set([])
+        this.searchTotal.set(0)
+        this.searchError.set(null)
+    }
+
+    private cancelPendingSearch(): void {
+        if (this.searchTimeout !== undefined) {
+            window.clearTimeout(this.searchTimeout)
+            this.searchTimeout = undefined
+        }
+        this.searchGeneration += 1
+    }
+
+    private async runSearch(append: boolean): Promise<void> {
+        const generation = ++this.searchGeneration
+        const query = this.searchQuery().trim()
+        const offset = append ? this.searchResults().length : 0
+
+        this.isSearching.set(true)
+        this.searchError.set(null)
+
+        try {
+            const response = await firstValueFrom(
+                this.projectSearchApi.search({ query }, offset, searchPageSize),
+            )
+            if (generation !== this.searchGeneration) {
+                return
+            }
+
+            const incoming = response.data.map(toStartupViewModel)
+            this.searchResults.update((current) => mergeProjects(current, incoming, append))
+            this.searchTotal.set(response.meta.totalCount)
+        } catch {
+            if (generation !== this.searchGeneration) {
+                return
+            }
+            this.searchError.set(searchStrings.failed)
+        } finally {
+            if (generation === this.searchGeneration) {
+                this.isSearching.set(false)
+            }
+        }
     }
 
     async startDiscovery(): Promise<void> {

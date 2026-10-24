@@ -91,6 +91,60 @@ Unavailable` without exposing the database error:
 }
 ```
 
+## `GET /api/v1/projects/search` — search published projects (PUL-23)
+
+Searches and filters published projects. The route is public: an anonymous and
+an authenticated visitor receive the same results, and only projects whose
+status is `PUBLISHED` are ever returned. Results are ordered by publication date,
+newest first, and each item has the same shape as the `GET /api/v1/startups`
+summary (including nullable `imageUrl` and `imageAlt`).
+
+Query parameters, all optional:
+
+- `q` — text matched case-insensitively against name, tagline, description,
+  city, and department. `%` and `_` are matched literally.
+- `sector` — sector slug or sector id.
+- `stage` — one of `IDEA`, `PROTOTYPE`, `MVP`, `EARLY_STAGE`, `GROWING`,
+  `ESTABLISHED` (case-insensitive).
+- `location` — text matched against city or department.
+- `tags` — repeatable tag slug; a project matches when it has any of them.
+  At most 10 distinct values.
+- `hasOpenOpportunities` — `true` keeps projects with an `OPEN` opportunity.
+- `offset` — integer from `0`; default `0`.
+- `limit` — integer from `1` to `50`; default `20`.
+
+Text values are trimmed, blank values are ignored, and each is limited to 100
+characters. An unknown `stage`, an oversized value, too many tags, or an invalid
+`offset`/`limit` returns `400 Bad Request`.
+
+```sh
+curl 'http://localhost:8080/api/v1/projects/search?q=eco&stage=MVP&limit=10'
+```
+
+Response `200 OK`:
+
+```json
+{
+  "data": [
+    {
+      "id": "33333333-3333-3333-3333-333333333333",
+      "slug": "eco-pack",
+      "name": "EcoPack Bolivia",
+      "tagline": "Envases biodegradables hechos con residuos agrícolas.",
+      "sector": "Sostenibilidad",
+      "city": "Cochabamba",
+      "stage": "MVP",
+      "imageUrl": null,
+      "imageAlt": null
+    }
+  ],
+  "meta": { "offset": 0, "limit": 10, "totalCount": 1 }
+}
+```
+
+The Angular discovery screen currently sends only the text query (`q`); the other
+filters are available to API clients.
+
 ## `GET /api/v1/projects/{projectRef}` — public project detail (PUL-74)
 
 Returns the public detail of one canonical `Project`. `projectRef` accepts the

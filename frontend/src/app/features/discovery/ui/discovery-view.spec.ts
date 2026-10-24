@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mockStartups } from '../data-access/mock-startups'
-import { feedStrings } from '../strings/feed.strings'
+import { feedStrings, searchStrings } from '../strings/feed.strings'
 import { DiscoveryViewComponent } from './discovery-view'
 
 const startup = mockStartups[0]!
@@ -71,5 +71,77 @@ describe('DiscoveryViewComponent interactions', () => {
     fixture.detectChanges()
     ;(fixture.nativeElement.querySelector('button') as HTMLButtonElement).click()
     expect(restart).toHaveBeenCalledOnce()
+  })
+
+  it('replaces the discovery feed with labelled, selectable search results', () => {
+    const fixture = TestBed.createComponent(DiscoveryViewComponent)
+    fixture.componentRef.setInput('currentStartup', startup)
+    fixture.componentRef.setInput('searchQuery', 'eco')
+    fixture.componentRef.setInput('searchResults', [startup])
+    fixture.componentRef.setInput('searchTotal', 3)
+    fixture.componentRef.setInput('searchHasMore', true)
+    const selected = vi.fn()
+    const more = vi.fn()
+    fixture.componentInstance.startupSelected.subscribe(selected)
+    fixture.componentInstance.searchMoreRequested.subscribe(more)
+    fixture.detectChanges()
+
+    const element = fixture.nativeElement as HTMLElement
+    expect(element.querySelector('label[for="project-search"]')?.textContent)
+      .toContain(searchStrings.label)
+    expect(element.querySelector('.discovery-action--save')).toBeNull()
+    expect(element.textContent).toContain(searchStrings.resultsCount(1, 3))
+
+    const result = element.querySelector('.search-result') as HTMLButtonElement
+    expect(result.getAttribute('aria-label')).toBe(searchStrings.openAria(startup.name))
+    result.click()
+    expect(selected).toHaveBeenCalledWith(startup)
+
+    const loadMore = Array.from(element.querySelectorAll('button'))
+      .find((button) => button.textContent?.includes(searchStrings.loadMore)) as HTMLButtonElement
+    loadMore.click()
+    expect(more).toHaveBeenCalledOnce()
+    fixture.destroy()
+  })
+
+  it('shows loading, error with retry and empty states for a search', () => {
+    const fixture = TestBed.createComponent(DiscoveryViewComponent)
+    const retry = vi.fn()
+    fixture.componentInstance.searchRetried.subscribe(retry)
+    fixture.componentRef.setInput('searchQuery', 'zzz')
+    fixture.componentRef.setInput('isSearching', true)
+    fixture.detectChanges()
+    const element = fixture.nativeElement as HTMLElement
+    expect(element.textContent).toContain(searchStrings.loading)
+
+    fixture.componentRef.setInput('isSearching', false)
+    fixture.detectChanges()
+    expect(element.textContent).toContain(searchStrings.emptyTitle('zzz'))
+
+    fixture.componentRef.setInput('searchError', searchStrings.failed)
+    fixture.detectChanges()
+    expect(element.querySelector('[role="alert"]')?.textContent).toContain(searchStrings.failed)
+    ;(element.querySelector('[role="alert"] button') as HTMLButtonElement).click()
+    expect(retry).toHaveBeenCalledOnce()
+    fixture.destroy()
+  })
+
+  it('emits the typed query and ignores discovery shortcuts while typing', () => {
+    const fixture = TestBed.createComponent(DiscoveryViewComponent)
+    fixture.componentRef.setInput('currentStartup', startup)
+    const changed = vi.fn()
+    const decision = vi.fn()
+    fixture.componentInstance.searchChanged.subscribe(changed)
+    fixture.componentInstance.decisionMade.subscribe(decision)
+    fixture.detectChanges()
+
+    const input = fixture.nativeElement.querySelector('#project-search') as HTMLInputElement
+    input.value = 'eco'
+    input.dispatchEvent(new Event('input'))
+    expect(changed).toHaveBeenCalledWith('eco')
+
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    expect(decision).not.toHaveBeenCalled()
+    fixture.destroy()
   })
 })

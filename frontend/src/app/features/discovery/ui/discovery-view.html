@@ -7,6 +7,42 @@
     </div>
   </header>
 
+  <pulso-search-bar [query]="searchQuery" (searched)="searchChanged.emit($event)" />
+
+  <section *ngIf="isSearchActive; else discoveryWorkspace" [attr.aria-label]="search.resultsAria" [attr.aria-busy]="isSearching">
+    <div *ngIf="isSearching && searchResults.length === 0" class="state-panel" role="status" aria-live="polite">
+      <span class="state-icon"><span class="spinner" aria-hidden="true"></span></span>
+      <h2>{{ search.loading }}</h2>
+    </div>
+
+    <div *ngIf="searchError" class="state-panel" role="alert">
+      <span class="state-icon state-icon--error"><pulso-icon name="compass" [size]="24" /></span>
+      <p>{{ searchError }}</p>
+      <button type="button" class="solid-button mt-2" (click)="searchRetried.emit()">{{ search.retry }}</button>
+    </div>
+
+    <div *ngIf="!isSearching && !searchError && searchResults.length === 0" class="state-panel" role="status">
+      <span class="state-icon"><pulso-icon name="search" [size]="24" /></span>
+      <h2>{{ search.emptyTitle(searchQuery.trim()) }}</h2>
+      <p>{{ search.emptyLead }}</p>
+    </div>
+
+    <ng-container *ngIf="searchResults.length > 0">
+      <p class="field-hint" role="status">{{ search.resultsCount(searchResults.length, searchTotal) }}</p>
+      <ul class="search-results">
+        <li *ngFor="let result of searchResults; trackBy: trackById">
+          <button type="button" class="search-result" [attr.aria-label]="search.openAria(result.name)" (click)="startupSelected.emit(result)">
+            <strong>{{ result.name }}</strong>
+            <p class="search-result__tagline">{{ result.pitch }}</p>
+            <p class="search-result__meta">{{ result.sector }} · {{ result.city }}</p>
+          </button>
+        </li>
+      </ul>
+      <button *ngIf="searchHasMore" type="button" class="solid-button" [disabled]="isSearching" (click)="searchMoreRequested.emit()">{{ search.loadMore }}</button>
+    </ng-container>
+  </section>
+
+  <ng-template #discoveryWorkspace>
   <div class="discovery-view__workspace">
     <section class="discovery-view__stage" [attr.aria-label]="strings.feedAria" [attr.aria-busy]="isLoading">
       <ng-container *ngIf="isLoading; else resolvedFeed">
@@ -83,5 +119,6 @@
       </div>
     </aside>
   </div>
+  </ng-template>
   <div *ngIf="toast" class="toast" role="status" aria-live="polite"><pulso-icon name="check" [size]="18" class="text-[var(--color-accent)]" />{{ toast }}</div>
 </main>

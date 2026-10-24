@@ -23,6 +23,7 @@ import type {
 } from '../domain/startup'
 import { IconComponent } from '../../../shared/icon/icon'
 import { detailStrings } from '../strings/detail.strings'
+import { projectStageStrings } from '../strings/project.strings'
 import { ShareButtonComponent } from './share-button'
 
 @Component({
@@ -134,29 +135,33 @@ export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterVie
                     }
                 },
                 error: (err) => {
-                    let message = 'Ocurrió un error al cargar el proyecto'
+                    let message: string = this.strings.errorGeneric
                     let retryable = true
 
                     if (err.status === 404) {
                         this.state.set({ status: 'empty' })
                         return
                     } else if (err.status === 400) {
-                        message = 'Referencia de proyecto inválida'
+                        message = this.strings.errorInvalidReference
                         retryable = false
                     } else if (err.status === 403) {
-                        message = 'No tienes permiso para ver este proyecto'
+                        message = this.strings.errorForbidden
                         retryable = false
                     } else if (err.status === 0) {
-                        message = 'No se pudo conectar con el servidor'
+                        message = this.strings.errorUnreachable
                         retryable = true
                     } else if (err.status >= 500) {
-                        message = 'Error del servidor. Intenta de nuevo más tarde'
+                        message = this.strings.errorServer
                         retryable = true
                     }
 
                     this.state.set({ status: 'error', message, retryable })
                 },
             })
+    }
+
+    stageLabel(stage: string): string {
+        return (projectStageStrings as Record<string, string>)[stage] ?? stage
     }
 
     retry(): void {
@@ -193,7 +198,7 @@ export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterVie
             accent: '#a9e1ff',
             founders: project.members.map((m) => ({
                 name: m.displayName,
-                role: m.displayTitle ?? 'Miembro',
+                role: m.displayTitle ?? this.strings.memberFallbackRole,
                 initials: m.displayName
                     .split(' ')
                     .map((n) => n.charAt(0))

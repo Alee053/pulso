@@ -2,6 +2,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http'
 import { inject, Injectable } from '@angular/core'
 import { catchError, map, Observable, throwError } from 'rxjs'
 import { appConfig } from '../../../core/config/app-config'
+import { detailStrings } from '../strings/detail.strings'
 import { projectImageUrl } from './project-image'
 import type {
     PublicExternalLink,
@@ -29,7 +30,7 @@ export class PublicProjectApi {
 
     getPublicDetail(reference: string): Observable<PublicProjectDetail> {
         if (!reference || reference.trim() === '') {
-            return throwError(() => ({ status: 400, message: 'Referencia de proyecto inválida', retryable: false }))
+            return throwError(() => ({ status: 400, message: detailStrings.errorInvalidReference, retryable: false }))
         }
 
         return this.http
@@ -142,23 +143,23 @@ export class PublicProjectApi {
     }
 
     private handleError(error: HttpErrorResponse): Observable<never> {
-        let message = 'Ocurrió un error al cargar el proyecto'
+        let message: string = detailStrings.errorGeneric
         let retryable = true
 
         if (error.status === 404) {
-            message = 'El proyecto no está disponible'
+            message = detailStrings.errorUnavailable
             retryable = false
         } else if (error.status === 400) {
-            message = 'Referencia de proyecto inválida'
+            message = detailStrings.errorInvalidReference
             retryable = false
         } else if (error.status === 403) {
-            message = 'No tienes permiso para ver este proyecto'
+            message = detailStrings.errorForbidden
             retryable = false
         } else if (error.status === 0) {
-            message = 'No se pudo conectar con el servidor'
+            message = detailStrings.errorUnreachable
             retryable = true
         } else if (error.status >= 500) {
-            message = 'Error del servidor. Intenta de nuevo más tarde'
+            message = detailStrings.errorServer
             retryable = true
         }
 

@@ -3,6 +3,8 @@ import { inject, Injectable } from '@angular/core'
 import { map, type Observable } from 'rxjs'
 import { appConfig } from '../../../core/config/app-config'
 import type { StartupSummary } from '../domain/startup'
+import { apiPaths } from './discovery.catalog.contract'
+import type { StartupSummaryDto } from './startups-api'
 
 export interface SearchFilters {
   query?: string
@@ -14,6 +16,15 @@ export interface SearchFilters {
 }
 
 interface SearchResponseDto {
+  data: StartupSummaryDto[]
+  meta: {
+    offset: number
+    limit: number
+    totalCount: number
+  }
+}
+
+export interface SearchResponse {
   data: StartupSummary[]
   meta: {
     offset: number
@@ -26,7 +37,7 @@ interface SearchResponseDto {
 export class ProjectSearchApi {
   private readonly http = inject(HttpClient)
 
-  search(filters: SearchFilters, offset = 0, limit = 20): Observable<SearchResponseDto> {
+  search(filters: SearchFilters, offset = 0, limit = 20): Observable<SearchResponse> {
     let params = new HttpParams().set('offset', offset).set('limit', limit)
 
     if (filters.query) params = params.set('q', filters.query)
@@ -34,13 +45,36 @@ export class ProjectSearchApi {
     if (filters.stage) params = params.set('stage', filters.stage)
     if (filters.location) params = params.set('location', filters.location)
     if (filters.hasOpenOpportunities) params = params.set('hasOpenOpportunities', 'true')
-    
-    if (filters.tags && filters.tags.length > 0) {
-      filters.tags.forEach((tag) => {
-        params = params.append('tags', tag)
-      })
+    for (const tag of filters.tags ?? []) {
+      params = params.append('tags', tag)
     }
 
-    return this.http.get<SearchResponseDto>(`${appConfig.apiBaseUrl}/api/v1/projects/search`, { params })
+    return this.http.get<SearchResponseDto>(
+      `${appConfig.apiBaseUrl}${apiPaths.projects}/search`,
+      { params },
+    ).pipe(
+      map((response) => ({
+        data: response.data.map(toStartupSummary),
+        meta: {
+          offset: response.meta.offset,
+          limit: response.meta.limit,
+          totalCount: response.meta.totalCount,
+        },
+      })),
+    )
+  }
+}
+
+function toStartupSummary(dto: StartupSummaryDto): StartupSummary {
+  return {
+    id: dto.id,
+    slug: dto.slug,
+    name: dto.name,
+    tagline: dto.tagline,
+    sector: dto.sector,
+    city: dto.city,
+    stage: dto.stage,
+    imageUrl: dto.imageUrl,
+    imageAlt: dto.imageAlt,
   }
 }

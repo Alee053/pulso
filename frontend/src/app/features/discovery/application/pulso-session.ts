@@ -4,7 +4,8 @@ import { CatalogsApi } from '../data-access/catalogs-api'
 import { preferenceContract } from '../data-access/discovery.catalog.contract'
 import { PreferencesApi } from '../data-access/preferences-api'
 import { ProjectInteractionsApi } from '../data-access/project-interactions-api'
-import { ProjectSearchApi, type SearchFilters } from '../data-access/project-search-api'
+import { ProjectSearchApi } from '../data-access/project-search-api'
+import { toStartupViewModel } from '../data-access/startup-view-model'
 
 import { SupabaseAuthGateway } from '../../../core/auth/supabase-auth.gateway'
 
@@ -28,9 +29,12 @@ import {
     type ProfileSkill,
 } from '../domain/preferences'
 import type { AppView, Decision, Startup } from '../domain/startup'
-import { feedStrings } from '../strings/feed.strings'
+import { feedStrings, searchStrings } from '../strings/feed.strings'
 import { onboardingStrings } from '../strings/onboarding.strings'
 import { savedStrings } from '../strings/saved.strings'
+
+const searchDebounceMs = 300
+const searchPageSize = 20
 
 @Injectable({ providedIn: 'root' })
 export class PulsoSession {
@@ -99,13 +103,12 @@ export class PulsoSession {
     readonly interactionErrorMessage = signal<string | null>(null)
     readonly preferenceWeights = signal<PreferenceWeights>({})
 
-    // === Búsqueda y Filtros ===
-    readonly searchQuery = signal<string>('')
+    readonly searchQuery = signal('')
     readonly isSearching = signal(false)
     readonly searchResults = signal<Startup[]>([])
-    readonly searchHasMore = signal(false)
+    readonly searchTotal = signal(0)
     readonly searchError = signal<string | null>(null)
-    private searchOffset = 0
+    readonly searchHasMore = computed(() => this.searchResults().length < this.searchTotal())
 
     readonly selectedProjectId = signal<string | null>(null)
 
@@ -114,6 +117,8 @@ export class PulsoSession {
     private preferencesSavedMessageTimeout: number | undefined
     private pendingInteractionAction: (() => Promise<void>) | null = null
     private requestGeneration = 0
+    private searchTimeout: number | undefined
+    private searchGeneration = 0
     private feedNextCursor: string | null = null
     private savedProjectsRevision = 0
     private interestedProjectsRevision = 0
@@ -438,72 +443,82 @@ export class PulsoSession {
         this.preferenceValidationMessage.set(null)
     }
 
-    async search(query: string, loadMore = false): Promise<void> {
+    search(query: string): void {
         this.searchQuery.set(query)
+        this.cancelPendingSearch()
 
         if (!query.trim()) {
-            this.isSearching.set(false)
-            this.searchResults.set([])
-            this.searchError.set(null)
+            this.clearSearch()
             return
         }
 
-        this.isSearching.set(true)
         this.searchError.set(null)
+        this.isSearching.set(true)
+        this.searchTimeout = window.setTimeout(() => {
+            this.searchTimeout = undefined
+            void this.runSearch(false)
+        }, searchDebounceMs)
+    }
 
-        if (!loadMore) {
-            this.searchOffset = 0
-            this.searchResults.set([])
+    retrySearch(): void {
+        if (this.searchQuery().trim()) {
+            this.cancelPendingSearch()
+            void this.runSearch(false)
         }
+    }
 
-        try {
-            const response = await firstValueFrom(
-                this.projectSearchApi.search({ query }, this.searchOffset, 20)
-            )
-
-            const mappedResults: Startup[] = response.data.map(item => ({
-                id: item.id,
-                name: item.name,
-                logoMark: item.name.charAt(0).toUpperCase(),
-                city: item.city ?? '',
-                sector: item.sector,
-                pitch: item.tagline,
-                description: '',
-                stage: item.stage,
-                tags: [],
-                badges: [],
-                image: item.imageUrl ?? '',
-                imageAlt: item.imageAlt ?? item.name,
-                accent: '#a9e1ff',
-                founders: [],
-                lookingFor: [],
-                founded: '',
-                teamSize: '',
-                traction: '',
-                website: '',
-                socials: [],
-                recommendation: '',
-                metrics: [],
-                popularity: 0,
-                exploration: 0
-            }))
-
-            this.searchResults.update(current => loadMore ? [...current, ...mappedResults] : mappedResults)
-            this.searchOffset += response.meta.limit
-            this.searchHasMore.set(this.searchResults().length < response.meta.totalCount)
-        } catch {
-            this.searchError.set('No pudimos realizar la búsqueda. Intenta de nuevo.')
-        } finally {
-            this.isSearching.set(false)
+    loadMoreSearch(): void {
+        if (!this.isSearching() && this.searchHasMore()) {
+            void this.runSearch(true)
         }
     }
 
     clearSearch(): void {
+        this.cancelPendingSearch()
         this.searchQuery.set('')
         this.isSearching.set(false)
         this.searchResults.set([])
+        this.searchTotal.set(0)
         this.searchError.set(null)
-        this.searchOffset = 0
+    }
+
+    private cancelPendingSearch(): void {
+        if (this.searchTimeout !== undefined) {
+            window.clearTimeout(this.searchTimeout)
+            this.searchTimeout = undefined
+        }
+        this.searchGeneration += 1
+    }
+
+    private async runSearch(append: boolean): Promise<void> {
+        const generation = ++this.searchGeneration
+        const query = this.searchQuery().trim()
+        const offset = append ? this.searchResults().length : 0
+
+        this.isSearching.set(true)
+        this.searchError.set(null)
+
+        try {
+            const response = await firstValueFrom(
+                this.projectSearchApi.search({ query }, offset, searchPageSize),
+            )
+            if (generation !== this.searchGeneration) {
+                return
+            }
+
+            const incoming = response.data.map(toStartupViewModel)
+            this.searchResults.update((current) => mergeProjects(current, incoming, append))
+            this.searchTotal.set(response.meta.totalCount)
+        } catch {
+            if (generation !== this.searchGeneration) {
+                return
+            }
+            this.searchError.set(searchStrings.failed)
+        } finally {
+            if (generation === this.searchGeneration) {
+                this.isSearching.set(false)
+            }
+        }
     }
 
     async startDiscovery(): Promise<void> {
@@ -692,6 +707,8 @@ export class PulsoSession {
             this.interestedProjects.update((current) => current.filter((item) => item.id !== projectId))
             this.interestedCount.update((count) => Math.max(0, count - 1))
             this.feedNextCursor = null
+            // A cleared project becomes eligible for discovery again.
+            // The next feed request must start from the beginning, not an old cursor.
             void this.loadCatalog()
         }, savedStrings.clearInterestFailed)
     }

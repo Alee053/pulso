@@ -1,11 +1,13 @@
 import { TestBed } from '@angular/core/testing'
 import { of, Subject, throwError } from 'rxjs'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CatalogsApi } from '../data-access/catalogs-api'
 import { PreferencesApi } from '../data-access/preferences-api'
 import { ProjectInteractionsApi } from '../data-access/project-interactions-api'
+import { ProjectSearchApi } from '../data-access/project-search-api'
 import { toStartupViewModel } from '../data-access/startup-view-model'
 import { onboardingIntentions } from '../domain/preferences'
+import { searchStrings } from '../strings/feed.strings'
 import { PulsoSession } from './pulso-session'
 
 describe('PulsoSession', () => {
@@ -479,6 +481,118 @@ describe('PulsoSession', () => {
   })
 })
 
+describe('PulsoSession project search', () => {
+  afterEach(() => vi.useRealTimers())
+
+  it('waits for the user to stop typing and searches with the trimmed query', async () => {
+    vi.useFakeTimers()
+    const searchProjects = vi.fn().mockReturnValue(of(searchPage(['project-1', 'project-2'], 2)))
+    const session = createSession({ searchProjects })
+
+    session.search('e')
+    session.search('eco')
+    session.search('  eco ')
+    expect(session.isSearching()).toBe(true)
+    expect(searchProjects).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(300)
+
+    expect(searchProjects).toHaveBeenCalledOnce()
+    expect(searchProjects).toHaveBeenCalledWith({ query: 'eco' }, 0, 20)
+    expect(session.searchResults().map((project) => project.id)).toEqual(['project-1', 'project-2'])
+    expect(session.searchTotal()).toBe(2)
+    expect(session.searchHasMore()).toBe(false)
+    expect(session.isSearching()).toBe(false)
+  })
+
+  it('ignores a slow response that was superseded by a newer search', async () => {
+    vi.useFakeTimers()
+    const first = new Subject<ReturnType<typeof searchPage>>()
+    const searchProjects = vi.fn()
+      .mockReturnValueOnce(first)
+      .mockReturnValueOnce(of(searchPage(['new'], 1)))
+    const session = createSession({ searchProjects })
+
+    session.search('old')
+    await vi.advanceTimersByTimeAsync(300)
+    session.search('new')
+    await vi.advanceTimersByTimeAsync(300)
+    first.next(searchPage(['old'], 1))
+    first.complete()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(session.searchResults().map((project) => project.id)).toEqual(['new'])
+    expect(session.isSearching()).toBe(false)
+  })
+
+  it('appends the next page and stops offering more when every result is loaded', async () => {
+    vi.useFakeTimers()
+    const searchProjects = vi.fn()
+      .mockReturnValueOnce(of(searchPage(['project-1', 'project-2'], 3)))
+      .mockReturnValueOnce(of(searchPage(['project-3'], 3, 2)))
+    const session = createSession({ searchProjects })
+
+    session.search('eco')
+    await vi.advanceTimersByTimeAsync(300)
+    expect(session.searchHasMore()).toBe(true)
+
+    session.loadMoreSearch()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(searchProjects).toHaveBeenLastCalledWith({ query: 'eco' }, 2, 20)
+    expect(session.searchResults().map((project) => project.id))
+      .toEqual(['project-1', 'project-2', 'project-3'])
+    expect(session.searchHasMore()).toBe(false)
+  })
+
+  it('reports a failed search and recovers when it is retried', async () => {
+    vi.useFakeTimers()
+    const searchProjects = vi.fn()
+      .mockReturnValueOnce(throwError(() => new Error('offline')))
+      .mockReturnValueOnce(of(searchPage(['project-1'], 1)))
+    const session = createSession({ searchProjects })
+
+    session.search('eco')
+    await vi.advanceTimersByTimeAsync(300)
+    expect(session.searchError()).toBe(searchStrings.failed)
+    expect(session.isSearching()).toBe(false)
+
+    session.retrySearch()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(session.searchError()).toBeNull()
+    expect(session.searchResults().map((project) => project.id)).toEqual(['project-1'])
+  })
+
+  it('returns to discovery when the query is cleared before the request is sent', async () => {
+    vi.useFakeTimers()
+    const searchProjects = vi.fn().mockReturnValue(of(searchPage(['project-1'], 1)))
+    const session = createSession({ searchProjects })
+
+    session.search('eco')
+    session.search('   ')
+    await vi.advanceTimersByTimeAsync(300)
+
+    expect(searchProjects).not.toHaveBeenCalled()
+    expect(session.searchQuery()).toBe('')
+    expect(session.isSearching()).toBe(false)
+    expect(session.searchResults()).toEqual([])
+  })
+
+  it('clears the search when the signed-in user changes', async () => {
+    vi.useFakeTimers()
+    const session = createSession({
+      searchProjects: vi.fn().mockReturnValue(of(searchPage(['project-1'], 1))),
+    })
+
+    session.search('eco')
+    await vi.advanceTimersByTimeAsync(300)
+    session.resetForUserChange()
+
+    expect(session.searchQuery()).toBe('')
+    expect(session.searchResults()).toEqual([])
+  })
+})
+
 function createSession(overrides: {
   loadDiscoveryFeed?: ReturnType<typeof vi.fn>
   loadSavedProjects?: ReturnType<typeof vi.fn>
@@ -490,6 +604,7 @@ function createSession(overrides: {
   loadCatalogs?: ReturnType<typeof vi.fn>
   loadPreferences?: ReturnType<typeof vi.fn>
   savePreferences?: ReturnType<typeof vi.fn>
+  searchProjects?: ReturnType<typeof vi.fn>
 } = {}): PulsoSession {
   const loadDiscoveryFeed = overrides.loadDiscoveryFeed ?? vi.fn().mockReturnValue(of({
     data: [],
@@ -533,9 +648,12 @@ function createSession(overrides: {
     recommendationWeights: {},
   }))
 
+  const searchProjects = overrides.searchProjects ?? vi.fn().mockReturnValue(of(searchPage([], 0)))
+
   TestBed.configureTestingModule({
     providers: [
       PulsoSession,
+      { provide: ProjectSearchApi, useValue: { search: searchProjects } },
       { provide: ProjectInteractionsApi, useValue: {
         loadDiscoveryFeed,
         loadSavedProjects,
@@ -551,6 +669,21 @@ function createSession(overrides: {
   })
 
   return TestBed.inject(PulsoSession)
+}
+
+function searchPage(ids: string[], totalCount: number, offset = 0) {
+  return {
+    data: ids.map((id) => ({
+      id,
+      slug: id,
+      name: `Project ${id}`,
+      tagline: 'Tagline',
+      sector: 'Sostenibilidad',
+      city: 'La Paz',
+      stage: 'MVP',
+    })),
+    meta: { offset, limit: 20, totalCount },
+  }
 }
 
 function startup(id: string, name: string, sector: string, city: string) {

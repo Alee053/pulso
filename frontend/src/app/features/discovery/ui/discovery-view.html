@@ -1,115 +1,124 @@
 <main class="discovery-view">
-    <header class="discovery-view__heading">
-        <div>
-            <span class="eyebrow">{{ strings.pageEyebrow }}</span>
-            <h1 class="page-title">{{ strings.pageTitle }}</h1>
-            <p class="page-lead">{{ strings.pageLead }}</p>
-        </div>
-    </header>
+  <header class="discovery-view__heading">
+    <div>
+      <span class="eyebrow">{{ strings.pageEyebrow }}</span>
+      <h1 class="page-title">{{ strings.pageTitle }}</h1>
+      <p class="page-lead">{{ strings.pageLead }}</p>
+    </div>
+  </header>
 
-    <!-- BARRA DE BÚSQUEDA -->
-    <div class="mb-6 flex justify-center">
-        <pulso-search-bar [query]="searchQuery"
-                          (searched)="onSearchInput($any($event))" />
+  <pulso-search-bar [query]="searchQuery" (searched)="searchChanged.emit($event)" />
+
+  <section *ngIf="isSearchActive; else discoveryWorkspace" [attr.aria-label]="search.resultsAria" [attr.aria-busy]="isSearching">
+    <div *ngIf="isSearching && searchResults.length === 0" class="state-panel" role="status" aria-live="polite">
+      <span class="state-icon"><span class="spinner" aria-hidden="true"></span></span>
+      <h2>{{ search.loading }}</h2>
     </div>
 
-    <!-- MODO BÚSQUEDA -->
-    <div *ngIf="searchQuery" class="mb-8">
-        <div *ngIf="isSearching" class="text-center py-8 text-white/60">Buscando proyectos...</div>
-
-        <div *ngIf="searchError" class="text-center py-8 text-red-400">{{ searchError }}</div>
-
-        <div *ngIf="!isSearching && searchResults.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div *ngFor="let result of searchResults"
-                 class="bg-white/5 border border-white/10 rounded-xl p-4 cursor-pointer hover:bg-white/10 transition"
-                 (click)="startupSelected.emit(result)">
-                <h3 class="text-white font-medium">{{ result.name }}</h3>
-                <p class="text-white/60 text-sm mt-1">{{ result.pitch }}</p>
-                <span class="inline-block mt-3 text-xs text-[#a9e1ff] border border-[#a9e1ff]/30 px-2 py-1 rounded-md">{{ result.sector }}</span>
-            </div>
-        </div>
-
-        <div *ngIf="!isSearching && searchResults.length === 0 && !searchError" class="text-center py-8 text-white/60">
-            No se encontraron proyectos para "{{ searchQuery }}".
-        </div>
+    <div *ngIf="searchError" class="state-panel" role="alert">
+      <span class="state-icon state-icon--error"><pulso-icon name="compass" [size]="24" /></span>
+      <p>{{ searchError }}</p>
+      <button type="button" class="solid-button mt-2" (click)="searchRetried.emit()">{{ search.retry }}</button>
     </div>
 
-    <!-- MODO DESCUBRIMIENTO (Se oculta si estamos buscando) -->
-    <div class="discovery-view__workspace" *ngIf="!searchQuery">
-        <section class="discovery-view__stage" [attr.aria-label]="strings.feedAria" [attr.aria-busy]="isLoading">
-            <ng-container *ngIf="isLoading; else resolvedFeed">
-                <div class="state-panel" role="status" aria-live="polite">
-                    <span class="state-icon"><span class="spinner" aria-hidden="true"></span></span>
-                    <span class="eyebrow">{{ strings.loadingEyebrow }}</span>
-                    <h2>{{ strings.loadingTitle }}</h2>
-                    <p>{{ strings.loadingLead }}</p>
-                </div>
-            </ng-container>
-            <ng-template #resolvedFeed>
-                <ng-container *ngIf="errorMessage; else loadedFeed">
-                    <div class="state-panel" role="alert">
-                        <span class="state-icon state-icon--error"><pulso-icon name="compass" [size]="24" /></span>
-                        <span class="eyebrow">{{ strings.errorEyebrow }}</span>
-                        <h2>{{ strings.errorTitle }}</h2>
-                        <p>{{ errorMessage }}</p>
-                        <button type="button" class="solid-button mt-2" (click)="retryRequested.emit()"><pulso-icon name="rotate-ccw" [size]="16" />{{ common.retry }}</button>
-                    </div>
-                </ng-container>
-            </ng-template>
-            <ng-template #loadedFeed>
-                <ng-container *ngIf="currentStartup as startup; else emptyFeed">
-                    <div class="discovery-view__progress-meta">
-                        <span>{{ strings.progress(activeNumber, totalStartups) }}</span>
-                        <span>{{ strings.remaining(feedRemaining) }}</span>
-                    </div>
-                    <div class="discovery-view__progress" aria-hidden="true"><div class="discovery-view__progress-fill" [style.width.%]="progress"></div></div>
-                    <div class="discovery-view__card-wrap">
-                        <div *ngIf="isDraggingLeft" class="drag-intent drag-intent--skip" [style.opacity]="horizontalIntensity" aria-hidden="true"><pulso-icon name="arrow-left" [size]="17" />{{ strings.skip }}</div>
-                        <div *ngIf="isDraggingRight" class="drag-intent drag-intent--interested" [style.opacity]="horizontalIntensity" aria-hidden="true"><pulso-icon name="heart" [size]="17" />{{ strings.interested }}</div>
-                        <div *ngIf="isDraggingUp" class="drag-intent drag-intent--detail" [style.opacity]="verticalIntensity" aria-hidden="true"><pulso-icon name="arrow-up" [size]="17" />{{ strings.seeProfile }}</div>
-                        <div *ngIf="isDraggingDown" class="drag-intent drag-intent--save" [style.opacity]="verticalIntensity" aria-hidden="true"><pulso-icon name="bookmark" [size]="17" />{{ strings.save }}</div>
-                        <pulso-startup-card [startup]="startup" [direction]="direction" [disabled]="isTransitioning || isSavingInteraction" [isSaved]="isSaved"
-                                            (saved)="handleSave()" (dragChanged)="updateDragOffset($event)" (selected)="startupSelected.emit($event)" (dragDecision)="handleDecision($event)" />
-                    </div>
-                    <div class="discovery-view__actions" [attr.aria-label]="strings.actionsAria">
-                        <button type="button" class="discovery-action" [disabled]="isTransitioning || isSavingInteraction" [attr.aria-label]="strings.skipAria" (click)="handleDecision('skip')"><span class="discovery-action__icon"><pulso-icon name="arrow-left" [size]="18" /></span><span class="discovery-action__label">{{ strings.skip }}</span><span class="discovery-action__shortcut" aria-hidden="true">←</span></button>
-                        <button type="button" class="discovery-action discovery-action--save" [disabled]="isTransitioning || isSavingInteraction" [attr.aria-pressed]="isSaved" [attr.aria-label]="isSaved ? strings.unsaveAria : strings.saveAria" (click)="handleSave()"><span class="discovery-action__icon"><pulso-icon name="bookmark" [size]="18" [filled]="isSaved" /></span><span class="discovery-action__label">{{ isSaved ? strings.saved : strings.save }}</span><span class="discovery-action__shortcut" aria-hidden="true">S</span></button>
-                        <button type="button" class="discovery-action discovery-action--interested" [disabled]="isTransitioning || isSavingInteraction" [attr.aria-label]="strings.interestedAria" (click)="handleDecision('interested')"><span class="discovery-action__icon"><pulso-icon name="heart" [size]="18" /></span><span class="discovery-action__label">{{ strings.interested }}</span><span class="discovery-action__shortcut" aria-hidden="true">→</span></button>
-                    </div>
-                </ng-container>
-            </ng-template>
-            <ng-template #emptyFeed>
-                <ng-container *ngIf="totalStartups === 0; else completedFeed">
-                    <div class="state-panel">
-                        <span class="state-icon"><pulso-icon name="compass" [size]="24" /></span>
-                        <span class="eyebrow">{{ strings.emptyEyebrow }}</span>
-                        <h2>{{ strings.emptyTitle }}</h2>
-                        <p>{{ strings.emptyLead }}</p>
-                    </div>
-                </ng-container>
-            </ng-template>
-            <ng-template #completedFeed>
-                <div class="state-panel">
-                    <span class="state-icon"><pulso-icon name="check" [size]="24" /></span>
-                    <span class="eyebrow">{{ strings.doneEyebrow }}</span>
-                    <h2>{{ strings.doneTitle }}</h2>
-                    <p>{{ strings.doneLead }}</p>
-                    <button type="button" class="solid-button mt-2" (click)="restarted.emit()"><pulso-icon name="rotate-ccw" [size]="16" />{{ strings.restart }}</button>
-                </div>
-            </ng-template>
-        </section>
-
-        <aside class="discovery-view__context" [attr.aria-label]="strings.contextAria">
-            <div class="panel">
-                <span class="state-icon mb-5"><pulso-icon name="sparkles" [size]="22" /></span>
-                <h2>{{ strings.contextTitle }}</h2>
-                <p>{{ strings.contextLead }}</p>
-                <div *ngIf="activeSignals.length > 0" class="mt-4 flex flex-wrap gap-2"><span *ngFor="let signal of activeSignals" class="interest-pill">{{ signal }}</span></div>
-                <div class="discovery-context__divider"></div>
-                <h2>{{ strings.actionsTitle }}</h2>
-                <p>{{ strings.actionsLead }}</p>
-            </div>
-        </aside>
+    <div *ngIf="!isSearching && !searchError && searchResults.length === 0" class="state-panel" role="status">
+      <span class="state-icon"><pulso-icon name="search" [size]="24" /></span>
+      <h2>{{ search.emptyTitle(searchQuery.trim()) }}</h2>
+      <p>{{ search.emptyLead }}</p>
     </div>
-    <div *ngIf="toast" class="toast" role="status" aria-live="polite"><pulso-icon name="check" [size]="18" class="text-[var(--color-accent)]" />{{ toast }}</div>
+
+    <ng-container *ngIf="searchResults.length > 0">
+      <p class="field-hint" role="status">{{ search.resultsCount(searchResults.length, searchTotal) }}</p>
+      <ul class="search-results">
+        <li *ngFor="let result of searchResults; trackBy: trackById">
+          <button type="button" class="search-result" [attr.aria-label]="search.openAria(result.name)" (click)="startupSelected.emit(result)">
+            <strong>{{ result.name }}</strong>
+            <p class="search-result__tagline">{{ result.pitch }}</p>
+            <p class="search-result__meta">{{ result.sector }} · {{ result.city }}</p>
+          </button>
+        </li>
+      </ul>
+      <button *ngIf="searchHasMore" type="button" class="solid-button" [disabled]="isSearching" (click)="searchMoreRequested.emit()">{{ search.loadMore }}</button>
+    </ng-container>
+  </section>
+
+  <ng-template #discoveryWorkspace>
+  <div class="discovery-view__workspace">
+    <section class="discovery-view__stage" [attr.aria-label]="strings.feedAria" [attr.aria-busy]="isLoading">
+      <ng-container *ngIf="isLoading; else resolvedFeed">
+        <div class="state-panel" role="status" aria-live="polite">
+          <span class="state-icon"><span class="spinner" aria-hidden="true"></span></span>
+          <span class="eyebrow">{{ strings.loadingEyebrow }}</span>
+          <h2>{{ strings.loadingTitle }}</h2>
+          <p>{{ strings.loadingLead }}</p>
+        </div>
+      </ng-container>
+      <ng-template #resolvedFeed>
+        <ng-container *ngIf="errorMessage; else loadedFeed">
+          <div class="state-panel" role="alert">
+            <span class="state-icon state-icon--error"><pulso-icon name="compass" [size]="24" /></span>
+            <span class="eyebrow">{{ strings.errorEyebrow }}</span>
+            <h2>{{ strings.errorTitle }}</h2>
+            <p>{{ errorMessage }}</p>
+            <button type="button" class="solid-button mt-2" (click)="retryRequested.emit()"><pulso-icon name="rotate-ccw" [size]="16" />{{ common.retry }}</button>
+          </div>
+        </ng-container>
+      </ng-template>
+      <ng-template #loadedFeed>
+        <ng-container *ngIf="currentStartup as startup; else emptyFeed">
+          <div class="discovery-view__progress-meta">
+            <span>{{ strings.progress(activeNumber, totalStartups) }}</span>
+            <span>{{ strings.remaining(feedRemaining) }}</span>
+          </div>
+          <div class="discovery-view__progress" aria-hidden="true"><div class="discovery-view__progress-fill" [style.width.%]="progress"></div></div>
+          <div class="discovery-view__card-wrap">
+            <div *ngIf="isDraggingLeft" class="drag-intent drag-intent--skip" [style.opacity]="horizontalIntensity" aria-hidden="true"><pulso-icon name="arrow-left" [size]="17" />{{ strings.skip }}</div>
+            <div *ngIf="isDraggingRight" class="drag-intent drag-intent--interested" [style.opacity]="horizontalIntensity" aria-hidden="true"><pulso-icon name="heart" [size]="17" />{{ strings.interested }}</div>
+            <div *ngIf="isDraggingUp" class="drag-intent drag-intent--detail" [style.opacity]="verticalIntensity" aria-hidden="true"><pulso-icon name="arrow-up" [size]="17" />{{ strings.seeProfile }}</div>
+            <div *ngIf="isDraggingDown" class="drag-intent drag-intent--save" [style.opacity]="verticalIntensity" aria-hidden="true"><pulso-icon name="bookmark" [size]="17" />{{ strings.save }}</div>
+            <pulso-startup-card [startup]="startup" [direction]="direction" [disabled]="isTransitioning || isSavingInteraction" [isSaved]="isSaved"
+              (saved)="handleSave()" (dragChanged)="updateDragOffset($event)" (selected)="startupSelected.emit($event)" (dragDecision)="handleDecision($event)" />
+          </div>
+          <div class="discovery-view__actions" [attr.aria-label]="strings.actionsAria">
+            <button type="button" class="discovery-action" [disabled]="isTransitioning || isSavingInteraction" [attr.aria-label]="strings.skipAria" (click)="handleDecision('skip')"><span class="discovery-action__icon"><pulso-icon name="arrow-left" [size]="18" /></span><span class="discovery-action__label">{{ strings.skip }}</span><span class="discovery-action__shortcut" aria-hidden="true">←</span></button>
+            <button type="button" class="discovery-action discovery-action--save" [disabled]="isTransitioning || isSavingInteraction" [attr.aria-pressed]="isSaved" [attr.aria-label]="isSaved ? strings.unsaveAria : strings.saveAria" (click)="handleSave()"><span class="discovery-action__icon"><pulso-icon name="bookmark" [size]="18" [filled]="isSaved" /></span><span class="discovery-action__label">{{ isSaved ? strings.saved : strings.save }}</span><span class="discovery-action__shortcut" aria-hidden="true">S</span></button>
+            <button type="button" class="discovery-action discovery-action--interested" [disabled]="isTransitioning || isSavingInteraction" [attr.aria-label]="strings.interestedAria" (click)="handleDecision('interested')"><span class="discovery-action__icon"><pulso-icon name="heart" [size]="18" /></span><span class="discovery-action__label">{{ strings.interested }}</span><span class="discovery-action__shortcut" aria-hidden="true">→</span></button>
+          </div>
+        </ng-container>
+      </ng-template>
+      <ng-template #emptyFeed>
+        <ng-container *ngIf="totalStartups === 0; else completedFeed">
+          <div class="state-panel">
+            <span class="state-icon"><pulso-icon name="compass" [size]="24" /></span>
+            <span class="eyebrow">{{ strings.emptyEyebrow }}</span>
+            <h2>{{ strings.emptyTitle }}</h2>
+            <p>{{ strings.emptyLead }}</p>
+          </div>
+        </ng-container>
+      </ng-template>
+      <ng-template #completedFeed>
+        <div class="state-panel">
+          <span class="state-icon"><pulso-icon name="check" [size]="24" /></span>
+          <span class="eyebrow">{{ strings.doneEyebrow }}</span>
+          <h2>{{ strings.doneTitle }}</h2>
+          <p>{{ strings.doneLead }}</p>
+          <button type="button" class="solid-button mt-2" (click)="restarted.emit()"><pulso-icon name="rotate-ccw" [size]="16" />{{ strings.restart }}</button>
+        </div>
+      </ng-template>
+    </section>
+
+    <aside class="discovery-view__context" [attr.aria-label]="strings.contextAria">
+      <div class="panel">
+        <span class="state-icon mb-5"><pulso-icon name="sparkles" [size]="22" /></span>
+        <h2>{{ strings.contextTitle }}</h2>
+        <p>{{ strings.contextLead }}</p>
+        <div *ngIf="activeSignals.length > 0" class="mt-4 flex flex-wrap gap-2"><span *ngFor="let signal of activeSignals" class="interest-pill">{{ signal }}</span></div>
+        <div class="discovery-context__divider"></div>
+        <h2>{{ strings.actionsTitle }}</h2>
+        <p>{{ strings.actionsLead }}</p>
+      </div>
+    </aside>
+  </div>
+  </ng-template>
+  <div *ngIf="toast" class="toast" role="status" aria-live="polite"><pulso-icon name="check" [size]="18" class="text-[var(--color-accent)]" />{{ toast }}</div>
 </main>

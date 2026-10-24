@@ -70,6 +70,7 @@
             </div>
             <header class="workspace-header">
                 <span>{{ common.workspaceLabel }}</span>
+                <pulso-language-switcher />
                 <button type="button" class="reference-example" (click)="session.openProjectDetail(session.catalog()[0]?.id || 'eco-pack')">
                     <pulso-icon name="arrow-up-right" [size]="16" />{{ common.exampleProject }}
                 </button>

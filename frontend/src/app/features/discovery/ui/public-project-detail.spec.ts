@@ -2,8 +2,9 @@ import { provideHttpClient } from '@angular/common/http'
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing'
 import { signal } from '@angular/core'
 import { TestBed } from '@angular/core/testing'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { SupabaseAuthGateway, type AuthenticatedUser } from '../../../core/auth/supabase-auth.gateway'
+import { currentLanguage } from '../../../core/i18n/language'
 import { MOCK_PUBLIC_PROJECTS } from '../data-access/mock-public-projects'
 import { PublicProjectDetailComponent } from './public-project-detail'
 import { detailStrings } from '../strings/detail.strings'
@@ -21,6 +22,8 @@ function createFixture() {
 }
 
 describe('PublicProjectDetailComponent', () => {
+  afterEach(() => currentLanguage.set('es'))
+
   it('renders the API cover with alternative text and hides a failed image', () => {
     const { fixture, http } = createFixture()
     http.expectOne('http://localhost:8080/api/v1/projects/eco-pack').flush({ data: {
@@ -247,6 +250,40 @@ describe('PublicProjectDetailComponent', () => {
     const request = http.expectOne('http://localhost:8080/api/v1/projects/eco-pack')
     fixture.destroy()
     expect(request.cancelled).toBe(true)
+    http.verify()
+  })
+
+  it('shows the project sections and the stage in the language the visitor chose', () => {
+    const { fixture, http } = createFixture()
+    http.expectOne('http://localhost:8080/api/v1/projects/eco-pack').flush({
+      data: { ...MOCK_PUBLIC_PROJECTS['eco-pack'], stage: 'EARLY_STAGE' },
+    })
+    fixture.detectChanges()
+    const element = fixture.nativeElement as HTMLElement
+    expect(element.textContent).toContain('Descripción')
+    expect(element.textContent).toContain('Etapa temprana')
+
+    currentLanguage.set('en')
+    fixture.detectChanges()
+
+    expect(element.textContent).toContain('Description')
+    expect(element.textContent).toContain('Early stage')
+    expect(element.textContent).not.toContain('Descripción')
+    expect(element.querySelector('h1')?.textContent).toContain('Project details')
+    fixture.destroy()
+    http.verify()
+  })
+
+  it('explains a loading failure in the chosen language', () => {
+    currentLanguage.set('en')
+    const { fixture, http } = createFixture()
+    http.expectOne('http://localhost:8080/api/v1/projects/eco-pack')
+      .flush({}, { status: 403, statusText: 'Forbidden' })
+    fixture.detectChanges()
+
+    expect(fixture.nativeElement.querySelector('[role="alert"]').textContent)
+      .toContain('You do not have permission to view this project')
+    fixture.destroy()
     http.verify()
   })
 

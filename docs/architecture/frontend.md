@@ -14,7 +14,8 @@ frontend/src/
     ├── app.config.ts                    # application-wide providers
     ├── core/
     │   ├── auth/                        # Supabase session gateway and interceptor
-    │   └── config/                      # public API/Auth configuration
+    │   ├── config/                      # public API/Auth configuration
+    │   └── i18n/                        # language state, preference service, and defineStrings
     ├── features/
     │   └── discovery/
     │       ├── application/             # session state and orchestration
@@ -23,7 +24,8 @@ frontend/src/
     │       └── ui/                      # onboarding, feed, saved, profile, and modal UI
     └── shared/
         ├── brand-mark/                  # stable Pulso brand primitive
-        └── icon/                        # small local icon surface for the prototype
+        ├── icon/                        # small local icon surface for the prototype
+        └── language-switcher/           # Spanish/English selector
 ```
 
 [`PulsoSession`](../../frontend/src/app/features/discovery/application/pulso-session.ts) is the application-facing session module: it owns onboarding completion, the active view, the API-backed discovery feed, saved items, interested items, and learned preference weights. [`recommendations.ts`](../../frontend/src/app/features/discovery/domain/recommendations.ts) is a pure policy module and has no Angular or browser dependency. [`mock-startups.ts`](../../frontend/src/app/features/discovery/data-access/mock-startups.ts) remains a fixture for domain tests, not the runtime catalog source.
@@ -97,6 +99,31 @@ These are deep-module seams: the caller-facing surface is small, while the modul
 - Treat keyboard access, focus management, modal focus trapping, reduced-motion behavior, and visible focus states as acceptance criteria.
 - Keep component templates focused on composition and user intent. Move non-trivial policy into a class, application module, or pure domain function.
 - Use route-level lazy loading once feature routes exist and the feature weight justifies it.
+
+### Language support (PUL-108)
+
+The interface can switch between Spanish and English without reloading. Spanish is the default and the reference language. Only the general surfaces are translated; the rest of the application stays in Spanish until its strings module is migrated.
+
+| Translated | Still Spanish |
+| --- | --- |
+| `common`, `navigation`, `auth`, `language` | `team`, `membership`, `invitation` |
+| `feed` (cards and search), `saved`, `detail` | `opportunity-skills`, `match` |
+| `profile`, `onboarding`, `recommendations`, project stage names | the rest of `project` (creation form) |
+
+How it works:
+
+- [`LanguageService`](../../frontend/src/app/core/i18n/language.service.ts) restores the language from `localStorage` (`pulso.language`), ignores invalid values, persists a change, and sets `<html lang>`. The preference belongs to the browser, not to the account, and it falls back to Spanish when storage is unavailable.
+- [`defineStrings(es, en)`](../../frontend/src/app/core/i18n/define-strings.ts) turns a strings module into an object with the same shape that reads the current language on every access. Templates keep using `{{ strings.title }}` and `strings.count(2)`. Reads inside templates, `computed`, and `effect` react to a language change because the language is a signal.
+- The English module must have exactly the Spanish keys, nested keys, and function parameters, or the project does not compile. [`translated-strings.spec.ts`](../../frontend/src/app/translated-strings.spec.ts) also checks that both languages expose the same texts and that the English texts contain no Spanish characters.
+- [`LanguageSwitcherComponent`](../../frontend/src/app/shared/language-switcher/language-switcher.ts) is mounted on the sign-in page and in the workspace header. Language names are always written in their own language.
+
+To make another strings module translatable:
+
+1. Wrap it: `export const xStrings = defineStrings({ ...spanish }, { ...english })`. Keep the same key names and add the module to `translated-strings.spec.ts`.
+2. Do not copy a string into a class field, a constant, or an array when the module loads, because it would keep the language active at that moment. Read it where it is displayed, or expose it through a getter or `computed`, as `interestOptions` and `projectStageOptions` do.
+3. Put every visible text, `aria-label`, placeholder, and error message in the module; do not leave literals in templates.
+
+Known limits: a message already stored in a signal (for example an error shown a moment ago) keeps its language until it is produced again. Names that come from the database (sectors, tags, skills, project text) are not translated. The backend keeps its English `ProblemDetail` messages, and the frontend chooses what to show.
 
 ### Visual system
 

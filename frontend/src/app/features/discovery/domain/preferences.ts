@@ -38,14 +38,13 @@ export interface OnboardingPreferencesPayload {
   completeOnboarding: true
 }
 
+// Labels are read when used, so the lists follow the current language.
 export const projectStageOptions: readonly ProjectStageOption[] = [
-  { id: 'IDEA', label: projectStageStrings.IDEA },
-  { id: 'PROTOTYPE', label: projectStageStrings.PROTOTYPE },
-  { id: 'MVP', label: projectStageStrings.MVP },
-  { id: 'EARLY_STAGE', label: projectStageStrings.EARLY_STAGE },
-  { id: 'GROWING', label: projectStageStrings.GROWING },
-  { id: 'ESTABLISHED', label: projectStageStrings.ESTABLISHED },
-]
+  'IDEA', 'PROTOTYPE', 'MVP', 'EARLY_STAGE', 'GROWING', 'ESTABLISHED',
+].map((id) => ({
+  id: id as ProjectStage,
+  get label(): string { return projectStageStrings[id as ProjectStage] },
+}))
 
 const interestByIntention: Readonly<Partial<Record<OnboardingIntention, InterestId>>> = {
   DISCOVER: 'discover',
@@ -70,7 +69,7 @@ export interface IntentionOption {
 }
 
 export const intentionOptions: readonly IntentionOption[] = onboardingIntentions.map(
-  (id) => ({ id, label: intentionStrings[id] }),
+  (id) => ({ id, get label(): string { return intentionStrings[id] } }),
 )
 
 export const skillProficiencies = ['BEGINNER', 'INTERMEDIATE', 'ADVANCED', 'EXPERT'] as const
@@ -80,7 +79,7 @@ export interface ProfileSkill {
   proficiency: SkillProficiency | null
 }
 export const proficiencyOptions = skillProficiencies.map(
-  (id) => ({ id, label: proficiencyStrings[id] }),
+  (id) => ({ id, get label(): string { return proficiencyStrings[id] } }),
 )
 
 export function isIntention(value: unknown): value is OnboardingIntention {

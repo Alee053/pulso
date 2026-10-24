@@ -8,7 +8,9 @@ export type Translated<T> = T extends (...args: infer Args) => string
   ? (...args: Args) => string
   : T extends string
     ? string
-    : { readonly [Key in keyof T]: Translated<T[Key]> }
+    : T extends number | boolean
+      ? T extends number ? number : boolean
+      : { readonly [Key in keyof T]: Translated<T[Key]> }
 
 type Tree = Record<string, unknown>
 

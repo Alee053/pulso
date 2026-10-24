@@ -9,7 +9,9 @@ import { ProfileViewComponent } from './features/discovery/ui/profile-view'
 import { SavedViewComponent } from './features/discovery/ui/saved-view'
 import { PublicProjectDetailComponent } from './features/discovery/ui/public-project-detail'
 import { PulsoSession } from './features/discovery/application/pulso-session'
+import { LanguageService } from './core/i18n/language.service'
 import { IconComponent } from './shared/icon/icon'
+import { LanguageSwitcherComponent } from './shared/language-switcher/language-switcher'
 import { commonStrings } from './shared/strings/common.strings'
 import type { AppView, Startup } from './features/discovery/domain/startup'
 import { InvitationLink } from './features/discovery/application/invitation-link'
@@ -33,6 +35,7 @@ import { ProjectCreateFormComponent } from './features/discovery/ui/project-crea
         SavedViewComponent,
         PublicProjectDetailComponent,
         IconComponent,
+        LanguageSwitcherComponent,
     ],
     templateUrl: './app.html',
     styleUrl: './app.css',
@@ -41,6 +44,7 @@ export class AppComponent implements OnInit {
     readonly invitation = inject(InvitationLink)
     readonly common = commonStrings
     readonly auth = inject(SupabaseAuthGateway)
+    private readonly language = inject(LanguageService)
     readonly session = inject(PulsoSession)
     readonly selectedStartup = signal<Startup | null>(null)
     private activeUserId: string | null = null
@@ -70,8 +74,12 @@ export class AppComponent implements OnInit {
         void this.session.loadProjectCollections()
     })
 
-    ngOnInit(): void {
+    private readonly documentTitleEffect = effect(() => {
+        this.language.language()
         document.title = commonStrings.documentTitle
+    })
+
+    ngOnInit(): void {
         void this.auth.initialize().catch(() => undefined)
     }
 

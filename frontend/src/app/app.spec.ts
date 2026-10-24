@@ -8,11 +8,16 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { SupabaseAuthGateway } from './core/auth/supabase-auth.gateway'
 import type { AuthenticatedUser } from './core/auth/supabase-auth.gateway'
 import { AppComponent } from './app'
+import { currentLanguage } from './core/i18n/language'
 import { PulsoSession } from './features/discovery/application/pulso-session'
 import { emptyReferenceCatalogs } from './features/discovery/domain/catalog'
 import { intentionOptions, projectStageOptions, type OnboardingIntention, type ProjectStage } from './features/discovery/domain/preferences'
 
-afterEach(() => history.replaceState(null, '', '/'))
+afterEach(() => {
+  history.replaceState(null, '', '/')
+  localStorage.clear()
+  currentLanguage.set('es')
+})
 
 describe('AppComponent', () => {
   it.each(['invitation', 'invite'])('accepts the %s link before onboarding and removes its secret from the location', (parameter) => {
@@ -36,6 +41,27 @@ describe('AppComponent', () => {
     fixture.detectChanges()
     expect(fixture.nativeElement.textContent).toContain('Ya formas parte del equipo')
     http.verify()
+  })
+
+  it('keeps the document title and language in step with the chosen language', () => {
+    const auth = createAuthStub()
+    TestBed.configureTestingModule({
+      imports: [AppComponent],
+      providers: [
+        provideHttpClient(), provideHttpClientTesting(),
+        { provide: PulsoSession, useValue: createSessionStub() },
+        { provide: SupabaseAuthGateway, useValue: auth },
+      ],
+    })
+    const fixture = TestBed.createComponent(AppComponent)
+    fixture.detectChanges()
+    expect(document.title).toBe('Pulso · Descubre lo que está creciendo')
+
+    currentLanguage.set('en')
+    fixture.detectChanges()
+
+    expect(document.title).toBe('Pulso · Discover what is growing')
+    fixture.destroy()
   })
 
   it('shows the standalone Auth page before the authenticated application', () => {

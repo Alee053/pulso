@@ -7,7 +7,7 @@
     <p class="desktop-nav__eyebrow">{{ strings.menuLabel }}</p>
     <nav class="desktop-nav__menu" [attr.aria-label]="strings.aria">
       <button
-        *ngFor="let item of navigationItems"
+        *ngFor="let item of navigationItems()"
         type="button"
         class="desktop-nav__item"
         [class.desktop-nav__item--active]="item.id === activeView"
@@ -44,7 +44,7 @@
 
 <nav class="mobile-nav" [attr.aria-label]="strings.aria">
   <button
-    *ngFor="let item of navigationItems"
+    *ngFor="let item of navigationItems()"
     type="button"
     class="mobile-nav__item"
     [class.mobile-nav__item--active]="item.id === activeView"

@@ -18,6 +18,7 @@ export class FeatureFlagSettingsComponent implements OnInit {
   readonly updateError = signal(false)
   readonly isSaved = signal(false)
   readonly savingKey = signal<FeatureFlagKey | null>(null)
+  readonly pendingSwitch = signal<{ key: FeatureFlagKey; enabled: boolean } | null>(null)
   readonly options = [
     {
       key: 'language_switcher',
@@ -45,6 +46,7 @@ export class FeatureFlagSettingsComponent implements OnInit {
     const enabled = (event.target as HTMLInputElement).checked
     this.updateError.set(false)
     this.isSaved.set(false)
+    this.pendingSwitch.set({ key, enabled })
     this.savingKey.set(key)
     try {
       await this.flags.update(key, enabled)
@@ -52,7 +54,13 @@ export class FeatureFlagSettingsComponent implements OnInit {
     } catch {
       this.updateError.set(true)
     } finally {
+      this.pendingSwitch.set(null)
       this.savingKey.set(null)
     }
+  }
+
+  isChecked(key: FeatureFlagKey): boolean {
+    const pending = this.pendingSwitch()
+    return pending?.key === key ? pending.enabled : this.flags.isEnabled(key)
   }
 }

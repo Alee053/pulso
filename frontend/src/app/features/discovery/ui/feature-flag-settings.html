@@ -27,8 +27,8 @@
           type="checkbox"
           role="switch"
           [attr.aria-label]="option.label()"
-          [attr.aria-checked]="flags.isEnabled(option.key)"
-          [checked]="flags.isEnabled(option.key)"
+          [attr.aria-checked]="isChecked(option.key)"
+          [checked]="isChecked(option.key)"
           [disabled]="savingKey() !== null || flags.isLoading()"
           (change)="updateFlag(option.key, $event)"
         />

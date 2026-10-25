@@ -3,7 +3,7 @@
     <header class="flex flex-wrap items-center justify-between gap-4">
       <pulso-brand-mark />
       <span class="text-sm text-slate-400">{{ strings.pageKicker }}</span>
-      <pulso-language-switcher />
+      <pulso-language-switcher *ngIf="featureFlags.isEnabled('language_switcher')" />
     </header>
 
     <div class="auth-page__layout">

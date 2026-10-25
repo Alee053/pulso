@@ -220,6 +220,11 @@ classDiagram
   %% Operacion minima
   %% ---------------------------------------------------------------------------
 
+  class FeatureFlag {
+    +text flagKey
+    +boolean enabled
+  }
+
   class Notification {
     +UUID id
     +UUID recipientProfileId

@@ -138,4 +138,4 @@
 - [ ] Run pgTAP in the authorized local Supabase CLI environment if available.
 - [ ] Run targeted backend/frontend suites, full backend/frontend suites, builds, and `git diff --check`.
 - [ ] Review the complete diff for auth, persistence, and scope.
-- [ ] Commit documentation and database contract tests as `docs(PUL-109): documentar la configuración de flags`.
+- [ ] Commit the schema model, pgTAP contract, API contract, architecture guide, and database workflow as separate scoped PUL-109 commits.

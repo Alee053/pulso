@@ -54,6 +54,7 @@ describe('FeatureFlagsService', () => {
     expect(service.isEnabled('language_switcher')).toBe(false)
     expect(service.isEnabled('project_creation')).toBe(false)
     expect(service.hasError()).toBe(true)
+    expect(service.hasLoadError()).toBe(true)
   })
 
   it('applies a successful update to shared state', async () => {

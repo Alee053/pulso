@@ -1,0 +1,40 @@
+<section class="panel p-5 sm:p-6" aria-labelledby="feature-flag-settings-title">
+  <h2 id="feature-flag-settings-title" class="text-base font-semibold text-slate-100">{{ strings.title }}</h2>
+  <p class="mt-1 text-sm leading-6 text-slate-400">{{ strings.description }}</p>
+
+  <p *ngIf="!flags.isLoaded() || flags.isLoading(); else loadedSettings" class="mt-5 state-panel" role="status">
+    {{ strings.loading }}
+  </p>
+
+  <ng-template #loadedSettings>
+    <div *ngIf="flags.hasLoadError(); else featureSettings" class="mt-5" role="alert">
+      <p class="text-sm leading-6 text-rose-200">{{ strings.loadFailed }}</p>
+      <button type="button" class="contact-button mt-3" (click)="retryLoad()" [disabled]="flags.isLoading()">
+        {{ common.retry }}
+      </button>
+    </div>
+  </ng-template>
+
+  <ng-template #featureSettings>
+    <div class="mt-5 flex flex-col gap-4">
+      <label *ngFor="let option of options" class="flex cursor-pointer items-start justify-between gap-4 rounded-xl border border-slate-700/60 p-4">
+        <span class="min-w-0">
+          <span class="block text-sm font-medium text-slate-100">{{ option.label() }}</span>
+          <span class="mt-1 block text-sm leading-5 text-slate-400">{{ option.description() }}</span>
+        </span>
+        <input
+          class="mt-1 size-5 shrink-0 accent-sky-300"
+          type="checkbox"
+          role="switch"
+          [attr.aria-label]="option.label()"
+          [attr.aria-checked]="flags.isEnabled(option.key)"
+          [checked]="flags.isEnabled(option.key)"
+          [disabled]="savingKey() !== null || flags.isLoading()"
+          (change)="updateFlag(option.key, $event)"
+        />
+      </label>
+    </div>
+    <p *ngIf="updateError()" class="mt-4 status-message status-message--error" role="alert">{{ strings.updateFailed }}</p>
+    <p *ngIf="isSaved()" class="mt-4 status-message" role="status">{{ strings.updated }}</p>
+  </ng-template>
+</section>

@@ -20,11 +20,13 @@ export class FeatureFlagsService {
   private readonly loadedState = signal(false)
   private readonly loadingState = signal(false)
   private readonly errorState = signal(false)
+  private readonly loadErrorState = signal(false)
 
   readonly values = this.valuesState.asReadonly()
   readonly isLoaded = this.loadedState.asReadonly()
   readonly isLoading = this.loadingState.asReadonly()
   readonly hasError = this.errorState.asReadonly()
+  readonly hasLoadError = this.loadErrorState.asReadonly()
 
   isEnabled(key: FeatureFlagKey): boolean {
     return this.valuesState()[key]
@@ -33,12 +35,14 @@ export class FeatureFlagsService {
   async load(): Promise<void> {
     this.loadingState.set(true)
     this.errorState.set(false)
+    this.loadErrorState.set(false)
     try {
       const response = await firstValueFrom(this.api.load())
       this.valuesState.set(parseFeatureFlags(response))
     } catch {
       this.valuesState.set({ ...disabledFeatureFlags })
       this.errorState.set(true)
+      this.loadErrorState.set(true)
     } finally {
       this.loadedState.set(true)
       this.loadingState.set(false)

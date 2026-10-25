@@ -121,10 +121,10 @@
 - Modify: `frontend/src/app/features/discovery/ui/profile-view.ts` and profile template
 - Test: feature settings and profile specs
 
-- [ ] Test that only persisted-profile ADMIN UI shows switches, loads actual values, saves changes, and recovers from API errors.
-- [ ] Implement accessible switches, loading/error/success states, and the shared state update.
-- [ ] Run focused frontend specs.
-- [ ] Commit as `feat(PUL-109): añadir controles para administradores`.
+- [x] Test that only persisted-profile ADMIN UI shows switches, loads actual values, saves changes, and recovers from API errors.
+- [x] Implement accessible switches, loading/error/success states, and the shared state update.
+- [x] Run focused frontend specs.
+- [x] Commit as `feat(PUL-109): añadir controles para administradores`.
 
 ### Task 7: Align references and run final verification
 

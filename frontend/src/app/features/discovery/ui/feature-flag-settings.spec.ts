@@ -77,14 +77,7 @@ describe('FeatureFlagSettingsComponent', () => {
     const service = createFeatureFlagsStub({ language_switcher: false, project_creation: true })
     let rejectUpdate!: (reason: Error) => void
     service.update.mockImplementation(async (key, enabled) => {
-      const previous = service.values()[key]
-      service.values.update(current => ({ ...current, [key]: enabled }))
-      try {
-        await new Promise<void>((_resolve, reject) => { rejectUpdate = reject })
-      } catch (error) {
-        service.values.update(current => ({ ...current, [key]: previous }))
-        throw error
-      }
+      await new Promise<void>((_resolve, reject) => { rejectUpdate = reject })
     })
     const fixture = createFixture(service)
     fixture.detectChanges()
@@ -93,6 +86,7 @@ describe('FeatureFlagSettingsComponent', () => {
       target: { checked: true },
     } as unknown as Event)
     fixture.detectChanges()
+    expect(service.values().language_switcher).toBe(false)
     expect((fixture.nativeElement.querySelector('[aria-label="Selector de idioma"]') as HTMLInputElement).checked).toBe(true)
     rejectUpdate(new Error('request failed'))
     await update

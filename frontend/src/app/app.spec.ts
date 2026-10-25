@@ -89,6 +89,84 @@ describe('AppComponent', () => {
     expect(auth.initialize).toHaveBeenCalled()
   })
 
+  it('keeps the signed-out language selector hidden while flags load and when disabled', async () => {
+    TestBed.configureTestingModule({
+      imports: [AppComponent],
+      providers: [
+        provideHttpClient(), provideHttpClientTesting(),
+        { provide: PulsoSession, useValue: createSessionStub() },
+        { provide: SupabaseAuthGateway, useValue: createAuthStub() },
+      ],
+    })
+    const fixture = TestBed.createComponent(AppComponent)
+    fixture.detectChanges()
+    const http = TestBed.inject(HttpTestingController)
+
+    expect(fixture.nativeElement.querySelector('pulso-auth-page')).not.toBeNull()
+    expect(fixture.nativeElement.querySelector('pulso-language-switcher')).toBeNull()
+
+    http.expectOne('http://localhost:8080/api/v1/feature-flags').flush({ flags: [
+      { key: 'language_switcher', enabled: false },
+      { key: 'project_creation', enabled: true },
+    ] })
+    await fixture.whenStable()
+    fixture.detectChanges()
+
+    expect(fixture.nativeElement.querySelector('pulso-language-switcher')).toBeNull()
+    http.verify()
+    fixture.destroy()
+  })
+
+  it('shows the signed-out language selector only after flags load enabled', async () => {
+    TestBed.configureTestingModule({
+      imports: [AppComponent],
+      providers: [
+        provideHttpClient(), provideHttpClientTesting(),
+        { provide: PulsoSession, useValue: createSessionStub() },
+        { provide: SupabaseAuthGateway, useValue: createAuthStub() },
+      ],
+    })
+    const fixture = TestBed.createComponent(AppComponent)
+    fixture.detectChanges()
+    const http = TestBed.inject(HttpTestingController)
+
+    expect(fixture.nativeElement.querySelector('pulso-language-switcher')).toBeNull()
+    http.expectOne('http://localhost:8080/api/v1/feature-flags').flush({ flags: [
+      { key: 'language_switcher', enabled: true },
+      { key: 'project_creation', enabled: true },
+    ] })
+    await fixture.whenStable()
+    fixture.detectChanges()
+
+    expect(fixture.nativeElement.querySelector('pulso-language-switcher')).not.toBeNull()
+    http.verify()
+    fixture.destroy()
+  })
+
+  it('keeps the signed-out language selector hidden when flag loading fails', async () => {
+    TestBed.configureTestingModule({
+      imports: [AppComponent],
+      providers: [
+        provideHttpClient(), provideHttpClientTesting(),
+        { provide: PulsoSession, useValue: createSessionStub() },
+        { provide: SupabaseAuthGateway, useValue: createAuthStub() },
+      ],
+    })
+    const fixture = TestBed.createComponent(AppComponent)
+    fixture.detectChanges()
+    const http = TestBed.inject(HttpTestingController)
+
+    http.expectOne('http://localhost:8080/api/v1/feature-flags')
+      .flush({ detail: 'unavailable' }, { status: 503, statusText: 'Unavailable' })
+    await fixture.whenStable()
+    fixture.detectChanges()
+
+    expect(fixture.nativeElement.querySelector('pulso-auth-page')).not.toBeNull()
+    expect(fixture.nativeElement.querySelector('pulso-language-switcher')).toBeNull()
+    http.verify()
+    fixture.destroy()
+  })
+
   it.each([
     ['discover', 'close'], ['discover', 'backdrop'], ['discover', 'escape'],
     ['saved', 'close'], ['saved', 'backdrop'], ['saved', 'escape'],

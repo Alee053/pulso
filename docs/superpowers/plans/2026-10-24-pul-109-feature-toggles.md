@@ -44,12 +44,12 @@
 **Interfaces:**
 - Produces a stable key allowlist, a read-only feature-flag port, and PostgreSQL-backed rows with enabled defaults.
 
-- [ ] Write a failing test for known keys/default values and JDBC reads/updates.
-- [ ] Run targeted tests and confirm the failures describe missing behavior.
-- [ ] Create the migration with boolean values, primary-key/identifier constraint, RLS enabled, and direct Supabase grants revoked; seed both flags as enabled.
-- [ ] Implement the domain, repository, reader, and JDBC adapter.
-- [ ] Run domain/JDBC tests with Testcontainers and verify real PostgreSQL persistence.
-- [ ] Commit as `feat(PUL-109): persistir las flags iniciales`.
+- [x] Write a failing test for known keys/default values and JDBC reads/updates.
+- [x] Run targeted tests and confirm the failures describe missing behavior.
+- [x] Create the migration with boolean values, primary-key/identifier constraint, RLS enabled, and direct Supabase grants revoked; seed both flags as enabled.
+- [x] Implement the domain, repository, reader, and JDBC adapter.
+- [x] Run domain/JDBC tests with Testcontainers and verify real PostgreSQL persistence.
+- [x] Commit as `feat(PUL-109): persistir las flags iniciales`.
 
 ### Task 2: Expose flag reads and admin-only updates
 
@@ -63,11 +63,11 @@
 - `GET /api/v1/feature-flags` returns only the two allowlisted keys and booleans.
 - `PUT /api/v1/feature-flags/{key}` accepts `{"enabled": boolean}`; persisted platform admins may write, unknown keys return 404, and other authenticated profiles receive 403.
 
-- [ ] Test public reads, invalid/unknown input, unauthenticated writes, USER/MODERATOR rejection, and ADMIN success.
-- [ ] Observe the expected failures before implementing the contract.
-- [ ] Implement transport mapping, use-case authorization through `ProfileRepository`, and exception responses.
-- [ ] Run targeted MVC/use-case tests.
-- [ ] Commit as `feat(PUL-109): exponer configuración protegida de flags`.
+- [x] Test public reads, invalid/unknown input, unauthenticated writes, USER/MODERATOR rejection, and ADMIN success.
+- [x] Observe the expected failures before implementing the contract.
+- [x] Implement transport mapping, use-case authorization through `ProfileRepository`, and exception responses.
+- [x] Run targeted MVC/use-case tests.
+- [x] Commit as `feat(PUL-109): exponer configuración protegida de flags`.
 
 ### Task 3: Enforce project creation availability on the backend
 
@@ -79,10 +79,10 @@
 - Read `project_creation` through `FeatureFlagReader` before any project/member write.
 - A disabled flag returns a stable 403 problem response and creates no records.
 
-- [ ] Add a failing test proving a disabled flag prevents both repository writes.
-- [ ] Implement the use-case guard and API problem mapping.
-- [ ] Run focused tests for enabled creation and disabled creation.
-- [ ] Commit as `feat(PUL-109): bloquear creación de proyectos desactivada`.
+- [x] Add a failing test proving a disabled flag prevents both repository writes.
+- [x] Implement the use-case guard and API problem mapping.
+- [x] Run focused tests for enabled creation and disabled creation.
+- [x] Commit as `feat(PUL-109): bloquear creación de proyectos desactivada`.
 
 ### Task 4: Add the Angular HTTP adapter and central state
 
@@ -95,10 +95,10 @@
 - Expose typed `load()` and `update(key, enabled)` methods.
 - State begins disabled/uninitialized, loads from the API, updates after success, and reverts on rejected writes.
 
-- [ ] Add failing HTTP-adapter and service tests for load, update, malformed/failed load, and failed-write rollback.
-- [ ] Implement the adapter and signal-owned state.
-- [ ] Run the focused frontend specs.
-- [ ] Commit as `feat(PUL-109): centralizar el estado de feature toggles`.
+- [x] Add failing HTTP-adapter and service tests for load, update, malformed/failed load, and failed-write rollback.
+- [x] Implement the adapter and signal-owned state.
+- [x] Run the focused frontend specs.
+- [x] Commit as `feat(PUL-109): centralizar el estado de feature toggles`.
 
 ### Task 5: Apply flags to language and project creation UI
 
@@ -134,8 +134,8 @@
 - Modify: `docs/api.md`, relevant architecture page, and `database/README.md`
 - Modify: `database/supabase/tests/database/` pgTAP suite
 
-- [ ] Add pgTAP checks for the migration, initial values, allowlisted keys, and revoked direct client writes; observe failures before changing the assertions' production premise.
-- [ ] Run pgTAP in the authorized local Supabase CLI environment if available.
-- [ ] Run targeted backend/frontend suites, full backend/frontend suites, builds, and `git diff --check`.
-- [ ] Review the complete diff for auth, persistence, and scope.
-- [ ] Commit the schema model, pgTAP contract, API contract, architecture guide, and database workflow as separate scoped PUL-109 commits.
+- [x] Add pgTAP checks for the migration, initial values, allowlisted keys, and revoked direct client writes; observe failures before changing the assertions' production premise.
+- [x] Run pgTAP in the authorized local Supabase CLI environment if available.
+- [x] Run targeted backend/frontend suites, full backend/frontend suites, builds, and `git diff --check`.
+- [x] Review the complete diff for auth, persistence, and scope; resolve the final review findings and revalidate affected suites.
+- [x] Commit the schema model, pgTAP contract, API contract, architecture guide, and database workflow as separate scoped PUL-109 commits.

@@ -109,7 +109,7 @@
 - Test: app, language-switcher, and navigation specs
 
 - [x] Add failing tests that hide the language selector and project-create entry/flow when their flags are off, preserve normal behavior when on, and avoid enabled flashes during load.
-- [x] Load flags at application startup and bind the shared signal to existing controls.
+- [x] Load flags at startup, refresh them when the window regains focus, and bind the shared signal to existing controls.
 - [x] Redirect an active project-create view to a safe existing view if the flag becomes disabled.
 - [x] Run focused frontend specs.
 - [x] Commit as `feat(PUL-109): controlar idioma y creación desde flags`.

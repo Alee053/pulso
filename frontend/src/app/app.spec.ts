@@ -164,6 +164,26 @@ describe('AppComponent', () => {
     expect(session.loadProjectCollections).toHaveBeenCalledOnce()
   })
 
+  it('refreshes shared feature flags when the browser window regains focus', () => {
+    const flags = createFeatureFlagsStub()
+    TestBed.configureTestingModule({
+      imports: [AppComponent],
+      providers: [provideHttpClient(), provideHttpClientTesting(),
+        { provide: FeatureFlagsService, useValue: flags },
+        { provide: PulsoSession, useValue: createSessionStub() },
+        { provide: SupabaseAuthGateway, useValue: createAuthStub() },
+      ],
+    })
+    const fixture = TestBed.createComponent(AppComponent)
+    fixture.detectChanges()
+    expect(flags.load).toHaveBeenCalledOnce()
+
+    window.dispatchEvent(new Event('focus'))
+
+    expect(flags.load).toHaveBeenCalledTimes(2)
+    fixture.destroy()
+  })
+
   it('keeps language and project creation controls hidden until flags load', () => {
     const session = createSessionStub()
     const auth = createAuthStub()

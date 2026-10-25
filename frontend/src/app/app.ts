@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common'
-import { Component, effect, inject, OnInit, signal } from '@angular/core'
+import { Component, effect, HostListener, inject, OnInit, signal } from '@angular/core'
 import { AuthPageComponent } from './core/auth/auth-page'
 import { SupabaseAuthGateway } from './core/auth/supabase-auth.gateway'
 import { DiscoveryViewComponent } from './features/discovery/ui/discovery-view'
@@ -90,6 +90,13 @@ export class AppComponent implements OnInit {
     ngOnInit(): void {
         void this.auth.initialize().catch(() => undefined)
         void this.featureFlags.load()
+    }
+
+    @HostListener('window:focus')
+    refreshFeatureFlags(): void {
+        if (!this.featureFlags.isLoading()) {
+            void this.featureFlags.load()
+        }
     }
 
     selectStartup(startup: Startup): void {

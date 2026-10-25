@@ -58,6 +58,7 @@
         </div>
 
         <pulso-navigation-bar [activeView]="session.activeView()"
+                              [projectCreationEnabled]="featureFlags.isEnabled('project_creation')"
                               [savedCount]="session.savedCount()"
                               [interestedCount]="session.interestedCount()"
                               (navigated)="navigateTo($event)"
@@ -70,7 +71,7 @@
             </div>
             <header class="workspace-header">
                 <span>{{ common.workspaceLabel }}</span>
-                <pulso-language-switcher />
+                <pulso-language-switcher *ngIf="featureFlags.isEnabled('language_switcher')" />
                 <button type="button" class="reference-example" (click)="session.openProjectDetail(session.catalog()[0]?.id || 'eco-pack')">
                     <pulso-icon name="arrow-up-right" [size]="16" />{{ common.exampleProject }}
                 </button>
@@ -101,11 +102,13 @@
                                       (startupSaved)="session.toggleSaved($event)"
                                       (startupSelected)="selectStartup($event)" />
 
-                <pulso-project-create-form *ngSwitchCase="'create-project'"
-                                           [sectors]="session.referenceCatalogs().sectors"
-                                           [catalogsLoading]="session.areCatalogsLoading()"
-                                           [catalogsLoaded]="session.hasLoadedReferenceCatalogs()"
-                                           [catalogsErrorMessage]="session.catalogsErrorMessage()" />
+                <ng-container *ngSwitchCase="'create-project'">
+                    <pulso-project-create-form *ngIf="featureFlags.isEnabled('project_creation')"
+                                               [sectors]="session.referenceCatalogs().sectors"
+                                               [catalogsLoading]="session.areCatalogsLoading()"
+                                               [catalogsLoaded]="session.hasLoadedReferenceCatalogs()"
+                                               [catalogsErrorMessage]="session.catalogsErrorMessage()" />
+                </ng-container>
 
                 <pulso-project-teams *ngSwitchCase="'teams'"
                                      [skills]="session.referenceCatalogs().skills"

@@ -9,6 +9,7 @@ import { SupabaseAuthGateway } from './core/auth/supabase-auth.gateway'
 import type { AuthenticatedUser } from './core/auth/supabase-auth.gateway'
 import { AppComponent } from './app'
 import { currentLanguage } from './core/i18n/language'
+import { FeatureFlagsService } from './core/feature-flags/feature-flags.service'
 import { PulsoSession } from './features/discovery/application/pulso-session'
 import { emptyReferenceCatalogs } from './features/discovery/domain/catalog'
 import { intentionOptions, projectStageOptions, type OnboardingIntention, type ProjectStage } from './features/discovery/domain/preferences'
@@ -27,6 +28,7 @@ describe('AppComponent', () => {
     auth.session.set({ id: 'invitee-1', email: 'ada@example.test' })
     TestBed.configureTestingModule({ imports: [AppComponent], providers: [
       provideHttpClient(), provideHttpClientTesting(),
+      { provide: FeatureFlagsService, useValue: createFeatureFlagsStub() },
       { provide: PulsoSession, useValue: session }, { provide: SupabaseAuthGateway, useValue: auth },
     ] })
     const fixture = TestBed.createComponent(AppComponent)
@@ -49,6 +51,7 @@ describe('AppComponent', () => {
       imports: [AppComponent],
       providers: [
         provideHttpClient(), provideHttpClientTesting(),
+        { provide: FeatureFlagsService, useValue: createFeatureFlagsStub() },
         { provide: PulsoSession, useValue: createSessionStub() },
         { provide: SupabaseAuthGateway, useValue: auth },
       ],
@@ -72,6 +75,7 @@ describe('AppComponent', () => {
       imports: [AppComponent],
       providers: [
         provideHttpClient(), provideHttpClientTesting(),
+        { provide: FeatureFlagsService, useValue: createFeatureFlagsStub() },
         { provide: PulsoSession, useValue: session },
         { provide: SupabaseAuthGateway, useValue: auth },
       ],
@@ -99,6 +103,7 @@ describe('AppComponent', () => {
     TestBed.configureTestingModule({
       imports: [AppComponent],
       providers: [provideHttpClient(), provideHttpClientTesting(),
+        { provide: FeatureFlagsService, useValue: createFeatureFlagsStub() },
         { provide: PulsoSession, useValue: session },
         { provide: SupabaseAuthGateway, useValue: auth },
       ],
@@ -142,6 +147,7 @@ describe('AppComponent', () => {
       imports: [AppComponent],
       providers: [
         provideHttpClient(), provideHttpClientTesting(),
+        { provide: FeatureFlagsService, useValue: createFeatureFlagsStub() },
         { provide: PulsoSession, useValue: session },
         { provide: SupabaseAuthGateway, useValue: auth },
       ],
@@ -157,7 +163,82 @@ describe('AppComponent', () => {
     expect(session.loadOnboardingPreferences).toHaveBeenCalledOnce()
     expect(session.loadProjectCollections).toHaveBeenCalledOnce()
   })
+
+  it('keeps language and project creation controls hidden until flags load', () => {
+    const session = createSessionStub()
+    const auth = createAuthStub()
+    const flags = createFeatureFlagsStub({ language_switcher: false, project_creation: false })
+    flags.load.mockReturnValue(new Promise<void>(() => undefined))
+    session.goToView = vi.fn((view: string) => session.activeView.set(view))
+    auth.session.set({ id: 'user-1', email: 'person@example.test' })
+    session.hasStarted.set(true)
+    TestBed.configureTestingModule({
+      imports: [AppComponent],
+      providers: [provideHttpClient(), provideHttpClientTesting(),
+        { provide: FeatureFlagsService, useValue: flags },
+        { provide: PulsoSession, useValue: session },
+        { provide: SupabaseAuthGateway, useValue: auth },
+      ],
+    })
+
+    const fixture = TestBed.createComponent(AppComponent)
+    fixture.detectChanges()
+
+    expect(fixture.nativeElement.querySelector('pulso-language-switcher')).toBeNull()
+    expect(fixture.nativeElement.querySelector('pulso-navigation-bar')?.textContent).not.toContain('Crear proyecto')
+    expect(flags.load).toHaveBeenCalledOnce()
+
+    session.activeView.set('create-project')
+    fixture.detectChanges()
+    expect(session.activeView()).toBe('discover')
+    expect(fixture.nativeElement.querySelector('pulso-project-create-form')).toBeNull()
+    fixture.destroy()
+  })
+
+  it('returns to discovery if project creation is disabled while its view is active', () => {
+    const session = createSessionStub()
+    const auth = createAuthStub()
+    const flags = createFeatureFlagsStub({ language_switcher: true, project_creation: true })
+    auth.session.set({ id: 'user-1', email: 'person@example.test' })
+    session.hasStarted.set(true)
+    session.activeView.set('create-project')
+    session.goToView = vi.fn((view: string) => session.activeView.set(view))
+    TestBed.configureTestingModule({
+      imports: [AppComponent],
+      providers: [provideHttpClient(), provideHttpClientTesting(),
+        { provide: FeatureFlagsService, useValue: flags },
+        { provide: PulsoSession, useValue: session },
+        { provide: SupabaseAuthGateway, useValue: auth },
+      ],
+    })
+
+    const fixture = TestBed.createComponent(AppComponent)
+    fixture.detectChanges()
+    expect(fixture.nativeElement.querySelector('pulso-language-switcher')).not.toBeNull()
+    expect(fixture.nativeElement.querySelector('pulso-project-create-form')).not.toBeNull()
+
+    flags.values.set({ language_switcher: true, project_creation: false })
+    fixture.detectChanges()
+
+    expect(session.activeView()).toBe('discover')
+    expect(session.goToView).toHaveBeenCalledWith('discover')
+    expect(fixture.nativeElement.querySelector('pulso-project-create-form')).toBeNull()
+    fixture.destroy()
+  })
 })
+
+function createFeatureFlagsStub(initial = { language_switcher: true, project_creation: true }) {
+  const values = signal(initial)
+  return {
+    values,
+    isLoaded: signal(false),
+    isLoading: signal(false),
+    hasError: signal(false),
+    isEnabled: (key: 'language_switcher' | 'project_creation') => values()[key],
+    load: vi.fn().mockResolvedValue(undefined),
+    update: vi.fn(),
+  }
+}
 
 function createSessionStub() {
   return {

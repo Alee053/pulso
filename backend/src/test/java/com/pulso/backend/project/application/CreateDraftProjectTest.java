@@ -10,6 +10,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 import com.pulso.backend.config.ProjectProperties;
+import com.pulso.backend.featureflag.application.FeatureFlagDisabledException;
+import com.pulso.backend.featureflag.application.FeatureFlagReader;
+import com.pulso.backend.featureflag.domain.FeatureFlagKey;
 import com.pulso.backend.project.domain.CreatedDraftProject;
 import com.pulso.backend.project.domain.Project;
 import com.pulso.backend.project.domain.ProjectDraft;
@@ -28,10 +31,29 @@ class CreateDraftProjectTest {
             new ProjectDraft.Limits(2, 120, 160, 240, 5000, 120, 40);
 
     @Test
+    void rejectsDisabledCreationBeforeAnyProjectOrMembershipReadOrWrite() {
+        CapturingRepository repository = new CapturingRepository();
+        List<FeatureFlagKey> requestedFlags = new ArrayList<>();
+        FeatureFlagReader featureFlags = key -> {
+            requestedFlags.add(key);
+            return false;
+        };
+
+        assertThatThrownBy(() -> new CreateDraftProject(repository, PROPERTIES, featureFlags).execute(
+                PROFILE_ID,
+                draft()))
+                .isInstanceOf(FeatureFlagDisabledException.class)
+                .hasMessage("The project_creation feature is disabled.");
+
+        assertThat(requestedFlags).containsExactly(FeatureFlagKey.PROJECT_CREATION);
+        assertThat(repository.calls).isEmpty();
+    }
+
+    @Test
     void createsADraftAndItsActiveOwnerForTheAuthenticatedProfile() {
         CapturingRepository repository = new CapturingRepository();
 
-        CreatedDraftProject result = new CreateDraftProject(repository, PROPERTIES).execute(
+        CreatedDraftProject result = new CreateDraftProject(repository, PROPERTIES, key -> true).execute(
                 PROFILE_ID,
                 draft());
 
@@ -52,7 +74,7 @@ class CreateDraftProjectTest {
         CapturingRepository repository = new CapturingRepository();
         repository.activeSector = false;
 
-        assertThatThrownBy(() -> new CreateDraftProject(repository, PROPERTIES).execute(
+        assertThatThrownBy(() -> new CreateDraftProject(repository, PROPERTIES, key -> true).execute(
                 PROFILE_ID,
                 draft()))
                 .isInstanceOf(ProjectValidationException.class)
@@ -66,7 +88,7 @@ class CreateDraftProjectTest {
         CapturingRepository repository = new CapturingRepository();
         repository.ownerFailure = new IllegalStateException("owner insert failed");
 
-        assertThatThrownBy(() -> new CreateDraftProject(repository, PROPERTIES).execute(
+        assertThatThrownBy(() -> new CreateDraftProject(repository, PROPERTIES, key -> true).execute(
                 PROFILE_ID,
                 draft()))
                 .isSameAs(repository.ownerFailure);
@@ -82,7 +104,7 @@ class CreateDraftProjectTest {
         CapturingRepository repository = new CapturingRepository();
         repository.draftFailure = new ProjectConflictException();
 
-        assertThatThrownBy(() -> new CreateDraftProject(repository, PROPERTIES).execute(
+        assertThatThrownBy(() -> new CreateDraftProject(repository, PROPERTIES, key -> true).execute(
                 PROFILE_ID,
                 draft()))
                 .isSameAs(repository.draftFailure);
@@ -94,7 +116,7 @@ class CreateDraftProjectTest {
 
     @Test
     void rejectsMissingAuthenticatedProfile() {
-        assertThatThrownBy(() -> new CreateDraftProject(new CapturingRepository(), PROPERTIES).execute(
+        assertThatThrownBy(() -> new CreateDraftProject(new CapturingRepository(), PROPERTIES, key -> true).execute(
                 null,
                 draft()))
                 .isInstanceOf(ProjectValidationException.class)

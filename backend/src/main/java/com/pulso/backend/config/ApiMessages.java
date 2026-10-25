@@ -31,6 +31,9 @@ public final class ApiMessages {
     public static final String FEATURE_FLAG_BOOLEAN_REQUIRED = "enabled must be a boolean value.";
     public static final String FEATURE_FLAG_INVALID_TITLE = "Invalid feature flag";
     public static final String FEATURE_FLAG_INVALID_CODE = "invalid_feature_flag";
+    public static final String FEATURE_DISABLED_TITLE = "Feature unavailable";
+    public static final String FEATURE_DISABLED_DETAIL = "The %s feature is disabled.";
+    public static final String FEATURE_DISABLED_CODE = "feature_disabled";
     public static final String PUBLIC_PROJECT_NOT_FOUND_TITLE = "Public project not found";
     public static final String PUBLIC_PROJECT_NOT_FOUND_DETAIL =
             "The project does not exist or is not publicly available.";

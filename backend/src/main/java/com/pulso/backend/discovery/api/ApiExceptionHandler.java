@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.pulso.backend.config.ApiMessages;
 import com.pulso.backend.featureflag.application.FeatureFlagAuthorizationException;
+import com.pulso.backend.featureflag.application.FeatureFlagDisabledException;
 import com.pulso.backend.featureflag.application.FeatureFlagNotFoundException;
 import com.pulso.backend.featureflag.application.FeatureFlagValidationException;
 import com.pulso.backend.ops.logging.ApplicationLogger;
@@ -132,6 +133,15 @@ public class ApiExceptionHandler {
                 HttpStatus.FORBIDDEN,
                 ApiMessages.FEATURE_FLAG_ADMIN_REQUIRED_TITLE,
                 ApiMessages.FEATURE_FLAG_ADMIN_REQUIRED_CODE,
+                exception.getMessage());
+    }
+
+    @ExceptionHandler(FeatureFlagDisabledException.class)
+    ProblemDetail featureDisabled(FeatureFlagDisabledException exception) {
+        return membershipProblem(
+                HttpStatus.FORBIDDEN,
+                ApiMessages.FEATURE_DISABLED_TITLE,
+                ApiMessages.FEATURE_DISABLED_CODE,
                 exception.getMessage());
     }
 

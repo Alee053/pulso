@@ -145,7 +145,8 @@ class ProjectControllerTest {
         return MockMvcBuilders
                 .standaloneSetup(new ProjectController(new CreateDraftProject(
                         repository,
-                        new ProjectProperties(2, 120, 160, 240, 5000, 120, 40, 254))))
+                        new ProjectProperties(2, 120, 160, 240, 5000, 120, 40, 254),
+                        key -> true)))
                 .setControllerAdvice(new ApiExceptionHandler())
                 .setCustomArgumentResolvers(new JwtArgumentResolver())
                 .build();

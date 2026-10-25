@@ -20,6 +20,17 @@ public final class ApiMessages {
     public static final String OPPORTUNITY_SKILL_CONFLICT_TITLE = "Opportunity skill conflict";
     public static final String OPPORTUNITY_SKILL_NOT_FOUND_TITLE = "Opportunity skill not found";
     public static final String PROJECT_CONFLICT_TITLE = "Project conflict";
+
+    public static final String FEATURE_FLAG_ADMIN_REQUIRED_DETAIL =
+            "A platform administrator is required to change feature flags.";
+    public static final String FEATURE_FLAG_ADMIN_REQUIRED_TITLE = "Feature flag access denied";
+    public static final String FEATURE_FLAG_ADMIN_REQUIRED_CODE = "feature_flag_admin_required";
+    public static final String FEATURE_FLAG_NOT_FOUND_DETAIL = "Feature flag not found.";
+    public static final String FEATURE_FLAG_NOT_FOUND_TITLE = "Feature flag not found";
+    public static final String FEATURE_FLAG_NOT_FOUND_CODE = "feature_flag_not_found";
+    public static final String FEATURE_FLAG_BOOLEAN_REQUIRED = "enabled must be a boolean value.";
+    public static final String FEATURE_FLAG_INVALID_TITLE = "Invalid feature flag";
+    public static final String FEATURE_FLAG_INVALID_CODE = "invalid_feature_flag";
     public static final String PUBLIC_PROJECT_NOT_FOUND_TITLE = "Public project not found";
     public static final String PUBLIC_PROJECT_NOT_FOUND_DETAIL =
             "The project does not exist or is not publicly available.";

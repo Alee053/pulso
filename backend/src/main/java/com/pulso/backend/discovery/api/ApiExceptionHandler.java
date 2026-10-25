@@ -11,6 +11,10 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.pulso.backend.config.ApiMessages;
+import com.pulso.backend.featureflag.application.FeatureFlagAuthorizationException;
+import com.pulso.backend.featureflag.application.FeatureFlagDisabledException;
+import com.pulso.backend.featureflag.application.FeatureFlagNotFoundException;
+import com.pulso.backend.featureflag.application.FeatureFlagValidationException;
 import com.pulso.backend.ops.logging.ApplicationLogger;
 import com.pulso.backend.ops.logging.LogContext;
 import com.pulso.backend.opportunity.application.ProjectOpportunityConflictException;
@@ -121,6 +125,42 @@ public class ApiExceptionHandler {
                 exception.getMessage());
         problem.setTitle(ApiMessages.PROJECT_CONFLICT_TITLE);
         return problem;
+    }
+
+    @ExceptionHandler(FeatureFlagAuthorizationException.class)
+    ProblemDetail featureFlagAuthorization(FeatureFlagAuthorizationException exception) {
+        return membershipProblem(
+                HttpStatus.FORBIDDEN,
+                ApiMessages.FEATURE_FLAG_ADMIN_REQUIRED_TITLE,
+                ApiMessages.FEATURE_FLAG_ADMIN_REQUIRED_CODE,
+                exception.getMessage());
+    }
+
+    @ExceptionHandler(FeatureFlagDisabledException.class)
+    ProblemDetail featureDisabled(FeatureFlagDisabledException exception) {
+        return membershipProblem(
+                HttpStatus.FORBIDDEN,
+                ApiMessages.FEATURE_DISABLED_TITLE,
+                ApiMessages.FEATURE_DISABLED_CODE,
+                exception.getMessage());
+    }
+
+    @ExceptionHandler(FeatureFlagNotFoundException.class)
+    ProblemDetail featureFlagNotFound(FeatureFlagNotFoundException exception) {
+        return membershipProblem(
+                HttpStatus.NOT_FOUND,
+                ApiMessages.FEATURE_FLAG_NOT_FOUND_TITLE,
+                ApiMessages.FEATURE_FLAG_NOT_FOUND_CODE,
+                exception.getMessage());
+    }
+
+    @ExceptionHandler(FeatureFlagValidationException.class)
+    ProblemDetail featureFlagValidation(FeatureFlagValidationException exception) {
+        return membershipProblem(
+                HttpStatus.BAD_REQUEST,
+                ApiMessages.FEATURE_FLAG_INVALID_TITLE,
+                ApiMessages.FEATURE_FLAG_INVALID_CODE,
+                exception.getMessage());
     }
 
     @ExceptionHandler(MembershipPermissionException.class)

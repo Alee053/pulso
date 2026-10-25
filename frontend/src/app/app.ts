@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common'
-import { Component, effect, inject, OnInit, signal } from '@angular/core'
+import { Component, effect, HostListener, inject, OnInit, signal } from '@angular/core'
 import { AuthPageComponent } from './core/auth/auth-page'
 import { SupabaseAuthGateway } from './core/auth/supabase-auth.gateway'
 import { DiscoveryViewComponent } from './features/discovery/ui/discovery-view'
@@ -18,6 +18,7 @@ import { InvitationLink } from './features/discovery/application/invitation-link
 import { InvitationAcceptanceComponent } from './features/discovery/ui/invitation-acceptance'
 import { ProjectTeamsComponent } from './features/discovery/ui/project-teams'
 import { ProjectCreateFormComponent } from './features/discovery/ui/project-create-form'
+import { FeatureFlagsService } from './core/feature-flags/feature-flags.service'
 
 @Component({
     selector: 'pulso-root',
@@ -46,6 +47,7 @@ export class AppComponent implements OnInit {
     readonly auth = inject(SupabaseAuthGateway)
     private readonly language = inject(LanguageService)
     readonly session = inject(PulsoSession)
+    readonly featureFlags = inject(FeatureFlagsService)
     readonly selectedStartup = signal<Startup | null>(null)
     private activeUserId: string | null = null
 
@@ -79,8 +81,22 @@ export class AppComponent implements OnInit {
         document.title = commonStrings.documentTitle
     })
 
+    private readonly disabledProjectCreationEffect = effect(() => {
+        if (this.session.activeView() === 'create-project' && !this.featureFlags.isEnabled('project_creation')) {
+            this.session.goToView('discover')
+        }
+    })
+
     ngOnInit(): void {
         void this.auth.initialize().catch(() => undefined)
+        void this.featureFlags.load()
+    }
+
+    @HostListener('window:focus')
+    refreshFeatureFlags(): void {
+        if (!this.featureFlags.isLoading()) {
+            void this.featureFlags.load()
+        }
     }
 
     selectStartup(startup: Startup): void {

@@ -64,6 +64,8 @@ public class SecurityConfig {
                                 "/actuator/info")
                         .permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/startups").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/feature-flags").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/feature-flags/*").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/projects/search").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/projects/*/members").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/projects/*/share").permitAll()

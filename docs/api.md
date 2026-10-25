@@ -17,6 +17,66 @@ unchanged during Sprint 0, so an internal database rename does not break
 clients. The API is the compatibility boundary; the database will not keep a
 second writable model or a permanent SQL alias.
 
+## Feature Toggles (PUL-109)
+
+Pulso persists two global availability switches in `public.feature_flags`:
+`language_switcher` controls the existing language selector, and
+`project_creation` controls the existing project-creation flow. Both start
+enabled. These flags change availability only; they do not replace endpoint
+authentication, project membership authorization, or input validation.
+
+### `GET /api/v1/feature-flags`
+
+Returns the non-sensitive allowlisted flag keys and their current boolean
+values. This read is public and contains no secrets.
+
+```sh
+curl http://localhost:8080/api/v1/feature-flags
+```
+
+Response `200 OK`:
+
+```json
+{
+  "flags": [
+    { "key": "language_switcher", "enabled": true },
+    { "key": "project_creation", "enabled": true }
+  ]
+}
+```
+
+### `PUT /api/v1/feature-flags/{key}`
+
+Updates one allowlisted flag immediately; a service restart or application
+rebuild is not required. The caller must have a valid user access token, and
+the backend resolves its subject to `profiles.id` and requires the persisted
+`profiles.platform_role = 'ADMIN'`. Project membership roles such as `OWNER`
+and `ADMIN` do not grant access to this global setting. The profile UI uses the
+role returned by `GET /api/v1/me` to show the controls, while the backend
+remains the authorization boundary.
+
+```sh
+curl -X PUT \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"enabled":false}' \
+  http://localhost:8080/api/v1/feature-flags/language_switcher
+```
+
+Response `200 OK`:
+
+```json
+{ "key": "language_switcher", "enabled": false }
+```
+
+Missing or invalid bearer tokens return `401`. A profile without the persisted
+platform `ADMIN` role receives `403` with code `feature_flag_admin_required`.
+Unknown keys return `404` with code `feature_flag_not_found`; missing,
+malformed, or non-boolean `enabled` values return `400` with code
+`invalid_feature_flag`. Database failures return the sanitized `503 Service
+Unavailable` response. The browser accesses flags only through these HTTP
+routes; direct Supabase table grants remain revoked.
+
 ## `GET /api/v1/startups`
 
 Lists published projects through the temporary startup-named route. This is the
@@ -459,6 +519,11 @@ fields return `400 Bad Request`. A duplicate project slug returns `409
 Conflict`; other PostgreSQL failures return the sanitized `503 Service
 Unavailable` response. Missing, invalid, or `service_role` bearer tokens
 return `401 Unauthorized`.
+
+When `project_creation` is disabled, this endpoint returns `403 Forbidden`
+with code `feature_disabled` before creating a project or owner membership.
+Existing project reads, edits, team administration, and opportunity operations
+are unaffected by this flag.
 
 ## Project opportunities (PUL-18, PUL-22)
 

@@ -7,6 +7,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.pulso.backend.config.ApiMessages;
 import com.pulso.backend.config.ProjectProperties;
+import com.pulso.backend.featureflag.application.FeatureFlagDisabledException;
+import com.pulso.backend.featureflag.application.FeatureFlagReader;
+import com.pulso.backend.featureflag.domain.FeatureFlagKey;
 import com.pulso.backend.project.domain.CreatedDraftProject;
 import com.pulso.backend.project.domain.Project;
 import com.pulso.backend.project.domain.ProjectDraft;
@@ -18,12 +21,15 @@ public class CreateDraftProject {
 
     private final ProjectRepository repository;
     private final ProjectProperties properties;
+    private final FeatureFlagReader featureFlags;
 
     public CreateDraftProject(
             ProjectRepository repository,
-            ProjectProperties properties) {
+            ProjectProperties properties,
+            FeatureFlagReader featureFlags) {
         this.repository = repository;
         this.properties = properties;
+        this.featureFlags = featureFlags;
     }
 
     public ProjectDraft.Limits limits() {
@@ -44,6 +50,9 @@ public class CreateDraftProject {
         }
         if (draft == null) {
             throw new ProjectValidationException(ApiMessages.PROJECT_DRAFT_REQUIRED);
+        }
+        if (!featureFlags.isEnabled(FeatureFlagKey.PROJECT_CREATION)) {
+            throw new FeatureFlagDisabledException(FeatureFlagKey.PROJECT_CREATION);
         }
         if (!repository.hasActiveSector(draft.sectorId())) {
             throw new ProjectValidationException(ApiMessages.SECTOR_MUST_BE_ACTIVE);

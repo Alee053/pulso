@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common'
-import { Component, computed, EventEmitter, Input, Output } from '@angular/core'
+import { Component, EventEmitter, Input, Output } from '@angular/core'
 import { BrandMarkComponent } from '../../../shared/brand-mark/brand-mark'
 import { IconComponent, type IconName } from '../../../shared/icon/icon'
 import type { AppView } from '../domain/startup'
@@ -20,6 +20,7 @@ interface NavigationItem {
 })
 export class NavigationBarComponent {
   @Input() activeView: AppView = 'discover'
+  @Input() projectCreationEnabled = true
   @Input() savedCount = 0
   @Input() interestedCount = 0
   @Output() navigated = new EventEmitter<AppView>()
@@ -29,13 +30,16 @@ export class NavigationBarComponent {
   readonly common = commonStrings
   readonly strings = navigationStrings
 
-  readonly navigationItems = computed<readonly NavigationItem[]>(() => [
-    { id: 'discover', label: navigationStrings.discover, icon: 'compass' },
-    { id: 'create-project', label: navigationStrings.createProject, icon: 'sparkles' },
-    { id: 'teams', label: navigationStrings.teams, icon: 'users-round' },
-    { id: 'saved', label: navigationStrings.saved, icon: 'bookmark' },
-    { id: 'profile', label: navigationStrings.profile, icon: 'user-round' },
-  ])
+  navigationItems(): readonly NavigationItem[] {
+    const items: NavigationItem[] = [
+      { id: 'discover', label: navigationStrings.discover, icon: 'compass' },
+      { id: 'create-project', label: navigationStrings.createProject, icon: 'sparkles' },
+      { id: 'teams', label: navigationStrings.teams, icon: 'users-round' },
+      { id: 'saved', label: navigationStrings.saved, icon: 'bookmark' },
+      { id: 'profile', label: navigationStrings.profile, icon: 'user-round' },
+    ]
+    return this.projectCreationEnabled ? items : items.filter(item => item.id !== 'create-project')
+  }
 
   get totalSaved(): number {
     return this.savedCount + this.interestedCount

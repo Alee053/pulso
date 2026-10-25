@@ -4,14 +4,18 @@ import { signal } from '@angular/core'
 import { TestBed } from '@angular/core/testing'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { currentLanguage } from '../i18n/language'
+import { FeatureFlagsService } from '../feature-flags/feature-flags.service'
 import { AuthPageComponent } from './auth-page'
 import { SupabaseAuthGateway } from './supabase-auth.gateway'
 import { authStrings } from './strings/auth.strings'
 
 describe('AuthPageComponent language', () => {
+  let languageSwitcherEnabled: ReturnType<typeof signal<boolean>>
+
   beforeEach(() => {
     localStorage.clear()
     currentLanguage.set('es')
+    languageSwitcherEnabled = signal(true)
     TestBed.configureTestingModule({
       imports: [AuthPageComponent],
       providers: [
@@ -25,6 +29,10 @@ describe('AuthPageComponent language', () => {
             isConfigured: signal(true),
             initialize: () => Promise.resolve(),
           },
+        },
+        {
+          provide: FeatureFlagsService,
+          useValue: { isEnabled: () => languageSwitcherEnabled() },
         },
       ],
     })
@@ -50,6 +58,21 @@ describe('AuthPageComponent language', () => {
     expect(title.textContent).toContain('Connect with the ideas')
     expect(element.textContent).toContain('Your community of projects')
     expect(document.documentElement.lang).toBe('en')
+    fixture.destroy()
+  })
+
+  it('hides and restores the language selector with the shared flag', () => {
+    languageSwitcherEnabled.set(false)
+    const fixture = TestBed.createComponent(AuthPageComponent)
+    fixture.detectChanges()
+    const element = fixture.nativeElement as HTMLElement
+
+    expect(element.querySelector('pulso-language-switcher')).toBeNull()
+
+    languageSwitcherEnabled.set(true)
+    fixture.detectChanges()
+
+    expect(element.querySelector('pulso-language-switcher')).not.toBeNull()
     fixture.destroy()
   })
 

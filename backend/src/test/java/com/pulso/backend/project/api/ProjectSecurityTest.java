@@ -2,6 +2,7 @@ package com.pulso.backend.project.api;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.nio.charset.StandardCharsets;
@@ -11,6 +12,7 @@ import java.util.UUID;
 
 import javax.crypto.spec.SecretKeySpec;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -28,6 +30,8 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.pulso.backend.config.ProjectProperties;
 import com.pulso.backend.config.SecurityConfig;
+import com.pulso.backend.featureflag.application.FeatureFlagReader;
+import com.pulso.backend.featureflag.domain.FeatureFlagKey;
 import com.pulso.backend.project.application.CreateDraftProject;
 import com.pulso.backend.project.application.ProjectRepository;
 import com.pulso.backend.project.domain.Project;
@@ -47,6 +51,14 @@ class ProjectSecurityTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private MutableFeatureFlagReader featureFlags;
+
+    @BeforeEach
+    void enableProjectCreationByDefault() {
+        featureFlags.setProjectCreationEnabled(true);
+    }
 
     @Test
     void requiresAnAccessTokenToCreateProjects() throws Exception {
@@ -70,6 +82,24 @@ class ProjectSecurityTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validRequest()))
                 .andExpect(status().isCreated());
+    }
+
+    @Test
+    void rejectsProjectCreationWhenFeatureFlagReaderReturnsDisabled() throws Exception {
+        featureFlags.setProjectCreationEnabled(false);
+        Jwt jwt = Jwt.withTokenValue("test-token")
+                .header("alg", "HS256")
+                .subject(PROFILE_ID.toString())
+                .claim("role", "authenticated")
+                .audience(List.of("authenticated"))
+                .build();
+
+        mockMvc.perform(post("/api/v1/projects")
+                .with(jwt().jwt(jwt))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validRequest()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("feature_disabled"));
     }
 
     @Test
@@ -153,10 +183,32 @@ class ProjectSecurityTest {
         }
 
         @Bean
-        CreateDraftProject createDraftProject(ProjectRepository repository) {
+        MutableFeatureFlagReader featureFlagReader() {
+            return new MutableFeatureFlagReader();
+        }
+
+        @Bean
+        CreateDraftProject createDraftProject(
+                ProjectRepository repository,
+                MutableFeatureFlagReader featureFlags) {
             return new CreateDraftProject(
                     repository,
-                    new ProjectProperties(2, 120, 160, 240, 5000, 120, 40, 254));
+                    new ProjectProperties(2, 120, 160, 240, 5000, 120, 40, 254),
+                    featureFlags);
+        }
+    }
+
+    static class MutableFeatureFlagReader implements FeatureFlagReader {
+
+        private boolean projectCreationEnabled = true;
+
+        void setProjectCreationEnabled(boolean enabled) {
+            projectCreationEnabled = enabled;
+        }
+
+        @Override
+        public boolean isEnabled(FeatureFlagKey key) {
+            return key != FeatureFlagKey.PROJECT_CREATION || projectCreationEnabled;
         }
     }
 }

@@ -40,4 +40,16 @@ describe('NavigationBarComponent language', () => {
     expect(active.getAttribute('aria-current')).toBe('page')
     fixture.destroy()
   })
+
+  it('hides project creation from both navigation layouts when the flag is disabled', () => {
+    const fixture = TestBed.createComponent(NavigationBarComponent)
+    fixture.componentRef.setInput('projectCreationEnabled', false)
+    fixture.detectChanges()
+
+    const element = fixture.nativeElement as HTMLElement
+    expect(labels(element)).not.toContain('Crear proyecto')
+    expect(Array.from(element.querySelectorAll('.mobile-nav__item')).map((item) => item.textContent?.trim()))
+      .not.toContain('Crear proyecto')
+    fixture.destroy()
+  })
 })

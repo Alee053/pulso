@@ -111,7 +111,7 @@ class JdbcProjectRepositoryTest {
 
     @Test
     void persistsDraftAndOwnerWithCanonicalNamesAndRoles() {
-        var result = new CreateDraftProject(repository, PROPERTIES).execute(PROFILE_ID, draft());
+        var result = new CreateDraftProject(repository, PROPERTIES, key -> true).execute(PROFILE_ID, draft());
 
         assertThat(result.project().status()).isEqualTo("DRAFT");
         assertThat(result.project().createdByProfileId()).isEqualTo(PROFILE_ID);
@@ -125,9 +125,9 @@ class JdbcProjectRepositoryTest {
 
     @Test
     void translatesDuplicateSlugIntoAProjectConflict() {
-        new CreateDraftProject(repository, PROPERTIES).execute(PROFILE_ID, draft());
+        new CreateDraftProject(repository, PROPERTIES, key -> true).execute(PROFILE_ID, draft());
 
-        assertThatThrownBy(() -> new CreateDraftProject(repository, PROPERTIES).execute(
+        assertThatThrownBy(() -> new CreateDraftProject(repository, PROPERTIES, key -> true).execute(
                 PROFILE_ID,
                 draft()))
                 .isInstanceOf(ProjectConflictException.class)
@@ -159,7 +159,7 @@ class JdbcProjectRepositoryTest {
                 new DataSourceTransactionManager(dataSource()));
 
         assertThatThrownBy(() -> transaction.executeWithoutResult(status ->
-                new CreateDraftProject(repository, PROPERTIES).execute(PROFILE_ID, draft())))
+                new CreateDraftProject(repository, PROPERTIES, key -> true).execute(PROFILE_ID, draft())))
                 .hasMessageContaining("forced owner failure");
 
         assertThat(count("public.projects")).isZero();

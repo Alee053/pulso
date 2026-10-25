@@ -3,6 +3,8 @@ import { TestBed } from '@angular/core/testing'
 import { of, throwError } from 'rxjs'
 import { describe, expect, it, vi } from 'vitest'
 import { SupabaseAuthGateway } from '../../../core/auth/supabase-auth.gateway'
+import { FeatureFlagsService } from '../../../core/feature-flags/feature-flags.service'
+import type { FeatureFlagValues } from '../../../core/feature-flags/feature-flags-api'
 import {
   ProfileApi,
   type CurrentUserDto,
@@ -105,6 +107,20 @@ describe('ProfileViewComponent', () => {
       fixture.nativeElement.querySelector('button')?.textContent,
     ).toContain('Reintentar')
   })
+
+  it('shows global feature controls when the loaded profile has the platform ADMIN role', async () => {
+    const administrator = createFixture(createProfileApiStub(createCurrentUser({ platformRole: 'ADMIN' })))
+    await administrator.whenStable()
+    administrator.detectChanges()
+    expect(administrator.nativeElement.querySelector('pulso-feature-flag-settings')).not.toBeNull()
+  })
+
+  it('hides global feature controls for a regular platform profile', async () => {
+    const regularUser = createFixture(createProfileApiStub(createCurrentUser({ platformRole: 'USER' })))
+    await regularUser.whenStable()
+    regularUser.detectChanges()
+    expect(regularUser.nativeElement.querySelector('pulso-feature-flag-settings')).toBeNull()
+  })
 })
 
 function createFixture(
@@ -113,6 +129,7 @@ function createFixture(
   TestBed.configureTestingModule({
     imports: [ProfileViewComponent],
     providers: [
+      { provide: FeatureFlagsService, useValue: createFeatureFlagsStub() },
       { provide: ProfileApi, useValue: profileApi },
       {
         provide: SupabaseAuthGateway,
@@ -127,6 +144,20 @@ function createFixture(
   const fixture = TestBed.createComponent(ProfileViewComponent)
   fixture.detectChanges()
   return fixture
+}
+
+function createFeatureFlagsStub() {
+  const values = signal<FeatureFlagValues>({ language_switcher: true, project_creation: true })
+  return {
+    values,
+    isLoaded: signal(true),
+    isLoading: signal(false),
+    hasError: signal(false),
+    hasLoadError: signal(false),
+    isEnabled: (key: keyof FeatureFlagValues) => values()[key],
+    load: vi.fn().mockResolvedValue(undefined),
+    update: vi.fn(),
+  }
 }
 
 function createProfileApiStub(

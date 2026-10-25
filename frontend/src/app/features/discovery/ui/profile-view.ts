@@ -13,11 +13,12 @@ import { profileContract } from '../data-access/project.contract'
 import type { IntentionOption, OnboardingIntention } from '../domain/preferences'
 import type { TagCatalogItem } from '../domain/catalog'
 import { profileStrings } from '../strings/profile.strings'
+import { FeatureFlagSettingsComponent } from './feature-flag-settings'
 
 @Component({
     selector: 'pulso-profile-view',
     standalone: true,
-    imports: [CommonModule, IconComponent],
+    imports: [CommonModule, IconComponent, FeatureFlagSettingsComponent],
     templateUrl: './profile-view.html',
 })
 export class ProfileViewComponent implements OnInit {

@@ -113,6 +113,13 @@ Spring backend remains the product data path for projects. The published-
 project policy stays in the schema as defense in depth for any deliberate
 future direct Supabase access.
 
+Feature availability is persisted in `public.feature_flags` and read or
+modified through the backend API. The table enables RLS and revokes direct
+`anon` and `authenticated` grants; API writes require a persisted platform
+`ADMIN` profile. The initial allowlist contains `language_switcher` and
+`project_creation`, both enabled by default. See the
+[feature-flag contract](../docs/api.md#feature-toggles-pul-109).
+
 Create a migration with:
 
 ```sh

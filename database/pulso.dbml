@@ -463,6 +463,13 @@ Table admin_audit_logs {
   Note: "Auditoría mínima para revisiones, suspensiones y cambios administrativos. No guardar secretos ni tokens."
 }
 
+Table feature_flags {
+  flag_key text [pk, note: "Identificador público estable; el backend expone únicamente sus claves permitidas"]
+  enabled boolean [not null, default: true]
+
+  Note: "Disponibilidad global de funciones. La lectura y escritura se hacen por el backend; solo platform_role ADMIN puede cambiar el estado."
+}
+
 // -----------------------------------------------------------------------------
 // Foreign keys
 // -----------------------------------------------------------------------------

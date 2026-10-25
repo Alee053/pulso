@@ -26,11 +26,16 @@ com.pulso.backend/
 │   ├── application/                   # draft-project use case and output port
 │   ├── domain/                        # project values, team lifecycle, invitation, and membership policy
 │   └── infrastructure/                # project JDBC adapter
-└── profile/
+├── profile/
     ├── api/                           # profile request/response DTOs
     ├── application/                   # profile use cases and output port
     ├── domain/                        # profile rules and values
     └── infrastructure/                # profile JDBC adapter
+└── featureflag/
+    ├── api/                           # allowlisted feature-flag HTTP contract
+    ├── application/                   # reads and platform-admin authorization
+    ├── domain/                        # stable flag keys and boolean values
+    └── infrastructure/                # PostgreSQL JDBC adapter
 ```
 
 The public examples are:
@@ -39,6 +44,8 @@ The public examples are:
 - `GET /api/v1/startups?limit=20` — published startup catalog.
 - `GET/PATCH /api/v1/me` — authenticated product-profile contract.
 - `GET/PUT /api/v1/me/preferences` — authenticated onboarding preferences.
+- `GET /api/v1/feature-flags` — public read of non-sensitive availability flags.
+- `PUT /api/v1/feature-flags/{key}` — authenticated update restricted to a persisted platform `ADMIN`.
 - `/actuator/health` — datasource/dependency health.
 - `/actuator/health/liveness` and `/actuator/health/readiness` — public process
   and dependency probes for local orchestration.
@@ -161,6 +168,10 @@ timestamps, and audience before a protected controller receives a `Jwt`.
   profile routes.
 - Every future write use case must make its authorization rule explicit in the
   application layer. Authentication alone is not authorization.
+- Feature-flag writes resolve the JWT subject to `profiles.platform_role` and
+  require `ADMIN`; project `OWNER`/`ADMIN` membership does not grant global
+  configuration access. The allowlisted values are stored in
+  `public.feature_flags`, whose direct Supabase table grants remain revoked.
 
 The full database/Auth choice and its trade-offs are recorded in
 [ADR 0003](../adr/0003-supabase-database-and-auth.md).

@@ -20,9 +20,9 @@
   push. It does not authorize merging, deploying, rewriting history, or modifying
   shared data. Ask before destructive operations or material requirement changes.
 - Keep secrets and personal data out of logs, documentation, commits, and PRs.
-- Never add statements that work was developed or generated with AI, assistant
-  signatures, attribution badges, or AI co-author trailers anywhere in project
-  deliverables. Write about the change and its evidence.
+- Never add statements that work was developed or generated with AI, assistant  
+  signatures, attribution badges, or AI co-author trailers anywhere in project  
+  deliverables. Write about the change and its evidence .
 
 ## Required skills
 

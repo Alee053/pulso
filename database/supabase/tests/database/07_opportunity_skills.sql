@@ -2,6 +2,11 @@ begin;
 
 select plan(17);
 
+-- The local seed already provides demo associations, so the final assertion
+-- compares against the number that existed before this test wrote anything.
+create temporary table baseline_opportunity_skills on commit drop as
+select count(*) as total from public.opportunity_skills;
+
 select has_table('public', 'opportunity_skills', 'opportunity skills use a canonical table');
 select has_column('public', 'opportunity_skills', 'importance', 'associations store importance');
 select has_index(
@@ -167,7 +172,7 @@ delete from public.project_opportunities
 where title = 'PUL-22 skill association';
 select is(
   (select count(*) from public.opportunity_skills),
-  0::bigint,
+  (select total from baseline_opportunity_skills),
   'deleting an opportunity removes only its associations'
 );
 

@@ -333,7 +333,7 @@ Table conversations {
   id uuid [pk, default: `gen_random_uuid()`]
   conversation_type text [not null, note: "PROJECT_CONTACT o DIRECT"]
   project_id uuid
-  connection_intent_id uuid
+  connection_intent_id uuid [unique]
   created_by_profile_id uuid [not null]
   status text [not null, default: 'ACTIVE', note: "ACTIVE, ARCHIVED, BLOCKED o CLOSED"]
   last_message_at timestamptz
@@ -343,10 +343,9 @@ Table conversations {
   indexes {
     (project_id, last_message_at)
     created_by_profile_id
-    connection_intent_id
   }
 
-  Note: "El proyecto es contexto; los participantes reales son perfiles."
+  Note: "El proyecto es contexto; los participantes reales son perfiles. PROJECT_CONTACT requiere proyecto y solicitud, y cada solicitud puede originar como máximo una conversación."
 }
 
 Table conversation_participants {
@@ -392,7 +391,7 @@ Table profile_blocks {
     blocked_profile_id
   }
 
-  Note: "Un bloqueo impide nuevos contactos y mensajes entre esos perfiles; la aplicación debe impedir bloquearse a sí mismo."
+  Note: "Un bloqueo impide nuevos contactos y mensajes entre esos perfiles; la base impide bloquearse a sí mismo."
 }
 
 // -----------------------------------------------------------------------------

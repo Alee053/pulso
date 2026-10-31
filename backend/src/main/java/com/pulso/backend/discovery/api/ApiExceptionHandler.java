@@ -10,6 +10,9 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.pulso.backend.connection.application.ConnectionIntentConflictException;
+import com.pulso.backend.connection.application.ConnectionIntentNotFoundException;
+import com.pulso.backend.connection.application.ConnectionIntentPermissionException;
 import com.pulso.backend.config.ApiMessages;
 import com.pulso.backend.featureflag.application.FeatureFlagAuthorizationException;
 import com.pulso.backend.featureflag.application.FeatureFlagDisabledException;
@@ -125,6 +128,33 @@ public class ApiExceptionHandler {
                 exception.getMessage());
         problem.setTitle(ApiMessages.PROJECT_CONFLICT_TITLE);
         return problem;
+    }
+
+    @ExceptionHandler(ConnectionIntentNotFoundException.class)
+    ProblemDetail connectionIntentNotFound(ConnectionIntentNotFoundException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND,
+                exception.getMessage());
+        problem.setTitle(ApiMessages.CONNECTION_INTENT_NOT_FOUND_TITLE);
+        return problem;
+    }
+
+    @ExceptionHandler(ConnectionIntentPermissionException.class)
+    ProblemDetail connectionIntentPermission(ConnectionIntentPermissionException exception) {
+        return membershipProblem(
+                HttpStatus.FORBIDDEN,
+                ApiMessages.CONNECTION_INTENT_PERMISSION_TITLE,
+                ApiMessages.CONNECTION_INTENT_PERMISSION_CODE,
+                exception.getMessage());
+    }
+
+    @ExceptionHandler(ConnectionIntentConflictException.class)
+    ProblemDetail connectionIntentConflict(ConnectionIntentConflictException exception) {
+        return membershipProblem(
+                HttpStatus.CONFLICT,
+                ApiMessages.CONNECTION_INTENT_CONFLICT_TITLE,
+                ApiMessages.CONNECTION_INTENT_CONFLICT_CODE,
+                exception.getMessage());
     }
 
     @ExceptionHandler(FeatureFlagAuthorizationException.class)

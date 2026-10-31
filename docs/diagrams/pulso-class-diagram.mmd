@@ -179,8 +179,12 @@ classDiagram
     +UUID projectId
     +UUID opportunityId
     +text reason
+    +text message
     +text status
     +text outcomeType
+    +UUID respondedByProfileId
+    +timestamp createdAt
+    +timestamp respondedAt
     +timestamp confirmedAt
   }
 
@@ -188,8 +192,12 @@ classDiagram
     +UUID id
     +text conversationType
     +UUID projectId
+    +UUID connectionIntentId
+    +UUID createdByProfileId
     +text status
     +timestamp lastMessageAt
+    +timestamp createdAt
+    +timestamp updatedAt
   }
 
   class ConversationParticipant {
@@ -198,6 +206,8 @@ classDiagram
     +text participantRole
     +timestamp lastReadAt
     +timestamp mutedAt
+    +timestamp joinedAt
+    +timestamp leftAt
   }
 
   class Message {
@@ -286,7 +296,7 @@ classDiagram
   Profile "1" --> "*" ConnectionIntent : envia
   Project "1" --> "*" ConnectionIntent : recibe
   ProjectOpportunity "0..1" --> "*" ConnectionIntent : contextualiza
-  ConnectionIntent "0..1" --> "0..1" Conversation : inicia
+  ConnectionIntent "1" --> "0..1" Conversation : inicia al aceptarse
 
   Conversation "1" --> "*" ConversationParticipant : agrupa
   Profile "1" --> "*" ConversationParticipant : participa

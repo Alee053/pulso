@@ -24,15 +24,14 @@ public class AcceptConnectionIntent {
         ConnectionIntent connectionIntent = repository.findByIdForUpdate(connectionIntentId)
                 .orElseThrow(ConnectionIntentNotFoundException::new);
 
+        if (connectionIntent.wasAcceptedBy(authenticatedProfileId)) {
+            return repository.findConversation(connectionIntent.id())
+                    .orElseThrow(ConnectionIntentConflictException::new);
+        }
         if (!repository.hasActiveProjectMembership(
                 connectionIntent.projectId(),
                 authenticatedProfileId)) {
             throw ConnectionIntentPermissionException.membershipRequired();
-        }
-
-        if (connectionIntent.wasAcceptedBy(authenticatedProfileId)) {
-            return repository.findConversation(connectionIntent.id())
-                    .orElseThrow(ConnectionIntentConflictException::new);
         }
         if (!connectionIntent.isPending()
                 || connectionIntent.fromProfileId().equals(authenticatedProfileId)) {

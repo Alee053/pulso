@@ -1348,7 +1348,9 @@ Response `200 OK`:
 
 Acceptance, conversation creation, and both participant inserts use one
 transaction. A unique `connection_intent_id` prevents duplicate conversations.
-A retry by the same responder returns the existing conversation; a different
+A retry by the same responder returns the existing conversation and its current
+persisted status, even if that responder's project membership changed after the
+original acceptance or the intent advanced to `CONVERTED`. A different
 responder or a request in another terminal state receives `409` with code
 `connection_intent_conflict`.
 

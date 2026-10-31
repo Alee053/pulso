@@ -22,7 +22,8 @@ public record ConnectionIntent(
     }
 
     public boolean wasAcceptedBy(UUID profileId) {
-        return status == Status.ACCEPTED && Objects.equals(respondedByProfileId, profileId);
+        return (status == Status.ACCEPTED || status == Status.CONVERTED)
+                && Objects.equals(respondedByProfileId, profileId);
     }
 
     public enum Status {

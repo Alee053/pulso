@@ -9,7 +9,8 @@ public record AcceptedConnectionConversation(
         UUID conversationId,
         UUID projectId,
         UUID initiatorProfileId,
-        UUID responderProfileId) {
+        UUID responderProfileId,
+        String status) {
 
     public AcceptedConnectionConversation {
         Objects.requireNonNull(connectionIntentId, "connectionIntentId is required");
@@ -17,14 +18,26 @@ public record AcceptedConnectionConversation(
         Objects.requireNonNull(projectId, "projectId is required");
         Objects.requireNonNull(initiatorProfileId, "initiatorProfileId is required");
         Objects.requireNonNull(responderProfileId, "responderProfileId is required");
+        Objects.requireNonNull(status, "status is required");
+    }
+
+    public AcceptedConnectionConversation(
+            UUID connectionIntentId,
+            UUID conversationId,
+            UUID projectId,
+            UUID initiatorProfileId,
+            UUID responderProfileId) {
+        this(
+                connectionIntentId,
+                conversationId,
+                projectId,
+                initiatorProfileId,
+                responderProfileId,
+                "ACTIVE");
     }
 
     public String conversationType() {
         return "PROJECT_CONTACT";
-    }
-
-    public String status() {
-        return "ACTIVE";
     }
 
     public List<Participant> participants() {

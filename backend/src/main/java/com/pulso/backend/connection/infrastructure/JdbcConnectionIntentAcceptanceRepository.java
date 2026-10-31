@@ -39,31 +39,55 @@ public class JdbcConnectionIntentAcceptanceRepository
     @Override
     public boolean hasActiveProjectMembership(UUID projectId, UUID profileId) {
         return jdbcClient.sql("""
-                select exists(
-                    select 1
-                    from public.project_members
-                    where project_id = :projectId
-                      and profile_id = :profileId
-                      and membership_status = 'ACTIVE'
-                )
+                select membership_status
+                from public.project_members
+                where project_id = :projectId
+                  and profile_id = :profileId
+                for update
                 """)
                 .param("projectId", projectId)
                 .param("profileId", profileId)
-                .query(Boolean.class)
-                .single();
+                .query(String.class)
+                .optional()
+                .filter("ACTIVE"::equals)
+                .isPresent();
     }
 
     @Override
     public boolean profilesAreBlocked(UUID firstProfileId, UUID secondProfileId) {
+        jdbcClient.sql("""
+                select true
+                from (
+                    select pg_advisory_xact_lock(hashtextextended(
+                        concat_ws(
+                            ':',
+                            least(
+                                cast(:firstProfileId as text),
+                                cast(:secondProfileId as text)
+                            ),
+                            greatest(
+                                cast(:firstProfileId as text),
+                                cast(:secondProfileId as text)
+                            )
+                        ),
+                        0
+                    ))
+                ) contact_lock
+                """)
+                .param("firstProfileId", firstProfileId)
+                .param("secondProfileId", secondProfileId)
+                .query(Boolean.class)
+                .single();
+
         return jdbcClient.sql("""
                 select exists(
-                    select 1
-                    from public.profile_blocks
-                    where (blocker_profile_id = :firstProfileId
-                           and blocked_profile_id = :secondProfileId)
-                       or (blocker_profile_id = :secondProfileId
-                           and blocked_profile_id = :firstProfileId)
-                )
+                           select 1
+                           from public.profile_blocks
+                           where (blocker_profile_id = :firstProfileId
+                                  and blocked_profile_id = :secondProfileId)
+                              or (blocker_profile_id = :secondProfileId
+                                  and blocked_profile_id = :firstProfileId)
+                       )
                 """)
                 .param("firstProfileId", firstProfileId)
                 .param("secondProfileId", secondProfileId)
@@ -77,13 +101,13 @@ public class JdbcConnectionIntentAcceptanceRepository
                 select c.connection_intent_id,
                        c.id as conversation_id,
                        c.project_id,
+                       c.status,
                        i.from_profile_id,
                        i.responded_by_profile_id
                 from public.conversations c
                 join public.connection_intents i on i.id = c.connection_intent_id
                 where c.connection_intent_id = :connectionIntentId
                   and c.conversation_type = 'PROJECT_CONTACT'
-                  and c.status = 'ACTIVE'
                 """)
                 .param("connectionIntentId", connectionIntentId)
                 .query(JdbcConnectionIntentAcceptanceRepository::mapConversation)
@@ -154,7 +178,8 @@ public class JdbcConnectionIntentAcceptanceRepository
                 conversationId,
                 connectionIntent.projectId(),
                 connectionIntent.fromProfileId(),
-                responderProfileId);
+                responderProfileId,
+                "ACTIVE");
     }
 
     private static ConnectionIntent mapConnectionIntent(ResultSet resultSet, int rowNumber)
@@ -175,6 +200,7 @@ public class JdbcConnectionIntentAcceptanceRepository
                 resultSet.getObject("conversation_id", UUID.class),
                 resultSet.getObject("project_id", UUID.class),
                 resultSet.getObject("from_profile_id", UUID.class),
-                resultSet.getObject("responded_by_profile_id", UUID.class));
+                resultSet.getObject("responded_by_profile_id", UUID.class),
+                resultSet.getString("status"));
     }
 }

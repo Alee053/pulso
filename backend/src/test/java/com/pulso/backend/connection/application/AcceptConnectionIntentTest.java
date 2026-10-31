@@ -38,6 +38,19 @@ class AcceptConnectionIntentTest {
     void returnsTheExistingConversationForARetryByTheSameResponder() {
         FakeRepository repository = pendingRepository();
         AcceptedConnectionConversation first = service(repository).execute(INTENT_ID, RESPONDER_ID);
+        repository.activeMember = false;
+
+        AcceptedConnectionConversation retry = service(repository).execute(INTENT_ID, RESPONDER_ID);
+
+        assertThat(retry).isEqualTo(first);
+        assertThat(repository.createCalls).isEqualTo(1);
+    }
+
+    @Test
+    void returnsTheExistingConversationAfterTheIntentWasConverted() {
+        FakeRepository repository = pendingRepository();
+        AcceptedConnectionConversation first = service(repository).execute(INTENT_ID, RESPONDER_ID);
+        repository.intent = intent(ConnectionIntent.Status.CONVERTED, RESPONDER_ID);
 
         AcceptedConnectionConversation retry = service(repository).execute(INTENT_ID, RESPONDER_ID);
 

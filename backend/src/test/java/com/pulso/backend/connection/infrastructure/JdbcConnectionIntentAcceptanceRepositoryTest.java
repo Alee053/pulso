@@ -8,6 +8,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.sql.DataSource;
 
@@ -109,6 +111,27 @@ class JdbcConnectionIntentAcceptanceRepositoryTest {
                   primary key (blocker_profile_id, blocked_profile_id)
                 )
                 """).update();
+        jdbcClient.sql("""
+                create or replace function public.serialize_test_profile_block()
+                returns trigger language plpgsql as $$
+                begin
+                  perform pg_advisory_xact_lock(hashtextextended(
+                    concat_ws(
+                      ':',
+                      least(new.blocker_profile_id::text, new.blocked_profile_id::text),
+                      greatest(new.blocker_profile_id::text, new.blocked_profile_id::text)
+                    ),
+                    0
+                  ));
+                  return new;
+                end
+                $$
+                """).update();
+        jdbcClient.sql("""
+                create trigger profile_blocks_serialize_contact_pair
+                before insert on public.profile_blocks
+                for each row execute function public.serialize_test_profile_block()
+                """).update();
 
         jdbcClient.sql("insert into public.profiles (id) values (:initiator), (:responder), (:other)")
                 .param("initiator", INITIATOR_ID)
@@ -157,10 +180,26 @@ class JdbcConnectionIntentAcceptanceRepositoryTest {
     @Test
     void returnsTheExistingConversationForTheSameResponder() {
         AcceptedConnectionConversation first = accept(RESPONDER_ID);
+        jdbcClient.sql("""
+                update public.project_members
+                set membership_status = 'LEFT'
+                where project_id = :projectId and profile_id = :profileId
+                """)
+                .param("projectId", PROJECT_ID)
+                .param("profileId", RESPONDER_ID)
+                .update();
+        jdbcClient.sql("""
+                update public.conversations
+                set status = 'ARCHIVED'
+                where id = :conversationId
+                """)
+                .param("conversationId", first.conversationId())
+                .update();
 
         AcceptedConnectionConversation retry = accept(RESPONDER_ID);
 
         assertThat(retry.conversationId()).isEqualTo(first.conversationId());
+        assertThat(retry.status()).isEqualTo("ARCHIVED");
         assertThat(count("conversations")).isEqualTo(1);
         assertThat(count("conversation_participants")).isEqualTo(2);
     }
@@ -184,13 +223,95 @@ class JdbcConnectionIntentAcceptanceRepositoryTest {
             Future<Boolean> second = executor.submit(() -> attemptAcceptance(start, OTHER_MEMBER_ID));
             start.countDown();
 
-            assertThat(first.get()).isNotEqualTo(second.get());
+            assertThat(first.get(5, TimeUnit.SECONDS))
+                    .isNotEqualTo(second.get(5, TimeUnit.SECONDS));
         } finally {
             executor.shutdownNow();
         }
 
         assertThat(count("conversations")).isEqualTo(1);
         assertThat(count("conversation_participants")).isEqualTo(2);
+    }
+
+    @Test
+    void observesABlockThatCommitsWhileAcceptanceWaitsForTheContactPair() throws Exception {
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch blockInserted = new CountDownLatch(1);
+        CountDownLatch releaseBlock = new CountDownLatch(1);
+        try {
+            Future<?> block = executor.submit(() -> transactionTemplate.executeWithoutResult(status -> {
+                insertBlock(INITIATOR_ID, RESPONDER_ID);
+                blockInserted.countDown();
+                await(releaseBlock);
+            }));
+            await(blockInserted);
+
+            Future<Boolean> accepted = executor.submit(() -> {
+                try {
+                    accept(RESPONDER_ID);
+                    return true;
+                } catch (ConnectionIntentPermissionException exception) {
+                    return false;
+                }
+            });
+
+            assertThatThrownBy(() -> accepted.get(200, TimeUnit.MILLISECONDS))
+                    .isInstanceOf(TimeoutException.class);
+            releaseBlock.countDown();
+            block.get(5, TimeUnit.SECONDS);
+            assertThat(accepted.get(5, TimeUnit.SECONDS)).isFalse();
+        } finally {
+            releaseBlock.countDown();
+            executor.shutdownNow();
+        }
+
+        assertThat(count("conversations")).isZero();
+        assertThat(jdbcClient.sql("select status from public.connection_intents where id = :id")
+                .param("id", INTENT_ID)
+                .query(String.class)
+                .single()).isEqualTo("PENDING");
+    }
+
+    @Test
+    void observesMembershipRevocationThatCommitsWhileAcceptanceWaits() throws Exception {
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch membershipUpdated = new CountDownLatch(1);
+        CountDownLatch releaseMembership = new CountDownLatch(1);
+        try {
+            Future<?> revocation = executor.submit(() -> transactionTemplate.executeWithoutResult(status -> {
+                jdbcClient.sql("""
+                        update public.project_members
+                        set membership_status = 'LEFT'
+                        where project_id = :projectId and profile_id = :profileId
+                        """)
+                        .param("projectId", PROJECT_ID)
+                        .param("profileId", RESPONDER_ID)
+                        .update();
+                membershipUpdated.countDown();
+                await(releaseMembership);
+            }));
+            await(membershipUpdated);
+
+            Future<Boolean> accepted = executor.submit(() -> {
+                try {
+                    accept(RESPONDER_ID);
+                    return true;
+                } catch (ConnectionIntentPermissionException exception) {
+                    return false;
+                }
+            });
+
+            assertThatThrownBy(() -> accepted.get(200, TimeUnit.MILLISECONDS))
+                    .isInstanceOf(TimeoutException.class);
+            releaseMembership.countDown();
+            revocation.get(5, TimeUnit.SECONDS);
+            assertThat(accepted.get(5, TimeUnit.SECONDS)).isFalse();
+        } finally {
+            releaseMembership.countDown();
+            executor.shutdownNow();
+        }
+
+        assertThat(count("conversations")).isZero();
     }
 
     @Test
@@ -235,6 +356,17 @@ class JdbcConnectionIntentAcceptanceRepositoryTest {
             return true;
         } catch (ConnectionIntentConflictException exception) {
             return false;
+        }
+    }
+
+    private static void await(CountDownLatch latch) {
+        try {
+            if (!latch.await(5, TimeUnit.SECONDS)) {
+                throw new IllegalStateException("concurrent test latch timed out");
+            }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(exception);
         }
     }
 

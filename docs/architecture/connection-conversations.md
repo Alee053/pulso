@@ -33,6 +33,11 @@ For a pending request, acceptance requires:
 2. The responder is not the initiating profile.
 3. Neither profile has blocked the other.
 
+The membership row is locked while these conditions are evaluated. Acceptance
+and writes to `profile_blocks` also take the same transaction-level advisory
+lock for the unordered profile pair, so a concurrent block cannot pass between
+the policy check and conversation creation.
+
 The transaction then changes the request to `ACCEPTED`, records the responder
 and response time, inserts one `PROJECT_CONTACT` conversation, and inserts the
 initiator and responder as `INITIATOR` and `PROJECT_MEMBER`. Any failure rolls
@@ -44,10 +49,16 @@ The database unique constraint on `conversations.connection_intent_id` is the
 last defense against duplicate conversations. The locked request serializes
 concurrent acceptance attempts before they reach that constraint.
 
-A retry by the profile that already accepted returns the existing active
-conversation. An attempt by another member after acceptance is a conflict and
-does not add that profile as a participant. Other terminal request states are
-also conflicts.
+A retry by the profile that already accepted returns the existing conversation
+with its persisted status, even if that profile is no longer an active project
+member, including after the intent advances to `CONVERTED`. An attempt by
+another member after acceptance is a conflict and does not add that profile as
+a participant. Other terminal request states are also conflicts.
+
+Database triggers additionally require a `PROJECT_CONTACT` conversation to
+reference its accepted intent and matching project and initiator. Deferred
+constraint triggers require exactly the intent initiator and responder with
+roles `INITIATOR` and `PROJECT_MEMBER` when the transaction commits.
 
 ## Error boundary
 

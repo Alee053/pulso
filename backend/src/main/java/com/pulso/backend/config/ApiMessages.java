@@ -108,6 +108,20 @@ public final class ApiMessages {
     public static final String PROJECT_CONFLICT_DETAIL =
             "A project with the same slug already exists.";
 
+    public static final String CONNECTION_INTENT_NOT_FOUND_TITLE = "Connection request not found";
+    public static final String CONNECTION_INTENT_NOT_FOUND_DETAIL =
+            "The connection request does not exist.";
+    public static final String CONNECTION_INTENT_PERMISSION_TITLE = "Connection request access denied";
+    public static final String CONNECTION_INTENT_MEMBERSHIP_REQUIRED =
+            "Active project membership is required to accept the connection request.";
+    public static final String CONNECTION_INTENT_PROFILES_BLOCKED =
+            "Blocked profiles cannot start a new conversation.";
+    public static final String CONNECTION_INTENT_PERMISSION_CODE = "connection_intent_forbidden";
+    public static final String CONNECTION_INTENT_CONFLICT_TITLE = "Connection request conflict";
+    public static final String CONNECTION_INTENT_CONFLICT_DETAIL =
+            "The connection request cannot be accepted in its current state.";
+    public static final String CONNECTION_INTENT_CONFLICT_CODE = "connection_intent_conflict";
+
     public static final String INVITATION_REQUIRED = "invitation is required.";
     public static final String INVITE_TOKEN_REQUIRED = "invite token is required.";
     public static final String SHA256_REQUIRED =

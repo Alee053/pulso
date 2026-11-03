@@ -206,6 +206,20 @@ The full database/Auth choice and its trade-offs are recorded in
 - Keep connection pool size, query timeouts, and retry policy configurable
   through environment-backed configuration.
 
+### Contextual connection requests
+
+`public.connection_intents` is backend-only: row level security is enabled and
+direct `anon` and `authenticated` table grants are revoked. The protected
+connection-request API derives the sender from the validated JWT and creates
+only `PENDING` rows. The JDBC adapter locks the active sender, publicly
+available project and sector, and optional open opportunity in the creation
+transaction. PostgreSQL partial unique indexes enforce one pending request per
+sender and project-wide or opportunity-specific context, including concurrent
+requests. Context availability uses the same published-project and active-sector
+rules as public project details; an opportunity must be `OPEN` and belong to the
+requested project. Request decisions, withdrawal, messaging, and notifications
+remain outside the create-request use case.
+
 The backend uses a direct or session-pooled PostgreSQL connection. A transaction
 pooler should not be used for this JDBC setup when prepared statements are
 enabled.

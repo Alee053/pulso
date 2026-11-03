@@ -85,6 +85,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/v1/projects/*/members",
+                                "/api/v1/projects/*/connection-intents",
                                 "/api/v1/project-members/accept",
                                 "/api/v1/projects/*/publication-request",
                                 "/api/v1/projects/*/archive")

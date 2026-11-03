@@ -3,6 +3,7 @@ package com.pulso.backend.connection.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import com.pulso.backend.connection.domain.AcceptedConnectionConversation;
 import com.pulso.backend.connection.domain.ConnectionIntent;
+import com.pulso.backend.connection.domain.ConnectionIntentReason;
 
 class AcceptConnectionIntentTest {
 
@@ -122,7 +124,16 @@ class AcceptConnectionIntentTest {
     }
 
     private static ConnectionIntent intent(ConnectionIntent.Status status, UUID responderId) {
-        return new ConnectionIntent(INTENT_ID, INITIATOR_ID, PROJECT_ID, status, responderId);
+        return ConnectionIntent.restored(
+                INTENT_ID,
+                INITIATOR_ID,
+                PROJECT_ID,
+                null,
+                ConnectionIntentReason.COLLABORATE,
+                null,
+                status.name(),
+                responderId,
+                OffsetDateTime.parse("2026-10-30T20:00:00Z"));
     }
 
     private static final class FakeRepository implements ConnectionIntentAcceptanceRepository {
@@ -162,12 +173,7 @@ class AcceptConnectionIntentTest {
                 ConnectionIntent connectionIntent,
                 UUID responderProfileId) {
             createCalls++;
-            intent = new ConnectionIntent(
-                    connectionIntent.id(),
-                    connectionIntent.fromProfileId(),
-                    connectionIntent.projectId(),
-                    ConnectionIntent.Status.ACCEPTED,
-                    responderProfileId);
+            intent = intent(ConnectionIntent.Status.ACCEPTED, responderProfileId);
             conversation = new AcceptedConnectionConversation(
                     INTENT_ID,
                     CONVERSATION_ID,

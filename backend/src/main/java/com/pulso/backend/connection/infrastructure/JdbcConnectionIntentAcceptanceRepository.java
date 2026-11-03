@@ -2,6 +2,7 @@ package com.pulso.backend.connection.infrastructure;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -12,6 +13,7 @@ import com.pulso.backend.connection.application.ConnectionIntentAcceptanceReposi
 import com.pulso.backend.connection.application.ConnectionIntentConflictException;
 import com.pulso.backend.connection.domain.AcceptedConnectionConversation;
 import com.pulso.backend.connection.domain.ConnectionIntent;
+import com.pulso.backend.connection.domain.ConnectionIntentReason;
 
 @Repository
 public class JdbcConnectionIntentAcceptanceRepository
@@ -26,7 +28,15 @@ public class JdbcConnectionIntentAcceptanceRepository
     @Override
     public Optional<ConnectionIntent> findByIdForUpdate(UUID connectionIntentId) {
         return jdbcClient.sql("""
-                select id, from_profile_id, project_id, status, responded_by_profile_id
+                select id,
+                       from_profile_id,
+                       project_id,
+                       opportunity_id,
+                       reason,
+                       message,
+                       status,
+                       responded_by_profile_id,
+                       created_at
                 from public.connection_intents
                 where id = :connectionIntentId
                 for update
@@ -184,12 +194,16 @@ public class JdbcConnectionIntentAcceptanceRepository
 
     private static ConnectionIntent mapConnectionIntent(ResultSet resultSet, int rowNumber)
             throws SQLException {
-        return new ConnectionIntent(
+        return ConnectionIntent.restored(
                 resultSet.getObject("id", UUID.class),
                 resultSet.getObject("from_profile_id", UUID.class),
                 resultSet.getObject("project_id", UUID.class),
-                ConnectionIntent.Status.valueOf(resultSet.getString("status")),
-                resultSet.getObject("responded_by_profile_id", UUID.class));
+                resultSet.getObject("opportunity_id", UUID.class),
+                ConnectionIntentReason.parse(resultSet.getString("reason")),
+                resultSet.getString("message"),
+                resultSet.getString("status"),
+                resultSet.getObject("responded_by_profile_id", UUID.class),
+                resultSet.getObject("created_at", OffsetDateTime.class));
     }
 
     private static AcceptedConnectionConversation mapConversation(

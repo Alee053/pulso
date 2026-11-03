@@ -3,9 +3,28 @@
 ## Current scope
 
 PUL-27 implements the backend boundary that turns an accepted contextual
-project request into one private conversation. It does not yet expose request
-creation, profile-block management, message sending, conversation lists, or an
+project request into one private conversation. It does not yet expose
+profile-block management, message sending, conversation lists, or an
 Angular acceptance screen.
+
+Request creation is provided by PUL-25 through the same `ConnectionIntent`
+domain and canonical `connection_intents` table. Acceptance restores the full
+persisted context without changing the creation endpoint's response contract.
+
+## Migration order after integrating PUL-25
+
+Apply `20261103133534_create_connection_intents.sql` first, followed by the
+PUL-27 migrations `20261103150000`, `20261103150100`, and `20261103150200`.
+These extend the canonical table rather than creating it again, preserving
+PUL-25's pending-context unique indexes and opportunity/project foreign key.
+
+Local databases that already applied the previous, unmerged PUL-27 migration
+versions (`20261030212210`, `20261031001305`, `20261031002402`) require schema
+and migration-history reconciliation before running the migrator. Merely
+renaming the history entries is insufficient: those databases lack PUL-25's
+composite foreign key and pending-context indexes. Back up local data and
+compare the schema first; do not reset a database containing data to retain.
+Fresh databases and databases on current master use the ordered chain above.
 
 The persisted aggregate uses four tables:
 

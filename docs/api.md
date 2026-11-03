@@ -660,6 +660,58 @@ type, description, location, remote availability, and names of active
 `REQUIRED` skills; it omits IDs, `PREFERRED` skills, creator/audit information,
 and non-open opportunities.
 
+## `POST /api/v1/projects/{projectId}/connection-intents` — create a contextual connection request (PUL-25)
+
+Requires a valid user access token. The sender profile is always derived from
+the validated JWT subject. The request body accepts a required `reason`, an
+optional `message`, and an optional `opportunityId`:
+
+```sh
+curl -X POST \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "reason": "COLLABORATE",
+    "message": "Me interesa explorar una colaboración.",
+    "opportunityId": "55555555-5555-5555-5555-555555555555"
+  }' \
+  http://localhost:8080/api/v1/projects/33333333-3333-3333-3333-333333333333/connection-intents
+```
+
+`reason` must be one of `COLLABORATE`, `WORK`, `TRY_PRODUCT`, `BUY`,
+`INSTITUTION`, `INVEST`, `OFFER_SERVICE`, or `OTHER`. When `opportunityId` is
+omitted, the request targets the project generally; when present, the
+opportunity must belong to that project and be `OPEN`. In both cases the
+project must be `PUBLISHED` and its sector active, matching the public project
+detail contract. The sender's profile must be active. Clients cannot provide
+`senderProfileId`, `status`, or other server-owned fields.
+
+Response `201 Created`:
+
+```json
+{
+  "id": "66666666-6666-6666-6666-666666666666",
+  "projectId": "33333333-3333-3333-3333-333333333333",
+  "opportunityId": "55555555-5555-5555-5555-555555555555",
+  "senderProfileId": "11111111-1111-1111-1111-111111111111",
+  "reason": "COLLABORATE",
+  "message": "Me interesa explorar una colaboración.",
+  "status": "PENDING",
+  "createdAt": "2026-11-03T12:00:00Z"
+}
+```
+
+Every new request starts in `PENDING`. At most one pending request exists for
+the same sender and context: a project-wide request and a request for a specific
+opportunity are separate contexts. Repeating a pending context returns `409
+Conflict`. Missing and ineligible projects or opportunities return the same
+`404` problem response, while an inactive sender receives `403`; neither error
+reveals private project or profile state. Missing or invalid bearer tokens and
+`service_role` tokens return `401`. Invalid reasons or protected request fields
+return `400`, and database failures use the sanitized `503` response. This API
+creates requests only; deciding, withdrawing, conversations, and notifications
+are handled by later features.
+
 ## `GET /api/v1/projects/{projectId}/members` — team administration list (PUL-85)
 
 Requires a valid user bearer token and an `ACTIVE` membership on the requested

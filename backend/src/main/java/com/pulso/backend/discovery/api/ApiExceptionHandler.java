@@ -14,6 +14,8 @@ import com.pulso.backend.connection.application.ConnectionIntentConflictExceptio
 import com.pulso.backend.connection.application.ConnectionIntentNotFoundException;
 import com.pulso.backend.connection.application.ConnectionIntentPermissionException;
 import com.pulso.backend.config.ApiMessages;
+import com.pulso.backend.connection.application.ConnectionIntentRejectedException;
+import com.pulso.backend.connection.domain.ConnectionIntentValidationException;
 import com.pulso.backend.featureflag.application.FeatureFlagAuthorizationException;
 import com.pulso.backend.featureflag.application.FeatureFlagDisabledException;
 import com.pulso.backend.featureflag.application.FeatureFlagNotFoundException;
@@ -74,6 +76,36 @@ public class ApiExceptionHandler {
                 ApiMessages.UNREADABLE_BODY_DETAIL);
         problem.setTitle(ApiMessages.INVALID_REQUEST_TITLE);
         return problem;
+    }
+
+    @ExceptionHandler(ConnectionIntentValidationException.class)
+    ProblemDetail invalidConnectionIntent(ConnectionIntentValidationException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                exception.getMessage());
+        problem.setTitle(ApiMessages.INVALID_REQUEST_TITLE);
+        return problem;
+    }
+
+    @ExceptionHandler(ConnectionIntentRejectedException.class)
+    ProblemDetail rejectedConnectionIntent(ConnectionIntentRejectedException exception) {
+        return switch (exception.reason()) {
+            case PROFILE_INACTIVE -> connectionIntentProblem(
+                    HttpStatus.FORBIDDEN,
+                    ApiMessages.CONNECTION_INTENT_FORBIDDEN_TITLE,
+                    ApiMessages.CONNECTION_INTENT_FORBIDDEN_DETAIL,
+                    ApiMessages.CONNECTION_INTENT_FORBIDDEN_CODE);
+            case CONTEXT_UNAVAILABLE -> connectionIntentProblem(
+                    HttpStatus.NOT_FOUND,
+                    ApiMessages.CONNECTION_CONTEXT_UNAVAILABLE_TITLE,
+                    ApiMessages.CONNECTION_CONTEXT_UNAVAILABLE_DETAIL,
+                    ApiMessages.CONNECTION_CONTEXT_UNAVAILABLE_CODE);
+            case DUPLICATE_PENDING -> connectionIntentProblem(
+                    HttpStatus.CONFLICT,
+                    ApiMessages.CONNECTION_INTENT_DUPLICATE_TITLE,
+                    ApiMessages.CONNECTION_INTENT_DUPLICATE_DETAIL,
+                    ApiMessages.CONNECTION_INTENT_DUPLICATE_CODE);
+        };
     }
 
     @ExceptionHandler(ProfileValidationException.class)
@@ -385,6 +417,17 @@ public class ApiExceptionHandler {
             String title,
             String code,
             String detail) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
+        problem.setTitle(title);
+        problem.setProperty("code", code);
+        return problem;
+    }
+
+    private static ProblemDetail connectionIntentProblem(
+            HttpStatus status,
+            String title,
+            String detail,
+            String code) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
         problem.setTitle(title);
         problem.setProperty("code", code);

@@ -81,9 +81,13 @@ class JdbcConnectionIntentAcceptanceRepositoryTest {
                   id uuid primary key,
                   from_profile_id uuid not null references public.profiles (id),
                   project_id uuid not null references public.projects (id),
+                  opportunity_id uuid,
+                  reason text not null,
+                  message text,
                   status text not null,
                   responded_by_profile_id uuid references public.profiles (id),
-                  responded_at timestamptz
+                  responded_at timestamptz,
+                  created_at timestamptz not null default now()
                 )
                 """).update();
         jdbcClient.sql("""
@@ -383,9 +387,9 @@ class JdbcConnectionIntentAcceptanceRepositoryTest {
     private void insertPendingIntent() {
         jdbcClient.sql("""
                 insert into public.connection_intents (
-                    id, from_profile_id, project_id, status
+                    id, from_profile_id, project_id, reason, status
                 ) values (
-                    :id, :initiatorId, :projectId, 'PENDING'
+                    :id, :initiatorId, :projectId, 'COLLABORATE', 'PENDING'
                 )
                 """)
                 .param("id", INTENT_ID)

@@ -4,6 +4,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,6 +23,7 @@ import com.pulso.backend.connection.application.AcceptConnectionIntent;
 import com.pulso.backend.connection.application.ConnectionIntentAcceptanceRepository;
 import com.pulso.backend.connection.domain.AcceptedConnectionConversation;
 import com.pulso.backend.connection.domain.ConnectionIntent;
+import com.pulso.backend.connection.domain.ConnectionIntentReason;
 
 @WebMvcTest(ConnectionIntentAcceptanceController.class)
 @Import({SecurityConfig.class, ConnectionIntentAcceptanceSecurityTest.TestBeans.class})
@@ -66,12 +68,16 @@ class ConnectionIntentAcceptanceSecurityTest {
             return new ConnectionIntentAcceptanceRepository() {
                 @Override
                 public Optional<ConnectionIntent> findByIdForUpdate(UUID connectionIntentId) {
-                    return Optional.of(new ConnectionIntent(
+                    return Optional.of(ConnectionIntent.restored(
                             INTENT_ID,
                             INITIATOR_ID,
                             PROJECT_ID,
-                            ConnectionIntent.Status.PENDING,
-                            null));
+                            null,
+                            ConnectionIntentReason.COLLABORATE,
+                            null,
+                            ConnectionIntent.Status.PENDING.name(),
+                            null,
+                            OffsetDateTime.parse("2026-10-30T20:00:00Z")));
                 }
 
                 @Override

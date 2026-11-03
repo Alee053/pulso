@@ -20,6 +20,19 @@ public final class ApiMessages {
     public static final String OPPORTUNITY_SKILL_CONFLICT_TITLE = "Opportunity skill conflict";
     public static final String OPPORTUNITY_SKILL_NOT_FOUND_TITLE = "Opportunity skill not found";
     public static final String PROJECT_CONFLICT_TITLE = "Project conflict";
+    public static final String CONNECTION_INTENT_FORBIDDEN_TITLE = "Connection request not permitted";
+    public static final String CONNECTION_INTENT_FORBIDDEN_DETAIL =
+            "The authenticated profile cannot create connection requests.";
+    public static final String CONNECTION_INTENT_FORBIDDEN_CODE = "connection_intent_forbidden";
+    public static final String CONNECTION_CONTEXT_UNAVAILABLE_TITLE = "Connection context unavailable";
+    public static final String CONNECTION_CONTEXT_UNAVAILABLE_DETAIL =
+            "The project or opportunity does not exist or cannot receive requests.";
+    public static final String CONNECTION_CONTEXT_UNAVAILABLE_CODE = "connection_context_unavailable";
+    public static final String CONNECTION_INTENT_DUPLICATE_TITLE =
+            "Pending connection request already exists";
+    public static final String CONNECTION_INTENT_DUPLICATE_DETAIL =
+            "A pending connection request already exists for this context.";
+    public static final String CONNECTION_INTENT_DUPLICATE_CODE = "connection_intent_duplicate";
 
     public static final String FEATURE_FLAG_ADMIN_REQUIRED_DETAIL =
             "A platform administrator is required to change feature flags.";

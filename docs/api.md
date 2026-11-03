@@ -1358,3 +1358,54 @@ The conditional update is transactional and serialized by the invitation row;
 concurrent acceptance attempts therefore produce at most one active profile
 association. The response and errors never include the plaintext token or its
 digest.
+
+## `POST /api/v1/connection-intents/{connectionIntentId}/accept` — accept project contact (PUL-27)
+
+Accepts a pending contextual request for a project and creates its private
+`PROJECT_CONTACT` conversation. The endpoint requires an authenticated user;
+the backend derives the responder from the JWT subject and does not accept a
+client-controlled profile, project, role, or participant list.
+
+Any active `OWNER`, `ADMIN`, or `MEMBER` of the request's project can accept it.
+The initiator cannot accept their own request. If either profile has blocked the
+other, the operation returns `403` and leaves the request pending.
+
+```sh
+curl -X POST \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  http://localhost:8080/api/v1/connection-intents/27333333-3333-4333-8333-333333333333/accept
+```
+
+Response `200 OK`:
+
+```json
+{
+  "connectionIntentId": "27333333-3333-4333-8333-333333333333",
+  "conversationId": "27444444-4444-4444-8444-444444444444",
+  "conversationType": "PROJECT_CONTACT",
+  "projectId": "33333333-3333-4333-8333-333333333333",
+  "status": "ACTIVE",
+  "participants": [
+    {
+      "profileId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "role": "INITIATOR"
+    },
+    {
+      "profileId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      "role": "PROJECT_MEMBER"
+    }
+  ]
+}
+```
+
+Acceptance, conversation creation, and both participant inserts use one
+transaction. A unique `connection_intent_id` prevents duplicate conversations.
+A retry by the same responder returns the existing conversation and its current
+persisted status, even if that responder's project membership changed after the
+original acceptance or the intent advanced to `CONVERTED`. A different
+responder or a request in another terminal state receives `409` with code
+`connection_intent_conflict`.
+
+Missing requests return `404`. Missing active membership and profile blocks
+return `403` with code `connection_intent_forbidden`. Missing authentication
+returns `401`, and sanitized database failures return `503`.

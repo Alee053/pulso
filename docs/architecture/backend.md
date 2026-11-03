@@ -12,6 +12,11 @@ com.pulso.backend/
 ├── config/                            # security, CORS, typed provider config
 ├── ops/
 │   └── api/                           # liveness endpoint
+├── connection/
+│   ├── api/                           # accepted-connection HTTP contract
+│   ├── application/                   # transactional acceptance use case and output port
+│   ├── domain/                        # connection intent and conversation result
+│   └── infrastructure/                # JDBC acceptance adapter
 ├── discovery/
 │   ├── api/                           # startup and current-user HTTP contracts
 │   ├── application/                   # use cases and output ports
@@ -60,6 +65,13 @@ rules, and JDBC persistence. Its management endpoints derive identity from the
 validated JWT and read `OWNER`/`ADMIN` permissions from active project
 membership. See [project opportunities](./project-opportunities.md) for the
 state matrix and public-project invariant.
+
+The `connection/` feature package accepts a pending project contact request and
+creates its `PROJECT_CONTACT` conversation in the same transaction. The caller
+identity comes from the validated JWT, while any `OWNER`, `ADMIN`, or `MEMBER`
+with active persisted membership may respond. See
+[connection conversations](./connection-conversations.md) for idempotency,
+blocking, and participant invariants.
 
 ## Feature plus inward layers
 

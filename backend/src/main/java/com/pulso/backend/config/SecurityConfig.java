@@ -77,6 +77,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/me", "/api/v1/me/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/projects").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/projects/*/share").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/connection-intents/*/accept")
+                        .authenticated()
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/projects/*/members/*")
                         .authenticated()
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/projects/*").authenticated()

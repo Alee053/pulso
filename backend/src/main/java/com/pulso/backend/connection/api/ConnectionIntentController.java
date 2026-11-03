@@ -48,7 +48,12 @@ public class ConnectionIntentController {
             throw new InvalidAuthenticatedSubjectException();
         }
         try {
-            return UUID.fromString(jwt.getSubject());
+            String subject = jwt.getSubject();
+            UUID profileId = UUID.fromString(subject);
+            if (!profileId.toString().equalsIgnoreCase(subject)) {
+                throw new IllegalArgumentException("JWT subject is not a canonical profile UUID.");
+            }
+            return profileId;
         } catch (IllegalArgumentException exception) {
             throw new InvalidAuthenticatedSubjectException();
         }

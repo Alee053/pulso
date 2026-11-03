@@ -71,11 +71,17 @@ class ConnectionIntentSecurityTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validRequest()))
                 .andExpect(status().isUnauthorized());
-        mockMvc.perform(post(PATH)
-                .header("Authorization", "Bearer " + token("authenticated", "not-a-profile-uuid"))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(validRequest()))
-                .andExpect(status().isUnauthorized());
+        for (String subject : new String[] {
+                "not-a-profile-uuid",
+                "1-1-1-1-1",
+                "+1-1-1-1-1"
+        }) {
+            mockMvc.perform(post(PATH)
+                    .header("Authorization", "Bearer " + token("authenticated", subject))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(validRequest()))
+                    .andExpect(status().isUnauthorized());
+        }
 
         assertThat(repository.callCount).isZero();
     }

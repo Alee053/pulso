@@ -692,3 +692,268 @@ values
 ('30000000-0000-4000-8000-000000000015'::uuid, (select id from public.tags where slug = 'impacto-social')),
 ('30000000-0000-4000-8000-000000000015'::uuid, (select id from public.tags where slug = 'talento-local'))
 on conflict (project_id, tag_id) do nothing;
+
+-- Oportunidades de demostración (PUL-18, PUL-22 y PUL-24).
+--
+-- Cubre todos los tipos de oportunidad, ubicaciones presenciales y remotas, los
+-- estados del ciclo de vida y habilidades REQUIRED y PREFERRED, para que el
+-- detalle público, la gestión del equipo y la coincidencia con un perfil tengan
+-- datos reales que mostrar. El seed no crea cuentas para iniciar sesión.
+--
+-- Identidad creadora: una cuenta de equipo sin contraseña ni correo utilizable,
+-- necesaria porque project_opportunities.created_by_profile_id es obligatorio y
+-- cada profile pertenece a auth.users. No puede iniciar sesión y no es miembro
+-- de ningún proyecto.
+--
+-- Reglas del seed: UUIDs fijos con el prefijo 40000000 (oportunidades) y
+-- 50000000 (creadora) para repetirlo sin duplicar; el contenido, el estado y las
+-- habilidades de estas filas se restauran al volver a ejecutarlo, y las
+-- oportunidades que cree una persona desarrolladora no se tocan.
+
+insert into public.skills (slug, name, category)
+values
+  ('ingenieria-electrica', 'Ingeniería eléctrica', 'INGENIERIA'),
+  ('logistica-y-distribucion', 'Logística y distribución', 'OPERACIONES'),
+  ('finanzas-y-contabilidad', 'Finanzas y contabilidad', 'NEGOCIOS'),
+  ('procesamiento-de-alimentos', 'Procesamiento de alimentos', 'AGRO')
+on conflict (slug) do update set
+  name = excluded.name,
+  category = excluded.category,
+  is_active = true,
+  updated_at = timezone('utc', now());
+
+insert into auth.users (
+  id,
+  aud,
+  role,
+  email,
+  encrypted_password,
+  raw_app_meta_data,
+  raw_user_meta_data,
+  created_at,
+  updated_at
+)
+values (
+  '50000000-0000-4000-8000-000000000001'::uuid,
+  'authenticated',
+  'authenticated',
+  'equipo-demo@pulso.invalid',
+  '',
+  '{"provider":"seed","providers":[]}'::jsonb,
+  '{"display_name":"Equipo demo de Pulso"}'::jsonb,
+  timezone('utc', now()),
+  timezone('utc', now())
+)
+on conflict (id) do nothing;
+
+do $$
+begin
+  if not exists (
+    select 1 from public.profiles
+    where id = '50000000-0000-4000-8000-000000000001'::uuid
+  ) then
+    raise exception 'the demo opportunity creator has no profile; check the auth.users trigger';
+  end if;
+end
+$$;
+
+insert into public.project_opportunities (
+  id, project_id, opportunity_type, title, description, status,
+  city, department, remote_allowed, created_by_profile_id,
+  closed_at, created_at, updated_at
+)
+select
+  demo.id,
+  project.id,
+  demo.opportunity_type,
+  demo.title,
+  demo.description,
+  demo.status,
+  demo.city,
+  demo.department,
+  demo.remote_allowed,
+  '50000000-0000-4000-8000-000000000001'::uuid,
+  case when demo.status = 'CLOSED' then demo.created_at + interval '20 days' end,
+  demo.created_at,
+  demo.created_at
+from (
+  values
+    -- EcoPack Bolivia
+    ('40000000-0000-4000-8000-000000000001'::uuid, 'eco-pack', 'TALENT',
+     'Desarrollador/a web para el portal de pedidos',
+     'Construye el portal donde restaurantes y marcas locales piden envases compostables, siguen sus entregas y repiten pedidos. Trabajarás con el equipo de operaciones desde Cochabamba.',
+     'OPEN', 'Cochabamba', 'Cochabamba', false, timestamptz '2026-10-20 12:00:00+00'),
+    ('40000000-0000-4000-8000-000000000002'::uuid, 'eco-pack', 'BETA_TESTER',
+     'Restaurantes piloto para probar los envases compostables',
+     'Buscamos restaurantes y cafeterías de Cochabamba que prueben los envases durante cuatro semanas y compartan cómo resisten el calor, la humedad y el transporte.',
+     'OPEN', 'Cochabamba', 'Cochabamba', false, timestamptz '2026-10-18 12:00:00+00'),
+    ('40000000-0000-4000-8000-000000000003'::uuid, 'eco-pack', 'SUPPLIER',
+     'Proveedores de fibra agrícola y residuos de caña',
+     'Necesitamos asociaciones productoras que entreguen de forma regular residuos de caña, paja y otras fibras limpias para convertirlos en envases.',
+     'OPEN', null, 'Cochabamba', false, timestamptz '2026-10-15 12:00:00+00'),
+    -- AndeSolar
+    ('40000000-0000-4000-8000-000000000004'::uuid, 'ande-solar', 'TALENT',
+     'Ingeniero/a eléctrico/a para kits solares modulares',
+     'Dimensiona, prueba y documenta los kits solares que se instalan en comunidades rurales del altiplano. Incluye visitas de campo planificadas.',
+     'OPEN', 'La Paz', 'La Paz', false, timestamptz '2026-10-19 12:00:00+00'),
+    ('40000000-0000-4000-8000-000000000005'::uuid, 'ande-solar', 'PARTNERSHIP',
+     'Aliados para instalar kits en comunidades rurales',
+     'Buscamos organizaciones y cooperativas con presencia en el altiplano que coordinen la instalación, la capacitación de las familias y el mantenimiento.',
+     'OPEN', null, 'La Paz', false, timestamptz '2026-10-14 12:00:00+00'),
+    ('40000000-0000-4000-8000-000000000006'::uuid, 'ande-solar', 'INVESTMENT',
+     'Inversión semilla para llegar a 200 hogares',
+     'Abrimos una ronda semilla pequeña para financiar la fabricación de la siguiente serie de kits y el seguimiento durante el primer año.',
+     'OPEN', null, null, true, timestamptz '2026-10-10 12:00:00+00'),
+    -- BioCarbono Andino
+    ('40000000-0000-4000-8000-000000000007'::uuid, 'bio-carbono-andino', 'MENTOR',
+     'Mentoría en suelos y agricultura sostenible',
+     'Buscamos una persona con experiencia en suelos andinos que revise nuestras parcelas de prueba y oriente el protocolo para medir resultados.',
+     'OPEN', null, null, true, timestamptz '2026-10-17 12:00:00+00'),
+    ('40000000-0000-4000-8000-000000000008'::uuid, 'bio-carbono-andino', 'TALENT',
+     'Analista de datos para la trazabilidad de lotes',
+     'Diseña los tableros y las consultas que muestran el origen, la mezcla y el rendimiento de cada lote de biochar. Puedes trabajar a distancia.',
+     'OPEN', null, null, true, timestamptz '2026-10-12 12:00:00+00'),
+    -- SecaSol Andino
+    ('40000000-0000-4000-8000-000000000009'::uuid, 'seca-sol-andino', 'COLLABORATION',
+     'Asociaciones productoras para pilotos de secado',
+     'Invitamos a asociaciones de productores de fruta, hierbas y cacao a probar los secadores y registrar sus ciclos de secado junto a nuestro equipo.',
+     'OPEN', 'El Alto', 'La Paz', false, timestamptz '2026-10-16 12:00:00+00'),
+    -- Qhatu
+    ('40000000-0000-4000-8000-000000000010'::uuid, 'qhatu', 'TALENT',
+     'Desarrollador/a móvil para vendedores de mercado',
+     'Crea la aplicación móvil con la que comerciantes de mercado registran ventas, cobran y reciben pedidos. Prioriza conexiones lentas y uso con una sola mano.',
+     'OPEN', null, null, true, timestamptz '2026-10-21 12:00:00+00'),
+    ('40000000-0000-4000-8000-000000000011'::uuid, 'qhatu', 'TALENT',
+     'Marketing digital para las primeras cohortes de comerciantes',
+     'Diseña y mide las campañas que atraen a las primeras cohortes de comerciantes en La Paz y El Alto, y propón cómo explicar el producto en mercados.',
+     'OPEN', 'La Paz', 'La Paz', false, timestamptz '2026-10-13 12:00:00+00'),
+    ('40000000-0000-4000-8000-000000000012'::uuid, 'qhatu', 'TALENT',
+     'Diseñador/a UX para el flujo de cobro',
+     'Rediseña el flujo de cobro con pruebas en mercados. La búsqueda está en pausa mientras se define el presupuesto del trimestre.',
+     'PAUSED', 'La Paz', 'La Paz', false, timestamptz '2026-09-30 12:00:00+00'),
+    -- Kawsay Foods
+    ('40000000-0000-4000-8000-000000000013'::uuid, 'kawsay-foods', 'TALENT',
+     'Ejecutivo/a de ventas para comercios locales',
+     'Abre cuentas en tiendas de barrio, restaurantes y cooperativas de Sucre, y construye una agenda de visitas con metas mensuales claras.',
+     'OPEN', 'Sucre', 'Chuquisaca', false, timestamptz '2026-10-19 08:00:00+00'),
+    ('40000000-0000-4000-8000-000000000014'::uuid, 'kawsay-foods', 'PARTNERSHIP',
+     'Distribuidores en ciudades intermedias',
+     'Buscamos distribuidores con frío y transporte propios para llevar los productos a Potosí, Tarija y Cochabamba con entregas semanales.',
+     'OPEN', null, 'Chuquisaca', true, timestamptz '2026-10-11 12:00:00+00'),
+    ('40000000-0000-4000-8000-000000000015'::uuid, 'kawsay-foods', 'TALENT',
+     'Jefe/a de planta de procesamiento',
+     'Coordina el arranque de la segunda línea de producción. La búsqueda se cerró al incorporarse la persona seleccionada.',
+     'CLOSED', 'Sucre', 'Chuquisaca', false, timestamptz '2026-08-25 12:00:00+00'),
+    -- AquaSense
+    ('40000000-0000-4000-8000-000000000016'::uuid, 'aquasense', 'BETA_TESTER',
+     'Agricultores con riego por goteo para probar los sensores',
+     'Buscamos agricultores de Tarija con riego por goteo que instalen los sensores de humedad en una parcela y nos cuenten cómo cambian sus decisiones de riego.',
+     'OPEN', 'Tarija', 'Tarija', false, timestamptz '2026-10-18 08:00:00+00'),
+    ('40000000-0000-4000-8000-000000000017'::uuid, 'aquasense', 'TALENT',
+     'Analista de datos para modelos de humedad del suelo',
+     'Limpia las lecturas de los sensores y prueba modelos sencillos que recomienden cuándo regar. Trabajo remoto con reuniones semanales.',
+     'OPEN', null, null, true, timestamptz '2026-10-09 12:00:00+00'),
+    ('40000000-0000-4000-8000-000000000018'::uuid, 'aquasense', 'TALENT',
+     'Técnico/a de campo para instalación de sensores',
+     'Borrador: perfil aún sin publicar mientras se define el calendario de instalaciones.',
+     'DRAFT', 'Tarija', 'Tarija', false, timestamptz '2026-10-22 12:00:00+00'),
+    -- Ruta
+    ('40000000-0000-4000-8000-000000000019'::uuid, 'ruta', 'CUSTOMER',
+     'Flotas de transporte interesadas en optimizar sus rutas',
+     'Buscamos empresas de transporte y distribución en Santa Cruz que prueben la planificación de rutas con sus propios camiones durante un mes.',
+     'OPEN', 'Santa Cruz de la Sierra', 'Santa Cruz', false, timestamptz '2026-10-17 08:00:00+00'),
+    ('40000000-0000-4000-8000-000000000020'::uuid, 'ruta', 'TALENT',
+     'Desarrollador/a web para el panel de despacho',
+     'La vacante ya fue cubierta. Se conserva en el historial del proyecto.',
+     'FILLED', 'Santa Cruz de la Sierra', 'Santa Cruz', false, timestamptz '2026-09-15 12:00:00+00'),
+    -- TutorIA
+    ('40000000-0000-4000-8000-000000000021'::uuid, 'tutoria', 'COLLABORATION',
+     'Colegios para probar la tutoría con inteligencia artificial',
+     'Invitamos a colegios de Cochabamba a usar el prototipo con un curso durante un bimestre y revisar con nosotros qué ayuda de verdad a las y los estudiantes.',
+     'OPEN', 'Cochabamba', 'Cochabamba', false, timestamptz '2026-10-14 08:00:00+00'),
+    -- Muyu Salud
+    ('40000000-0000-4000-8000-000000000022'::uuid, 'muyu-salud', 'PARTNERSHIP',
+     'Centros de salud rurales para el seguimiento de controles',
+     'Buscamos centros y brigadas de salud del Beni que prueben el seguimiento de controles prenatales y vacunas en zonas con poca conectividad.',
+     'OPEN', 'Trinidad', 'Beni', false, timestamptz '2026-10-13 08:00:00+00'),
+    -- Suma Logística
+    ('40000000-0000-4000-8000-000000000023'::uuid, 'suma-logistica', 'TALENT',
+     'Coordinador/a de operaciones logísticas',
+     'Planifica las rutas de recojo y entrega del día, coordina a los conductores y mantiene indicadores simples de puntualidad y costo.',
+     'OPEN', 'Santa Cruz de la Sierra', 'Santa Cruz', false, timestamptz '2026-10-16 08:00:00+00'),
+    -- Altura Cacao
+    ('40000000-0000-4000-8000-000000000024'::uuid, 'altura-cacao', 'INVESTMENT',
+     'Capital de trabajo para la próxima cosecha',
+     'Buscamos financiamiento de corto plazo para comprar cacao a las asociaciones productoras de Riberalta al inicio de la cosecha y pagarles a tiempo.',
+     'OPEN', 'Riberalta', 'Beni', false, timestamptz '2026-10-12 08:00:00+00'),
+    -- Bosque Vivo
+    ('40000000-0000-4000-8000-000000000025'::uuid, 'bosque-vivo', 'OTHER',
+     'Voluntariado para jornadas de reforestación',
+     'Convocamos personas de Cobija y alrededores para plantar y cuidar árboles nativos durante las jornadas mensuales del proyecto.',
+     'OPEN', 'Cobija', 'Pando', false, timestamptz '2026-10-08 12:00:00+00')
+) as demo (
+  id, project_slug, opportunity_type, title, description, status,
+  city, department, remote_allowed, created_at
+)
+join public.projects project on project.slug = demo.project_slug
+on conflict (id) do update set
+  project_id = excluded.project_id,
+  opportunity_type = excluded.opportunity_type,
+  title = excluded.title,
+  description = excluded.description,
+  status = excluded.status,
+  city = excluded.city,
+  department = excluded.department,
+  remote_allowed = excluded.remote_allowed,
+  closed_at = excluded.closed_at;
+
+do $$
+begin
+  if (select count(*)
+      from public.project_opportunities
+      where id::text like '40000000-0000-4000-8000-0000000000%') <> 25 then
+    raise exception 'the demo opportunities were not all written; check the demo project slugs';
+  end if;
+end
+$$;
+
+-- Cada oportunidad demo conserva exactamente estas habilidades.
+delete from public.opportunity_skills
+where opportunity_id::text like '40000000-0000-4000-8000-0000000000%';
+
+insert into public.opportunity_skills (opportunity_id, skill_id, importance)
+select demo.opportunity_id, skill.id, demo.importance
+from (
+  values
+    ('40000000-0000-4000-8000-000000000001'::uuid, 'desarrollo-web', 'REQUIRED'),
+    ('40000000-0000-4000-8000-000000000001'::uuid, 'diseno-ux', 'PREFERRED'),
+    ('40000000-0000-4000-8000-000000000003'::uuid, 'agricultura-sostenible', 'REQUIRED'),
+    ('40000000-0000-4000-8000-000000000004'::uuid, 'ingenieria-electrica', 'REQUIRED'),
+    ('40000000-0000-4000-8000-000000000004'::uuid, 'gestion-de-proyectos', 'PREFERRED'),
+    ('40000000-0000-4000-8000-000000000005'::uuid, 'gestion-de-proyectos', 'REQUIRED'),
+    ('40000000-0000-4000-8000-000000000005'::uuid, 'logistica-y-distribucion', 'PREFERRED'),
+    ('40000000-0000-4000-8000-000000000006'::uuid, 'finanzas-y-contabilidad', 'PREFERRED'),
+    ('40000000-0000-4000-8000-000000000007'::uuid, 'agricultura-sostenible', 'REQUIRED'),
+    ('40000000-0000-4000-8000-000000000008'::uuid, 'analisis-de-datos', 'REQUIRED'),
+    ('40000000-0000-4000-8000-000000000008'::uuid, 'desarrollo-web', 'PREFERRED'),
+    ('40000000-0000-4000-8000-000000000009'::uuid, 'procesamiento-de-alimentos', 'REQUIRED'),
+    ('40000000-0000-4000-8000-000000000009'::uuid, 'agricultura-sostenible', 'PREFERRED'),
+    ('40000000-0000-4000-8000-000000000010'::uuid, 'desarrollo-movil', 'REQUIRED'),
+    ('40000000-0000-4000-8000-000000000010'::uuid, 'diseno-ux', 'PREFERRED'),
+    ('40000000-0000-4000-8000-000000000011'::uuid, 'marketing-digital', 'REQUIRED'),
+    ('40000000-0000-4000-8000-000000000011'::uuid, 'ventas', 'PREFERRED'),
+    ('40000000-0000-4000-8000-000000000012'::uuid, 'diseno-ux', 'REQUIRED'),
+    ('40000000-0000-4000-8000-000000000013'::uuid, 'ventas', 'REQUIRED'),
+    ('40000000-0000-4000-8000-000000000013'::uuid, 'marketing-digital', 'PREFERRED'),
+    ('40000000-0000-4000-8000-000000000014'::uuid, 'logistica-y-distribucion', 'REQUIRED'),
+    ('40000000-0000-4000-8000-000000000015'::uuid, 'procesamiento-de-alimentos', 'REQUIRED'),
+    ('40000000-0000-4000-8000-000000000015'::uuid, 'gestion-de-proyectos', 'PREFERRED'),
+    ('40000000-0000-4000-8000-000000000017'::uuid, 'analisis-de-datos', 'REQUIRED'),
+    ('40000000-0000-4000-8000-000000000017'::uuid, 'agricultura-sostenible', 'PREFERRED'),
+    ('40000000-0000-4000-8000-000000000018'::uuid, 'agricultura-sostenible', 'PREFERRED'),
+    ('40000000-0000-4000-8000-000000000020'::uuid, 'desarrollo-web', 'REQUIRED'),
+    ('40000000-0000-4000-8000-000000000023'::uuid, 'logistica-y-distribucion', 'REQUIRED'),
+    ('40000000-0000-4000-8000-000000000023'::uuid, 'gestion-de-proyectos', 'PREFERRED'),
+    ('40000000-0000-4000-8000-000000000024'::uuid, 'finanzas-y-contabilidad', 'PREFERRED')
+) as demo (opportunity_id, skill_slug, importance)
+join public.skills skill on skill.slug = demo.skill_slug;

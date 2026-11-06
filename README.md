@@ -457,6 +457,40 @@ La cobertura relacionada incluye `07_opportunity_skills.sql` (pgTAP),
 `JdbcOpportunitySkillRepositoryTest`, `JdbcPublicProjectRepositoryTest` y
 `project-opportunity-skills.spec.ts` en Angular.
 
+## Datos de demostración de oportunidades
+
+El [seed](database/supabase/seed.sql) incluye 25 oportunidades en 13 proyectos
+publicados para poder mostrar el recorrido completo sin crear datos a mano:
+
+- Los nueve tipos de oportunidad (`TALENT`, `COLLABORATION`, `CUSTOMER`,
+  `BETA_TESTER`, `INVESTMENT`, `MENTOR`, `SUPPLIER`, `PARTNERSHIP`, `OTHER`),
+  con ubicaciones presenciales (ciudad o departamento) y remotas.
+- Los cinco estados del ciclo de vida: 21 `OPEN` (las únicas visibles en el
+  detalle público), más una `DRAFT`, una `PAUSED`, una `CLOSED` y una `FILLED`.
+- 30 asociaciones de habilidades `REQUIRED` y `PREFERRED` sobre un catálogo de
+  12 habilidades, para que la coincidencia con un perfil dé resultados distintos.
+- Una cuenta de equipo sin contraseña ni correo utilizable
+  (`equipo-demo@pulso.invalid`) como creadora: la tabla exige un creador y cada
+  perfil pertenece a `auth.users`. No puede iniciar sesión ni es miembro de un
+  proyecto, de modo que el seed sigue sin crear cuentas con las que entrar.
+
+Aplícalo con `pnpm db:compose:seed` (o `pnpm db:reset` con la CLI de Supabase,
+que borra datos locales). Es repetible: las filas con UUID `40000000-…` recuperan
+su contenido, estado y habilidades, y las oportunidades que crees tú no se tocan.
+
+Para recorrer la coincidencia, regístrate, completa el onboarding y abre el
+detalle de un proyecto con oportunidades, por ejemplo EcoPack Bolivia, AndeSolar,
+Qhatu o Kawsay Foods. Para administrar oportunidades y habilidades desde
+«Mis equipos» tu cuenta debe ser `OWNER` o `ADMIN`; en un entorno local puedes
+hacerte propietario de un proyecto de ejemplo con tu correo (Compose):
+
+```sh
+docker compose exec db psql -U postgres -d postgres -c "insert into public.project_members (project_id, profile_id, role, membership_status, created_by_profile_id, joined_at) select project.id, account.id, 'OWNER', 'ACTIVE', account.id, timezone('utc', now()) from public.projects project join auth.users account on account.email = 'tu@correo.com' where project.slug = 'eco-pack' and not exists (select 1 from public.project_members member where member.project_id = project.id and member.profile_id = account.id)"
+```
+
+Solo úsalo en una base local desechable: escribe directamente en las tablas del
+producto y se salta la invitación y su aceptación.
+
 ## Trabajo en equipo y documentación
 
 Los estándares del repositorio están en [AGENTS.md](AGENTS.md) y los

@@ -35,6 +35,7 @@ export class NavigationBarComponent {
       { id: 'discover', label: navigationStrings.discover, icon: 'compass' },
       { id: 'create-project', label: navigationStrings.createProject, icon: 'sparkles' },
       { id: 'teams', label: navigationStrings.teams, icon: 'users-round' },
+      { id: 'requests', label: navigationStrings.requests, icon: 'heart' },
       { id: 'saved', label: navigationStrings.saved, icon: 'bookmark' },
       { id: 'profile', label: navigationStrings.profile, icon: 'user-round' },
     ]

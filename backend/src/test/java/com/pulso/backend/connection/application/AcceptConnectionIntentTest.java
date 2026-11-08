@@ -182,5 +182,16 @@ class AcceptConnectionIntentTest {
                     responderProfileId);
             return conversation;
         }
+
+        @Override
+        public void updateStatus(ConnectionIntent connectionIntent, UUID respondedByProfileId) {
+            this.intent = connectionIntent; // Actualizamos el intent falso
+        }
+
+        @Override
+        public java.util.List<ConnectionIntent> findPendingByProjectMembership(java.util.UUID profileId) {
+            return java.util.List.of();
+        }
+
     }
 }

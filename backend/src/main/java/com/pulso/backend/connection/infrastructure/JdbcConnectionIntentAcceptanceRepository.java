@@ -217,4 +217,41 @@ public class JdbcConnectionIntentAcceptanceRepository
                 resultSet.getObject("responded_by_profile_id", UUID.class),
                 resultSet.getString("status"));
     }
+
+    @Override
+    public void updateStatus(ConnectionIntent connectionIntent, UUID respondedByProfileId) {
+        int updated = jdbcClient.sql("""
+            update public.connection_intents
+            set status = :status,
+                responded_by_profile_id = :respondedByProfileId,
+                responded_at = now()
+            where id = :id
+            """)
+            .param("status", connectionIntent.status())
+            .param("respondedByProfileId", respondedByProfileId)
+            .param("id", connectionIntent.id())
+            .update();
+
+        if (updated == 0) {
+            throw new ConnectionIntentConflictException();
+        }
+    }
+  
+    @Override
+    public java.util.List<ConnectionIntent> findPendingByProjectMembership(java.util.UUID profileId) {
+        return jdbcClient.sql("""
+            select i.id, i.from_profile_id, i.project_id, i.opportunity_id, i.reason, i.message, i.status, i.responded_by_profile_id, i.created_at
+            from public.connection_intents i
+            join public.project_members pm on pm.project_id = i.project_id
+            where i.status = 'PENDING'
+              and pm.profile_id = :profileId
+              and pm.membership_status = 'ACTIVE'
+              and pm.role in ('OWNER', 'ADMIN')
+            order by i.created_at desc
+            """)
+            .param("profileId", profileId)
+            .query(JdbcConnectionIntentAcceptanceRepository::mapConnectionIntent)
+            .list();
+    }
+
 }

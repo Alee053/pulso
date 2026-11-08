@@ -117,6 +117,8 @@
                                      [catalogsErrorMessage]="session.catalogsErrorMessage()"
                                      (catalogsRetryRequested)="session.retryReferenceCatalogs()" />
 
+                 <pulso-requests-view *ngSwitchCase="'requests'" />
+
                 <pulso-saved-view *ngSwitchCase="'saved'"
                                   [savedStartups]="session.savedStartups()"
                                   [interestedStartups]="session.interestedStartups()"

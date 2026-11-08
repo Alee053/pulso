@@ -5,7 +5,7 @@ export type InterestId =
   | 'opportunities'
   | 'inspiration'
 
-export type AppView = 'discover' | 'create-project' | 'saved' | 'profile' | 'detail' | 'teams'
+export type AppView = 'discover' | 'create-project' | 'saved' | 'profile' | 'detail' | 'teams' | 'requests'
 
 
 export type Decision = 'skip' | 'interested'
@@ -128,6 +128,16 @@ export interface PublicProjectDetail {
     opportunities: PublicOpenOpportunity[]
     imageUrl?: string | null
     imageAlt?: string | null
+}
+
+export interface ConnectionIntent {
+  id: string;
+  fromProfileId: string;
+  projectId: string;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'WITHDRAWN' | 'EXPIRED' | 'CONVERTED';
+  reason: string;
+  message: string | null;
+  createdAt: string;
 }
 
 export type PublicProjectState =

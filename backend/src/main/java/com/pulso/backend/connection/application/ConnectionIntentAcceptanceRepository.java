@@ -19,4 +19,9 @@ public interface ConnectionIntentAcceptanceRepository {
     AcceptedConnectionConversation acceptAndCreateConversation(
             ConnectionIntent connectionIntent,
             UUID responderProfileId);
+    
+    void updateStatus(ConnectionIntent connectionIntent, UUID respondedByProfileId);
+
+    java.util.List<ConnectionIntent> findPendingByProjectMembership(java.util.UUID profileId);
+
 }

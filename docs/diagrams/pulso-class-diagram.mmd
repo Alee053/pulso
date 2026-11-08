@@ -241,6 +241,10 @@ classDiagram
   class Notification {
     +UUID id
     +UUID recipientProfileId
+    +UUID actorProfileId
+    +UUID projectId
+    +UUID conversationId
+    +UUID connectionIntentId
     +text notificationType
     +text title
     +timestamp readAt
@@ -311,6 +315,8 @@ classDiagram
   Profile "1" --> "*" Notification : recibe
   Profile "0..1" --> "*" Notification : origina
   Project "0..1" --> "*" Notification : contextualiza
+  Conversation "0..1" --> "*" Notification : contextualiza
+  ConnectionIntent "0..1" --> "*" Notification : contextualiza
   Profile "1" --> "*" Report : reporta
   Profile "0..1" --> "*" Report : es reportado
   Project "0..1" --> "*" Report : es reportado

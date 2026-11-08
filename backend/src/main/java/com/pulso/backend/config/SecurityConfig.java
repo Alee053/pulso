@@ -41,6 +41,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
         CurrentProjectsProperties.class,
         ProjectMembersProperties.class,
         MessageProperties.class,
+        NotificationProperties.class,
         ProjectOpportunityProperties.class,
         ProjectProperties.class
 })

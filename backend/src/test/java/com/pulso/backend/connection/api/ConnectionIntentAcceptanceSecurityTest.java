@@ -24,6 +24,7 @@ import com.pulso.backend.connection.application.ConnectionIntentAcceptanceReposi
 import com.pulso.backend.connection.domain.AcceptedConnectionConversation;
 import com.pulso.backend.connection.domain.ConnectionIntent;
 import com.pulso.backend.connection.domain.ConnectionIntentReason;
+import com.pulso.backend.notification.application.RecordingNotificationPublisher;
 
 @WebMvcTest(ConnectionIntentAcceptanceController.class)
 @Import({SecurityConfig.class, ConnectionIntentAcceptanceSecurityTest.TestBeans.class})
@@ -111,7 +112,7 @@ class ConnectionIntentAcceptanceSecurityTest {
 
         @Bean
         AcceptConnectionIntent acceptConnectionIntent(ConnectionIntentAcceptanceRepository repository) {
-            return new AcceptConnectionIntent(repository);
+            return new AcceptConnectionIntent(repository, new RecordingNotificationPublisher());
         }
     }
 }

@@ -109,5 +109,7 @@ safety net: keep `body-max-length` at or below it.
 - No idempotency key: retrying a send after a lost response can create a second
   message. A client key can be added later without changing the contract.
 - No edit or delete endpoints, although their statuses are persisted and read.
-- No conversation list, unread counters, or push delivery. Notifications for new
-  messages are the scope of the next issue.
+- No conversation list, unread counters, or push delivery. Each sent message
+  creates a notice for the other active participants, as described in
+  [notifications](./notifications.md); the notice stores identifiers only, never
+  the text.

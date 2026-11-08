@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import com.pulso.backend.connection.domain.AcceptedConnectionConversation;
 import com.pulso.backend.connection.domain.ConnectionIntent;
 import com.pulso.backend.connection.domain.ConnectionIntentReason;
+import com.pulso.backend.notification.application.RecordingNotificationPublisher;
 
 class AcceptConnectionIntentTest {
 
@@ -22,11 +23,17 @@ class AcceptConnectionIntentTest {
     private static final UUID OTHER_MEMBER_ID = UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc");
     private static final UUID CONVERSATION_ID = UUID.fromString("27444444-4444-4444-8444-444444444444");
 
+    private final RecordingNotificationPublisher notifications = new RecordingNotificationPublisher();
+
     @Test
     void acceptsAPendingIntentAndCreatesTheProjectContactConversation() {
         FakeRepository repository = pendingRepository();
 
         AcceptedConnectionConversation accepted = service(repository).execute(INTENT_ID, RESPONDER_ID);
+
+        assertThat(notifications.acceptances).containsExactly(
+                new RecordingNotificationPublisher.ConnectionAccepted(
+                        INTENT_ID, PROJECT_ID, CONVERSATION_ID, INITIATOR_ID, RESPONDER_ID));
 
         assertThat(accepted.conversationId()).isEqualTo(CONVERSATION_ID);
         assertThat(accepted.conversationType()).isEqualTo("PROJECT_CONTACT");
@@ -46,6 +53,7 @@ class AcceptConnectionIntentTest {
 
         assertThat(retry).isEqualTo(first);
         assertThat(repository.createCalls).isEqualTo(1);
+        assertThat(notifications.acceptances).hasSize(1);
     }
 
     @Test
@@ -90,6 +98,7 @@ class AcceptConnectionIntentTest {
                 .isInstanceOf(ConnectionIntentPermissionException.class)
                 .hasMessageContaining("Blocked profiles");
         assertThat(repository.createCalls).isZero();
+        assertThat(notifications.isEmpty()).isTrue();
     }
 
     @Test
@@ -115,8 +124,8 @@ class AcceptConnectionIntentTest {
                 .isInstanceOf(ConnectionIntentNotFoundException.class);
     }
 
-    private static AcceptConnectionIntent service(FakeRepository repository) {
-        return new AcceptConnectionIntent(repository);
+    private AcceptConnectionIntent service(FakeRepository repository) {
+        return new AcceptConnectionIntent(repository, notifications);
     }
 
     private static FakeRepository pendingRepository() {

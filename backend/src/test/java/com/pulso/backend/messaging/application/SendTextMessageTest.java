@@ -12,6 +12,7 @@ import com.pulso.backend.messaging.domain.Message;
 import com.pulso.backend.messaging.domain.MessageStatus;
 import com.pulso.backend.messaging.domain.MessageType;
 import com.pulso.backend.messaging.domain.MessageValidationException;
+import com.pulso.backend.notification.application.RecordingNotificationPublisher;
 
 class SendTextMessageTest {
 
@@ -22,9 +23,11 @@ class SendTextMessageTest {
 
     private final InMemoryConversationMessageRepository repository =
             new InMemoryConversationMessageRepository(CONVERSATION_ID, SENDER_ID, RECIPIENT_ID);
+    private final RecordingNotificationPublisher notifications = new RecordingNotificationPublisher();
     private final SendTextMessage sendTextMessage = new SendTextMessage(
             repository,
-            new MessageProperties(0, 20, 50, 100000, 50));
+            new MessageProperties(0, 20, 50, 100000, 50),
+            notifications);
 
     @Test
     void anActiveParticipantSendsATextMessageAsSent() {
@@ -36,6 +39,8 @@ class SendTextMessageTest {
         assertThat(message.status()).isEqualTo(MessageStatus.SENT);
         assertThat(message.body()).isEqualTo("Hola, ¿conversamos?");
         assertThat(repository.messages).containsExactly(message);
+        assertThat(notifications.messages).containsExactly(
+                new RecordingNotificationPublisher.MessageSent(CONVERSATION_ID, message.id(), SENDER_ID));
     }
 
     @Test
@@ -44,6 +49,7 @@ class SendTextMessageTest {
                 .isInstanceOf(ConversationNotFoundException.class);
 
         assertThat(repository.appendCalls).isZero();
+        assertThat(notifications.isEmpty()).isTrue();
     }
 
     @Test
@@ -80,6 +86,7 @@ class SendTextMessageTest {
                 .isInstanceOf(MessagingBlockedException.class);
 
         assertThat(repository.appendCalls).isZero();
+        assertThat(notifications.isEmpty()).isTrue();
     }
 
     @Test

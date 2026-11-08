@@ -8,14 +8,19 @@ import org.springframework.transaction.annotation.Transactional;
 import com.pulso.backend.connection.domain.ConnectionIntent;
 import com.pulso.backend.connection.domain.ConnectionIntentReason;
 import com.pulso.backend.connection.domain.ConnectionIntentValidationException;
+import com.pulso.backend.notification.application.NotificationPublisher;
 
 @Service
 public class CreateConnectionIntent {
 
     private final ConnectionIntentRepository repository;
+    private final NotificationPublisher notifications;
 
-    public CreateConnectionIntent(ConnectionIntentRepository repository) {
+    public CreateConnectionIntent(
+            ConnectionIntentRepository repository,
+            NotificationPublisher notifications) {
         this.repository = repository;
+        this.notifications = notifications;
     }
 
     @Transactional
@@ -33,6 +38,9 @@ public class CreateConnectionIntent {
         }
 
         ConnectionIntentReason parsedReason = ConnectionIntentReason.parse(reason);
-        return repository.createPending(senderProfileId, projectId, opportunityId, parsedReason, message);
+        ConnectionIntent created = repository.createPending(
+                senderProfileId, projectId, opportunityId, parsedReason, message);
+        notifications.connectionRequested(created.id(), created.projectId(), senderProfileId);
+        return created;
     }
 }

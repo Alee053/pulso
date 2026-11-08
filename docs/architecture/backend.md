@@ -22,6 +22,11 @@ com.pulso.backend/
 │   ├── application/                   # send and list use cases and output port
 │   ├── domain/                        # message values, content rules, and states
 │   └── infrastructure/                # JDBC message adapter
+├── notification/
+│   ├── api/                           # recipient-only inbox HTTP contract
+│   ├── application/                   # list/read use cases, publisher port, and read port
+│   ├── domain/                        # notification types, read filter, and values
+│   └── infrastructure/                # JDBC adapter for publishing and reading notices
 ├── discovery/
 │   ├── api/                           # startup and current-user HTTP contracts
 │   ├── application/                   # use cases and output ports
@@ -84,6 +89,14 @@ validated JWT and authorization comes from persisted participation, so a user
 outside the conversation can neither read nor send. See
 [conversation messages](./conversation-messages.md) for the access boundary,
 pagination, and message states.
+
+The `notification/` feature package records a notice when a connection request
+is received or answered and when a message arrives, and lets each person list
+and mark their own notices as read. The connection and messaging use cases
+publish notices through the `NotificationPublisher` port inside their own
+transaction, while the inbox endpoints under `/api/v1/me/notifications` take the
+recipient from the validated JWT. See [notifications](./notifications.md) for
+recipients, read state, and the access boundary.
 
 ## Feature plus inward layers
 

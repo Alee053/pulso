@@ -263,6 +263,13 @@ public final class ApiMessages {
             "A profile block prevents sending messages in this conversation.";
     public static final String MESSAGING_BLOCKED_CODE = "messaging_blocked";
 
+    public static final String NOTIFICATION_ID_REQUIRED = "notificationId is required.";
+    public static final String NOTIFICATION_STATUS_INVALID = "status must be ALL, UNREAD or READ.";
+    public static final String NOTIFICATION_NOT_FOUND_TITLE = "Notification not found";
+    public static final String NOTIFICATION_NOT_FOUND_DETAIL =
+            "The notification does not exist or is not available to the authenticated profile.";
+    public static final String NOTIFICATION_NOT_FOUND_CODE = "notification_not_found";
+
     public static final String KNOWN_VALUE_REQUIRED = "%s is required.";
     public static final String KNOWN_VALUE_UNKNOWN =
             "%s contains unknown value '%s'.";

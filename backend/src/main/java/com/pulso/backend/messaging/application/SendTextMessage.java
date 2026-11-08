@@ -11,16 +11,22 @@ import com.pulso.backend.messaging.domain.ConversationAccess;
 import com.pulso.backend.messaging.domain.Message;
 import com.pulso.backend.messaging.domain.MessageValidationException;
 import com.pulso.backend.messaging.domain.TextMessageContent;
+import com.pulso.backend.notification.application.NotificationPublisher;
 
 @Service
 public class SendTextMessage {
 
     private final ConversationMessageRepository repository;
     private final MessageProperties properties;
+    private final NotificationPublisher notifications;
 
-    public SendTextMessage(ConversationMessageRepository repository, MessageProperties properties) {
+    public SendTextMessage(
+            ConversationMessageRepository repository,
+            MessageProperties properties,
+            NotificationPublisher notifications) {
         this.repository = repository;
         this.properties = properties;
+        this.notifications = notifications;
     }
 
     @Transactional
@@ -43,6 +49,8 @@ public class SendTextMessage {
             throw new MessagingBlockedException();
         }
 
-        return repository.appendText(conversationId, authenticatedProfileId, content.value());
+        Message message = repository.appendText(conversationId, authenticatedProfileId, content.value());
+        notifications.messageSent(conversationId, message.id(), authenticatedProfileId);
+        return message;
     }
 }

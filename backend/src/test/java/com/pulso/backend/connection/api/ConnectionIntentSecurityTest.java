@@ -32,6 +32,7 @@ import com.pulso.backend.connection.application.ConnectionIntentRepository;
 import com.pulso.backend.connection.application.CreateConnectionIntent;
 import com.pulso.backend.connection.domain.ConnectionIntent;
 import com.pulso.backend.connection.domain.ConnectionIntentReason;
+import com.pulso.backend.notification.application.RecordingNotificationPublisher;
 
 @WebMvcTest(ConnectionIntentController.class)
 @Import({ SecurityConfig.class, ConnectionIntentSecurityTest.TestBeans.class })
@@ -149,7 +150,7 @@ class ConnectionIntentSecurityTest {
 
         @Bean
         CreateConnectionIntent createConnectionIntent(CapturingRepository repository) {
-            return new CreateConnectionIntent(repository);
+            return new CreateConnectionIntent(repository, new RecordingNotificationPublisher());
         }
     }
 

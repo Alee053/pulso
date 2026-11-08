@@ -6,11 +6,16 @@ import type { Decision, Startup } from '../domain/startup'
 import { feedStrings, searchStrings } from '../strings/feed.strings'
 import { StartupCardComponent } from './startup-card'
 import { SearchBarComponent } from './search-bar'
+// 1. IMPORTAR EL NUEVO COMPONENTE Y TIPOS
+import { SearchFiltersComponent } from './search-filters'
+import type { SearchFilters } from '../data-access/project-search-api'
+import type { SectorCatalogItem } from '../domain/catalog'
 
 @Component({
   selector: 'pulso-discovery-view',
   standalone: true,
-  imports: [CommonModule, IconComponent, SearchBarComponent, StartupCardComponent],
+  // 2. AÑADIR SearchFiltersComponent A LOS IMPORTS
+  imports: [CommonModule, IconComponent, SearchBarComponent, StartupCardComponent, SearchFiltersComponent],
   templateUrl: './discovery-view.html',
 })
 export class DiscoveryViewComponent implements OnChanges, OnDestroy {
@@ -29,6 +34,12 @@ export class DiscoveryViewComponent implements OnChanges, OnDestroy {
   @Input() searchQuery = ''
   @Input() searchResults: Startup[] = []
   @Input() searchTotal = 0
+  
+  // 3. AÑADIR LOS NUEVOS @Input Y @Output PARA LOS FILTROS
+  @Input() activeFilters: SearchFilters = {};
+  @Input() sectorsList: SectorCatalogItem[] = [];
+  @Output() filtersChanged = new EventEmitter<SearchFilters>();
+
   @Output() decisionMade = new EventEmitter<Decision>()
   @Output() restarted = new EventEmitter<void>()
   @Output() retryRequested = new EventEmitter<void>()
@@ -63,8 +74,13 @@ export class DiscoveryViewComponent implements OnChanges, OnDestroy {
     }
   }
 
+  // 4. ACTUALIZAR EL GETTER PARA QUE LOS FILTROS ACTIVEN LA BÚSQUEDA
   get isSearchActive(): boolean {
-    return this.searchQuery.trim().length > 0
+    return this.searchQuery.trim().length > 0 
+        || !!this.activeFilters.sector 
+        || !!this.activeFilters.stage 
+        || !!this.activeFilters.location
+        || !!this.activeFilters.hasOpenOpportunities;
   }
 
   get isSaved(): boolean {

@@ -6,6 +6,7 @@ import { PreferencesApi } from '../data-access/preferences-api'
 import { ProjectInteractionsApi } from '../data-access/project-interactions-api'
 import { ProjectSearchApi } from '../data-access/project-search-api'
 import { toStartupViewModel } from '../data-access/startup-view-model'
+import type { SearchFilters } from '../data-access/project-search-api';
 
 import { SupabaseAuthGateway } from '../../../core/auth/supabase-auth.gateway'
 
@@ -109,6 +110,7 @@ export class PulsoSession {
     readonly searchTotal = signal(0)
     readonly searchError = signal<string | null>(null)
     readonly searchHasMore = computed(() => this.searchResults().length < this.searchTotal())
+    readonly searchFilters = signal<SearchFilters>({});
 
     readonly selectedProjectId = signal<string | null>(null)
 
@@ -443,22 +445,45 @@ export class PulsoSession {
         this.preferenceValidationMessage.set(null)
     }
 
-    search(query: string): void {
-        this.searchQuery.set(query)
-        this.cancelPendingSearch()
+   
+search(query: string): void {
+    this.searchQuery.set(query);
+    this.cancelPendingSearch();
 
-        if (!query.trim()) {
-            this.clearSearch()
-            return
-        }
-
-        this.searchError.set(null)
-        this.isSearching.set(true)
-        this.searchTimeout = window.setTimeout(() => {
-            this.searchTimeout = undefined
-            void this.runSearch(false)
-        }, searchDebounceMs)
+    
+    if (!query.trim() && !this.hasActiveFilters()) {
+        this.clearSearch();
+        return;
     }
+
+    this.searchError.set(null);
+    this.isSearching.set(true);
+    this.searchTimeout = window.setTimeout(() => {
+        this.searchTimeout = undefined;
+        void this.runSearch(false);
+    }, searchDebounceMs);
+}
+
+
+updateFilters(filters: SearchFilters): void {
+    this.searchFilters.set(filters);
+    this.cancelPendingSearch();
+
+    if (!this.searchQuery().trim() && !this.hasActiveFilters()) {
+        this.clearSearch();
+        return;
+    }
+
+    this.searchError.set(null);
+    this.isSearching.set(true);
+    void this.runSearch(false);
+}
+
+
+private hasActiveFilters(): boolean {
+    const f = this.searchFilters();
+    return !!(f.sector || f.stage || f.location || f.hasOpenOpportunities);
+}
 
     retrySearch(): void {
         if (this.searchQuery().trim()) {
@@ -491,35 +516,44 @@ export class PulsoSession {
     }
 
     private async runSearch(append: boolean): Promise<void> {
-        const generation = ++this.searchGeneration
-        const query = this.searchQuery().trim()
-        const offset = append ? this.searchResults().length : 0
+    const generation = ++this.searchGeneration;
+    const query = this.searchQuery().trim();
+    const currentFilters = this.searchFilters(); // Obtenemos los filtros actuales
+    const offset = append ? this.searchResults().length : 0;
 
-        this.isSearching.set(true)
-        this.searchError.set(null)
+    this.isSearching.set(true);
+    this.searchError.set(null);
 
-        try {
-            const response = await firstValueFrom(
-                this.projectSearchApi.search({ query }, offset, searchPageSize),
-            )
-            if (generation !== this.searchGeneration) {
-                return
-            }
+    try {
+        
+        const response = await firstValueFrom(
+            this.projectSearchApi.search(
+                { 
+                  ...currentFilters, 
+                  query: query || undefined 
+                }, 
+                offset, 
+                searchPageSize
+            ),
+        );
+        if (generation !== this.searchGeneration) {
+            return;
+        }
 
-            const incoming = response.data.map(toStartupViewModel)
-            this.searchResults.update((current) => mergeProjects(current, incoming, append))
-            this.searchTotal.set(response.meta.totalCount)
-        } catch {
-            if (generation !== this.searchGeneration) {
-                return
-            }
-            this.searchError.set(searchStrings.failed)
-        } finally {
-            if (generation === this.searchGeneration) {
-                this.isSearching.set(false)
-            }
+        const incoming = response.data.map(toStartupViewModel);
+        this.searchResults.update((current) => mergeProjects(current, incoming, append));
+        this.searchTotal.set(response.meta.totalCount);
+    } catch {
+        if (generation !== this.searchGeneration) {
+            return;
+        }
+        this.searchError.set(searchStrings.failed);
+    } finally {
+        if (generation === this.searchGeneration) {
+            this.isSearching.set(false);
         }
     }
+}
 
     async startDiscovery(): Promise<void> {
         if (

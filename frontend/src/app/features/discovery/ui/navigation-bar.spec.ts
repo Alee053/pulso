@@ -16,13 +16,13 @@ describe('NavigationBarComponent language', () => {
     const fixture = TestBed.createComponent(NavigationBarComponent)
     fixture.detectChanges()
     const element = fixture.nativeElement as HTMLElement
-    expect(labels(element)).toEqual(['Descubrir', 'Crear proyecto', 'Mis equipos', 'Guardados', 'Perfil'])
+    expect(labels(element)).toEqual(['Descubrir', 'Crear proyecto', 'Mis equipos', 'Solicitudes', 'Guardados', 'Perfil'])
     expect(element.querySelector('aside')?.getAttribute('aria-label')).toBe('Navegación principal')
 
     currentLanguage.set('en')
     fixture.detectChanges()
 
-    expect(labels(element)).toEqual(['Discover', 'Create project', 'My teams', 'Saved', 'Profile'])
+    expect(labels(element)).toEqual(['Discover', 'Create project', 'My teams', 'Requests', 'Saved', 'Profile'])
     expect(element.querySelector('aside')?.getAttribute('aria-label')).toBe('Main navigation')
     fixture.destroy()
   })

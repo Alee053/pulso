@@ -170,5 +170,15 @@ class ConnectionIntentAcceptanceControllerTest {
                     INITIATOR_ID,
                     responderProfileId);
         }
+
+          @Override
+    public void updateStatus(ConnectionIntent connectionIntent, UUID respondedByProfileId) {
+        
+    }
+
+    @Override
+        public java.util.List<ConnectionIntent> findPendingByProjectMembership(java.util.UUID profileId) {
+            return java.util.List.of();
+        }
     }
 }

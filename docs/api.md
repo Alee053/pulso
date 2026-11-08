@@ -1409,3 +1409,99 @@ responder or a request in another terminal state receives `409` with code
 Missing requests return `404`. Missing active membership and profile blocks
 return `403` with code `connection_intent_forbidden`. Missing authentication
 returns `401`, and sanitized database failures return `503`.
+
+## `POST /api/v1/conversations/{conversationId}/messages` — send a text message (S5.4)
+
+Sends a `TEXT` message to a private conversation. The endpoint requires an
+authenticated user who is an active participant of the conversation. The
+backend derives the sender from the JWT subject; the request accepts only
+`body`, and any other field (`senderProfileId`, `messageType`, `status`,
+timestamps) is rejected with `400`.
+
+```sh
+curl -X POST \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"body": "Hola, me interesa colaborar con el equipo."}' \
+  http://localhost:8080/api/v1/conversations/28444444-4444-4444-8444-444444444444/messages
+```
+
+Response `201 Created`:
+
+```json
+{
+  "id": "28666666-6666-4666-8666-666666666661",
+  "conversationId": "28444444-4444-4444-8444-444444444444",
+  "senderProfileId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+  "messageType": "TEXT",
+  "status": "SENT",
+  "body": "Hola, me interesa colaborar con el equipo.",
+  "createdAt": "2026-11-07T15:00:00Z",
+  "editedAt": null,
+  "deletedAt": null
+}
+```
+
+`body` is trimmed, must not be blank, and must not exceed
+`pulso.messages.body-max-length` characters (2000 by default). The message is
+stored and `conversations.last_message_at` is advanced in one transaction.
+
+Errors:
+
+- `400` — blank, missing or oversized `body`, unknown fields, or a missing body.
+- `401` — missing or invalid access token.
+- `403` with code `messaging_blocked` — a profile block separates the sender
+  from another active participant.
+- `404` with code `conversation_not_found` — the conversation does not exist, the
+  caller is not a participant, or the caller left it. These cases are
+  intentionally indistinguishable.
+- `409` with code `conversation_not_active` — the conversation is `ARCHIVED`,
+  `BLOCKED` or `CLOSED`.
+- `503` — sanitized persistence failure.
+
+## `GET /api/v1/conversations/{conversationId}/messages` — list messages (S5.4)
+
+Lists the messages of a conversation from oldest to newest, ordered by creation
+time with the message id as a stable tie-breaker. It requires an active
+participant; an external user, or a participant who left, receives `404`.
+
+```sh
+curl -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  "http://localhost:8080/api/v1/conversations/28444444-4444-4444-8444-444444444444/messages?offset=0&limit=20"
+```
+
+| Parameter | Default | Range |
+| --- | --- | --- |
+| `offset` | `0` | `0` to `100000` |
+| `limit` | `20` | `1` to `50` |
+
+Response `200 OK`:
+
+```json
+{
+  "data": [
+    {
+      "id": "28666666-6666-4666-8666-666666666661",
+      "conversationId": "28444444-4444-4444-8444-444444444444",
+      "senderProfileId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "messageType": "TEXT",
+      "status": "SENT",
+      "body": "Hola, me interesa colaborar con el equipo.",
+      "createdAt": "2026-11-07T15:00:00Z",
+      "editedAt": null,
+      "deletedAt": null
+    }
+  ],
+  "meta": { "offset": 0, "limit": 20, "hasMore": false }
+}
+```
+
+`status` is `SENT`, `EDITED` or `DELETED`. A `DELETED` message keeps its
+position and `deletedAt` but its `body` is `null`. This version creates only
+`SENT` messages; there are no edit or delete endpoints yet. History stays
+readable when the conversation is no longer `ACTIVE`. An empty conversation
+returns `"data": []`. An offset or limit outside the ranges returns `400`.
+
+Messages are never visible to profiles outside the conversation: the
+authorization and the page are read in one statement from persisted
+participation.

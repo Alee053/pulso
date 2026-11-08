@@ -1505,3 +1505,84 @@ returns `"data": []`. An offset or limit outside the ranges returns `400`.
 Messages are never visible to profiles outside the conversation: the
 authorization and the page are read in one statement from persisted
 participation.
+
+## `GET /api/v1/me/notifications` — list notifications (S5.5)
+
+Lists the authenticated person's notifications, most recent first. The backend
+derives the recipient from the JWT subject; there is no way to read another
+person's notifications.
+
+Notifications are created when a connection request is received, when a
+connection request is answered, and when a new message arrives in a conversation
+the person takes part in.
+
+```sh
+curl -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  "http://localhost:8080/api/v1/me/notifications?status=UNREAD&offset=0&limit=20"
+```
+
+| Parameter | Default | Range |
+| --- | --- | --- |
+| `status` | `ALL` | `ALL`, `UNREAD` or `READ` (case-insensitive) |
+| `offset` | `0` | `0` to `100000` |
+| `limit` | `20` | `1` to `50` |
+
+Response `200 OK`:
+
+```json
+{
+  "data": [
+    {
+      "id": "29666666-6666-4666-8666-666666666661",
+      "type": "NEW_MESSAGE",
+      "title": "New message",
+      "body": null,
+      "actorProfileId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "projectId": "33333333-3333-4333-8333-333333333333",
+      "conversationId": "28444444-4444-4444-8444-444444444444",
+      "connectionIntentId": null,
+      "payload": { "messageId": "28666666-6666-4666-8666-666666666661" },
+      "read": false,
+      "readAt": null,
+      "createdAt": "2026-11-08T15:00:00Z"
+    }
+  ],
+  "meta": { "offset": 0, "limit": 20, "hasMore": false, "unreadCount": 1 }
+}
+```
+
+`type` is `CONNECTION_REQUEST` (to the active members of the project, with
+`projectId` and `connectionIntentId`), `CONNECTION_RESPONSE` (to the person who
+sent the request, with `conversationId` and `payload.response`) or
+`NEW_MESSAGE` (to the other participants, with `conversationId` and
+`payload.messageId`). The model also reserves `USER_INTERESTED`,
+`MEMBERSHIP_UPDATE`, `PROJECT_APPROVED`, `PROJECT_VERIFIED` and `ADMIN_UPDATE`,
+which no feature creates yet. Clients should present a notice from its `type`
+and ids; `title` is a stable English label. The message text is never included.
+
+`status=UNREAD` and `status=READ` separate the two groups. `meta.unreadCount` is
+the total of unread notifications whatever the filter is, so a badge needs no
+second request. An empty inbox returns `"data": []`.
+
+Errors: `400` for an unknown `status` or an offset or limit outside the ranges,
+`401` for a missing or invalid access token, and `503` for a sanitized
+persistence failure.
+
+## `POST /api/v1/me/notifications/{notificationId}/read` — mark as read (S5.5)
+
+Marks one of the authenticated person's notifications as read and returns it.
+The call is idempotent: marking an already read notification keeps its first
+`readAt`.
+
+```sh
+curl -X POST \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  http://localhost:8080/api/v1/me/notifications/29666666-6666-4666-8666-666666666661/read
+```
+
+Response `200 OK`: the notification, with `"read": true` and its `readAt`.
+
+A notification that belongs to another person and one that does not exist both
+return `404` with code `notification_not_found`, so an id reveals nothing about
+other people's notifications. A malformed id returns `400`, a missing or invalid
+access token `401`, and a sanitized persistence failure `503`.

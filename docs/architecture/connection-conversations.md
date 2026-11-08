@@ -90,6 +90,8 @@ roles `INITIATOR` and `PROJECT_MEMBER` when the transaction commits.
 - `503` — sanitized persistence failure.
 
 Sending and reading text messages is documented in
-[conversation messages](./conversation-messages.md). Notifications, read state,
-muting, conversation closure, and confirmation of a successful real-world
-outcome remain separate capabilities.
+[conversation messages](./conversation-messages.md). Creating a request and
+accepting it also notify the people involved; see
+[notifications](./notifications.md). Read state per conversation, muting,
+conversation closure, and confirmation of a successful real-world outcome remain
+separate capabilities.

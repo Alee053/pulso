@@ -29,6 +29,7 @@ import com.pulso.backend.messaging.application.SendTextMessage;
 import com.pulso.backend.messaging.domain.Message;
 import com.pulso.backend.messaging.domain.MessageStatus;
 import com.pulso.backend.messaging.domain.MessageType;
+import com.pulso.backend.notification.application.RecordingNotificationPublisher;
 
 class ConversationMessageControllerTest {
 
@@ -210,7 +211,7 @@ class ConversationMessageControllerTest {
                 .build();
         return MockMvcBuilders
                 .standaloneSetup(new ConversationMessageController(
-                        new SendTextMessage(repository, PROPERTIES),
+                        new SendTextMessage(repository, PROPERTIES, new RecordingNotificationPublisher()),
                         new ListConversationMessages(repository),
                         PROPERTIES))
                 .setControllerAdvice(new ApiExceptionHandler())

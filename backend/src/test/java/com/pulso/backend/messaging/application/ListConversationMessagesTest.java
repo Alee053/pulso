@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import com.pulso.backend.config.MessageProperties;
 import com.pulso.backend.messaging.domain.Message;
 import com.pulso.backend.messaging.domain.MessageValidationException;
+import com.pulso.backend.notification.application.RecordingNotificationPublisher;
 
 class ListConversationMessagesTest {
 
@@ -24,7 +25,8 @@ class ListConversationMessagesTest {
     private final ListConversationMessages listMessages = new ListConversationMessages(repository);
     private final SendTextMessage sendTextMessage = new SendTextMessage(
             repository,
-            new MessageProperties(0, 20, 50, 100000, 100));
+            new MessageProperties(0, 20, 50, 100000, 100),
+            new RecordingNotificationPublisher());
 
     @Test
     void returnsMessagesFromOldestToNewestWithPaginationMetadata() {

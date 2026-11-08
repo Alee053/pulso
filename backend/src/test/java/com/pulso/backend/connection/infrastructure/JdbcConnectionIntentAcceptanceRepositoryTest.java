@@ -28,6 +28,7 @@ import com.pulso.backend.connection.application.AcceptConnectionIntent;
 import com.pulso.backend.connection.application.ConnectionIntentConflictException;
 import com.pulso.backend.connection.application.ConnectionIntentPermissionException;
 import com.pulso.backend.connection.domain.AcceptedConnectionConversation;
+import com.pulso.backend.notification.application.RecordingNotificationPublisher;
 
 @Testcontainers(disabledWithoutDocker = true)
 class JdbcConnectionIntentAcceptanceRepositoryTest {
@@ -53,7 +54,8 @@ class JdbcConnectionIntentAcceptanceRepositoryTest {
                 POSTGRES.getPassword());
         jdbcClient = JdbcClient.create(dataSource);
         acceptance = new AcceptConnectionIntent(
-                new JdbcConnectionIntentAcceptanceRepository(jdbcClient));
+                new JdbcConnectionIntentAcceptanceRepository(jdbcClient),
+                new RecordingNotificationPublisher());
         transactionTemplate = new TransactionTemplate(new DataSourceTransactionManager(dataSource));
 
         jdbcClient.sql("""

@@ -26,6 +26,7 @@ import com.pulso.backend.connection.domain.AcceptedConnectionConversation;
 import com.pulso.backend.connection.domain.ConnectionIntent;
 import com.pulso.backend.connection.domain.ConnectionIntentReason;
 import com.pulso.backend.discovery.api.ApiExceptionHandler;
+import com.pulso.backend.notification.application.RecordingNotificationPublisher;
 
 class ConnectionIntentAcceptanceControllerTest {
 
@@ -86,7 +87,7 @@ class ConnectionIntentAcceptanceControllerTest {
     private static MockMvc mockMvc(CapturingRepository repository, Jwt jwt) {
         return MockMvcBuilders
                 .standaloneSetup(new ConnectionIntentAcceptanceController(
-                        new AcceptConnectionIntent(repository)))
+                        new AcceptConnectionIntent(repository, new RecordingNotificationPublisher())))
                 .setControllerAdvice(new ApiExceptionHandler())
                 .setCustomArgumentResolvers(new JwtArgumentResolver(jwt))
                 .build();

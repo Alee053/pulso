@@ -7,14 +7,19 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.pulso.backend.connection.domain.AcceptedConnectionConversation;
 import com.pulso.backend.connection.domain.ConnectionIntent;
+import com.pulso.backend.notification.application.NotificationPublisher;
 
 @Service
 public class AcceptConnectionIntent {
 
     private final ConnectionIntentAcceptanceRepository repository;
+    private final NotificationPublisher notifications;
 
-    public AcceptConnectionIntent(ConnectionIntentAcceptanceRepository repository) {
+    public AcceptConnectionIntent(
+            ConnectionIntentAcceptanceRepository repository,
+            NotificationPublisher notifications) {
         this.repository = repository;
+        this.notifications = notifications;
     }
 
     @Transactional
@@ -43,8 +48,15 @@ public class AcceptConnectionIntent {
             throw ConnectionIntentPermissionException.profilesBlocked();
         }
 
-        return repository.acceptAndCreateConversation(
+        AcceptedConnectionConversation accepted = repository.acceptAndCreateConversation(
                 connectionIntent,
                 authenticatedProfileId);
+        notifications.connectionAccepted(
+                accepted.connectionIntentId(),
+                accepted.projectId(),
+                accepted.conversationId(),
+                accepted.initiatorProfileId(),
+                accepted.responderProfileId());
+        return accepted;
     }
 }

@@ -25,6 +25,7 @@ import com.pulso.backend.connection.application.CreateConnectionIntent;
 import com.pulso.backend.connection.domain.ConnectionIntent;
 import com.pulso.backend.connection.domain.ConnectionIntentReason;
 import com.pulso.backend.discovery.api.ApiExceptionHandler;
+import com.pulso.backend.notification.application.RecordingNotificationPublisher;
 import com.pulso.backend.profile.application.InvalidAuthenticatedSubjectException;
 
 class ConnectionIntentControllerTest {
@@ -153,7 +154,7 @@ class ConnectionIntentControllerTest {
 
     private static MockMvc mockMvc(RecordingRepository repository, boolean invalidSubject) {
         return MockMvcBuilders.standaloneSetup(new ConnectionIntentController(
-                        new CreateConnectionIntent(repository)))
+                        new CreateConnectionIntent(repository, new RecordingNotificationPublisher())))
                 .setControllerAdvice(new ApiExceptionHandler())
                 .setCustomArgumentResolvers(new JwtArgumentResolver(invalidSubject))
                 .build();

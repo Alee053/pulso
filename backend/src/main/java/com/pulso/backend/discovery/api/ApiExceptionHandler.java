@@ -24,6 +24,8 @@ import com.pulso.backend.messaging.application.ConversationNotActiveException;
 import com.pulso.backend.messaging.application.ConversationNotFoundException;
 import com.pulso.backend.messaging.application.MessagingBlockedException;
 import com.pulso.backend.messaging.domain.MessageValidationException;
+import com.pulso.backend.notification.application.NotificationNotFoundException;
+import com.pulso.backend.notification.domain.NotificationValidationException;
 import com.pulso.backend.ops.logging.ApplicationLogger;
 import com.pulso.backend.ops.logging.LogContext;
 import com.pulso.backend.opportunity.application.ProjectOpportunityConflictException;
@@ -226,6 +228,24 @@ public class ApiExceptionHandler {
                 HttpStatus.FORBIDDEN,
                 ApiMessages.MESSAGING_BLOCKED_TITLE,
                 ApiMessages.MESSAGING_BLOCKED_CODE,
+                exception.getMessage());
+    }
+
+    @ExceptionHandler(NotificationValidationException.class)
+    ProblemDetail invalidNotificationRequest(NotificationValidationException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                exception.getMessage());
+        problem.setTitle(ApiMessages.INVALID_REQUEST_TITLE);
+        return problem;
+    }
+
+    @ExceptionHandler(NotificationNotFoundException.class)
+    ProblemDetail notificationNotFound(NotificationNotFoundException exception) {
+        return membershipProblem(
+                HttpStatus.NOT_FOUND,
+                ApiMessages.NOTIFICATION_NOT_FOUND_TITLE,
+                ApiMessages.NOTIFICATION_NOT_FOUND_CODE,
                 exception.getMessage());
     }
 

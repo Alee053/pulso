@@ -26,6 +26,7 @@ import com.pulso.backend.messaging.application.ConversationMessageRepository;
 import com.pulso.backend.messaging.application.InMemoryConversationMessageRepository;
 import com.pulso.backend.messaging.application.ListConversationMessages;
 import com.pulso.backend.messaging.application.SendTextMessage;
+import com.pulso.backend.notification.application.RecordingNotificationPublisher;
 
 @WebMvcTest(ConversationMessageController.class)
 @Import({SecurityConfig.class, ConversationMessageSecurityTest.TestBeans.class})
@@ -90,7 +91,7 @@ class ConversationMessageSecurityTest {
         SendTextMessage sendTextMessage(
                 ConversationMessageRepository repository,
                 MessageProperties properties) {
-            return new SendTextMessage(repository, properties);
+            return new SendTextMessage(repository, properties, new RecordingNotificationPublisher());
         }
 
         @Bean

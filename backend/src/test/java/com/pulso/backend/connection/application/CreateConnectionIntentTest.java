@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import com.pulso.backend.connection.domain.ConnectionIntent;
 import com.pulso.backend.connection.domain.ConnectionIntentReason;
 import com.pulso.backend.connection.domain.ConnectionIntentValidationException;
+import com.pulso.backend.notification.application.RecordingNotificationPublisher;
 
 class CreateConnectionIntentTest {
 
@@ -23,10 +24,13 @@ class CreateConnectionIntentTest {
     @Test
     void createsAProjectOnlyRequestForTheAuthenticatedSender() {
         RecordingRepository repository = new RecordingRepository();
+        RecordingNotificationPublisher notifications = new RecordingNotificationPublisher();
 
-        ConnectionIntent created = new CreateConnectionIntent(repository).execute(
+        ConnectionIntent created = new CreateConnectionIntent(repository, notifications).execute(
                 PROJECT_ID, SENDER_ID, null, "COLLABORATE", null);
 
+        assertThat(notifications.requests).containsExactly(
+                new RecordingNotificationPublisher.ConnectionRequested(INTENT_ID, PROJECT_ID, SENDER_ID));
         assertThat(repository.callCount).isEqualTo(1);
         assertThat(repository.senderId).isEqualTo(SENDER_ID);
         assertThat(repository.projectId).isEqualTo(PROJECT_ID);
@@ -40,7 +44,8 @@ class CreateConnectionIntentTest {
     void createsAnOpportunityRequestWithAnOptionalMessage() {
         RecordingRepository repository = new RecordingRepository();
 
-        ConnectionIntent created = new CreateConnectionIntent(repository).execute(
+        ConnectionIntent created = new CreateConnectionIntent(
+                repository, new RecordingNotificationPublisher()).execute(
                 PROJECT_ID, SENDER_ID, OPPORTUNITY_ID, " offer_service ", "Me interesa colaborar.");
 
         assertThat(repository.senderId).isEqualTo(SENDER_ID);
@@ -57,11 +62,13 @@ class CreateConnectionIntentTest {
         for (ConnectionIntentRejectedException.Reason reason : ConnectionIntentRejectedException.Reason.values()) {
             RecordingRepository repository = new RecordingRepository();
             repository.failure = new ConnectionIntentRejectedException(reason);
+            RecordingNotificationPublisher notifications = new RecordingNotificationPublisher();
 
-            assertThatThrownBy(() -> new CreateConnectionIntent(repository).execute(
+            assertThatThrownBy(() -> new CreateConnectionIntent(repository, notifications).execute(
                     PROJECT_ID, SENDER_ID, null, "OTHER", null))
                     .isSameAs(repository.failure);
             assertThat(repository.callCount).isEqualTo(1);
+            assertThat(notifications.isEmpty()).isTrue();
         }
     }
 
@@ -69,17 +76,21 @@ class CreateConnectionIntentTest {
     void invalidReasonDoesNotCallTheRepository() {
         RecordingRepository repository = new RecordingRepository();
 
-        assertThatThrownBy(() -> new CreateConnectionIntent(repository).execute(
+        RecordingNotificationPublisher notifications = new RecordingNotificationPublisher();
+
+        assertThatThrownBy(() -> new CreateConnectionIntent(repository, notifications).execute(
                 PROJECT_ID, SENDER_ID, null, "UNKNOWN", null))
                 .isInstanceOf(ConnectionIntentValidationException.class);
 
         assertThat(repository.callCount).isZero();
+        assertThat(notifications.isEmpty()).isTrue();
     }
 
     @Test
     void missingAuthenticatedSenderOrProjectDoesNotCallTheRepository() {
         RecordingRepository repository = new RecordingRepository();
-        CreateConnectionIntent useCase = new CreateConnectionIntent(repository);
+        CreateConnectionIntent useCase = new CreateConnectionIntent(
+                repository, new RecordingNotificationPublisher());
 
         assertThatThrownBy(() -> useCase.execute(PROJECT_ID, null, null, "OTHER", null))
                 .isInstanceOf(ConnectionIntentValidationException.class);

@@ -42,6 +42,7 @@ import com.pulso.backend.messaging.application.SendTextMessage;
 import com.pulso.backend.messaging.domain.Message;
 import com.pulso.backend.messaging.domain.MessageStatus;
 import com.pulso.backend.messaging.domain.MessageType;
+import com.pulso.backend.notification.application.RecordingNotificationPublisher;
 
 @Testcontainers(disabledWithoutDocker = true)
 class JdbcConversationMessageRepositoryTest {
@@ -72,7 +73,10 @@ class JdbcConversationMessageRepositoryTest {
         jdbcClient = JdbcClient.create(dataSource);
         transactionTemplate = new TransactionTemplate(new DataSourceTransactionManager(dataSource));
         JdbcConversationMessageRepository repository = new JdbcConversationMessageRepository(jdbcClient);
-        sendTextMessage = new SendTextMessage(repository, new MessageProperties(0, 20, 50, 100000, 100));
+        sendTextMessage = new SendTextMessage(
+                repository,
+                new MessageProperties(0, 20, 50, 100000, 100),
+                new RecordingNotificationPublisher());
         listMessages = new ListConversationMessages(repository);
 
         jdbcClient.sql("""

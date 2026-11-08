@@ -93,6 +93,8 @@
                                       [searchQuery]="session.searchQuery()"
                                       [searchResults]="session.searchResults()"
                                       [searchTotal]="session.searchTotal()"
+                                      [activeFilters]="session.searchFilters()"
+                                     [sectorsList]="session.referenceCatalogs().sectors"
                                       (searchChanged)="session.search($event)"
                                       (searchMoreRequested)="session.loadMoreSearch()"
                                       (searchRetried)="session.retrySearch()"
@@ -100,7 +102,8 @@
                                       (restarted)="session.restartDiscovery()"
                                       (retryRequested)="session.retryDiscovery()"
                                       (startupSaved)="session.toggleSaved($event)"
-                                      (startupSelected)="selectStartup($event)" />
+                                      (startupSelected)="selectStartup($event)" 
+                                      (filtersChanged)="session.updateFilters($event)" />
 
                 <ng-container *ngSwitchCase="'create-project'">
                     <pulso-project-create-form *ngIf="featureFlags.isEnabled('project_creation')"

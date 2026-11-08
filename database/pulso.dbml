@@ -379,9 +379,12 @@ Table messages {
   deleted_at timestamptz
 
   indexes {
-    (conversation_id, created_at)
+    (conversation_id, created_at, id) [name: 'messages_conversation_created_idx']
     sender_profile_id
+    (conversation_id, id) [unique, name: 'messages_conversation_id_id_key', note: "Respalda la referencia de una respuesta a un mensaje de la misma conversación"]
   }
+
+  Note: "El remitente debe ser participante activo de la conversación (trigger messages_validate_sender). SENT no tiene edited_at ni deleted_at, EDITED exige edited_at y DELETED exige deleted_at; un mensaje DELETED puede no conservar su cuerpo y la API nunca lo expone. La conversación, el remitente, el tipo y created_at no cambian. La API actual solo crea mensajes TEXT en estado SENT."
 }
 
 Table profile_blocks {
@@ -515,7 +518,7 @@ Ref: conversation_participants.conversation_id > conversations.id
 Ref: conversation_participants.profile_id > profiles.id
 Ref: messages.conversation_id > conversations.id
 Ref: messages.sender_profile_id > profiles.id
-Ref: messages.reply_to_message_id > messages.id
+Ref: messages.reply_to_message_id > messages.id // se persiste como (conversation_id, reply_to_message_id) > (conversation_id, id)
 Ref: profile_blocks.blocker_profile_id > profiles.id
 Ref: profile_blocks.blocked_profile_id > profiles.id
 

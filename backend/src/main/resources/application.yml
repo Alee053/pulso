@@ -75,6 +75,12 @@ pulso:
     default-limit: 20
     max-limit: 50
     max-offset: 100000
+  messages:
+    default-offset: 0
+    default-limit: 20
+    max-limit: 50
+    max-offset: 100000
+    body-max-length: ${PULSO_MESSAGES_BODY_MAX_LENGTH:2000}
   catalogs:
     max-items-per-catalog: ${PULSO_CATALOGS_MAX_ITEMS_PER_CATALOG:500}
   preferences:

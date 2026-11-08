@@ -247,6 +247,22 @@ public final class ApiMessages {
     public static final String PREFERENCES_SERIALIZE_FAILED =
             "Onboarding preferences could not be serialized.";
 
+    public static final String CONVERSATION_ID_REQUIRED = "conversationId is required.";
+    public static final String MESSAGE_BODY_REQUIRED = "body is required.";
+    public static final String MESSAGE_BODY_MAX_LENGTH = "body must not exceed %d characters.";
+    public static final String CONVERSATION_NOT_FOUND_TITLE = "Conversation not found";
+    public static final String CONVERSATION_NOT_FOUND_DETAIL =
+            "The conversation does not exist or is not available to the authenticated profile.";
+    public static final String CONVERSATION_NOT_FOUND_CODE = "conversation_not_found";
+    public static final String CONVERSATION_NOT_ACTIVE_TITLE = "Conversation not active";
+    public static final String CONVERSATION_NOT_ACTIVE_DETAIL =
+            "The conversation is not active and cannot receive messages.";
+    public static final String CONVERSATION_NOT_ACTIVE_CODE = "conversation_not_active";
+    public static final String MESSAGING_BLOCKED_TITLE = "Messaging blocked";
+    public static final String MESSAGING_BLOCKED_DETAIL =
+            "A profile block prevents sending messages in this conversation.";
+    public static final String MESSAGING_BLOCKED_CODE = "messaging_blocked";
+
     public static final String KNOWN_VALUE_REQUIRED = "%s is required.";
     public static final String KNOWN_VALUE_UNKNOWN =
             "%s contains unknown value '%s'.";

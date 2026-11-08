@@ -20,6 +20,10 @@ import com.pulso.backend.featureflag.application.FeatureFlagAuthorizationExcepti
 import com.pulso.backend.featureflag.application.FeatureFlagDisabledException;
 import com.pulso.backend.featureflag.application.FeatureFlagNotFoundException;
 import com.pulso.backend.featureflag.application.FeatureFlagValidationException;
+import com.pulso.backend.messaging.application.ConversationNotActiveException;
+import com.pulso.backend.messaging.application.ConversationNotFoundException;
+import com.pulso.backend.messaging.application.MessagingBlockedException;
+import com.pulso.backend.messaging.domain.MessageValidationException;
 import com.pulso.backend.ops.logging.ApplicationLogger;
 import com.pulso.backend.ops.logging.LogContext;
 import com.pulso.backend.opportunity.application.ProjectOpportunityConflictException;
@@ -186,6 +190,42 @@ public class ApiExceptionHandler {
                 HttpStatus.CONFLICT,
                 ApiMessages.CONNECTION_INTENT_CONFLICT_TITLE,
                 ApiMessages.CONNECTION_INTENT_CONFLICT_CODE,
+                exception.getMessage());
+    }
+
+    @ExceptionHandler(MessageValidationException.class)
+    ProblemDetail invalidMessage(MessageValidationException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                exception.getMessage());
+        problem.setTitle(ApiMessages.INVALID_REQUEST_TITLE);
+        return problem;
+    }
+
+    @ExceptionHandler(ConversationNotFoundException.class)
+    ProblemDetail conversationNotFound(ConversationNotFoundException exception) {
+        return membershipProblem(
+                HttpStatus.NOT_FOUND,
+                ApiMessages.CONVERSATION_NOT_FOUND_TITLE,
+                ApiMessages.CONVERSATION_NOT_FOUND_CODE,
+                exception.getMessage());
+    }
+
+    @ExceptionHandler(ConversationNotActiveException.class)
+    ProblemDetail conversationNotActive(ConversationNotActiveException exception) {
+        return membershipProblem(
+                HttpStatus.CONFLICT,
+                ApiMessages.CONVERSATION_NOT_ACTIVE_TITLE,
+                ApiMessages.CONVERSATION_NOT_ACTIVE_CODE,
+                exception.getMessage());
+    }
+
+    @ExceptionHandler(MessagingBlockedException.class)
+    ProblemDetail messagingBlocked(MessagingBlockedException exception) {
+        return membershipProblem(
+                HttpStatus.FORBIDDEN,
+                ApiMessages.MESSAGING_BLOCKED_TITLE,
+                ApiMessages.MESSAGING_BLOCKED_CODE,
                 exception.getMessage());
     }
 

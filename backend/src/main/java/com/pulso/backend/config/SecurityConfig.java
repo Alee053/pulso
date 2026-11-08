@@ -40,6 +40,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
         ProfileProperties.class,
         CurrentProjectsProperties.class,
         ProjectMembersProperties.class,
+        MessageProperties.class,
         ProjectOpportunityProperties.class,
         ProjectProperties.class
 })
@@ -78,6 +79,14 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/projects").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/projects/*/share").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/connection-intents/*/accept")
+                        .authenticated()
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/conversations/*/messages")
+                        .authenticated()
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/conversations/*/messages")
                         .authenticated()
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/projects/*/members/*")
                         .authenticated()

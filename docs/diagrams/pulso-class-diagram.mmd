@@ -214,10 +214,13 @@ classDiagram
     +UUID id
     +UUID conversationId
     +UUID senderProfileId
+    +UUID replyToMessageId
     +text body
     +text messageType
     +text status
     +timestamp createdAt
+    +timestamp editedAt
+    +timestamp deletedAt
   }
 
   class ProfileBlock {

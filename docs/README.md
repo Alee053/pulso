@@ -17,9 +17,10 @@ This directory is the durable reference for the codebase: what is deployed in th
 11. [Membership administration](./architecture/membership-administration.md) — role and membership-status matrix, owner invariant, and endpoint/UI errors.
 12. [Project opportunities](./architecture/project-opportunities.md) — opportunity fields, permission boundary, public-project requirement, and status transitions.
 13. [Connection conversations](./architecture/connection-conversations.md) — accepted-request transaction, participants, idempotency, and profile blocks.
-14. [Scalability](./architecture/scalability.md) — default decisions and triggers for adding complexity.
-15. [Working agreements](./engineering/working-agreements.md) — team workflow, review standards, and definition of done.
-16. [Architecture decisions](./adr/0001-monorepo-project-seams.md) — decisions that are costly or surprising to reverse.
+14. [Conversation messages](./architecture/conversation-messages.md) — text messages, participant-only access, history pagination, and message states.
+15. [Scalability](./architecture/scalability.md) — default decisions and triggers for adding complexity.
+16. [Working agreements](./engineering/working-agreements.md) — team workflow, review standards, and definition of done.
+17. [Architecture decisions](./adr/0001-monorepo-project-seams.md) — decisions that are costly or surprising to reverse.
 17. [Supabase decision](./adr/0003-supabase-database-and-auth.md) — database, migrations, RLS, and Auth boundaries.
 18. [Project/startup compatibility](./adr/0004-project-startup-compatibility.md) — canonical domain naming, current baseline, and migration order.
 19. [Agent workflows](./engineering/agent-workflows.md) — shared skills, commit/PR conventions, and Codex, OpenCode, and Claude Code entry points.

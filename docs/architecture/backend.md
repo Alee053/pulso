@@ -17,6 +17,11 @@ com.pulso.backend/
 │   ├── application/                   # transactional acceptance use case and output port
 │   ├── domain/                        # connection intent and conversation result
 │   └── infrastructure/                # JDBC acceptance adapter
+├── messaging/
+│   ├── api/                           # message HTTP contract
+│   ├── application/                   # send and list use cases and output port
+│   ├── domain/                        # message values, content rules, and states
+│   └── infrastructure/                # JDBC message adapter
 ├── discovery/
 │   ├── api/                           # startup and current-user HTTP contracts
 │   ├── application/                   # use cases and output ports
@@ -72,6 +77,13 @@ identity comes from the validated JWT, while any `OWNER`, `ADMIN`, or `MEMBER`
 with active persisted membership may respond. See
 [connection conversations](./connection-conversations.md) for idempotency,
 blocking, and participant invariants.
+
+The `messaging/` feature package lets the active participants of a conversation
+send `TEXT` messages and read its ordered history. The sender comes from the
+validated JWT and authorization comes from persisted participation, so a user
+outside the conversation can neither read nor send. See
+[conversation messages](./conversation-messages.md) for the access boundary,
+pagination, and message states.
 
 ## Feature plus inward layers
 

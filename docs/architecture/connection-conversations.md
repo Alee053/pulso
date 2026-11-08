@@ -4,8 +4,8 @@
 
 PUL-27 implements the backend boundary that turns an accepted contextual
 project request into one private conversation. It does not yet expose
-profile-block management, message sending, conversation lists, or an
-Angular acceptance screen.
+profile-block management, conversation lists, or an Angular acceptance
+screen. Message sending and history were added afterwards by S5.4.
 
 Request creation is provided by PUL-25 through the same `ConnectionIntent`
 domain and canonical `connection_intents` table. Acceptance restores the full
@@ -89,5 +89,7 @@ roles `INITIATOR` and `PROJECT_MEMBER` when the transaction commits.
   incompatible with the operation.
 - `503` — sanitized persistence failure.
 
-Message history, notifications, read state, muting, conversation closure, and
-confirmation of a successful real-world outcome remain separate capabilities.
+Sending and reading text messages is documented in
+[conversation messages](./conversation-messages.md). Notifications, read state,
+muting, conversation closure, and confirmation of a successful real-world
+outcome remain separate capabilities.

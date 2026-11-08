@@ -77,6 +77,7 @@ pulso.security.supabase.*     # ya existe
 pulso.cors.*                  # ya existe
 pulso.discovery.*             # paginación del catálogo
 pulso.project-opportunities.* # ya existe: paginación de oportunidades del proyecto
+pulso.messages.*              # ya existe: paginación y longitud del texto de los mensajes
 pulso.catalogs.*              # tope de lectura
 pulso.preferences.*           # tamaños de lista
 pulso.profile.*               # longitudes de campo
@@ -425,6 +426,11 @@ Compose local (`compose.yaml`) también nombra `SITE_URL`, `API_EXTERNAL_URL`, `
 | api-rule | `pulso.project-opportunities.default-limit` | `ProjectOpportunityProperties` | `20` | igual | `application.yml` | all |
 | api-rule | `pulso.project-opportunities.max-limit` | `ProjectOpportunityProperties` | `50` | igual | `application.yml` | all |
 | api-rule | `pulso.project-opportunities.max-offset` | `ProjectOpportunityProperties` | `100000` | igual | `application.yml` | all |
+| api-rule | `pulso.messages.default-offset` | `MessageProperties` | `0` | `GET /api/v1/conversations/{conversationId}/messages` | `application.yml` | all |
+| api-rule | `pulso.messages.default-limit` | `MessageProperties` | `20` | igual | `application.yml` | all |
+| api-rule | `pulso.messages.max-limit` | `MessageProperties` | `50` | igual | `application.yml` | all |
+| api-rule | `pulso.messages.max-offset` | `MessageProperties` | `100000` | igual | `application.yml` | all |
+| api-rule | `pulso.messages.body-max-length` | `MessageProperties` | `2000` | `POST /api/v1/conversations/{conversationId}/messages` | `application.yml`, `PULSO_MESSAGES_BODY_MAX_LENGTH`; la base limita a 5000 | all |
 | api-rule | `discovery.path` | `@RequestMapping` | `/api/v1/startups` | Angular + curl | contrato; no env | all |
 | presentation | `api.invalid-request.title` | `ApiExceptionHandler` | `Invalid request` | clientes HTTP | `messages.properties` | all |
 | presentation | `api.discovery.offset.detail` | `StartupController` | `offset must be between 0 and 100000.` | `400` | `messages.properties` | all |

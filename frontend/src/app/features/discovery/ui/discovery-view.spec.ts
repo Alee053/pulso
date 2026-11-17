@@ -59,17 +59,19 @@ describe('DiscoveryViewComponent interactions', () => {
     fixture.componentInstance.retryRequested.subscribe(retry)
     fixture.componentInstance.restarted.subscribe(restart)
     fixture.detectChanges()
-    ;(fixture.nativeElement.querySelector('button') as HTMLButtonElement).click()
+    const retryButton = fixture.nativeElement.querySelector('button.solid-button') as HTMLButtonElement;
+    retryButton.click();
     expect(retry).toHaveBeenCalledOnce()
 
     fixture.componentRef.setInput('errorMessage', null)
     fixture.detectChanges()
     expect(fixture.nativeElement.textContent).toContain(feedStrings.emptyTitle)
-    expect(fixture.nativeElement.querySelector('button')).toBeNull()
+    expect(fixture.nativeElement.querySelector('button.solid-button')).toBeNull()
 
     fixture.componentRef.setInput('totalStartups', 1)
     fixture.detectChanges()
-    ;(fixture.nativeElement.querySelector('button') as HTMLButtonElement).click()
+    const restartButton = fixture.nativeElement.querySelector('button.solid-button') as HTMLButtonElement;
+    restartButton.click();
     expect(restart).toHaveBeenCalledOnce()
   })
 

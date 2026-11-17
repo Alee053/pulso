@@ -394,6 +394,8 @@ function createSessionStub() {
     searchQuery: signal(''),
     searchResults: signal([]),
     searchTotal: signal(0),
+    searchFilters: signal({}),
+    updateFilters: vi.fn(),
     search: vi.fn(),
     loadMoreSearch: vi.fn(),
     retrySearch: vi.fn(),

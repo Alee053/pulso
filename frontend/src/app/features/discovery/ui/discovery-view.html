@@ -8,6 +8,10 @@
   </header>
 
   <pulso-search-bar [query]="searchQuery" (searched)="searchChanged.emit($event)" />
+   <pulso-search-filters 
+    [filters]="activeFilters" 
+    [sectors]="sectorsList" 
+    (filtersChanged)="filtersChanged.emit($event)" />
 
   <section *ngIf="isSearchActive; else discoveryWorkspace" [attr.aria-label]="search.resultsAria" [attr.aria-busy]="isSearching">
     <div *ngIf="isSearching && searchResults.length === 0" class="state-panel" role="status" aria-live="polite">

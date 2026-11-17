@@ -53,9 +53,23 @@ import com.pulso.backend.project.domain.MembershipPermissionException;
 import com.pulso.backend.project.domain.MemberInvitationPermissionException;
 import com.pulso.backend.project.domain.MemberInvitationProjectNotFoundException;
 import com.pulso.backend.project.domain.ProjectValidationException;
+import com.pulso.backend.project.domain.ProjectReviewException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+
+    @ExceptionHandler(ProjectReviewException.class)
+    ProblemDetail projectReview(ProjectReviewException exception) {
+        HttpStatus status = switch (exception.reason()) {
+            case FORBIDDEN, OWN_PROJECT -> HttpStatus.FORBIDDEN;
+            case NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case STATE_CHANGED, UNAVAILABLE -> HttpStatus.CONFLICT;
+        };
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, exception.getMessage());
+        problem.setTitle(ApiMessages.PROJECT_REVIEW_TITLE);
+        problem.setProperty("code", "project_review_" + exception.reason().name().toLowerCase(java.util.Locale.ROOT));
+        return problem;
+    }
 
     @ExceptionHandler(InvalidRequestException.class)
     ProblemDetail invalidRequest(InvalidRequestException exception) {

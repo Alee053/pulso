@@ -144,6 +144,12 @@ The design research and scope are recorded in [UI/UX refactor research](../resea
 
 ## Project teams and invitations
 
+The profile page also hosts administrative [project review](./project-review.md)
+for active platform moderators/admins. `ProjectReviewsComponent` owns its queue
+and decision state, while `ProjectReviewsApi` adapts the protected backend
+contract. Team cards display the publication status and review note returned
+by `CurrentProjectsApi`. Review strings support Spanish and English.
+
 `CurrentProjectsApi` reads the authenticated account's paginated active teams.
 `ProjectTeamsComponent` owns its page, loading/error/retry state, and account
 changes. `MemberInvitationFormComponent` uses the existing membership policy to

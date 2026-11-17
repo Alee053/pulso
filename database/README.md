@@ -154,6 +154,12 @@ staging database.
 
 ## Backend connection
 
+PUL-31 adds the backend-only `admin_audit_logs` table and the partial pending
+project review index. Administrative decisions and their audit entries commit
+in one backend transaction. Apply the additive migration before deploying the
+review endpoints; no backfill or local data reset is needed. See
+[administrative project review](../docs/architecture/project-review.md).
+
 The Spring Boot backend connects to PostgreSQL through JDBC. The browser uses
 Supabase Auth, but never receives the database password or a service-role key.
 Keep staging credentials in `backend/.env.development` or another ignored file;

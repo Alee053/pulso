@@ -78,15 +78,16 @@ Regression checks cover both public and transactional boundaries:
 These checks use isolated Testcontainers PostgreSQL with minimal schemas. They
 do not validate deployed migrations, RLS, or a live Supabase browser flow.
 
-## Administrative review (out of S2.2)
+## Administrative review (PUL-31)
 
-These transitions are documented so later review slices do not collide with the
-team matrix. They are not implemented here.
+The separate [administrative review](./project-review.md) flow implements
+approval and rejection with persisted platform permissions and transactional
+audit. Team endpoints retain the matrix above. Suspension remains future work.
 
 | From | To | Notes |
 | --- | --- | --- |
-| `PENDING_REVIEW` | `PUBLISHED` | First publication should set `published_at` |
-| `PENDING_REVIEW` | `REJECTED` | Must not invent `published_at` |
+| `PENDING_REVIEW` | `PUBLISHED` | Sets first `published_at`; records reviewer, verification, and audit |
+| `PENDING_REVIEW` | `REJECTED` | Requires a team-visible note; records reviewer and audit; preserves `published_at` |
 | `*` | `SUSPENDED` | Administrative hold; not a team archive |
 
 ## Errors

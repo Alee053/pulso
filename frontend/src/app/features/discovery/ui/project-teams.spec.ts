@@ -27,6 +27,18 @@ function flushMembers(http: HttpTestingController, roles: Record<string, string>
 }
 
 describe('ProjectTeamsComponent', () => {
+  it('shows the publication status and rejection note to an active project member', () => {
+    const { fixture, http } = setup()
+    http.expectOne(path).flush({ data: [{ projectId: 'p1', name: 'EcoPack', role: 'MEMBER', membershipStatus: 'ACTIVE',
+      status: 'REJECTED', verificationStatus: 'UNVERIFIED', reviewNote: 'Completar la propuesta de valor.', reviewedAt: '2026-11-16T18:00:00Z' }],
+      meta: { offset: 0, limit: 20, hasMore: false } })
+    fixture.detectChanges()
+    flushMembers(http, { p1: 'MEMBER' })
+    fixture.detectChanges()
+    expect(fixture.nativeElement.textContent).toContain('Publicación rechazada')
+    expect(fixture.nativeElement.textContent).toContain('Completar la propuesta de valor.')
+    http.verify()
+  })
   it('refreshes permissions and withdraws admin controls after the backend reports a role change', () => {
     const { fixture, http } = setup()
     http.expectOne(path).flush({ data: [{ projectId: 'p1', name: 'EcoPack', role: 'ADMIN', membershipStatus: 'ACTIVE' }],

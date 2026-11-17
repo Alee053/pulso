@@ -100,6 +100,12 @@ recipients, read state, and the access boundary.
 
 ## Feature plus inward layers
 
+Administrative [project review](./project-review.md) remains inside `project/`.
+Its private queue and decision endpoints require a persisted active platform
+moderator/admin, reject self-review, and commit the project change and
+`admin_audit_logs` entry together. Active team reads expose the review note;
+public project reads retain their existing publication boundary.
+
 The first real product feature is organized by business capability. Add another
 feature package only when there is a real business capability, not merely
 because a new table or controller exists. Spring Boot does not require this

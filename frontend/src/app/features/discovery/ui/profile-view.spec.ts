@@ -11,6 +11,7 @@ import {
   type ProfileDto,
 } from '../data-access/profile-api'
 import { ProfileViewComponent } from './profile-view'
+import { ProjectReviewsApi } from '../data-access/project-reviews-api'
 
 describe('ProfileViewComponent', () => {
   it('loads the profile and renders labeled editable fields', async () => {
@@ -120,6 +121,21 @@ describe('ProfileViewComponent', () => {
     await regularUser.whenStable()
     regularUser.detectChanges()
     expect(regularUser.nativeElement.querySelector('pulso-feature-flag-settings')).toBeNull()
+    expect(regularUser.nativeElement.querySelector('pulso-project-reviews')).toBeNull()
+  })
+
+  it.each(['MODERATOR', 'ADMIN'])('shows project review for an active platform %s', async (platformRole) => {
+    const fixture = createFixture(createProfileApiStub(createCurrentUser({ platformRole })))
+    await fixture.whenStable()
+    fixture.detectChanges()
+    expect(fixture.nativeElement.querySelector('pulso-project-reviews')).not.toBeNull()
+  })
+
+  it('does not offer project review to an inactive platform moderator', async () => {
+    const fixture = createFixture(createProfileApiStub(createCurrentUser({ platformRole: 'MODERATOR', accountStatus: 'SUSPENDED' })))
+    await fixture.whenStable()
+    fixture.detectChanges()
+    expect(fixture.nativeElement.querySelector('pulso-project-reviews')).toBeNull()
   })
 })
 
@@ -129,6 +145,7 @@ function createFixture(
   TestBed.configureTestingModule({
     imports: [ProfileViewComponent],
     providers: [
+      { provide: ProjectReviewsApi, useValue: { list: () => of({ data: [], meta: { offset: 0, limit: 20, hasMore: false, noteMaxLength: 2000 } }) } },
       { provide: FeatureFlagsService, useValue: createFeatureFlagsStub() },
       { provide: ProfileApi, useValue: profileApi },
       {

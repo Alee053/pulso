@@ -1,0 +1,60 @@
+<section class="panel p-5 sm:p-8" aria-labelledby="project-reviews-title" [attr.aria-busy]="loading() || saving() !== null">
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <h2 id="project-reviews-title" class="text-xl font-semibold">{{ strings.title }}</h2>
+      <p class="field-hint mt-2">{{ strings.lead }}</p>
+    </div>
+    <button type="button" class="contact-button" (click)="refresh()" [disabled]="loading() || saving() !== null">{{ strings.refresh }}</button>
+  </div>
+  <p *ngIf="loading()" class="state-panel mt-5" role="status">{{ strings.loading }}</p>
+  <div *ngIf="error() as message" class="status-message status-message--error mt-5" role="alert">
+    <p>{{ message }}</p>
+    <button type="button" class="contact-button mt-3" (click)="refresh()" [disabled]="loading() || saving() !== null">{{ common.retry }}</button>
+  </div>
+  <p *ngIf="saved()" class="status-message mt-5" role="status">{{ strings.saved }}</p>
+  <p *ngIf="!loading() && !error() && projects().length === 0" class="state-panel mt-5" role="status">{{ strings.empty }}</p>
+  <div class="mt-5 grid gap-5">
+    <article *ngFor="let project of projects()" class="min-w-0 rounded-2xl border border-[var(--color-border)] p-4 sm:p-6" [attr.data-review-project]="project.id">
+      <h3 class="break-words text-lg font-semibold">{{ project.name }}</h3>
+      <p class="mt-2 break-words">{{ project.tagline }}</p>
+      <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+        <div><dt class="field-hint">{{ strings.sector }}</dt><dd class="break-words">{{ project.sector }}</dd></div>
+        <div><dt class="field-hint">{{ strings.stage }}</dt><dd>{{ stageLabel(project.stage) }}</dd></div>
+        <div><dt class="field-hint">{{ strings.location }}</dt><dd class="break-words">{{ project.city || project.department || strings.notProvided }}</dd></div>
+        <div><dt class="field-hint">{{ strings.creator }}</dt><dd class="break-words">{{ project.creatorName || strings.notProvided }}</dd></div>
+      </dl>
+      <details class="mt-4">
+        <summary class="cursor-pointer rounded-lg py-2 font-medium text-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--color-accent)]">{{ strings.details }}</summary>
+        <h4 class="field-label mt-3">{{ strings.description }}</h4>
+        <p class="mt-2 whitespace-pre-wrap break-words">{{ project.description || strings.notProvided }}</p>
+        <h4 class="field-label mt-4">{{ strings.valueProposition }}</h4>
+        <p class="mt-2 whitespace-pre-wrap break-words">{{ project.valueProposition || strings.notProvided }}</p>
+      </details>
+      <p *ngIf="!project.canReview" class="status-message mt-4">{{ strings.ownProject }}</p>
+      <p *ngIf="!project.sectorActive || project.activeOwnerCount === 0" class="status-message mt-4">{{ strings.unavailable }}</p>
+      <fieldset class="mt-5 min-w-0 border-0 p-0" [disabled]="loading() || saving() !== null || !project.canReview">
+        <label class="field-label" [for]="'review-note-' + project.id">{{ strings.note }}</label>
+        <textarea class="field-input mt-2 min-h-24 resize-y" rows="3" [id]="'review-note-' + project.id"
+          [attr.aria-describedby]="'review-hint-' + project.id + (validation() === project.id ? ' review-error-' + project.id : '')"
+          [attr.aria-invalid]="validation() === project.id ? 'true' : null"
+          [attr.maxlength]="noteMaxLength()" [value]="draft(project.id).note"
+          (input)="draft(project.id).note = $any($event.target).value"></textarea>
+        <p class="field-hint mt-2" [id]="'review-hint-' + project.id">{{ strings.noteHint }}</p>
+        <p *ngIf="validation() === project.id" class="field-error mt-2" role="alert" [id]="'review-error-' + project.id">
+          {{ draft(project.id).note.trim().length > noteMaxLength() ? strings.noteTooLong : strings.noteRequired }}
+        </p>
+        <label class="mt-4 flex items-start gap-3 text-sm">
+          <input class="mt-1 size-5 shrink-0 accent-sky-300" type="checkbox" [checked]="draft(project.id).verified"
+            (change)="draft(project.id).verified = $any($event.target).checked" />
+          {{ strings.verified }}
+        </label>
+        <div class="mt-5 flex flex-wrap gap-3">
+          <button type="button" class="solid-button" [disabled]="!project.sectorActive || project.activeOwnerCount === 0"
+            (click)="decide(project, 'APPROVE')">{{ saving() === project.id ? strings.saving : strings.approve }}</button>
+          <button type="button" class="contact-button" (click)="decide(project, 'REJECT')">{{ strings.reject }}</button>
+        </div>
+      </fieldset>
+    </article>
+  </div>
+  <button *ngIf="hasMore() && !error()" type="button" class="contact-button mt-5" (click)="load()" [disabled]="loading() || saving() !== null">{{ strings.more }}</button>
+</section>

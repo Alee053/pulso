@@ -12,6 +12,7 @@ import {
 } from './features/discovery/strings/onboarding.strings'
 import { profileStrings } from './features/discovery/strings/profile.strings'
 import { projectStageStrings } from './features/discovery/strings/project.strings'
+import { projectReviewStrings } from './features/discovery/strings/project-review.strings'
 import { recommendationStrings } from './features/discovery/strings/recommendations.strings'
 import { savedStrings } from './features/discovery/strings/saved.strings'
 import { interestOptions } from './features/discovery/data-access/interests'
@@ -34,6 +35,7 @@ const modules: Record<string, object> = {
   onboardingStrings,
   profileStrings,
   projectStageStrings,
+  projectReviewStrings,
   proficiencyStrings,
   recommendationStrings,
   savedStrings,

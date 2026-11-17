@@ -79,6 +79,7 @@ pulso.discovery.*             # paginación del catálogo
 pulso.project-opportunities.* # ya existe: paginación de oportunidades del proyecto
 pulso.messages.*              # ya existe: paginación y longitud del texto de los mensajes
 pulso.notifications.*         # ya existe: paginación de las notificaciones
+pulso.project-review.*        # paginación administrativa y longitud de la nota de revisión
 pulso.catalogs.*              # tope de lectura
 pulso.preferences.*           # tamaños de lista
 pulso.profile.*               # longitudes de campo

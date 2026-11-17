@@ -15,6 +15,7 @@ import { SupabaseAuthGateway } from '../../../core/auth/supabase-auth.gateway'
 import { CurrentProjectsApi } from '../data-access/current-projects-api'
 import type { CurrentProjectMembership } from '../domain/member-invitation'
 import { invitationStrings } from '../strings/invitation.strings'
+import { projectReviewStrings } from '../strings/project-review.strings'
 import { ProjectMembersComponent } from './project-members'
 import type { UpdatedMembership } from '../domain/project-member'
 import type { SkillCatalogItem } from '../domain/catalog'
@@ -34,6 +35,7 @@ export class ProjectTeamsComponent implements OnDestroy {
   @Output() catalogsRetryRequested = new EventEmitter<void>()
 
   readonly strings = invitationStrings
+  readonly reviewStrings = projectReviewStrings
   private readonly auth = inject(SupabaseAuthGateway)
   private readonly api = inject(CurrentProjectsApi)
   private request: Subscription | null = null

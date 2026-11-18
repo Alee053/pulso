@@ -147,6 +147,18 @@ public final class ConnectionIntent {
         return createdAt;
     }
 
+    public ConnectionIntent decline(UUID respondedByProfileId) {
+        return new ConnectionIntent(
+                id, fromProfileId, projectId, opportunityId, reason, message,
+                Status.DECLINED, respondedByProfileId, createdAt);
+    }
+
+    public ConnectionIntent withdraw() {
+        return new ConnectionIntent(
+                id, fromProfileId, projectId, opportunityId, reason, message,
+                Status.WITHDRAWN, null, createdAt);
+    }
+
     public enum Status {
         PENDING,
         ACCEPTED,

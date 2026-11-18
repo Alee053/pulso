@@ -19,6 +19,7 @@ import { InvitationAcceptanceComponent } from './features/discovery/ui/invitatio
 import { ProjectTeamsComponent } from './features/discovery/ui/project-teams'
 import { ProjectCreateFormComponent } from './features/discovery/ui/project-create-form'
 import { FeatureFlagsService } from './core/feature-flags/feature-flags.service'
+import { RequestsViewComponent } from './features/discovery/ui/requests-view'
 
 @Component({
     selector: 'pulso-root',
@@ -34,6 +35,7 @@ import { FeatureFlagsService } from './core/feature-flags/feature-flags.service'
         ProfileViewComponent,
         ProjectCreateFormComponent,
         SavedViewComponent,
+        RequestsViewComponent,
         PublicProjectDetailComponent,
         IconComponent,
         LanguageSwitcherComponent,

@@ -24,6 +24,53 @@ function createFixture() {
 describe('PublicProjectDetailComponent', () => {
   afterEach(() => currentLanguage.set('es'))
 
+  it('submits project and profile reports and allows retry after an error', () => {
+    TestBed.configureTestingModule({
+      providers: [{ provide: SupabaseAuthGateway, useValue: { session: signal({ id: 'user-1', email: null }) } }],
+    })
+    const { fixture, http } = createFixture()
+    const project = MOCK_PUBLIC_PROJECTS['eco-pack']
+    http.expectOne('http://localhost:8080/api/v1/projects/eco-pack').flush({ data: project })
+    fixture.detectChanges()
+
+    const root = fixture.nativeElement as HTMLElement
+    const reportForms = root.querySelectorAll<HTMLFormElement>('pulso-report-form form')
+    const firstMember = project.members[0]
+    expect(firstMember).toBeDefined()
+
+    const submit = (form: HTMLFormElement) => {
+      form.closest('details')!.open = true
+      form.querySelector('select')!.value = 'ABUSE'
+      form.dispatchEvent(new Event('submit', { cancelable: true }))
+      fixture.detectChanges()
+      expect(form.querySelector('fieldset')!.disabled).toBe(true)
+      return http.expectOne({ method: 'POST', url: 'http://localhost:8080/api/v1/reports' })
+    }
+
+    const failed = submit(reportForms[0])
+    expect(failed.request.body).toEqual({ targetProjectId: project.id, reason: 'ABUSE', description: undefined })
+    failed.flush({}, { status: 503, statusText: 'Unavailable' })
+    fixture.detectChanges()
+    expect(reportForms[0].querySelector('[role="alert"]')).not.toBeNull()
+
+    const receipt = { id: 'report-id', status: 'OPEN', createdAt: '2026-11-20T18:00:00Z' }
+    submit(reportForms[0]).flush(receipt)
+    fixture.detectChanges()
+    expect(reportForms[0].isConnected).toBe(false)
+
+    reportForms[1].querySelector('textarea')!.value = ' Contexto '
+    const profileReport = submit(reportForms[1])
+    expect(profileReport.request.body).toEqual({
+      targetProfileId: firstMember.profileId,
+      reason: 'ABUSE',
+      description: 'Contexto',
+    })
+    profileReport.flush(receipt)
+    fixture.detectChanges()
+    expect(root.querySelectorAll('pulso-report-form [role="status"]')).toHaveLength(2)
+    http.verify()
+  })
+
   it('renders the API cover with alternative text and hides a failed image', () => {
     const { fixture, http } = createFixture()
     http.expectOne('http://localhost:8080/api/v1/projects/eco-pack').flush({ data: {

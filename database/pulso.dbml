@@ -452,7 +452,7 @@ Table reports {
     target_message_id
   }
 
-  Note: "Debe existir exactamente uno de target_profile_id, target_project_id o target_message_id."
+  Note: "Debe existir exactamente uno de target_profile_id, target_project_id o target_message_id. Solo el backend accede a los reportes. El motivo no puede estar vacío y admite hasta 120 caracteres. La descripción admite hasta 2000."
 }
 
 Table admin_audit_logs {
@@ -531,9 +531,9 @@ Ref: notifications.actor_profile_id > profiles.id
 Ref: notifications.project_id > projects.id
 Ref: notifications.conversation_id > conversations.id
 Ref: notifications.connection_intent_id > connection_intents.id
-Ref: reports.reporter_profile_id > profiles.id
-Ref: reports.target_profile_id > profiles.id
-Ref: reports.target_project_id > projects.id
-Ref: reports.target_message_id > messages.id
-Ref: reports.assigned_moderator_id > profiles.id
+Ref: reports.reporter_profile_id > profiles.id [delete: restrict]
+Ref: reports.target_profile_id > profiles.id [delete: restrict]
+Ref: reports.target_project_id > projects.id [delete: restrict]
+Ref: reports.target_message_id > messages.id [delete: restrict]
+Ref: reports.assigned_moderator_id > profiles.id [delete: restrict]
 Ref: admin_audit_logs.actor_profile_id > profiles.id

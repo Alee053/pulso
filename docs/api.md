@@ -1664,3 +1664,31 @@ still reject direct publication and verification fields.
 The Angular **Perfil** page exposes the review queue to active platform
 moderators/admins. See [administrative review](./architecture/project-review.md)
 for transaction, migration, and scope details.
+## Crear un reporte
+
+`POST /api/v1/reports` requiere un JWT de Supabase. Enviar exactamente uno de
+`targetProfileId`, `targetProjectId` o `targetMessageId` como UUID, un
+`reason` obligatorio de hasta 120 caracteres y una `description` opcional
+de hasta 2000 caracteres. Los textos se recortan y una descripción en blanco
+se guarda como nula. Los códigos que ofrece la interfaz son `SPAM`, `ABUSE`,
+`IMPERSONATION` y `OTHER`.
+
+```json
+{"targetProjectId":"11111111-1111-4111-8111-111111111111","reason":"SPAM"}
+```
+
+Respuesta `201 Created`:
+
+```json
+{"id":"22222222-2222-4222-8222-222222222222","status":"OPEN","createdAt":"2026-11-20T18:00:00Z"}
+```
+
+El reportante se identifica por el JWT. La API devuelve `400` para datos
+inválidos, `401` cuando falta autenticación válida y `404` cuando el
+objetivo no existe o no es accesible para el reportante. El contrato solo
+expone la creación y el comprobante.
+
+El perfil reportado puede ser público y activo o el perfil propio activo.
+El proyecto debe ser visible en el catálogo público o en los equipos del
+reportante. Para reportar un mensaje se requiere participación vigente en
+su conversación, igual que para leer el historial.

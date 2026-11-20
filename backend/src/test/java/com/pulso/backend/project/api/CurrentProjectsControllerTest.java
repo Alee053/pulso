@@ -66,8 +66,9 @@ class CurrentProjectsControllerTest {
     @Test
     void listsOnlyTheAuthenticatedActorsProjectsWithBoundedPagination() throws Exception {
         when(repository.findActive(PROFILE_ID, 0, 2)).thenReturn(List.of(
-                new CurrentProject(PROJECT_ID, "EcoPack", "OWNER", "ACTIVE"),
-                new CurrentProject(UUID.randomUUID(), "AndeSolar", "MEMBER", "ACTIVE")));
+                new CurrentProject(PROJECT_ID, "EcoPack", "OWNER", "ACTIVE", "REJECTED", "UNVERIFIED",
+                        "Completar descripción", java.time.Instant.parse("2026-11-16T18:00:00Z")),
+                new CurrentProject(UUID.randomUUID(), "AndeSolar", "MEMBER", "ACTIVE", "DRAFT", "UNVERIFIED", null, null)));
 
         mockMvc.perform(get("/api/v1/me/projects?offset=0&limit=1")
                 .with(jwt().jwt(token -> token.subject(PROFILE_ID.toString()))))
@@ -77,6 +78,8 @@ class CurrentProjectsControllerTest {
                 .andExpect(jsonPath("$.data[0].name").value("EcoPack"))
                 .andExpect(jsonPath("$.data[0].role").value("OWNER"))
                 .andExpect(jsonPath("$.data[0].membershipStatus").value("ACTIVE"))
+                .andExpect(jsonPath("$.data[0].status").value("REJECTED"))
+                .andExpect(jsonPath("$.data[0].reviewNote").value("Completar descripción"))
                 .andExpect(jsonPath("$.data[0].profileId").doesNotExist())
                 .andExpect(jsonPath("$.data[0].inviteeEmail").doesNotExist())
                 .andExpect(jsonPath("$.meta.hasMore").value(true));

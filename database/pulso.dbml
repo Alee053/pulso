@@ -160,6 +160,7 @@ Table projects {
 
   indexes {
     (status, published_at, id)
+    (created_at, id) [name: 'projects_pending_review_created_idx', note: "Partial where status = PENDING_REVIEW; oldest first"]
     (sector_id, stage, city)
     created_by_profile_id
   }
@@ -457,18 +458,18 @@ Table reports {
 Table admin_audit_logs {
   id uuid [pk, default: `gen_random_uuid()`]
   actor_profile_id uuid [not null]
-  action text [not null]
+  action text [not null, note: "1 a 120 caracteres; PROJECT_APPROVED o PROJECT_REJECTED para revisión de proyectos"]
   target_type text
   target_id uuid
   metadata jsonb
   created_at timestamptz [not null, default: `now()`]
 
   indexes {
-    (actor_profile_id, created_at)
-    (target_type, target_id, created_at)
+    (actor_profile_id, created_at) [name: 'admin_audit_logs_actor_created_idx']
+    (target_type, target_id, created_at) [name: 'admin_audit_logs_target_created_idx']
   }
 
-  Note: "Auditoría mínima para revisiones, suspensiones y cambios administrativos. No guardar secretos ni tokens."
+  Note: "Auditoría administrativa accesible solo por el backend. Cada revisión registra actor, objetivo PROJECT, fecha y cambio de estado en la misma transacción del proyecto. metadata no guarda la nota ni contenido aportado por personas. No guardar secretos ni tokens."
 }
 
 Table feature_flags {

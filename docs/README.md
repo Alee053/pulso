@@ -28,6 +28,9 @@ This directory is the durable reference for the codebase: what is deployed in th
 
 The database-specific workflow starts at [`database/README.md`](../database/README.md).
 
+[Administrative project review](./architecture/project-review.md) documents
+PUL-31's queue, approval/rejection, platform permission boundary, and audit transaction.
+
 The product vocabulary is maintained in [`CONTEXT.md`](../CONTEXT.md). It intentionally contains language, not implementation details.
 
 ## Documentation rules

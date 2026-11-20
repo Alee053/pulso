@@ -5,6 +5,18 @@ public final class ApiMessages {
     private ApiMessages() {
     }
 
+    public static final String PROJECT_REVIEW_TITLE = "Project review";
+    public static final String PROJECT_REVIEW_FORBIDDEN = "An active platform moderator or administrator is required.";
+    public static final String PROJECT_REVIEW_OWN_PROJECT = "Creators and active owners cannot review their own project.";
+    public static final String PROJECT_REVIEW_NOT_FOUND = "The project does not exist.";
+    public static final String PROJECT_REVIEW_STATE_CHANGED = "Only a project pending review can receive a decision.";
+    public static final String PROJECT_REVIEW_UNAVAILABLE = "Publication requires an active sector and at least one active owner.";
+    public static final String PROJECT_REVIEW_INVALID_DECISION = "decision must be APPROVE or REJECT.";
+    public static final String PROJECT_REVIEW_INVALID_VERIFICATION = "Approval requires verificationStatus VERIFIED or UNVERIFIED.";
+    public static final String PROJECT_REVIEW_NOTE_REQUIRED = "Rejection requires a review note for the project team.";
+    public static final String PROJECT_REVIEW_NOTE_TOO_LONG = "note must not exceed %d characters.";
+    public static final String PROJECT_REVIEW_REJECTION_VERIFICATION = "verificationStatus is only accepted when approving.";
+
     public static final String INVALID_REQUEST_TITLE = "Invalid request";
     public static final String INVALID_PARAMETER_DETAIL =
             "Parameter '%s' has an invalid value.";

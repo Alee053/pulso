@@ -1586,3 +1586,81 @@ A notification that belongs to another person and one that does not exist both
 return `404` with code `notification_not_found`, so an id reveals nothing about
 other people's notifications. A malformed id returns `400`, a missing or invalid
 access token `401`, and a sanitized persistence failure `503`.
+
+## Administrative project review (PUL-31)
+
+Both endpoints require a validated user access token and a persisted, active,
+non-deleted platform `MODERATOR` or `ADMIN` profile. Project `OWNER`/`ADMIN`
+membership and token claims cannot grant these permissions. A creator or active
+owner cannot decide on their own project, including with an elevated platform role.
+
+### Pending queue
+
+`GET /api/v1/admin/project-reviews?offset=0&limit=20`
+
+Returns `{ data, meta: { offset, limit, hasMore, noteMaxLength } }`. Defaults are
+offset `0`, limit `20`; limits are `1..50` and offsets `0..100000`. The default
+note limit is `2000` (`PULSO_PROJECT_REVIEW_NOTE_MAX_LENGTH`).
+
+Only `PENDING_REVIEW` projects appear, ordered by `created_at`, then `id`, oldest
+first. Each item includes `id`, `name`, `tagline`, `description`,
+`valueProposition`, `sector`, `sectorActive`, `stage`, `city`, `department`,
+`status`, `verificationStatus`, `creatorName`, `activeOwnerCount`, `canReview`,
+`createdAt`, and `publishedAt`. The `canReview` flag excludes the caller's own
+projects; approval also requires `sectorActive` and a positive active-owner count.
+This private review data is unavailable through public discovery endpoints.
+
+### Decision
+
+`POST /api/v1/admin/project-reviews/{projectId}/decision`
+
+Approval body:
+
+```json
+{ "decision": "APPROVE", "verificationStatus": "VERIFIED", "note": "Revisión básica completada" }
+```
+
+`verificationStatus` must explicitly be `VERIFIED` or `UNVERIFIED`. The note is
+optional for approval. The project must still be pending, have an active sector,
+and retain at least one active owner.
+
+Rejection body:
+
+```json
+{ "decision": "REJECT", "note": "Completar la propuesta de valor antes de publicar" }
+```
+
+Rejection requires a nonblank note and does not accept `verificationStatus`.
+It preserves the stored verification and any previous publication timestamp.
+All notes are trimmed and bounded. Actor, target status, and dates cannot be
+supplied by the client; unknown/protected fields produce `400`.
+
+Response `200 OK`: `{ projectId, status, verificationStatus, reviewNote,
+reviewedByProfileId, reviewedAt, publishedAt }`. Approval yields `PUBLISHED`,
+rejection `REJECTED`. The server records the reviewer and decision time and
+sets the first publication time only on approval. The same transaction inserts
+an `admin_audit_logs` entry with action `PROJECT_APPROVED` or `PROJECT_REJECTED`,
+actor, target `PROJECT`, target UUID, and decision time. Audit failure rolls back
+the project update. Concurrent or repeated decisions cannot create a second
+decision/audit entry.
+
+Errors use `ProblemDetail`: `401` for missing/invalid tokens or subjects;
+`403` with code `project_review_forbidden` for insufficient platform permissions
+or `project_review_own_project` for self-review; `404` with
+`project_review_not_found` for a missing project; `409` with
+`project_review_state_changed` for a non-pending project or
+`project_review_unavailable` when publication lacks an active sector/owner;
+`400` for invalid input; sanitized `503` for persistence failures.
+
+### Team-visible result
+
+`GET /api/v1/me/projects` additively includes `status`, `verificationStatus`,
+`reviewNote`, and `reviewedAt` in each active team row. The note is visible in
+**Mis equipos** to the project's active team, including members. Other accounts
+cannot read these rows. Public project responses omit the note and keep their
+`PUBLISHED` filter. Team publication-request and information-update endpoints
+still reject direct publication and verification fields.
+
+The Angular **Perfil** page exposes the review queue to active platform
+moderators/admins. See [administrative review](./architecture/project-review.md)
+for transaction, migration, and scope details.

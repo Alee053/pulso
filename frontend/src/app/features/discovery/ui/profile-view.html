@@ -142,5 +142,6 @@
         <pulso-feature-flag-settings *ngIf="profile()?.profile?.platformRole === 'ADMIN'" />
       </aside>
     </div>
+    <pulso-project-reviews *ngIf="profile()?.profile?.accountStatus === 'ACTIVE' && (profile()?.profile?.platformRole === 'MODERATOR' || profile()?.profile?.platformRole === 'ADMIN')" />
   </ng-template>
 </main>

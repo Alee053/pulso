@@ -68,6 +68,12 @@ pulso:
     default-limit: 20
     max-limit: 50
     max-offset: 100000
+  project-review:
+    default-offset: 0
+    default-limit: 20
+    max-limit: 50
+    max-offset: 100000
+    note-max-length: 2000
   project-opportunities:
     default-offset: 0
     default-limit: 20

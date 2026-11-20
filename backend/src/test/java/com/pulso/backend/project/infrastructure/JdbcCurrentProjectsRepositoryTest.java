@@ -24,7 +24,11 @@ class JdbcCurrentProjectsRepositoryTest {
         var jdbc = JdbcClient.create(new DriverManagerDataSource(
                 POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword()));
         jdbc.sql("drop table if exists public.project_members, public.projects").update();
-        jdbc.sql("create table public.projects (id uuid primary key, name text not null)").update();
+        jdbc.sql("""
+                create table public.projects (id uuid primary key, name text not null,
+                    status text default 'DRAFT', verification_status text default 'UNVERIFIED',
+                    review_note text, reviewed_at timestamptz)
+                """).update();
         jdbc.sql("""
                 create table public.project_members (
                     project_id uuid references public.projects(id), profile_id uuid,
@@ -32,7 +36,7 @@ class JdbcCurrentProjectsRepositoryTest {
                 """).update();
         for (int i = 1; i <= 6; i++) {
             UUID id = new UUID(0, i);
-            jdbc.sql("insert into public.projects values (:id, :name)")
+            jdbc.sql("insert into public.projects (id, name) values (:id, :name)")
                     .param("id", id).param("name", "Project " + i).update();
             jdbc.sql("insert into public.project_members values (:id, :profile, :role, :status)")
                     .param("id", id).param("profile", i == 3 ? UUID.randomUUID() : PROFILE_ID)

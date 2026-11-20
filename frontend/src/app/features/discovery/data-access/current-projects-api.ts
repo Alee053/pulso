@@ -4,6 +4,7 @@ import { catchError, map, throwError, type Observable } from 'rxjs'
 import { appConfig } from '../../../core/config/app-config'
 import type { CurrentProjectsPage } from '../domain/member-invitation'
 import { invitationStrings } from '../strings/invitation.strings'
+import { projectStatuses } from '../domain/project-review'
 
 @Injectable({ providedIn: 'root' })
 export class CurrentProjectsApi {
@@ -21,12 +22,19 @@ export class CurrentProjectsApi {
           || page.meta.limit !== 20 || typeof page.meta.hasMore !== 'boolean' || page.data.length > 20
           || page.data.some((project) => !project || typeof project.projectId !== 'string' || !project.projectId
             || typeof project.name !== 'string' || !['OWNER', 'ADMIN', 'MEMBER'].includes(project.role)
-            || project.membershipStatus !== 'ACTIVE')) {
+            || project.membershipStatus !== 'ACTIVE'
+            || (project.status !== undefined && !projectStatuses.includes(project.status))
+            || (project.reviewNote !== undefined && project.reviewNote !== null && typeof project.reviewNote !== 'string'))) {
           throw new Error('Invalid current projects response')
         }
         return {
           data: page.data.map((project) => ({ projectId: project.projectId, name: project.name,
-            role: project.role, membershipStatus: project.membershipStatus })),
+            role: project.role, membershipStatus: project.membershipStatus,
+            ...(project.status !== undefined ? { status: project.status } : {}),
+            ...(project.verificationStatus !== undefined ? { verificationStatus: project.verificationStatus } : {}),
+            ...(project.reviewNote !== undefined ? { reviewNote: project.reviewNote } : {}),
+            ...(project.reviewedAt !== undefined ? { reviewedAt: project.reviewedAt } : {}),
+          })),
           meta: { offset: page.meta.offset, limit: page.meta.limit, hasMore: page.meta.hasMore },
         }
       }),

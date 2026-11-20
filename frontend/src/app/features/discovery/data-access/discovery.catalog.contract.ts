@@ -21,7 +21,14 @@ export const apiPaths = {
   interestedProjects: '/api/v1/me/interested-projects',
   projectFeedback: '/api/v1/me/project-feedback',
   projects: '/api/v1/projects',
+  projectReviews: '/api/v1/admin/project-reviews',
 } as const;
+
+export const projectReviewContract = {
+  pageSize: 20,
+  maxOffset: 100_000,
+  noteMaxLength: 2000,
+} as const
 
 export const preferenceContract = {
   maxItemsPerField: 10,

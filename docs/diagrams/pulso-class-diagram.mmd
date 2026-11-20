@@ -86,6 +86,10 @@ classDiagram
     +text verificationStatus
     +json media
     +json externalLinks
+    +UUID reviewedByProfileId
+    +text reviewNote
+    +timestamp reviewedAt
+    +timestamp publishedAt
   }
 
   class ProjectTag {
@@ -280,6 +284,7 @@ classDiagram
   Skill "1" --> "*" ProfileSkill : representa
 
   Profile "1" --> "*" Project : crea
+  Profile "0..1" --> "*" Project : revisa
   Sector "1" --> "*" Project : clasifica
   Project "1" --> "*" ProjectTag : usa
   Tag "1" --> "*" ProjectTag : etiqueta

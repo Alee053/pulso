@@ -258,7 +258,11 @@ classDiagram
   class Report {
     +UUID id
     +UUID reporterProfileId
+    +UUID targetProfileId
+    +UUID targetProjectId
+    +UUID targetMessageId
     +text reason
+    +text description
     +text status
     +text resolutionNote
     +timestamp createdAt
@@ -323,6 +327,7 @@ classDiagram
   Conversation "0..1" --> "*" Notification : contextualiza
   ConnectionIntent "0..1" --> "*" Notification : contextualiza
   Profile "1" --> "*" Report : reporta
+  %% Cada Report tiene exactamente un objetivo.
   Profile "0..1" --> "*" Report : es reportado
   Project "0..1" --> "*" Report : es reportado
   Message "0..1" --> "*" Report : es reportado

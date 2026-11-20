@@ -1,0 +1,34 @@
+import { defineStrings } from '../../../core/i18n/define-strings'
+
+export const reportStrings = defineStrings(
+  {
+    project: 'Reportar proyecto',
+    profile: (name: string) => `Reportar perfil de ${name}`,
+    reason: 'Motivo',
+    chooseReason: 'Selecciona un motivo',
+    spam: 'Spam',
+    abuse: 'Acoso o abuso',
+    impersonation: 'Suplantación',
+    other: 'Otro',
+    description: 'Descripción (opcional)',
+    submit: 'Enviar reporte',
+    submitting: 'Enviando reporte…',
+    success: 'Reporte enviado.',
+    error: 'No se pudo enviar el reporte. Puedes volver a intentarlo.',
+  },
+  {
+    project: 'Report project',
+    profile: (name: string) => `Report ${name}’s profile`,
+    reason: 'Reason',
+    chooseReason: 'Select a reason',
+    spam: 'Spam',
+    abuse: 'Harassment or abuse',
+    impersonation: 'Impersonation',
+    other: 'Other',
+    description: 'Description (optional)',
+    submit: 'Submit report',
+    submitting: 'Submitting report…',
+    success: 'Report submitted.',
+    error: 'The report could not be submitted. You can try again.',
+  },
+)

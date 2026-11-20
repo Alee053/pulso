@@ -30,16 +30,19 @@ import { projectStageStrings } from '../strings/project.strings'
 import { matchStrings } from '../strings/match.strings'
 import { OpportunityMatchComponent } from './opportunity-match'
 import { ShareButtonComponent } from './share-button'
+import { ReportFormComponent } from './report-form'
+import { reportStrings } from '../strings/report.strings'
 
 @Component({
     selector: 'pulso-public-project-detail',
     standalone: true,
-    imports: [CommonModule, IconComponent, OpportunityMatchComponent, ShareButtonComponent],
+    imports: [CommonModule, IconComponent, OpportunityMatchComponent, ShareButtonComponent, ReportFormComponent],
     templateUrl: './public-project-detail.html',
 })
 export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterViewChecked, OnDestroy {
     readonly strings = detailStrings
     readonly matchStrings = matchStrings
+    readonly reportStrings = reportStrings
     @Input() projectId!: string
     @Input() recommendation = ''
     @Output() closed = new EventEmitter<void>()
@@ -123,9 +126,12 @@ export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterVie
         }
     }
 
-    private focusableElements(): NodeListOf<HTMLElement> {
-        return this.element.nativeElement.querySelectorAll<HTMLElement>(
-            'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+    private focusableElements(): HTMLElement[] {
+        const candidates = this.element.nativeElement.querySelectorAll<HTMLElement>(
+            'button:not(:disabled), a[href], summary, select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+        )
+        return Array.from(candidates).filter(candidate =>
+            candidate.tagName === 'SUMMARY' || !candidate.closest('details:not([open])'),
         )
     }
 

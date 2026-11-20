@@ -167,3 +167,9 @@ do not put them in the frontend environment.
 
 Hosted Supabase credentials belong in the deployment secret manager. Do not
 commit `.env`, project passwords, JWT secrets, or service-role keys.
+
+PUL-29 adds the backend-only `reports` table. Apply the additive migration
+before starting a backend that exposes report creation. It needs no backfill.
+Restricted foreign keys protect the referenced evidence and may prevent hard
+deletion of linked rows. The migration can stay in place if the application is
+rolled back.

@@ -1,0 +1,32 @@
+<details class="mt-3">
+  <summary #trigger class="cursor-pointer text-sm text-[var(--color-muted)]">{{ label() }}</summary>
+  @if (state() === 'success') {
+    <p role="status" class="mt-2">{{ strings.success }}</p>
+  } @else {
+    <form #form class="mt-3 grid gap-3" (submit)="submit($event, form, trigger, reason.value, description.value)">
+      <fieldset class="grid min-w-0 gap-3" [disabled]="state() === 'sending'">
+        <label class="grid gap-1">
+          {{ strings.reason }}
+          <select #reason required class="field-input">
+            <option value="" disabled selected>{{ strings.chooseReason }}</option>
+            <option value="SPAM">{{ strings.spam }}</option>
+            <option value="ABUSE">{{ strings.abuse }}</option>
+            <option value="IMPERSONATION">{{ strings.impersonation }}</option>
+            <option value="OTHER">{{ strings.other }}</option>
+          </select>
+        </label>
+        <label class="grid gap-1">
+          {{ strings.description }}
+          <textarea #description class="field-input" rows="3" maxlength="2000"></textarea>
+        </label>
+        <button type="submit" class="solid-button justify-self-start">{{ strings.submit }}</button>
+      </fieldset>
+      @if (state() === 'sending') {
+        <p role="status">{{ strings.submitting }}</p>
+      }
+      @if (state() === 'error') {
+        <p role="alert" class="text-[var(--color-error)]">{{ strings.error }}</p>
+      }
+    </form>
+  }
+</details>

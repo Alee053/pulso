@@ -8,6 +8,19 @@ import { ProjectTeamsComponent } from './project-teams'
 
 const path = 'http://localhost:8080/api/v1/me/projects?offset=0&limit=20'
 
+function projectRow(
+  projectId: string,
+  name: string,
+  role: string,
+  extra: Record<string, unknown> = {},
+) {
+  return {
+    projectId, name, tagline: 'Propuesta breve', description: 'Descripción actual',
+    valueProposition: 'Propuesta de valor', sectorId: 'sector-1', sectorName: 'Tecnología', stage: 'IDEA',
+    city: null, department: null, role, membershipStatus: 'ACTIVE', ...extra,
+  }
+}
+
 function setup() {
   const auth = { session: signal<{ id: string; email: string } | null>({ id: 'actor-1', email: 'actor@example.test' }) }
   TestBed.configureTestingModule({ imports: [ProjectTeamsComponent], providers: [
@@ -29,8 +42,10 @@ function flushMembers(http: HttpTestingController, roles: Record<string, string>
 describe('ProjectTeamsComponent', () => {
   it('shows the publication status and rejection note to an active project member', () => {
     const { fixture, http } = setup()
-    http.expectOne(path).flush({ data: [{ projectId: 'p1', name: 'EcoPack', role: 'MEMBER', membershipStatus: 'ACTIVE',
-      status: 'REJECTED', verificationStatus: 'UNVERIFIED', reviewNote: 'Completar la propuesta de valor.', reviewedAt: '2026-11-16T18:00:00Z' }],
+    http.expectOne(path).flush({ data: [projectRow('p1', 'EcoPack', 'MEMBER', {
+      status: 'REJECTED', verificationStatus: 'UNVERIFIED', reviewNote: 'Completar la propuesta de valor.',
+      reviewedAt: '2026-11-16T18:00:00Z',
+    })],
       meta: { offset: 0, limit: 20, hasMore: false } })
     fixture.detectChanges()
     flushMembers(http, { p1: 'MEMBER' })
@@ -41,14 +56,14 @@ describe('ProjectTeamsComponent', () => {
   })
   it('refreshes permissions and withdraws admin controls after the backend reports a role change', () => {
     const { fixture, http } = setup()
-    http.expectOne(path).flush({ data: [{ projectId: 'p1', name: 'EcoPack', role: 'ADMIN', membershipStatus: 'ACTIVE' }],
+    http.expectOne(path).flush({ data: [projectRow('p1', 'EcoPack', 'ADMIN')],
       meta: { offset: 0, limit: 20, hasMore: false } })
     fixture.detectChanges()
     flushMembers(http, { p1: 'ADMIN' })
     fixture.detectChanges()
     expect(fixture.nativeElement.querySelector('form')).not.toBeNull()
     fixture.nativeElement.querySelector('[data-action=refresh-teams]').click()
-    http.expectOne(path).flush({ data: [{ projectId: 'p1', name: 'EcoPack', role: 'MEMBER', membershipStatus: 'ACTIVE' }],
+    http.expectOne(path).flush({ data: [projectRow('p1', 'EcoPack', 'MEMBER')],
       meta: { offset: 0, limit: 20, hasMore: false } })
     fixture.detectChanges()
     flushMembers(http, { p1: 'MEMBER' })
@@ -79,7 +94,7 @@ describe('ProjectTeamsComponent', () => {
 
   it('loads subsequent pages and retains existing teams', () => {
     const { fixture, http } = setup()
-    http.expectOne(path).flush({ data: [{ projectId: 'p1', name: 'First', role: 'MEMBER', membershipStatus: 'ACTIVE' }],
+    http.expectOne(path).flush({ data: [projectRow('p1', 'First', 'MEMBER')],
       meta: { offset: 0, limit: 20, hasMore: true } })
     fixture.detectChanges()
     flushMembers(http, { p1: 'MEMBER' })
@@ -88,7 +103,7 @@ describe('ProjectTeamsComponent', () => {
       .find((button: HTMLButtonElement) => button.textContent.trim() === 'Cargar más equipos')
     more.click()
     http.expectOne('http://localhost:8080/api/v1/me/projects?offset=20&limit=20').flush({
-      data: [{ projectId: 'p2', name: 'Second', role: 'ADMIN', membershipStatus: 'ACTIVE' }],
+      data: [projectRow('p2', 'Second', 'ADMIN')],
       meta: { offset: 20, limit: 20, hasMore: false },
     })
     fixture.detectChanges()
@@ -116,9 +131,9 @@ describe('ProjectTeamsComponent', () => {
     const { fixture, http } = setup()
     expect(fixture.nativeElement.textContent).toContain('Cargando tus equipos')
     http.expectOne(path).flush({ data: [
-      { projectId: 'p1', name: 'Owner project', role: 'OWNER', membershipStatus: 'ACTIVE' },
-      { projectId: 'p2', name: 'Admin project', role: 'ADMIN', membershipStatus: 'ACTIVE' },
-      { projectId: 'p3', name: 'Member project', role: 'MEMBER', membershipStatus: 'ACTIVE' },
+      projectRow('p1', 'Owner project', 'OWNER'),
+      projectRow('p2', 'Admin project', 'ADMIN'),
+      projectRow('p3', 'Member project', 'MEMBER'),
     ], meta: { offset: 0, limit: 20, hasMore: false } })
     fixture.detectChanges()
     flushMembers(http, { p1: 'OWNER', p2: 'ADMIN', p3: 'MEMBER' })
@@ -132,7 +147,7 @@ describe('ProjectTeamsComponent', () => {
 
   it('removes invitation and administration controls after demoting own membership', () => {
     const { fixture, http } = setup()
-    http.expectOne(path).flush({ data: [{ projectId: 'p1', name: 'EcoPack', role: 'ADMIN', membershipStatus: 'ACTIVE' }],
+    http.expectOne(path).flush({ data: [projectRow('p1', 'EcoPack', 'ADMIN')],
       meta: { offset: 0, limit: 20, hasMore: false } })
     fixture.detectChanges()
     const membersPath = 'http://localhost:8080/api/v1/projects/p1/members'
@@ -159,7 +174,7 @@ describe('ProjectTeamsComponent', () => {
 
   it('removes a project immediately after own active membership leaves', () => {
     const { fixture, http } = setup()
-    http.expectOne(path).flush({ data: [{ projectId: 'p1', name: 'EcoPack', role: 'ADMIN', membershipStatus: 'ACTIVE' }],
+    http.expectOne(path).flush({ data: [projectRow('p1', 'EcoPack', 'ADMIN')],
       meta: { offset: 0, limit: 20, hasMore: false } })
     fixture.detectChanges()
     const membersPath = 'http://localhost:8080/api/v1/projects/p1/members'
@@ -181,8 +196,7 @@ describe('ProjectTeamsComponent', () => {
 
   it('adjusts and cancels stale team pagination when a loaded membership leaves', () => {
     const { fixture, http } = setup()
-    const projects = Array.from({ length: 20 }, (_, index) => ({ projectId: `p${index}`, name: `Team ${index}`,
-      role: 'MEMBER', membershipStatus: 'ACTIVE' }))
+    const projects = Array.from({ length: 20 }, (_, index) => projectRow(`p${index}`, `Team ${index}`, 'MEMBER'))
     http.expectOne(path).flush({ data: projects, meta: { offset: 0, limit: 20, hasMore: true } })
     fixture.detectChanges()
     flushMembers(http, Object.fromEntries(projects.map((project) => [project.projectId, project.role])))
@@ -193,7 +207,7 @@ describe('ProjectTeamsComponent', () => {
     expect(stale.cancelled).toBe(true)
     fixture.componentInstance.load()
     http.expectOne('http://localhost:8080/api/v1/me/projects?offset=19&limit=20').flush({
-      data: [{ projectId: 'p20', name: 'Previously 21st team', role: 'MEMBER', membershipStatus: 'ACTIVE' }],
+      data: [projectRow('p20', 'Previously 21st team', 'MEMBER')],
       meta: { offset: 19, limit: 20, hasMore: false },
     })
     fixture.detectChanges()

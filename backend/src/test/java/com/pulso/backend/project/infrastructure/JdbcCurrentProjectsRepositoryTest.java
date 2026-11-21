@@ -23,9 +23,14 @@ class JdbcCurrentProjectsRepositoryTest {
     void setUp() {
         var jdbc = JdbcClient.create(new DriverManagerDataSource(
                 POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword()));
-        jdbc.sql("drop table if exists public.project_members, public.projects").update();
+        jdbc.sql("drop table if exists public.project_members, public.projects, public.sectors").update();
+        jdbc.sql("create table public.sectors (id uuid primary key, name text not null)").update();
+        jdbc.sql("insert into public.sectors (id, name) values (:id, 'Technology')")
+                .param("id", new UUID(1, 1)).update();
         jdbc.sql("""
                 create table public.projects (id uuid primary key, name text not null,
+                    tagline text not null, description text, value_proposition text,
+                    sector_id uuid not null, stage text not null, city text, department text,
                     status text default 'DRAFT', verification_status text default 'UNVERIFIED',
                     review_note text, reviewed_at timestamptz)
                 """).update();
@@ -36,8 +41,12 @@ class JdbcCurrentProjectsRepositoryTest {
                 """).update();
         for (int i = 1; i <= 6; i++) {
             UUID id = new UUID(0, i);
-            jdbc.sql("insert into public.projects (id, name) values (:id, :name)")
-                    .param("id", id).param("name", "Project " + i).update();
+            jdbc.sql("""
+                    insert into public.projects (id, name, tagline, sector_id, stage)
+                    values (:id, :name, :tagline, :sectorId, 'IDEA')
+                    """)
+                    .param("id", id).param("name", "Project " + i).param("tagline", "Project tagline")
+                    .param("sectorId", new UUID(1, 1)).update();
             jdbc.sql("insert into public.project_members values (:id, :profile, :role, :status)")
                     .param("id", id).param("profile", i == 3 ? UUID.randomUUID() : PROFILE_ID)
                     .param("role", i == 1 ? "ADMIN" : "MEMBER")
@@ -56,6 +65,9 @@ class JdbcCurrentProjectsRepositoryTest {
         var projects = repository.findActive(PROFILE_ID, 0, 20);
         assertThat(projects).extracting(project -> project.name()).containsExactly("Project 1", "Project 2");
         assertThat(projects).extracting(project -> project.role()).containsExactly("ADMIN", "MEMBER");
+        assertThat(projects.get(0).tagline()).isEqualTo("Project tagline");
+        assertThat(projects.get(0).sectorId()).isEqualTo(new UUID(1, 1));
+        assertThat(projects.get(0).sectorName()).isEqualTo("Technology");
     }
 
     @Test

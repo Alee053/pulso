@@ -1,4 +1,5 @@
 import type { ProjectStatus } from './project-review'
+import type { ProjectStage } from './project'
 
 export interface MembershipResult {
   projectId: string
@@ -13,6 +14,14 @@ export interface InvitationFailure {
 export interface CurrentProjectMembership {
   projectId: string
   name: string
+  tagline: string
+  description: string | null
+  valueProposition: string | null
+  sectorId: string
+  sectorName: string
+  stage: ProjectStage
+  city: string | null
+  department: string | null
   role: 'OWNER' | 'ADMIN' | 'MEMBER'
   membershipStatus: 'ACTIVE'
   status?: ProjectStatus

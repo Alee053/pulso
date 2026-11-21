@@ -115,6 +115,7 @@
 
                 <pulso-project-teams *ngSwitchCase="'teams'"
                                      [skills]="session.referenceCatalogs().skills"
+                                     [sectors]="session.referenceCatalogs().sectors"
                                      [catalogsLoaded]="session.hasLoadedReferenceCatalogs()"
                                      [catalogsLoading]="session.areCatalogsLoading()"
                                      [catalogsErrorMessage]="session.catalogsErrorMessage()"

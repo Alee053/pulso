@@ -1,4 +1,5 @@
 import { projectStageStrings } from '../strings/project.strings'
+import type { ProjectStatus } from './project-review'
 
 export const projectStages = [
   'IDEA',
@@ -68,7 +69,7 @@ export interface UpdatedProject {
   stage: ProjectStage
   city: string | null
   department: string | null
-  status: string
+  status: ProjectStatus
   verificationStatus: string
   createdByProfileId: string | null
   createdAt: string

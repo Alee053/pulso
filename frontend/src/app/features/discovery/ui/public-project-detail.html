@@ -49,6 +49,9 @@
 
     <!-- Estado: Cargado -->
     <article *ngIf="loadedProject as project" class="project-detail">
+        @if (isSignedIn) {
+          <pulso-report-form [target]="{ targetProjectId: project.id }" [label]="reportStrings.project" />
+        }
         <img *ngIf="project.imageUrl && !hasImageError"
              [src]="project.imageUrl" [alt]="project.imageAlt || project.name"
              class="mb-6 aspect-video w-full rounded-xl object-cover"
@@ -152,15 +155,20 @@
         <section *ngIf="project.members.length > 0" class="mb-6">
             <h2 class="text-xl font-semibold text-[var(--color-text)] mb-2">{{ strings.members }}</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div *ngFor="let member of project.members" class="flex items-center gap-3 p-4 bg-[var(--color-surface-raised)] rounded-lg">
+                @for (member of project.members; track member.profileId) {
+                <div class="flex items-start gap-3 p-4 bg-[var(--color-surface-raised)] rounded-lg">
                     <div class="w-12 h-12 rounded-full bg-[var(--color-accent-surface)] flex items-center justify-center text-[var(--color-accent)] font-semibold" aria-hidden="true">
                         {{ member.displayName.charAt(0) }}
                     </div>
                     <div class="flex-1">
                         <p class="font-medium text-[var(--color-text)]">{{ member.displayName }}</p>
                         <p class="text-sm text-[var(--color-muted)]">{{ member.displayTitle }}</p>
+                        @if (isSignedIn) {
+                          <pulso-report-form [target]="{ targetProfileId: member.profileId }" [label]="reportStrings.profile(member.displayName)" />
+                        }
                     </div>
                 </div>
+                }
             </div>
         </section>
     </article>

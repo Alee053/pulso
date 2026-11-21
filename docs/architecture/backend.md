@@ -106,6 +106,12 @@ moderator/admin, reject self-review, and commit the project change and
 `admin_audit_logs` entry together. Active team reads expose the review note;
 public project reads retain their existing publication boundary.
 
+The `report/` feature creates trust reports from an authenticated product
+profile. Its JDBC adapter checks target visibility or active conversation
+participation in the same statement that inserts the report. The response
+contains only a receipt. The table is backend-only and the existing project
+review authorization remains independent of report creation.
+
 The first real product feature is organized by business capability. Add another
 feature package only when there is a real business capability, not merely
 because a new table or controller exists. Spring Boot does not require this

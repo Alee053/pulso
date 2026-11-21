@@ -54,9 +54,21 @@ import com.pulso.backend.project.domain.MemberInvitationPermissionException;
 import com.pulso.backend.project.domain.MemberInvitationProjectNotFoundException;
 import com.pulso.backend.project.domain.ProjectValidationException;
 import com.pulso.backend.project.domain.ProjectReviewException;
+import com.pulso.backend.report.application.ReportTargetNotFoundException;
+import com.pulso.backend.report.domain.ReportValidationException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+
+    @ExceptionHandler(ReportValidationException.class)
+    ProblemDetail invalidReport(ReportValidationException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
+    }
+
+    @ExceptionHandler(ReportTargetNotFoundException.class)
+    ProblemDetail reportTargetNotFound(ReportTargetNotFoundException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, exception.getMessage());
+    }
 
     @ExceptionHandler(ProjectReviewException.class)
     ProblemDetail projectReview(ProjectReviewException exception) {

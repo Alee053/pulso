@@ -5,6 +5,7 @@ import { ConnectionIntentsApi } from '../data-access/connection-intents-api'
 import type { ConnectionIntent } from '../domain/startup'
 import { LanguageService } from '../../../core/i18n/language.service'
 import { requestsStrings } from '../strings/requests.strings'
+import { ProfileBlockApi } from '../data-access/profile-block-api' // NUEVO
 
 @Component({
   selector: 'pulso-requests-view',
@@ -41,6 +42,8 @@ import { requestsStrings } from '../strings/requests.strings'
           <div class="flex gap-2">
             <button type="button" class="solid-button" (click)="accept(req.id)">{{ strings.accept }}</button>
             <button type="button" class="contact-button" (click)="decline(req.id)">{{ strings.decline }}</button>
+            <!-- BOTÓN DE BLOQUEAR -->
+            <button type="button" class="text-[var(--color-error)] text-sm hover:underline px-2" (click)="blockSender(req)">Bloquear</button>
           </div>
         </div>
       </div>
@@ -50,6 +53,7 @@ import { requestsStrings } from '../strings/requests.strings'
 export class RequestsViewComponent implements OnInit {
   private readonly api = inject(ConnectionIntentsApi)
   private readonly languageService = inject(LanguageService)
+  private readonly blockApi = inject(ProfileBlockApi) // NUEVO
   
   readonly requests = signal<ConnectionIntent[]>([])
   readonly isLoading = signal(true)
@@ -82,5 +86,15 @@ export class RequestsViewComponent implements OnInit {
 
   decline(id: string): void {
     this.api.declineIntent(id).subscribe(() => this.loadRequests())
+  }
+
+  
+  blockSender(req: ConnectionIntent): void {
+    this.blockApi.blockProfile(req.fromProfileId).subscribe({
+      next: () => {
+        this.decline(req.id) 
+      },
+      error: () => alert('Error al bloquear al usuario.')
+    })
   }
 }

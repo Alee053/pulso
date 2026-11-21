@@ -12,6 +12,7 @@ import com.pulso.backend.connection.domain.ConnectionIntent;
 import com.pulso.backend.connection.domain.ConnectionIntentReason;
 import com.pulso.backend.connection.domain.ConnectionIntentValidationException;
 import com.pulso.backend.notification.application.RecordingNotificationPublisher;
+import com.pulso.backend.profile.application.ProfileBlockRepository;
 
 class CreateConnectionIntentTest {
 
@@ -21,12 +22,20 @@ class CreateConnectionIntentTest {
     private static final UUID INTENT_ID = id("44444444-4444-4444-4444-444444444444");
     private static final OffsetDateTime CREATED_AT = OffsetDateTime.parse("2026-11-03T12:00:00Z");
 
+    
+    private final ProfileBlockRepository noBlocks = new ProfileBlockRepository() {
+        @Override public void block(UUID b, UUID bl) {}
+        @Override public void unblock(UUID b, UUID bl) {}
+        @Override public boolean isBlockedInAnyDirection(UUID a, UUID b) { return false; }
+    };
+
     @Test
     void createsAProjectOnlyRequestForTheAuthenticatedSender() {
         RecordingRepository repository = new RecordingRepository();
         RecordingNotificationPublisher notifications = new RecordingNotificationPublisher();
 
-        ConnectionIntent created = new CreateConnectionIntent(repository, notifications).execute(
+        // 2. Añadido 'noBlocks' al constructor
+        ConnectionIntent created = new CreateConnectionIntent(repository, notifications, noBlocks).execute(
                 PROJECT_ID, SENDER_ID, null, "COLLABORATE", null);
 
         assertThat(notifications.requests).containsExactly(
@@ -44,8 +53,9 @@ class CreateConnectionIntentTest {
     void createsAnOpportunityRequestWithAnOptionalMessage() {
         RecordingRepository repository = new RecordingRepository();
 
+        
         ConnectionIntent created = new CreateConnectionIntent(
-                repository, new RecordingNotificationPublisher()).execute(
+                repository, new RecordingNotificationPublisher(), noBlocks).execute(
                 PROJECT_ID, SENDER_ID, OPPORTUNITY_ID, " offer_service ", "Me interesa colaborar.");
 
         assertThat(repository.senderId).isEqualTo(SENDER_ID);
@@ -64,7 +74,8 @@ class CreateConnectionIntentTest {
             repository.failure = new ConnectionIntentRejectedException(reason);
             RecordingNotificationPublisher notifications = new RecordingNotificationPublisher();
 
-            assertThatThrownBy(() -> new CreateConnectionIntent(repository, notifications).execute(
+            // 2. Añadido 'noBlocks' al constructor
+            assertThatThrownBy(() -> new CreateConnectionIntent(repository, notifications, noBlocks).execute(
                     PROJECT_ID, SENDER_ID, null, "OTHER", null))
                     .isSameAs(repository.failure);
             assertThat(repository.callCount).isEqualTo(1);
@@ -75,10 +86,10 @@ class CreateConnectionIntentTest {
     @Test
     void invalidReasonDoesNotCallTheRepository() {
         RecordingRepository repository = new RecordingRepository();
-
         RecordingNotificationPublisher notifications = new RecordingNotificationPublisher();
 
-        assertThatThrownBy(() -> new CreateConnectionIntent(repository, notifications).execute(
+        // 2. Añadido 'noBlocks' al constructor
+        assertThatThrownBy(() -> new CreateConnectionIntent(repository, notifications, noBlocks).execute(
                 PROJECT_ID, SENDER_ID, null, "UNKNOWN", null))
                 .isInstanceOf(ConnectionIntentValidationException.class);
 
@@ -89,8 +100,10 @@ class CreateConnectionIntentTest {
     @Test
     void missingAuthenticatedSenderOrProjectDoesNotCallTheRepository() {
         RecordingRepository repository = new RecordingRepository();
+        
+        // 2. Añadido 'noBlocks' al constructor
         CreateConnectionIntent useCase = new CreateConnectionIntent(
-                repository, new RecordingNotificationPublisher());
+                repository, new RecordingNotificationPublisher(), noBlocks);
 
         assertThatThrownBy(() -> useCase.execute(PROJECT_ID, null, null, "OTHER", null))
                 .isInstanceOf(ConnectionIntentValidationException.class);
@@ -138,6 +151,12 @@ class CreateConnectionIntentTest {
                     targetReason,
                     targetMessage,
                     CREATED_AT);
+        }
+
+        
+        @Override
+        public UUID findTargetProfileId(UUID projectId, UUID opportunityId) {
+            return null; 
         }
     }
 }

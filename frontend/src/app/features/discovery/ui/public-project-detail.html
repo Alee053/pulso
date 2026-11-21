@@ -152,7 +152,7 @@
         </section>
 
         <!-- Miembros destacados -->
-        <section *ngIf="project.members.length > 0" class="mb-6">
+         <section *ngIf="project.members.length > 0" class="mb-6">
             <h2 class="text-xl font-semibold text-[var(--color-text)] mb-2">{{ strings.members }}</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 @for (member of project.members; track member.profileId) {
@@ -164,7 +164,23 @@
                         <p class="font-medium text-[var(--color-text)]">{{ member.displayName }}</p>
                         <p class="text-sm text-[var(--color-muted)]">{{ member.displayTitle }}</p>
                         @if (isSignedIn) {
-                          <pulso-report-form [target]="{ targetProfileId: member.profileId }" [label]="reportStrings.profile(member.displayName)" />
+                          <div class="mt-2 flex flex-wrap gap-3 items-center">
+                            <pulso-report-form [target]="{ targetProfileId: member.profileId }" [label]="reportStrings.profile(member.displayName)" />
+                            
+                            <!-- BOTÓN DE BLOQUEAR -->
+                            <details class="relative inline-block text-sm">
+                                <summary class="cursor-pointer text-[var(--color-error)] hover:underline list-none">
+                                    🚫 {{ profileStrings.blockUser }}
+                                </summary>
+                                <div class="absolute right-0 z-10 mt-1 w-56 rounded-md bg-[var(--color-surface-raised)] p-3 shadow-lg border border-[var(--color-border)]">
+                                    <p class="mb-3 text-xs text-[var(--color-text)]">{{ profileStrings.blockConfirm }}</p>
+                                    <div class="flex justify-end gap-2">
+                                        <button type="button" class="text-xs text-[var(--color-muted)] hover:underline" (click)="cancelBlock($event)">Cancelar</button>
+                                        <button type="button" class="text-xs text-[var(--color-error)] font-bold hover:underline" (click)="onBlockProfile(member.profileId)">Bloquear</button>
+                                    </div>
+                                </div>
+                            </details>
+                          </div>
                         }
                     </div>
                 </div>

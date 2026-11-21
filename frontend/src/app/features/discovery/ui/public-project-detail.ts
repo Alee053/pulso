@@ -32,6 +32,8 @@ import { OpportunityMatchComponent } from './opportunity-match'
 import { ShareButtonComponent } from './share-button'
 import { ReportFormComponent } from './report-form'
 import { reportStrings } from '../strings/report.strings'
+import { ProfileBlockApi } from '../data-access/profile-block-api'
+import { profileStrings } from '../strings/profile.strings'
 
 @Component({
     selector: 'pulso-public-project-detail',
@@ -41,6 +43,8 @@ import { reportStrings } from '../strings/report.strings'
 })
 export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterViewChecked, OnDestroy {
     readonly strings = detailStrings
+    readonly profileStrings = profileStrings
+    private readonly blockApi = inject(ProfileBlockApi)
     readonly matchStrings = matchStrings
     readonly reportStrings = reportStrings
     @Input() projectId!: string
@@ -263,6 +267,26 @@ export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterVie
             popularity: 0,
             exploration: 0,
         }
+    }
+
+    cancelBlock(event: Event): void {
+        
+        const details = (event.target as HTMLElement).closest('details');
+        if (details) {
+            details.removeAttribute('open');
+        }
+    }
+
+    onBlockProfile(profileId: string): void {
+        this.blockApi.blockProfile(profileId).subscribe({
+            next: () => {
+                alert(this.profileStrings.blockSuccess);
+                this.close(); // Cerramos el modal asumiendo que ya no quieres ver nada de ese proyecto
+            },
+            error: () => {
+                alert(this.profileStrings.blockFailed);
+            }
+        });
     }
 
     ngOnDestroy(): void {

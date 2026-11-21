@@ -88,6 +88,8 @@ public class JdbcConnectionIntentRepository implements ConnectionIntentRepositor
         }
     }
 
+    
+
     private boolean lockActiveSender(UUID senderProfileId) {
         return jdbcClient.sql("""
                 select id
@@ -117,6 +119,19 @@ public class JdbcConnectionIntentRepository implements ConnectionIntentRepositor
                 .query(UUID.class)
                 .optional()
                 .isPresent();
+    }
+
+    @Override
+    public UUID findTargetProfileId(UUID projectId, UUID opportunityId) {
+        return jdbcClient.sql("""
+                select created_by_profile_id 
+                from public.projects 
+                where id = :projectId
+                """)
+                .param("projectId", projectId)
+                .query(UUID.class)
+                .optional()
+                .orElse(null);
     }
 
     private boolean lockOpenOpportunity(UUID projectId, UUID opportunityId) {

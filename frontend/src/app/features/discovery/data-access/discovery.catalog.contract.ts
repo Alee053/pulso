@@ -22,6 +22,7 @@ export const apiPaths = {
   projectFeedback: '/api/v1/me/project-feedback',
   projects: '/api/v1/projects',
   projectReviews: '/api/v1/admin/project-reviews',
+  blockProfile: (targetId: string) => `/api/v1/profiles/${targetId}/block`,
 } as const;
 
 export const projectReviewContract = {

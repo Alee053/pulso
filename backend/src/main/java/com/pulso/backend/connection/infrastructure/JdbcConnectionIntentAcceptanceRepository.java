@@ -3,6 +3,7 @@ package com.pulso.backend.connection.infrastructure;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -236,20 +237,32 @@ public class JdbcConnectionIntentAcceptanceRepository
             throw new ConnectionIntentConflictException();
         }
     }
-  
+
     @Override
-    public java.util.List<ConnectionIntent> findPendingByProjectMembership(java.util.UUID profileId) {
+    public List<ConnectionIntent> findPendingByProjectMembership(UUID profileId, int offset, int limit) {
         return jdbcClient.sql("""
-            select i.id, i.from_profile_id, i.project_id, i.opportunity_id, i.reason, i.message, i.status, i.responded_by_profile_id, i.created_at
+            select i.id, i.from_profile_id, i.project_id, i.opportunity_id,
+                   i.reason, i.message, i.status, i.responded_by_profile_id, i.created_at
             from public.connection_intents i
             join public.project_members pm on pm.project_id = i.project_id
             where i.status = 'PENDING'
+              and i.from_profile_id <> :profileId
               and pm.profile_id = :profileId
               and pm.membership_status = 'ACTIVE'
               and pm.role in ('OWNER', 'ADMIN')
-            order by i.created_at desc
+              and not exists (
+                  select 1
+                  from public.profile_blocks block
+                  where (block.blocker_profile_id = :profileId and block.blocked_profile_id = i.from_profile_id)
+                     or (block.blocker_profile_id = i.from_profile_id and block.blocked_profile_id = :profileId)
+              )
+            order by i.created_at desc, i.id desc
+            offset :offset
+            limit :limit
             """)
             .param("profileId", profileId)
+            .param("offset", offset)
+            .param("limit", limit)
             .query(JdbcConnectionIntentAcceptanceRepository::mapConnectionIntent)
             .list();
     }

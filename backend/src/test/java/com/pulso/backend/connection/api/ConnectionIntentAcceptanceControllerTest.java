@@ -178,7 +178,7 @@ class ConnectionIntentAcceptanceControllerTest {
     }
 
     @Override
-        public java.util.List<ConnectionIntent> findPendingByProjectMembership(java.util.UUID profileId) {
+        public java.util.List<ConnectionIntent> findPendingByProjectMembership(UUID profileId, int offset, int limit) {
             return java.util.List.of();
         }
     }

@@ -66,6 +66,10 @@ public final class ApiMessages {
     public static final String PROFILE_NOT_FOUND_TITLE = "Profile not found";
     public static final String PROFILE_NOT_FOUND_DETAIL =
             "The authenticated profile was not found.";
+    public static final String PROFILE_BLOCK_TARGET_UNAVAILABLE =
+            "The profile cannot be blocked.";
+    public static final String PROFILE_BLOCK_SELF =
+            "A profile cannot block itself.";
 
     public static final String UNAUTHORIZED_TITLE = "Unauthorized";
     public static final String UNAUTHORIZED_DETAIL =

@@ -92,6 +92,14 @@ pulso:
     default-limit: 20
     max-limit: 50
     max-offset: 100000
+  profile-blocks:
+    default-limit: 20
+    max-limit: 50
+    max-offset: 100000
+  connection-inbox:
+    default-limit: 20
+    max-limit: 50
+    max-offset: 100000
   catalogs:
     max-items-per-catalog: ${PULSO_CATALOGS_MAX_ITEMS_PER_CATALOG:500}
   preferences:

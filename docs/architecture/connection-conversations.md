@@ -2,10 +2,9 @@
 
 ## Current scope
 
-PUL-27 implements the backend boundary that turns an accepted contextual
-project request into one private conversation. It does not yet expose
-profile-block management, conversation lists, or an Angular acceptance
-screen. Message sending and history were added afterwards by S5.4.
+PUL-27 turns an accepted contextual project request into one private
+conversation. S5.4 adds message sending and history. PUL-33 adds profile
+blocks to the project detail, request inbox, and profile settings.
 
 Request creation is provided by PUL-25 through the same `ConnectionIntent`
 domain and canonical `connection_intents` table. Acceptance restores the full
@@ -38,6 +37,25 @@ The persisted aggregate uses four tables:
 
 All four tables have RLS enabled and direct `anon` and `authenticated` grants
 revoked. Product access is owned by the backend API.
+
+## Contact policy and profile blocks
+
+Only the authenticated blocker can list or remove their outgoing blocks.
+Either direction is sufficient to prevent contact. When both profiles
+block each other, each must remove their own block to restore contact.
+See the [profile block API](../api.md#profile-blocks-pul-33).
+
+Request creation validates the sender and context before checking the
+project's other active members. The transaction locks their profile pairs in
+advisory-key order and then checks for blocks. It rejects the request if
+every recipient is blocked. When at least one recipient is available, only
+unblocked members receive notifications. The inbox hides requests across
+blocked pairs, while the shared request remains available to other members.
+
+Block and unblock acquire the existing `profile_contact_lock_key` before
+writing to `profile_blocks`. Request creation, acceptance and message
+sending use the same unordered pair key so that contact authorization
+and concurrent block writes take effect in a consistent order.
 
 ## Acceptance transaction
 

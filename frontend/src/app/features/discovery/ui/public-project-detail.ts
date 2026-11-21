@@ -32,11 +32,15 @@ import { OpportunityMatchComponent } from './opportunity-match'
 import { ShareButtonComponent } from './share-button'
 import { ReportFormComponent } from './report-form'
 import { reportStrings } from '../strings/report.strings'
+import { ProfileBlockActionComponent } from './profile-block-action'
 
 @Component({
     selector: 'pulso-public-project-detail',
     standalone: true,
-    imports: [CommonModule, IconComponent, OpportunityMatchComponent, ShareButtonComponent, ReportFormComponent],
+    imports: [
+        CommonModule, IconComponent, OpportunityMatchComponent, ShareButtonComponent,
+        ReportFormComponent, ProfileBlockActionComponent,
+    ],
     templateUrl: './public-project-detail.html',
 })
 export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterViewChecked, OnDestroy {
@@ -62,6 +66,11 @@ export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterVie
 
     get isSignedIn(): boolean {
         return this.auth.session() !== null
+    }
+
+    canBlockProfile(profileId: string): boolean {
+        const actor = this.auth.session()
+        return actor !== null && actor.id !== profileId
     }
 
     get isLoading(): boolean {

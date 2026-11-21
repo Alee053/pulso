@@ -165,6 +165,10 @@
                         <p class="text-sm text-[var(--color-muted)]">{{ member.displayTitle }}</p>
                         @if (isSignedIn) {
                           <pulso-report-form [target]="{ targetProfileId: member.profileId }" [label]="reportStrings.profile(member.displayName)" />
+                          @if (canBlockProfile(member.profileId)) {
+                            <pulso-profile-block-action class="mt-2 block" [profileId]="member.profileId"
+                                                        [displayName]="member.displayName" />
+                          }
                         }
                     </div>
                 </div>

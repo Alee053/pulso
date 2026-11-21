@@ -63,7 +63,10 @@ class JdbcConnectionIntentRepositoryTest {
                 POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
         jdbc = JdbcClient.create(dataSource);
         transactions = new TransactionTemplate(new DataSourceTransactionManager(dataSource));
-        jdbc.sql("drop table if exists public.connection_intents, public.project_opportunities, public.projects, public.sectors, public.profiles cascade")
+        jdbc.sql("""
+                drop table if exists public.connection_intents, public.project_opportunities, public.profile_blocks,
+                    public.project_members, public.projects, public.sectors, public.profiles cascade
+                """)
                 .update();
         createBaseSchema();
         createRoleIfMissing("anon");
@@ -252,6 +255,29 @@ class JdbcConnectionIntentRepositoryTest {
         jdbc.sql("create table public.sectors (id uuid primary key, is_active boolean not null)").update();
         jdbc.sql("create table public.projects (id uuid primary key, status text not null, sector_id uuid not null references public.sectors (id))").update();
         jdbc.sql("create table public.project_opportunities (id uuid primary key, project_id uuid not null references public.projects (id), status text not null)").update();
+        jdbc.sql("""
+                create table public.project_members (
+                    project_id uuid not null references public.projects (id),
+                    profile_id uuid not null references public.profiles (id),
+                    membership_status text not null,
+                    primary key (project_id, profile_id)
+                )
+                """).update();
+        jdbc.sql("""
+                create table public.profile_blocks (
+                    blocker_profile_id uuid not null references public.profiles (id),
+                    blocked_profile_id uuid not null references public.profiles (id),
+                    primary key (blocker_profile_id, blocked_profile_id)
+                )
+                """).update();
+        jdbc.sql("""
+                create or replace function public.profile_contact_lock_key(first_profile_id uuid, second_profile_id uuid)
+                returns bigint language sql immutable strict
+                return hashtextextended(concat_ws(':',
+                    least(first_profile_id::text, second_profile_id::text),
+                    greatest(first_profile_id::text, second_profile_id::text)
+                ), 0)
+                """).update();
     }
 
     private void createRoleIfMissing(String role) {

@@ -131,13 +131,14 @@ export interface PublicProjectDetail {
 }
 
 export interface ConnectionIntent {
-  id: string;
-  fromProfileId: string;
-  projectId: string;
-  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'WITHDRAWN' | 'EXPIRED' | 'CONVERTED';
-  reason: string;
-  message: string | null;
-  createdAt: string;
+  id: string
+  senderProfileId: string
+  projectId: string
+  opportunityId: string | null
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'WITHDRAWN' | 'EXPIRED' | 'CONVERTED'
+  reason: string
+  message: string | null
+  createdAt: string
 }
 
 export type PublicProjectState =

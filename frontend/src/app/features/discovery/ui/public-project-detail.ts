@@ -32,19 +32,19 @@ import { OpportunityMatchComponent } from './opportunity-match'
 import { ShareButtonComponent } from './share-button'
 import { ReportFormComponent } from './report-form'
 import { reportStrings } from '../strings/report.strings'
-import { ProfileBlockApi } from '../data-access/profile-block-api'
-import { profileStrings } from '../strings/profile.strings'
+import { ProfileBlockActionComponent } from './profile-block-action'
 
 @Component({
     selector: 'pulso-public-project-detail',
     standalone: true,
-    imports: [CommonModule, IconComponent, OpportunityMatchComponent, ShareButtonComponent, ReportFormComponent],
+    imports: [
+        CommonModule, IconComponent, OpportunityMatchComponent, ShareButtonComponent,
+        ReportFormComponent, ProfileBlockActionComponent,
+    ],
     templateUrl: './public-project-detail.html',
 })
 export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterViewChecked, OnDestroy {
     readonly strings = detailStrings
-    readonly profileStrings = profileStrings
-    private readonly blockApi = inject(ProfileBlockApi)
     readonly matchStrings = matchStrings
     readonly reportStrings = reportStrings
     @Input() projectId!: string
@@ -66,6 +66,11 @@ export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterVie
 
     get isSignedIn(): boolean {
         return this.auth.session() !== null
+    }
+
+    canBlockProfile(profileId: string): boolean {
+        const actor = this.auth.session()
+        return actor !== null && actor.id !== profileId
     }
 
     get isLoading(): boolean {
@@ -267,26 +272,6 @@ export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterVie
             popularity: 0,
             exploration: 0,
         }
-    }
-
-    cancelBlock(event: Event): void {
-        
-        const details = (event.target as HTMLElement).closest('details');
-        if (details) {
-            details.removeAttribute('open');
-        }
-    }
-
-    onBlockProfile(profileId: string): void {
-        this.blockApi.blockProfile(profileId).subscribe({
-            next: () => {
-                alert(this.profileStrings.blockSuccess);
-                this.close(); // Cerramos el modal asumiendo que ya no quieres ver nada de ese proyecto
-            },
-            error: () => {
-                alert(this.profileStrings.blockFailed);
-            }
-        });
     }
 
     ngOnDestroy(): void {

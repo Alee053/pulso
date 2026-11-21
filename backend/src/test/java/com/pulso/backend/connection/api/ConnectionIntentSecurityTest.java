@@ -33,7 +33,6 @@ import com.pulso.backend.connection.application.CreateConnectionIntent;
 import com.pulso.backend.connection.domain.ConnectionIntent;
 import com.pulso.backend.connection.domain.ConnectionIntentReason;
 import com.pulso.backend.notification.application.RecordingNotificationPublisher;
-import com.pulso.backend.profile.application.ProfileBlockRepository;
 
 @WebMvcTest(ConnectionIntentController.class)
 @Import({ SecurityConfig.class, ConnectionIntentSecurityTest.TestBeans.class })
@@ -150,27 +149,8 @@ class ConnectionIntentSecurityTest {
         }
 
         @Bean
-        ProfileBlockRepository profileBlockRepository() {
-            return new ProfileBlockRepository() {
-                @Override
-                public void block(UUID blockerId, UUID blockedId) {}
-                @Override
-                public void unblock(UUID blockerId, UUID blockedId) {}
-                @Override
-                public boolean isBlockedInAnyDirection(UUID profileA, UUID profileB) {
-                    return false; // En este test asumimos que no hay bloqueos
-                }
-            };
-        }
-
-        @Bean
-        CreateConnectionIntent createConnectionIntent(
-                CapturingRepository repository,
-                ProfileBlockRepository profileBlockRepository) {
-            return new CreateConnectionIntent(
-                    repository, 
-                    new RecordingNotificationPublisher(),
-                    profileBlockRepository);
+        CreateConnectionIntent createConnectionIntent(CapturingRepository repository) {
+            return new CreateConnectionIntent(repository, new RecordingNotificationPublisher());
         }
     }
 
@@ -196,11 +176,6 @@ class ConnectionIntentSecurityTest {
                     reason,
                     message,
                     OffsetDateTime.now());
-        }
-
-        @Override
-        public UUID findTargetProfileId(UUID projectId, UUID opportunityId) {
-            return null;
         }
     }
 }

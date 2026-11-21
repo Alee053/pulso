@@ -1,9 +1,14 @@
 package com.pulso.backend.profile.application;
 
-import com.pulso.backend.profile.domain.ProfileBlockValidationException;
-import org.springframework.stereotype.Service;
-
+import java.util.List;
 import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.pulso.backend.config.ApiMessages;
+import com.pulso.backend.profile.domain.BlockedProfile;
+import com.pulso.backend.profile.domain.ProfileValidationException;
 
 @Service
 public class ManageProfileBlocks {
@@ -14,14 +19,28 @@ public class ManageProfileBlocks {
         this.repository = repository;
     }
 
-    public void block(UUID currentUserId, UUID targetId) {
-        if (currentUserId.equals(targetId)) {
-            throw new ProfileBlockValidationException("No puedes bloquearte a ti mismo.");
+    @Transactional
+    public void block(UUID blockerId, UUID targetId) {
+        if (blockerId.equals(targetId)) {
+            throw new ProfileValidationException(ApiMessages.PROFILE_BLOCK_SELF);
         }
-        repository.block(currentUserId, targetId);
+        if (!repository.blockActiveProfiles(blockerId, targetId)) {
+            throw new ProfileNotFoundException(ApiMessages.PROFILE_BLOCK_TARGET_UNAVAILABLE);
+        }
     }
 
-    public void unblock(UUID currentUserId, UUID targetId) {
-        repository.unblock(currentUserId, targetId);
+    @Transactional
+    public void unblock(UUID blockerId, UUID targetId) {
+        repository.unblock(blockerId, targetId);
+    }
+
+    @Transactional(readOnly = true)
+    public Page list(UUID blockerId, int offset, int limit) {
+        List<BlockedProfile> window = repository.findPage(blockerId, offset, limit + 1);
+        boolean hasMore = window.size() > limit;
+        return new Page(hasMore ? window.subList(0, limit) : window, hasMore);
+    }
+
+    public record Page(List<BlockedProfile> profiles, boolean hasMore) {
     }
 }

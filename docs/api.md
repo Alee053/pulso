@@ -683,8 +683,12 @@ curl -X POST \
 omitted, the request targets the project generally; when present, the
 opportunity must belong to that project and be `OPEN`. In both cases the
 project must be `PUBLISHED` and its sector active, matching the public project
-detail contract. The sender's profile must be active. Clients cannot provide
-`senderProfileId`, `status`, or other server-owned fields.
+detail contract. The sender's profile must be active. If every other active
+team member is separated from the sender by a profile block in either direction,
+the request returns `403 connection_intent_forbidden`. If some team members
+can receive the request, only those members are notified. Projects with no
+other active members may still receive a pending request. Clients cannot
+provide `senderProfileId`, `status`, or other server-owned fields.
 
 Response `201 Created`:
 
@@ -711,6 +715,58 @@ reveals private project or profile state. Missing or invalid bearer tokens and
 return `400`, and database failures use the sanitized `503` response. This API
 creates requests only; deciding, withdrawing, conversations, and notifications
 are handled by later features.
+
+## Profile blocks (PUL-33)
+
+All block operations require a valid user JWT with a canonical profile UUID
+as its subject. The subject owns the block. A block stops new contact between
+the two profiles in either direction, including sending messages and accepting
+a pending request. Authorized participants can still read existing messages.
+
+- `POST /api/v1/profiles/{profileId}/block` blocks the target profile. Both
+  profiles must be active. A successful block or retry returns `204` with an
+  empty body. A self-block or invalid UUID returns `400`. An unavailable
+  profile returns `404`.
+- `DELETE /api/v1/profiles/{profileId}/block` removes the caller's block on
+  that target and returns `204` even if the caller had already removed it.
+  Contact becomes possible when both directions are clear.
+- `GET /api/v1/me/profile-blocks` lists the caller's outgoing blocks by
+  profile ID. The response contains `data` and `meta`. A profile's
+  `displayName` is present for active public profiles and `null` otherwise.
+
+```json
+{
+  "data": [
+    {
+      "profileId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      "displayName": "Integrante público"
+    }
+  ],
+  "meta": { "offset": 0, "limit": 20, "hasMore": false }
+}
+```
+
+The list takes `offset` (default `0`, maximum `100000`) and `limit`
+(default `20`, range `1..50`). Invalid windows return `400`.
+Limits are configured under `pulso.profile-blocks.*`.
+Missing or invalid authentication returns `401`.
+
+## `GET /api/v1/connection-intents/pending` — incoming requests
+
+Lists pending requests for projects where the caller is an active `OWNER`
+or `ADMIN`. The caller's own requests and requests from profiles separated
+from the caller by a block in either direction are excluded. A blocked
+request stays pending for other eligible project members.
+
+Returns an array of the same request objects as the creation endpoint, ordered
+by creation time and ID, newest first. The array respects `offset` (default
+`0`, maximum `100000`) and `limit` (default `20`, range `1..50`),
+configured under `pulso.connection-inbox.*`. Invalid windows return `400`.
+Missing or invalid authentication returns `401`.
+
+`POST /api/v1/connection-intents/{connectionIntentId}/decline` lets a project
+member decline a pending request. As with acceptance, a block between the
+member and the sender returns `403 connection_intent_forbidden`.
 
 ## `GET /api/v1/projects/{projectId}/members` — team administration list (PUL-85)
 

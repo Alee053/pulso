@@ -24,6 +24,48 @@ function createFixture() {
 describe('PublicProjectDetailComponent', () => {
   afterEach(() => currentLanguage.set('es'))
 
+  it('blocks another member after confirmation and leaves the project detail open', () => {
+    const project = MOCK_PUBLIC_PROJECTS['eco-pack']
+    const [target] = project.members
+    const ownProfile = { ...target, profileId: 'signed-in-profile', displayName: 'Perfil propio' }
+    TestBed.configureTestingModule({
+      providers: [{ provide: SupabaseAuthGateway, useValue: { session: signal({ id: ownProfile.profileId, email: null }) } }],
+    })
+    const { fixture, http } = createFixture()
+    http.expectOne('http://localhost:8080/api/v1/projects/eco-pack')
+      .flush({ data: { ...project, members: [ownProfile, ...project.members] } })
+    fixture.detectChanges()
+
+    const root = fixture.nativeElement as HTMLElement
+    const actions = root.querySelectorAll<HTMLElement>('pulso-profile-block-action')
+    expect(actions).toHaveLength(project.members.length)
+    const action = actions[0]
+    const details = action.querySelector('details')!
+    const url = `http://localhost:8080/api/v1/profiles/${target.profileId}/block`
+    details.open = true
+    action.querySelector<HTMLButtonElement>('button')!.click()
+    expect(details.open).toBe(false)
+    expect(document.activeElement).toBe(action.querySelector('summary'))
+    http.expectNone(url)
+
+    details.open = true
+    const confirm = action.querySelectorAll<HTMLButtonElement>('button')[1]
+    confirm.click()
+    fixture.detectChanges()
+    expect(confirm.disabled).toBe(true)
+    http.expectOne({ method: 'POST', url }).flush(null, { status: 503, statusText: 'Unavailable' })
+    fixture.detectChanges()
+    expect(action.querySelector('[role="alert"]')?.textContent).toContain('No se pudo bloquear')
+    expect(confirm.disabled).toBe(false)
+
+    confirm.click()
+    http.expectOne({ method: 'POST', url }).flush(null, { status: 204, statusText: 'No Content' })
+    fixture.detectChanges()
+    expect(action.querySelector('[role="status"]')?.textContent).toContain('Perfil bloqueado')
+    expect(root.querySelector('[role="dialog"]')).not.toBeNull()
+    http.verify()
+  })
+
   it('submits project and profile reports and allows retry after an error', () => {
     TestBed.configureTestingModule({
       providers: [{ provide: SupabaseAuthGateway, useValue: { session: signal({ id: 'user-1', email: null }) } }],

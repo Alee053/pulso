@@ -23,6 +23,12 @@ public class JdbcConnectionIntentRepository implements ConnectionIntentRepositor
             "connection_intents_pending_project_context_uidx";
     private static final String OPPORTUNITY_CONTEXT_UNIQUE_INDEX =
             "connection_intents_pending_opportunity_context_uidx";
+    private static final String PROJECT_RECIPIENTS = """
+            from public.project_members member
+            where member.project_id = :projectId
+              and member.membership_status = 'ACTIVE'
+              and member.profile_id <> :senderProfileId
+            """;
 
     private final JdbcClient jdbcClient;
 
@@ -46,6 +52,9 @@ public class JdbcConnectionIntentRepository implements ConnectionIntentRepositor
         }
         if (opportunityId != null && !lockOpenOpportunity(projectId, opportunityId)) {
             throw new ConnectionIntentRejectedException(Reason.CONTEXT_UNAVAILABLE);
+        }
+        if (hasOnlyBlockedRecipients(senderProfileId, projectId)) {
+            throw new ConnectionIntentRejectedException(Reason.RECIPIENTS_BLOCKED);
         }
 
         try {
@@ -88,8 +97,6 @@ public class JdbcConnectionIntentRepository implements ConnectionIntentRepositor
         }
     }
 
-    
-
     private boolean lockActiveSender(UUID senderProfileId) {
         return jdbcClient.sql("""
                 select id
@@ -121,19 +128,6 @@ public class JdbcConnectionIntentRepository implements ConnectionIntentRepositor
                 .isPresent();
     }
 
-    @Override
-    public UUID findTargetProfileId(UUID projectId, UUID opportunityId) {
-        return jdbcClient.sql("""
-                select created_by_profile_id 
-                from public.projects 
-                where id = :projectId
-                """)
-                .param("projectId", projectId)
-                .query(UUID.class)
-                .optional()
-                .orElse(null);
-    }
-
     private boolean lockOpenOpportunity(UUID projectId, UUID opportunityId) {
         return jdbcClient.sql("""
                 select id
@@ -148,6 +142,37 @@ public class JdbcConnectionIntentRepository implements ConnectionIntentRepositor
                 .query(UUID.class)
                 .optional()
                 .isPresent();
+    }
+
+    private boolean hasOnlyBlockedRecipients(UUID senderProfileId, UUID projectId) {
+        // The block check must take a new snapshot after waiting for in-flight block writes.
+        jdbcClient.sql("""
+                select true
+                from (
+                    select pg_advisory_xact_lock(public.profile_contact_lock_key(:senderProfileId, member.profile_id))
+                    %s
+                    order by public.profile_contact_lock_key(:senderProfileId, member.profile_id)
+                    for share of member
+                ) contact_locks
+                """.formatted(PROJECT_RECIPIENTS))
+                .param("projectId", projectId)
+                .param("senderProfileId", senderProfileId)
+                .query(Boolean.class)
+                .list();
+
+        return jdbcClient.sql("""
+                select coalesce(bool_and(exists (
+                    select 1
+                    from public.profile_blocks block
+                    where (block.blocker_profile_id = :senderProfileId and block.blocked_profile_id = member.profile_id)
+                       or (block.blocker_profile_id = member.profile_id and block.blocked_profile_id = :senderProfileId)
+                )), false)
+                %s
+                """.formatted(PROJECT_RECIPIENTS))
+                .param("projectId", projectId)
+                .param("senderProfileId", senderProfileId)
+                .query(Boolean.class)
+                .single();
     }
 
     private static ConnectionIntent mapConnectionIntent(ResultSet resultSet, int rowNumber)

@@ -22,13 +22,18 @@ export const apiPaths = {
   projectFeedback: '/api/v1/me/project-feedback',
   projects: '/api/v1/projects',
   projectReviews: '/api/v1/admin/project-reviews',
-  blockProfile: (targetId: string) => `/api/v1/profiles/${targetId}/block`,
+  profileBlocks: '/api/v1/me/profile-blocks',
+  blockProfile: (profileId: string) => `/api/v1/profiles/${encodeURIComponent(profileId)}/block`,
 } as const;
 
 export const projectReviewContract = {
   pageSize: 20,
   maxOffset: 100_000,
   noteMaxLength: 2000,
+} as const
+
+export const connectionInboxContract = {
+  pageSize: 20,
 } as const
 
 export const preferenceContract = {

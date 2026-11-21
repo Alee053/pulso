@@ -13,5 +13,4 @@ public interface ConnectionIntentRepository {
             UUID opportunityId,
             ConnectionIntentReason reason,
             String message);
-    UUID findTargetProfileId(UUID projectId, UUID opportunityId);
 }

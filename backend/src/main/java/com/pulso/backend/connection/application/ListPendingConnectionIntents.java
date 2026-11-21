@@ -18,7 +18,7 @@ public class ListPendingConnectionIntents {
     }
 
     @Transactional(readOnly = true)
-    public List<ConnectionIntent> execute(UUID authenticatedProfileId) {
-        return repository.findPendingByProjectMembership(authenticatedProfileId);
+    public List<ConnectionIntent> execute(UUID authenticatedProfileId, int offset, int limit) {
+        return repository.findPendingByProjectMembership(authenticatedProfileId, offset, limit);
     }
 }

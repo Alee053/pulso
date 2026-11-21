@@ -26,7 +26,7 @@ import com.pulso.backend.connection.domain.ConnectionIntent;
 import com.pulso.backend.connection.domain.ConnectionIntentReason;
 import com.pulso.backend.discovery.api.ApiExceptionHandler;
 import com.pulso.backend.notification.application.RecordingNotificationPublisher;
-import com.pulso.backend.profile.application.ProfileBlockRepository;
+import com.pulso.backend.profile.application.InvalidAuthenticatedSubjectException;
 
 class ConnectionIntentControllerTest {
 
@@ -153,18 +153,8 @@ class ConnectionIntentControllerTest {
     }
 
     private static MockMvc mockMvc(RecordingRepository repository, boolean invalidSubject) {
-        // 1. Instanciamos un repositorio de bloqueos falso
-        ProfileBlockRepository noBlocks = new ProfileBlockRepository() {
-            @Override public void block(UUID b, UUID bl) {}
-            @Override public void unblock(UUID b, UUID bl) {}
-            @Override public boolean isBlockedInAnyDirection(UUID a, UUID b) { return false; }
-        };
-
         return MockMvcBuilders.standaloneSetup(new ConnectionIntentController(
-                        new CreateConnectionIntent(
-                                repository, 
-                                new RecordingNotificationPublisher(),
-                                noBlocks))) // 2. Se lo pasamos al constructor
+                        new CreateConnectionIntent(repository, new RecordingNotificationPublisher())))
                 .setControllerAdvice(new ApiExceptionHandler())
                 .setCustomArgumentResolvers(new JwtArgumentResolver(invalidSubject))
                 .build();
@@ -241,12 +231,6 @@ class ConnectionIntentControllerTest {
                     reason,
                     message,
                     OffsetDateTime.parse("2026-11-03T12:00:00Z"));
-        }
-
-        
-        @Override
-        public UUID findTargetProfileId(UUID projectId, UUID opportunityId) {
-            return null;
         }
     }
 }

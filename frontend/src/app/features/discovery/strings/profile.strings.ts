@@ -30,13 +30,6 @@ export const profileStrings = defineStrings(
     saved: 'Perfil guardado correctamente.',
     saveFailed:
       'No se pudo guardar el perfil. Revisa los campos e inténtalo de nuevo.',
-    blockUser: 'Bloquear usuario',
-    unblockUser: 'Desbloquear usuario',
-    blockConfirm: '¿Estás seguro de que quieres bloquear a este usuario? No podrán enviarse mensajes ni solicitudes.',
-    blockSuccess: 'Usuario bloqueado correctamente.',
-    unblockSuccess: 'Usuario desbloqueado correctamente.',
-    blockFailed: 'No se pudo completar la acción. Inténtalo de nuevo.',
-    blockedNotice: 'Has bloqueado a este usuario.',
   },
   {
     eyebrow: 'YOUR SPACE',
@@ -67,12 +60,5 @@ export const profileStrings = defineStrings(
     saved: 'Profile saved successfully.',
     saveFailed:
       'The profile could not be saved. Check the fields and try again.',
-    blockUser: 'Block user',
-    unblockUser: 'Unblock user',
-    blockConfirm: 'Are you sure you want to block this user? They will not be able to send you messages or requests.',
-    blockSuccess: 'User blocked successfully.',
-    unblockSuccess: 'User unblocked successfully.',
-    blockFailed: 'The action could not be completed. Please try again.',
-    blockedNotice: 'You have blocked this user.',
   },
 )

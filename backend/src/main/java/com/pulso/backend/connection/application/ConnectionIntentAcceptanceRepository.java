@@ -1,5 +1,6 @@
 package com.pulso.backend.connection.application;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -19,9 +20,8 @@ public interface ConnectionIntentAcceptanceRepository {
     AcceptedConnectionConversation acceptAndCreateConversation(
             ConnectionIntent connectionIntent,
             UUID responderProfileId);
-    
+
     void updateStatus(ConnectionIntent connectionIntent, UUID respondedByProfileId);
 
-    java.util.List<ConnectionIntent> findPendingByProjectMembership(java.util.UUID profileId);
-
+    List<ConnectionIntent> findPendingByProjectMembership(UUID profileId, int offset, int limit);
 }

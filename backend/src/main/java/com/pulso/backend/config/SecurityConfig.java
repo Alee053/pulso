@@ -35,9 +35,11 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableConfigurationProperties({
         SupabaseJwtProperties.class,
         DiscoveryProperties.class,
+        ConnectionInboxProperties.class,
         CatalogProperties.class,
         PreferenceProperties.class,
         ProfileProperties.class,
+        ProfileBlockProperties.class,
         CurrentProjectsProperties.class,
         ProjectMembersProperties.class,
         ProjectReviewProperties.class,
@@ -83,8 +85,13 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/projects").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/reports").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/projects/*/share").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/connection-intents/*/accept")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/connection-intents/pending").authenticated()
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/v1/connection-intents/*/accept",
+                                "/api/v1/connection-intents/*/decline",
+                                "/api/v1/profiles/*/block")
                         .authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/profiles/*/block").authenticated()
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/v1/conversations/*/messages")

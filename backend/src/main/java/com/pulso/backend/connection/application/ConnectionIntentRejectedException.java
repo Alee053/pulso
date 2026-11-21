@@ -4,6 +4,7 @@ public final class ConnectionIntentRejectedException extends RuntimeException {
 
     public enum Reason {
         PROFILE_INACTIVE,
+        RECIPIENTS_BLOCKED,
         CONTEXT_UNAVAILABLE,
         DUPLICATE_PENDING
     }

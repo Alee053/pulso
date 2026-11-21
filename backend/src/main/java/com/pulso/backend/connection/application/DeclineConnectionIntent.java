@@ -24,6 +24,9 @@ public class DeclineConnectionIntent {
         if (!intent.isPending() || intent.fromProfileId().equals(authenticatedProfileId)) {
             throw new ConnectionIntentConflictException();
         }
+        if (repository.profilesAreBlocked(authenticatedProfileId, intent.fromProfileId())) {
+            throw ConnectionIntentPermissionException.profilesBlocked();
+        }
 
         ConnectionIntent declined = intent.decline(authenticatedProfileId);
         repository.updateStatus(declined, authenticatedProfileId);

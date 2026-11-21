@@ -1,0 +1,13 @@
+<div *ngIf="!isSelf" class="mt-3 grid justify-items-start gap-2">
+  <p *ngIf="state() === 'loading'" class="field-hint" role="status">{{ strings.loading }}</p>
+  <button *ngIf="state() === 'blocked' || state() === 'unblocked'" type="button" class="contact-button"
+          (click)="toggle()" [disabled]="saving()">
+    {{ saving()
+      ? (state() === 'blocked' ? strings.unblocking : strings.blocking)
+      : (state() === 'blocked' ? strings.unblock(displayName) : strings.block(displayName)) }}
+  </button>
+  <p *ngIf="state() === 'blocked'" class="field-hint" role="status">{{ strings.blocked }}</p>
+  <p *ngIf="errorMessage() as error" class="field-error" role="alert">{{ error }}</p>
+  <p *ngIf="successMessage() as success" class="status-message status-message--success" role="status" aria-live="polite">{{ success }}</p>
+  <button *ngIf="state() === 'error'" type="button" class="contact-button" (click)="load()">{{ strings.retry }}</button>
+</div>

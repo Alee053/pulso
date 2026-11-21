@@ -32,11 +32,12 @@ import { OpportunityMatchComponent } from './opportunity-match'
 import { ShareButtonComponent } from './share-button'
 import { ReportFormComponent } from './report-form'
 import { reportStrings } from '../strings/report.strings'
+import { ProfileBlockControlComponent } from './profile-block-control'
 
 @Component({
     selector: 'pulso-public-project-detail',
     standalone: true,
-    imports: [CommonModule, IconComponent, OpportunityMatchComponent, ShareButtonComponent, ReportFormComponent],
+    imports: [CommonModule, IconComponent, OpportunityMatchComponent, ShareButtonComponent, ReportFormComponent, ProfileBlockControlComponent],
     templateUrl: './public-project-detail.html',
 })
 export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterViewChecked, OnDestroy {

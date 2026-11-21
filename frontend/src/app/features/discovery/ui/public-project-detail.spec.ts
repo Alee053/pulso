@@ -32,10 +32,12 @@ describe('PublicProjectDetailComponent', () => {
     const project = MOCK_PUBLIC_PROJECTS['eco-pack']
     http.expectOne('http://localhost:8080/api/v1/projects/eco-pack').flush({ data: project })
     fixture.detectChanges()
+    const firstMember = project.members[0]
+    http.expectOne(`http://localhost:8080/api/v1/me/blocks/${firstMember.profileId}`)
+      .flush({ targetProfileId: firstMember.profileId, blocked: false, createdAt: null })
 
     const root = fixture.nativeElement as HTMLElement
     const reportForms = root.querySelectorAll<HTMLFormElement>('pulso-report-form form')
-    const firstMember = project.members[0]
     expect(firstMember).toBeDefined()
 
     const submit = (form: HTMLFormElement) => {
@@ -373,6 +375,11 @@ describe('PublicProjectDetailComponent', () => {
       const http = TestBed.inject(HttpTestingController)
       http.expectOne(PROJECT_URL).flush({ data: project })
       fixture.detectChanges()
+      if (user) {
+        const member = project.members[0]
+        http.expectOne(`http://localhost:8080/api/v1/me/blocks/${member.profileId}`)
+          .flush({ targetProfileId: member.profileId, blocked: false, createdAt: null })
+      }
       return { fixture, http }
     }
 

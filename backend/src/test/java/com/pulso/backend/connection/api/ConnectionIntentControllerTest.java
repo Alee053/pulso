@@ -131,6 +131,21 @@ class ConnectionIntentControllerTest {
     }
 
     @Test
+    void rejectsARequestWhenContactIsBlockedInEitherDirection() throws Exception {
+        RecordingRepository repository = new RecordingRepository();
+        repository.failure = com.pulso.backend.connection.application.ConnectionIntentPermissionException
+                .profilesBlocked();
+
+        mockMvc(repository, false).perform(post(PATH)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validRequest()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.title").value("Connection request access denied"))
+                .andExpect(jsonPath("$.detail").value("Blocked profiles cannot start a new conversation."))
+                .andExpect(jsonPath("$.code").value("connection_intent_forbidden"));
+    }
+
+    @Test
     void reportsPendingDuplicateAsConflict() throws Exception {
         RecordingRepository repository = new RecordingRepository();
         repository.failure = new ConnectionIntentRejectedException(

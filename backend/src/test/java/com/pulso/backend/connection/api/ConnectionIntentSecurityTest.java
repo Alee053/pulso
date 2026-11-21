@@ -1,13 +1,17 @@
 package com.pulso.backend.connection.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import javax.crypto.spec.SecretKeySpec;
@@ -30,11 +34,16 @@ import com.nimbusds.jwt.SignedJWT;
 import com.pulso.backend.config.SecurityConfig;
 import com.pulso.backend.connection.application.ConnectionIntentRepository;
 import com.pulso.backend.connection.application.CreateConnectionIntent;
+import com.pulso.backend.connection.application.ConnectionIntentAcceptanceRepository;
+import com.pulso.backend.connection.application.DeclineConnectionIntent;
+import com.pulso.backend.connection.application.ListPendingConnectionIntents;
+import com.pulso.backend.connection.application.WithdrawConnectionIntent;
+import com.pulso.backend.connection.domain.AcceptedConnectionConversation;
 import com.pulso.backend.connection.domain.ConnectionIntent;
 import com.pulso.backend.connection.domain.ConnectionIntentReason;
 import com.pulso.backend.notification.application.RecordingNotificationPublisher;
 
-@WebMvcTest(ConnectionIntentController.class)
+@WebMvcTest({ ConnectionIntentController.class, ConnectionIntentResponseController.class })
 @Import({ SecurityConfig.class, ConnectionIntentSecurityTest.TestBeans.class })
 class ConnectionIntentSecurityTest {
 
@@ -50,10 +59,27 @@ class ConnectionIntentSecurityTest {
     @Autowired
     private CapturingRepository repository;
 
+    @Autowired
+    private CapturingAcceptanceRepository acceptanceRepository;
+
     @BeforeEach
     void resetRepository() {
         repository.callCount = 0;
         repository.senderProfileId = null;
+        acceptanceRepository.pendingProfileId = null;
+    }
+
+    @Test
+    void pendingConnectionIntentsRequireAuthenticationAndUseTheJwtProfile() throws Exception {
+        mockMvc.perform(get("/api/v1/connection-intents/pending"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/api/v1/connection-intents/pending")
+                .header("Authorization", "Bearer " + token("authenticated", SENDER_ID.toString())))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[]"));
+
+        assertThat(acceptanceRepository.pendingProfileId).isEqualTo(SENDER_ID);
     }
 
     @Test
@@ -151,6 +177,69 @@ class ConnectionIntentSecurityTest {
         @Bean
         CreateConnectionIntent createConnectionIntent(CapturingRepository repository) {
             return new CreateConnectionIntent(repository, new RecordingNotificationPublisher());
+        }
+
+        @Bean
+        CapturingAcceptanceRepository connectionIntentAcceptanceRepository() {
+            return new CapturingAcceptanceRepository();
+        }
+
+        @Bean
+        DeclineConnectionIntent declineConnectionIntent(CapturingAcceptanceRepository repository) {
+            return new DeclineConnectionIntent(repository);
+        }
+
+        @Bean
+        WithdrawConnectionIntent withdrawConnectionIntent(CapturingAcceptanceRepository repository) {
+            return new WithdrawConnectionIntent(repository);
+        }
+
+        @Bean
+        ListPendingConnectionIntents listPendingConnectionIntents(CapturingAcceptanceRepository repository) {
+            return new ListPendingConnectionIntents(repository);
+        }
+    }
+
+    static final class CapturingAcceptanceRepository implements ConnectionIntentAcceptanceRepository {
+
+        private UUID pendingProfileId;
+
+        @Override
+        public Optional<ConnectionIntent> findByIdForUpdate(UUID connectionIntentId) {
+            return Optional.empty();
+        }
+
+        @Override
+        public boolean hasActiveProjectMembership(UUID projectId, UUID profileId) {
+            return false;
+        }
+
+        @Override
+        public boolean profilesAreBlocked(UUID firstProfileId, UUID secondProfileId) {
+            return false;
+        }
+
+        @Override
+        public Optional<AcceptedConnectionConversation> findConversation(UUID connectionIntentId) {
+            return Optional.empty();
+        }
+
+        @Override
+        public AcceptedConnectionConversation acceptAndCreateConversation(
+                ConnectionIntent connectionIntent,
+                UUID responderProfileId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void updateStatus(ConnectionIntent connectionIntent, UUID respondedByProfileId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<ConnectionIntent> findPendingByProjectMembership(UUID profileId) {
+            pendingProfileId = profileId;
+            return List.of();
         }
     }
 

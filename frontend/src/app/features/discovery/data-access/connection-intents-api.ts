@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core'
 import type { Observable } from 'rxjs'
 import { appConfig } from '../../../core/config/app-config'
 import type { ConnectionIntent } from '../domain/startup'
+import type { AcceptedConnectionConversation } from '../domain/conversation'
 
 @Injectable({ providedIn: 'root' })
 export class ConnectionIntentsApi {
@@ -13,8 +14,8 @@ export class ConnectionIntentsApi {
     return this.http.get<ConnectionIntent[]>(`${appConfig.apiBaseUrl}/api/v1/connection-intents/pending`)
   }
 
-  acceptIntent(id: string): Observable<unknown> {
-    return this.http.post(`${appConfig.apiBaseUrl}/api/v1/connection-intents/${id}/accept`, {})
+  acceptIntent(id: string): Observable<AcceptedConnectionConversation> {
+    return this.http.post<AcceptedConnectionConversation>(`${appConfig.apiBaseUrl}/api/v1/connection-intents/${id}/accept`, {})
   }
 
   declineIntent(id: string): Observable<unknown> {

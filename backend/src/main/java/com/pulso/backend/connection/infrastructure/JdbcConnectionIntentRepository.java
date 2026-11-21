@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.pulso.backend.connection.application.ConnectionIntentRejectedException;
 import com.pulso.backend.connection.application.ConnectionIntentRejectedException.Reason;
+import com.pulso.backend.connection.application.ConnectionIntentPermissionException;
 import com.pulso.backend.connection.application.ConnectionIntentRepository;
 import com.pulso.backend.connection.domain.ConnectionIntent;
 import com.pulso.backend.connection.domain.ConnectionIntentReason;
@@ -46,6 +47,9 @@ public class JdbcConnectionIntentRepository implements ConnectionIntentRepositor
         }
         if (opportunityId != null && !lockOpenOpportunity(projectId, opportunityId)) {
             throw new ConnectionIntentRejectedException(Reason.CONTEXT_UNAVAILABLE);
+        }
+        if (isBlockedByProjectMember(senderProfileId, projectId)) {
+            throw ConnectionIntentPermissionException.profilesBlocked();
         }
 
         try {
@@ -133,6 +137,56 @@ public class JdbcConnectionIntentRepository implements ConnectionIntentRepositor
                 .query(UUID.class)
                 .optional()
                 .isPresent();
+    }
+
+    private boolean isBlockedByProjectMember(UUID senderProfileId, UUID projectId) {
+        var members = jdbcClient.sql("""
+                select profile_id
+                from public.project_members
+                where project_id = :projectId
+                  and membership_status = 'ACTIVE'
+                  and profile_id is not null
+                  and profile_id <> :senderProfileId
+                order by profile_id
+                """)
+                .param("projectId", projectId)
+                .param("senderProfileId", senderProfileId)
+                .query(UUID.class)
+                .list();
+
+        for (UUID memberProfileId : members) {
+            lockContactPair(senderProfileId, memberProfileId);
+            boolean blocked = jdbcClient.sql("""
+                    select exists(
+                        select 1 from public.profile_blocks
+                        where (blocker_profile_id = :senderProfileId and blocked_profile_id = :memberProfileId)
+                           or (blocker_profile_id = :memberProfileId and blocked_profile_id = :senderProfileId)
+                    )
+                    """)
+                    .param("senderProfileId", senderProfileId)
+                    .param("memberProfileId", memberProfileId)
+                    .query(Boolean.class)
+                    .single();
+            if (blocked) return true;
+        }
+        return false;
+    }
+
+    private void lockContactPair(UUID firstProfileId, UUID secondProfileId) {
+        jdbcClient.sql("""
+                select true
+                from (
+                    select pg_advisory_xact_lock(hashtextextended(
+                        concat_ws(':', least(cast(:firstProfileId as text), cast(:secondProfileId as text)),
+                                       greatest(cast(:firstProfileId as text), cast(:secondProfileId as text))),
+                        0
+                    ))
+                ) contact_lock
+                """)
+                .param("firstProfileId", firstProfileId)
+                .param("secondProfileId", secondProfileId)
+                .query(Boolean.class)
+                .single();
     }
 
     private static ConnectionIntent mapConnectionIntent(ResultSet resultSet, int rowNumber)

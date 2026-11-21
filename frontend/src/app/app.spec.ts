@@ -199,6 +199,10 @@ describe('AppComponent', () => {
     const http = TestBed.inject(HttpTestingController)
     http.expectOne(`http://localhost:8080/api/v1/projects/${mockStartups[0].id}`).flush({ data: MOCK_PUBLIC_PROJECTS['eco-pack'] })
     fixture.detectChanges()
+    const member = MOCK_PUBLIC_PROJECTS['eco-pack'].members[0]
+    http.expectOne(`http://localhost:8080/api/v1/me/blocks/${member.profileId}`)
+      .flush({ targetProfileId: member.profileId, blocked: false, createdAt: null })
+    fixture.detectChanges()
     expect(fixture.nativeElement.querySelector('pulso-public-project-detail')).not.toBeNull()
     expect(fixture.nativeElement.querySelector('[role="dialog"]')).not.toBeNull()
     if (dismissal === 'escape') {

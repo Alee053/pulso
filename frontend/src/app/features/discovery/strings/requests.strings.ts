@@ -8,6 +8,14 @@ export const requestsStrings = {
     accept: 'Aceptar',
     decline: 'Rechazar',
     reason: 'Motivo',
+    loading: 'Cargando solicitudes…',
+    retry: 'Reintentar',
+    loadFailed: 'No pudimos cargar las solicitudes. Inténtalo de nuevo.',
+    acceptFailed: 'No pudimos aceptar la solicitud. Actualiza la lista e inténtalo de nuevo.',
+    declineFailed: 'No pudimos rechazar la solicitud. Actualiza la lista e inténtalo de nuevo.',
+    openConversation: 'Conversación abierta',
+    closeConversation: 'Cerrar conversación',
+    participant: 'Perfil de conexión',
   },
   en: {
     eyebrow: 'CONNECTIONS',
@@ -18,5 +26,13 @@ export const requestsStrings = {
     accept: 'Accept',
     decline: 'Decline',
     reason: 'Reason',
+    loading: 'Loading requests…',
+    retry: 'Retry',
+    loadFailed: 'We could not load the requests. Try again.',
+    acceptFailed: 'We could not accept the request. Refresh the list and try again.',
+    declineFailed: 'We could not decline the request. Refresh the list and try again.',
+    openConversation: 'Conversation opened',
+    closeConversation: 'Close conversation',
+    participant: 'Connection profile',
   }
 };

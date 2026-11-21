@@ -5,12 +5,28 @@ import { appConfig } from '../../../core/config/app-config'
 import type {
   ManagedProjectOpportunity,
   OpportunityPage,
+  OpportunityContentValue,
+  OpportunityStatus,
   OpportunitySkill,
   OpportunitySkillImportance,
 } from '../domain/project-opportunity-skills'
 
+interface OpportunityDto {
+  id: string
+  projectId: string
+  opportunityType: string
+  title: string
+  description: string
+  status: string
+  city: string | null
+  department: string | null
+  remoteAllowed: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 interface OpportunityPageDto {
-  data: Array<{ id: string; title: string; status: string }>
+  data: OpportunityDto[]
   meta: { offset: number; limit: number; hasMore: boolean }
 }
 
@@ -43,11 +59,7 @@ export class ProjectOpportunitySkillsApi {
           }
           const nextOffset = page.meta.offset + page.meta.limit
           return {
-            data: page.data.map((opportunity): ManagedProjectOpportunity => ({
-              id: opportunity.id,
-              title: opportunity.title,
-              status: opportunity.status,
-            })),
+            data: page.data.map((opportunity) => toOpportunity(opportunity, projectId)),
             meta: {
               offset: page.meta.offset,
               limit: page.meta.limit,
@@ -56,6 +68,39 @@ export class ProjectOpportunitySkillsApi {
           }
         }),
       )
+  }
+
+  createOpportunity(
+    projectId: string,
+    value: OpportunityContentValue,
+    status: 'DRAFT' | 'OPEN',
+  ): Observable<ManagedProjectOpportunity> {
+    return this.http.post<OpportunityDto>(
+      `${this.baseUrl}/${encodeURIComponent(projectId)}/opportunities`,
+      { ...toContentRequest(value), status },
+    ).pipe(map((dto) => toOpportunity(dto, projectId)))
+  }
+
+  updateOpportunity(
+    projectId: string,
+    opportunityId: string,
+    value: OpportunityContentValue,
+  ): Observable<ManagedProjectOpportunity> {
+    return this.http.put<OpportunityDto>(
+      `${this.baseUrl}/${encodeURIComponent(projectId)}/opportunities/${encodeURIComponent(opportunityId)}`,
+      toContentRequest(value),
+    ).pipe(map((dto) => toOpportunity(dto, projectId)))
+  }
+
+  changeOpportunityStatus(
+    projectId: string,
+    opportunityId: string,
+    action: 'OPEN' | 'PAUSE' | 'CLOSE' | 'ARCHIVE',
+  ): Observable<ManagedProjectOpportunity> {
+    return this.http.post<OpportunityDto>(
+      `${this.baseUrl}/${encodeURIComponent(projectId)}/opportunities/${encodeURIComponent(opportunityId)}/actions`,
+      { action },
+    ).pipe(map((dto) => toOpportunity(dto, projectId)))
   }
 
   listSkills(projectId: string, opportunityId: string): Observable<OpportunitySkill[]> {
@@ -102,6 +147,44 @@ export class ProjectOpportunitySkillsApi {
   private skillsUrl(projectId: string, opportunityId: string): string {
     return `${this.baseUrl}/${encodeURIComponent(projectId)}/opportunities/`
       + `${encodeURIComponent(opportunityId)}/skills`
+  }
+}
+
+function toContentRequest(value: OpportunityContentValue): OpportunityContentValue {
+  return {
+    opportunityType: value.opportunityType,
+    title: value.title.trim(),
+    description: value.description.trim(),
+    city: value.city.trim(),
+    department: value.department.trim(),
+    remoteAllowed: value.remoteAllowed,
+  }
+}
+
+function toOpportunity(dto: OpportunityDto, expectedProjectId: string): ManagedProjectOpportunity {
+  const types = ['TALENT', 'COLLABORATION', 'CUSTOMER', 'BETA_TESTER', 'INVESTMENT', 'MENTOR', 'SUPPLIER', 'PARTNERSHIP', 'OTHER']
+  const statuses = ['DRAFT', 'OPEN', 'PAUSED', 'FILLED', 'CLOSED', 'ARCHIVED']
+  if (!dto || typeof dto.id !== 'string' || !dto.id || dto.projectId !== expectedProjectId
+    || !types.includes(dto.opportunityType) || typeof dto.title !== 'string'
+    || typeof dto.description !== 'string' || !statuses.includes(dto.status)
+    || (dto.city !== null && typeof dto.city !== 'string')
+    || (dto.department !== null && typeof dto.department !== 'string')
+    || typeof dto.remoteAllowed !== 'boolean' || typeof dto.createdAt !== 'string'
+    || typeof dto.updatedAt !== 'string') {
+    throw new Error('Invalid project opportunity response')
+  }
+  return {
+    id: dto.id,
+    projectId: dto.projectId,
+    opportunityType: dto.opportunityType as ManagedProjectOpportunity['opportunityType'],
+    title: dto.title,
+    description: dto.description,
+    status: dto.status as OpportunityStatus,
+    city: dto.city,
+    department: dto.department,
+    remoteAllowed: dto.remoteAllowed,
+    createdAt: dto.createdAt,
+    updatedAt: dto.updatedAt,
   }
 }
 

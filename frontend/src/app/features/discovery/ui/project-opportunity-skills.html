@@ -10,7 +10,63 @@
   </button>
 
   <div *ngIf="expanded()" [id]="'opportunity-skills-' + projectId" class="mt-5">
-    <h3 class="text-lg font-semibold">{{ projectName }}</h3>
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <h3 class="text-lg font-semibold">{{ projectName }}</h3>
+      </div>
+      <button type="button" class="solid-button" data-action="create-opportunity" (click)="beginCreate()"
+              [disabled]="opportunitySaving() || pendingOpportunityAction() !== null">
+        {{ strings.create }}
+      </button>
+    </div>
+
+    <form *ngIf="createOpen() || editingOpportunityId()" class="panel mt-4 grid gap-4 p-4 sm:grid-cols-2"
+          [formGroup]="opportunityForm" (ngSubmit)="saveOpportunity()" [attr.aria-busy]="opportunitySaving()">
+      <h4 class="text-base font-semibold sm:col-span-2">
+        {{ editingOpportunityId() ? strings.edit : strings.createTitle }}
+      </h4>
+      <div>
+        <label class="field-label" for="opportunity-type">{{ strings.type }}</label>
+        <select id="opportunity-type" class="field-input" formControlName="opportunityType">
+          <option *ngFor="let type of opportunityTypes" [value]="type">{{ strings.typeOptions[type] }}</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label" for="opportunity-title">{{ strings.title }}</label>
+        <input id="opportunity-title" class="field-input" formControlName="title" maxlength="160"
+               [attr.aria-invalid]="opportunityFieldError('title', 'required') ? 'true' : null" />
+        <p *ngIf="opportunityFieldError('title', 'required')" class="field-error" role="alert">{{ strings.titleRequired }}</p>
+      </div>
+      <div class="sm:col-span-2">
+        <label class="field-label" for="opportunity-description">{{ strings.description }}</label>
+        <textarea id="opportunity-description" class="field-input" formControlName="description" maxlength="5000"
+                  [attr.aria-invalid]="opportunityFieldError('description', 'required') ? 'true' : null"></textarea>
+        <p *ngIf="opportunityFieldError('description', 'required')" class="field-error" role="alert">{{ strings.descriptionRequired }}</p>
+      </div>
+      <div>
+        <label class="field-label" for="opportunity-city">{{ strings.city }}</label>
+        <input id="opportunity-city" class="field-input" formControlName="city" maxlength="120" />
+      </div>
+      <div>
+        <label class="field-label" for="opportunity-department">{{ strings.department }}</label>
+        <input id="opportunity-department" class="field-input" formControlName="department" maxlength="120" />
+      </div>
+      <label class="flex items-start gap-3 sm:col-span-2">
+        <input class="mt-1 size-5 accent-[var(--color-accent)]" type="checkbox" formControlName="remoteAllowed" />
+        <span><span class="field-label">{{ strings.remoteAllowed }}</span><span class="field-hint block">{{ strings.remoteHint }}</span></span>
+      </label>
+      <p *ngIf="!editingOpportunityId()" class="field-hint sm:col-span-2" role="status">
+        {{ strings.createStatus(displayOpportunityStatus(createInitialStatus())) }}
+      </p>
+      <div class="flex flex-wrap gap-2 sm:col-span-2">
+        <button type="button" class="contact-button" (click)="cancelOpportunityForm()" [disabled]="opportunitySaving()">
+          {{ strings.cancel }}
+        </button>
+        <button type="submit" class="solid-button" [disabled]="opportunitySaving() || opportunityForm.invalid">
+          {{ opportunitySaving() ? strings.savingOpportunity : strings.saveOpportunity }}
+        </button>
+      </div>
+    </form>
 
     <p *ngIf="loading()" class="state-panel mt-4" role="status" aria-live="polite">
       {{ strings.loading }}
@@ -32,14 +88,34 @@
         <header class="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h4 class="font-semibold break-words">{{ opportunity.title }}</h4>
-            <p class="field-hint mt-1">{{ strings.opportunityStatus(opportunity.status) }}</p>
+            <p class="field-hint mt-1">{{ strings.opportunityStatus(displayOpportunityStatus(opportunity.status)) }}</p>
           </div>
-          <button type="button" class="contact-button"
-                  (click)="beginAdding(opportunity.id)"
-                  [disabled]="!catalogsLoaded || catalogsLoading || saving() || pendingSkillKey() !== null">
-            {{ strings.add }}
-          </button>
+          <div class="flex flex-wrap gap-2">
+            <button *ngIf="opportunity.status !== 'ARCHIVED'" type="button" class="contact-button" data-action="edit-opportunity"
+                    (click)="beginEdit(opportunity)" [disabled]="opportunitySaving()">
+              {{ strings.edit }}
+            </button>
+            <button *ngIf="opportunity.status !== 'ARCHIVED'" type="button" class="contact-button" data-action="add-skill"
+                    (click)="beginAdding(opportunity.id)"
+                    [disabled]="!catalogsLoaded || catalogsLoading || saving() || pendingSkillKey() !== null">
+              {{ strings.add }}
+            </button>
+            <button *ngFor="let action of opportunityActions(opportunity)" type="button" data-action="change-opportunity-status"
+                    [attr.data-status-action]="action"
+                    [class.solid-button]="action === 'OPEN'" [class.contact-button]="action !== 'OPEN'"
+                    (click)="changeOpportunityStatus(opportunity, action)"
+                    [disabled]="pendingOpportunityAction() !== null || opportunitySaving()">
+              {{ pendingOpportunityAction() === opportunity.id ? strings.saving : strings.action[action] }}
+            </button>
+          </div>
         </header>
+
+        <p class="mt-2 whitespace-pre-line text-[var(--color-muted)]">{{ opportunity.description }}</p>
+        <p class="field-hint mt-2">
+          {{ strings.typeOptions[opportunity.opportunityType] }}
+          <span *ngIf="opportunity.city || opportunity.department"> · {{ opportunity.city }}<span *ngIf="opportunity.department">, {{ opportunity.department }}</span></span>
+          <span *ngIf="opportunity.remoteAllowed"> · {{ strings.remoteAllowed }}</span>
+        </p>
 
         <p *ngIf="catalogsLoading" class="field-hint mt-3" role="status">
           {{ strings.catalogsLoading }}

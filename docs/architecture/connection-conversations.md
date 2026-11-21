@@ -3,9 +3,11 @@
 ## Current scope
 
 PUL-27 implements the backend boundary that turns an accepted contextual
-project request into one private conversation. It does not yet expose
-profile-block management, conversation lists, or an Angular acceptance
-screen. Message sending and history were added afterwards by S5.4.
+project request into one private conversation. S6.6 adds directed profile-block
+management and opens a conversation inline after the current user accepts a
+pending request. A conversation list and a durable route for returning to an
+existing conversation remain outside the current scope. Message sending and
+history were added by S5.4.
 
 Request creation is provided by PUL-25 through the same `ConnectionIntent`
 domain and canonical `connection_intents` table. Acceptance restores the full
@@ -38,6 +40,13 @@ The persisted aggregate uses four tables:
 
 All four tables have RLS enabled and direct `anon` and `authenticated` grants
 revoked. Product access is owned by the backend API.
+
+The authenticated profile can read, create, and remove its own directed block
+through `/api/v1/me/blocks/{profileId}`. Self-blocks and inactive targets are
+rejected. New project requests also check both directions between the sender
+and every active member of the target project. Blocks continue to apply to
+request acceptance and message sending according to the conversation's active
+participants.
 
 ## Acceptance transaction
 

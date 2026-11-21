@@ -86,3 +86,14 @@ skill; deactivating a skill does not delete existing associations. Public
 project details include up to the 50 most recent `OPEN` opportunities and names
 of active `REQUIRED` skills. They omit opportunity/skill identifiers,
 importance labels, audit fields, and all non-open opportunities.
+
+## Angular management
+
+`ProjectOpportunitySkillsComponent` is available on active owner/admin team
+cards. It manages opportunity content and lifecycle through the project
+opportunity HTTP endpoints, and keeps the existing required/preferred skill
+association controls in the same feature. It creates `DRAFT` opportunities
+for non-published projects and `OPEN` opportunities only for published
+projects. The Angular actions hide `OPEN` for draft opportunities until the
+project is published. Public-project reads remain separate from the management
+projection.

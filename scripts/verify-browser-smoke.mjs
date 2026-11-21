@@ -15,12 +15,13 @@ async function main() {
 
   browser.on('Network.requestWillBeSent', (event) => {
     if (event.request.url.includes('/api/v1/')) {
-      const extraHeaders = extraHeadersByRequestId.get(event.request.requestId)
+      const request = { requestId: event.requestId, ...event.request }
+      const extraHeaders = extraHeadersByRequestId.get(event.requestId)
       if (extraHeaders) {
-        event.request.extraHeaders = extraHeaders
-        extraHeadersByRequestId.delete(event.request.requestId)
+        request.extraHeaders = extraHeaders
+        extraHeadersByRequestId.delete(event.requestId)
       }
-      apiRequests.push(event.request)
+      apiRequests.push(request)
     }
   })
 
@@ -38,20 +39,21 @@ async function main() {
   await browser.send('Network.enable')
   await browser.navigate(frontendUrl)
 
-  await waitForText(browser, 'Conecta tu cuenta para probar Auth', 'el panel de Auth')
+  await waitForText(browser, 'Vuelve a Pulso', 'la pantalla de inicio de sesión')
+  await waitForText(browser, 'Iniciar sesión', 'el formulario de inicio de sesión')
   await browser.evaluate(`
   [...document.querySelectorAll('button')]
     .find((button) => button.textContent?.includes('Crear cuenta'))
     ?.click()
   `)
-  await waitForText(browser, 'Registrarme', 'el modo de registro de Auth')
+  await waitForText(browser, 'Crear mi cuenta', 'el modo de registro de Auth')
   await fillInput(browser, 'input[name="email"]', testEmail)
   await fillInput(browser, 'input[name="password"]', testPassword)
   await browser.evaluate(`document.querySelector('form button[type="submit"]')?.click()`)
-  await waitForText(browser, 'Sesión conectada', 'el inicio de sesión')
+  await waitForText(browser, 'Tu próximo descubrimiento empieza aquí.', 'el onboarding de la cuenta nueva')
 
   await browser.reload()
-  await waitForText(browser, 'Sesión conectada', 'la sesión persistida tras recargar')
+  await waitForText(browser, 'Tu próximo descubrimiento empieza aquí.', 'el onboarding de la sesión persistida tras recargar')
 
   const meResult = await browser.evaluate(`
   (async () => {
@@ -79,7 +81,7 @@ async function main() {
     .find((button) => button.textContent?.includes('Colaborar'))
     ?.click()
   `)
-  await waitForText(browser, '1 interés seleccionado.', 'la selección de intereses')
+  await waitForText(browser, '1 intención seleccionada.', 'la selección de intereses')
   await browser.evaluate(`
   [...document.querySelectorAll('button')]
     .find((button) => button.textContent?.includes('Entrar a Pulso'))
@@ -88,17 +90,24 @@ async function main() {
   await waitForAnyText(browser, ['EcoPack Bolivia', 'AndeSolar'], 'el catálogo seed de discovery')
   await waitForText(browser, 'por ver', 'el feed de discovery')
 
-  const startupRequest = apiRequests.find((request) => request.url.includes('/api/v1/startups'))
-  if (!startupRequest || !hasBearerHeader(startupRequest)) {
+  const discoveryRequest = apiRequests.find((request) => request.url.includes('/api/v1/me/discovery-feed'))
+  if (!discoveryRequest || !hasBearerHeader(discoveryRequest)) {
     throw new Error('El navegador no envió el bearer token al request de discovery del backend.')
   }
 
   await browser.evaluate(`
   [...document.querySelectorAll('button')]
+    .find((button) => button.textContent?.trim() === 'Perfil')
+    ?.click()
+  `)
+  await waitForText(browser, 'Tu perfil', 'el perfil autenticado')
+  await waitForText(browser, 'Cerrar sesión', 'el formulario de perfil ya cargado')
+  await browser.evaluate(`
+  [...document.querySelectorAll('button')]
     .find((button) => button.textContent?.includes('Cerrar sesión'))
     ?.click()
   `)
-  await waitForText(browser, 'Conecta tu cuenta para probar Auth', 'el cierre de sesión')
+  await waitForText(browser, 'Vuelve a Pulso', 'el cierre de sesión')
 
   await browser.close()
   console.log('Smoke del navegador validado: Auth persistida, /me, discovery seed, bearer al backend y logout.')
@@ -160,7 +169,7 @@ async function waitFor(browserSession, expression, description) {
     await new Promise((resolve) => setTimeout(resolve, 100))
   }
   const state = await browserSession.evaluate(`({
-    authConnected: document.body.innerText.includes('Sesión conectada'),
+    signInScreen: document.body.innerText.includes('Vuelve a Pulso'),
     onboarding: document.body.innerText.includes('Entrar a Pulso'),
     selectedInterest: document.body.innerText.includes('1 interés seleccionado.'),
     discovery: document.body.innerText.includes('Ideas con pulso.'),

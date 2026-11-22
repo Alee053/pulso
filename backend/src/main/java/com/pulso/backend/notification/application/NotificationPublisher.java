@@ -9,7 +9,7 @@ import java.util.UUID;
 public interface NotificationPublisher {
 
     /**
-     * Notifies every active member of the project, except the sender and anyone
+     * Notifies active owners and admins of the project, except the sender and anyone
      * separated from the sender by a block.
      */
     void connectionRequested(UUID connectionIntentId, UUID projectId, UUID senderProfileId);
@@ -21,6 +21,9 @@ public interface NotificationPublisher {
             UUID conversationId,
             UUID initiatorProfileId,
             UUID responderProfileId);
+
+    void connectionDeclined(
+            UUID connectionIntentId, UUID projectId, UUID initiatorProfileId, UUID responderProfileId);
 
     /** Notifies the other active participants of the conversation. */
     void messageSent(UUID conversationId, UUID messageId, UUID senderProfileId);

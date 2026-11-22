@@ -330,7 +330,7 @@ Table connection_intents {
     (from_profile_id, project_id, opportunity_id) [name: 'connection_intents_pending_opportunity_context_uidx', note: "Partial unique where status = 'PENDING' and opportunity_id is not null"]
   }
 
-  Note: "Representa Mostrar interés y funciona como solicitud contextual de contacto. Una conexión útil puede confirmarse sin crear todavía otra entidad. Los índices parciales impiden solicitudes PENDING repetidas por remitente y contexto; el contexto sin oportunidad y cada oportunidad son distintos."
+  Note: "Solicitud contextual de contacto con un proyecto o una oportunidad. El interés y el descarte se registran en project_feedback. Los índices parciales impiden solicitudes PENDING repetidas por remitente y contexto."
 }
 
 Table conversations {

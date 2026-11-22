@@ -1,6 +1,7 @@
+import { defineStrings } from '../../../core/i18n/define-strings'
 import type { MatchFactorKey, MatchFactorStatus } from '../domain/opportunity-match'
 
-export const matchStrings = {
+export const matchStrings = defineStrings({
   title: 'Compatibilidad contigo',
   scoreAria: (title: string, score: number): string =>
     `Compatibilidad con ${title}: ${score} de 100`,
@@ -8,6 +9,9 @@ export const matchStrings = {
   showDetails: 'Ver por qué',
   hideDetails: 'Ocultar detalles',
   points: (points: number, weight: number): string => `${points} de ${weight} puntos`,
+  loading: 'Cargando coincidencias…',
+  loadFailed: 'No se pudieron cargar las coincidencias de las oportunidades.',
+  retry: 'Reintentar coincidencias',
   signedOut: 'Inicia sesión para ver qué tan compatible eres con cada oportunidad.',
   incompleteProfile:
     'Tu perfil está incompleto, por eso esta compatibilidad puede ser menor de lo real.',
@@ -38,4 +42,42 @@ export const matchStrings = {
     SAME_DEPARTMENT: 'Estás en el mismo departamento.',
     DIFFERENT_LOCATION: 'Estás en otra ubicación.',
   } as Record<string, string>,
-} as const
+}, {
+  title: 'Your compatibility',
+  scoreAria: (title: string, score: number): string => `Compatibility with ${title}: ${score} out of 100`,
+  scoreLabel: (score: number): string => `${score}%`,
+  showDetails: 'See why',
+  hideDetails: 'Hide details',
+  points: (points: number, weight: number): string => `${points} out of ${weight} points`,
+  loading: 'Loading matches…',
+  loadFailed: 'Could not load the opportunity matches.',
+  retry: 'Retry matches',
+  signedOut: 'Sign in to see your compatibility with each opportunity.',
+  incompleteProfile: 'Your profile is incomplete, so your compatibility score may be lower.',
+  missingIntro: 'Complete these profile fields to compare:',
+  explanation: 'Calculated using your skills, interests, intention, stage and location.',
+  matchedLabel: 'Matches',
+  unmatchedLabel: 'Does not match',
+  expectedLabel: 'The opportunity requires',
+  factors: {
+    SKILLS: 'Skills',
+    INTENTION: 'Intention',
+    INTERESTS: 'Interests',
+    SECTOR: 'Sector',
+    STAGE: 'Stage',
+    LOCATION: 'Location',
+  },
+  statuses: {
+    MATCHED: 'Matches',
+    PARTIAL: 'Partially matches',
+    NOT_MATCHED: 'Does not match',
+    MISSING_PROFILE_DATA: 'Missing from your profile',
+    NOT_APPLICABLE: 'Not applicable',
+  },
+  reasons: {
+    REMOTE_ALLOWED: 'This opportunity allows remote work.',
+    SAME_CITY: 'You are in the same city.',
+    SAME_DEPARTMENT: 'You are in the same department.',
+    DIFFERENT_LOCATION: 'You are in a different location.',
+  },
+})

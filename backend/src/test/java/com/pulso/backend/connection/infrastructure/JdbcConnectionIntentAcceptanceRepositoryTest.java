@@ -151,7 +151,7 @@ class JdbcConnectionIntentAcceptanceRepositoryTest {
                 insert into public.project_members (
                     project_id, profile_id, role, membership_status
                 ) values
-                    (:projectId, :responderId, 'MEMBER', 'ACTIVE'),
+                    (:projectId, :responderId, 'ADMIN', 'ACTIVE'),
                     (:projectId, :otherMemberId, 'OWNER', 'ACTIVE')
                 """)
                 .param("projectId", PROJECT_ID)

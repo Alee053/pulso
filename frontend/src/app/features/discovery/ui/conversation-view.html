@@ -1,0 +1,56 @@
+<main class="discovery-view">
+  <header class="discovery-view__heading flex-wrap">
+    <h1 class="page-title">{{ strings.title }}</h1>
+    @if (loaded()) {
+      <button type="button" class="contact-button" [disabled]="loading() || sending()"
+              (click)="loadMore()">{{ hasMore() ? strings.more : strings.refresh }}</button>
+    }
+  </header>
+
+  @if (messages().length) {
+    <ol class="grid gap-3" [attr.aria-label]="strings.title">
+      @for (message of messages(); track message.id) {
+        <li class="panel p-4 [overflow-wrap:anywhere]"
+            [style.border-color]="message.senderProfileId === profileId ? 'var(--color-accent)' : null">
+          <div class="flex flex-wrap justify-between gap-x-3">
+            <span class="font-semibold">{{ message.senderProfileId === profileId ? strings.me : strings.participant }}</span>
+            <time class="field-hint" [attr.datetime]="message.createdAt">{{ message.createdAt | date:'short' }}</time>
+          </div>
+          <p class="mt-1 whitespace-pre-wrap">{{ message.status === 'DELETED' ? strings.deleted : message.body }}</p>
+        </li>
+      }
+    </ol>
+  } @else if (loaded()) {
+    <p class="status-message" role="status">{{ strings.empty }}</p>
+  }
+
+  @if (loading()) {
+    <p class="state-panel mt-3" role="status">{{ strings.waiting }}</p>
+  } @else if (loadError(); as error) {
+    <div class="state-panel mt-3">
+      <p role="alert">{{ strings[error] }}</p>
+      @if (error === 'loadFailed') {
+        <button type="button" class="contact-button" (click)="loadMore()">{{ common.retry }}</button>
+      }
+    </div>
+  }
+
+  @if (loaded()) {
+    <form class="panel mt-4 grid gap-3 p-4" (submit)="send($event, body)">
+      <label for="message-body" class="field-label">{{ strings.body }}</label>
+      <textarea #body id="message-body" class="field-input" rows="3" required
+                [value]="draft()" (input)="draft.set(body.value)"
+                [readOnly]="sending() || sendUnavailable()"></textarea>
+      @if (sendError(); as error) {
+        <p class="status-message status-message--error" role="alert">{{ strings[error] }}</p>
+      }
+      @if (sent()) {
+        <p class="status-message status-message--success" role="status">{{ strings.sent }}</p>
+      }
+      <button type="submit" class="solid-button w-fit"
+              [disabled]="!draft().trim() || loading() || sending() || sendUnavailable()">
+        {{ sending() ? strings.sending : strings.send }}
+      </button>
+    </form>
+  }
+</main>

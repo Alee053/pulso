@@ -444,6 +444,7 @@ class JdbcPublicProjectRepositoryTest {
                         false));
         assertThat(bySlug.opportunities()).containsExactly(
                 new PublicProjectDetail.Opportunity(
+                        OPEN_OPPORTUNITY_ID,
                         "Desarrollador Frontend",
                         "TALENT",
                         "Implementa la experiencia web.",
@@ -501,12 +502,13 @@ class JdbcPublicProjectRepositoryTest {
                 "profileId", "displayName", "avatarStoragePath", "displayTitle", "isFeatured"));
         assertThat(data.path("opportunities")).hasSize(1);
         JsonNode opportunity = data.path("opportunities").get(0);
-        assertFields(opportunity, "title", "opportunityType", "description", "city",
+        assertFields(opportunity, "id", "title", "opportunityType", "description", "city",
                 "department", "remoteAllowed", "requiredSkills");
+        assertThat(opportunity.path("id").asText()).isEqualTo(OPEN_OPPORTUNITY_ID.toString());
         assertThat(opportunity.path("requiredSkills").toString()).isEqualTo("[\"Angular\"]");
         assertThat(body).doesNotContain("private biography", "private review note",
                 "invited@example.test", "test-invite-digest", "test-token",
-                OPEN_OPPORTUNITY_ID.toString(), REQUIRED_SKILL_ID.toString(),
+                PAUSED_OPPORTUNITY_ID.toString(), REQUIRED_SKILL_ID.toString(),
                 "Figma", "Internal skill", "Mentoría privada");
     }
 

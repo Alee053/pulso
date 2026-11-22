@@ -128,6 +128,7 @@ export class PublicProjectApi {
     private mapOpportunities(raw: PublicOpenOpportunity[]): PublicOpenOpportunity[] {
         if (!Array.isArray(raw)) return []
         return raw.map((opportunity) => ({
+            id: this.sanitizeText(opportunity?.id),
             title: this.sanitizeText(opportunity?.title) ?? '',
             opportunityType: this.sanitizeText(opportunity?.opportunityType) ?? '',
             description: this.sanitizeText(opportunity?.description) ?? '',

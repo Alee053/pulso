@@ -2,5 +2,10 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "angular",
   "buildCommand": "pnpm build",
-  "outputDirectory": "frontend/dist/pulso-frontend/browser"
+  "outputDirectory": "frontend/dist/pulso-frontend/browser",
+  "rewrites": [
+    { "source": "/proyectos/:reference", "destination": "/index.html" },
+    { "source": "/conversaciones/:conversationId", "destination": "/index.html" },
+    { "source": "/solicitudes/:inbox", "destination": "/index.html" }
+  ]
 }

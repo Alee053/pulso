@@ -23,6 +23,7 @@ export class NavigationBarComponent {
   @Input() projectCreationEnabled = true
   @Input() savedCount = 0
   @Input() interestedCount = 0
+  @Input() unreadCount = 0
   @Output() navigated = new EventEmitter<AppView>()
 
   @Output() exampleRequested = new EventEmitter<void>()
@@ -36,6 +37,7 @@ export class NavigationBarComponent {
       { id: 'create-project', label: navigationStrings.createProject, icon: 'sparkles' },
       { id: 'teams', label: navigationStrings.teams, icon: 'users-round' },
       { id: 'requests', label: navigationStrings.requests, icon: 'heart' },
+      { id: 'notifications', label: navigationStrings.notifications, icon: 'bell' },
       { id: 'saved', label: navigationStrings.saved, icon: 'bookmark' },
       { id: 'profile', label: navigationStrings.profile, icon: 'user-round' },
     ]
@@ -47,6 +49,12 @@ export class NavigationBarComponent {
   }
 
   countFor(item: NavigationItem): number {
+    if (item.id === 'notifications') return this.unreadCount
     return item.id === 'saved' ? this.savedCount : 0
+  }
+
+  countLabel(item: NavigationItem): string | number {
+    const count = this.countFor(item)
+    return count > 99 ? '99+' : count
   }
 }

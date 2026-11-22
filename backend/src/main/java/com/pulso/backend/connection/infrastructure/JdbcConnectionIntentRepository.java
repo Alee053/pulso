@@ -27,6 +27,7 @@ public class JdbcConnectionIntentRepository implements ConnectionIntentRepositor
             from public.project_members member
             where member.project_id = :projectId
               and member.membership_status = 'ACTIVE'
+              and member.role in ('OWNER', 'ADMIN')
               and member.profile_id <> :senderProfileId
             """;
 

@@ -21,6 +21,11 @@ function createFixture() {
   return { fixture, http: TestBed.inject(HttpTestingController) }
 }
 
+function flushDecision(http: HttpTestingController, projectId: string): void {
+  http.expectOne({ method: 'GET', url: 'http://localhost:8080/api/v1/me/project-feedback/' + projectId })
+    .flush({ projectId, feedbackType: null })
+}
+
 describe('PublicProjectDetailComponent', () => {
   afterEach(() => currentLanguage.set('es'))
 
@@ -35,6 +40,8 @@ describe('PublicProjectDetailComponent', () => {
     http.expectOne('http://localhost:8080/api/v1/projects/eco-pack')
       .flush({ data: { ...project, members: [ownProfile, ...project.members] } })
     fixture.detectChanges()
+
+    flushDecision(http, project.id)
 
     const root = fixture.nativeElement as HTMLElement
     const actions = root.querySelectorAll<HTMLElement>('pulso-profile-block-action')
@@ -74,6 +81,8 @@ describe('PublicProjectDetailComponent', () => {
     const project = MOCK_PUBLIC_PROJECTS['eco-pack']
     http.expectOne('http://localhost:8080/api/v1/projects/eco-pack').flush({ data: project })
     fixture.detectChanges()
+
+    flushDecision(http, project.id)
 
     const root = fixture.nativeElement as HTMLElement
     const reportForms = root.querySelectorAll<HTMLFormElement>('pulso-report-form form')
@@ -210,6 +219,7 @@ describe('PublicProjectDetailComponent', () => {
         },
       ],
       opportunities: [{
+        id: 'opportunity-1',
         title: 'Desarrollador Frontend',
         opportunityType: 'TALENT',
         description: 'Implementa la experiencia web.',
@@ -381,6 +391,7 @@ describe('PublicProjectDetailComponent', () => {
     const project = {
       ...MOCK_PUBLIC_PROJECTS['eco-pack'],
       opportunities: [{
+        id: 'opportunity-1',
         title: 'Desarrollador Frontend',
         opportunityType: 'TALENT',
         description: 'Implementa la experiencia web.',
@@ -415,13 +426,14 @@ describe('PublicProjectDetailComponent', () => {
       const http = TestBed.inject(HttpTestingController)
       http.expectOne(PROJECT_URL).flush({ data: project })
       fixture.detectChanges()
+      if (user) flushDecision(http, project.id)
       return { fixture, http }
     }
 
     it('shows the explained match under each opportunity for a signed-in person', () => {
       const { fixture, http } = createWithUser({ id: 'user-1', email: null })
       http.expectOne('http://localhost:8080/api/v1/projects/' + project.id + '/opportunity-matches')
-        .flush({ data: [match] })
+        .flush({ data: [{ ...match, opportunityId: 'different-id', score: 9 }, match] })
       fixture.detectChanges()
 
       const element = fixture.nativeElement as HTMLElement
@@ -449,14 +461,15 @@ describe('PublicProjectDetailComponent', () => {
 
       expect(fixture.nativeElement.querySelector('pulso-opportunity-match')).toBeNull()
       expect((fixture.nativeElement as HTMLElement).textContent).toContain('Desarrollador Frontend')
+      expect(fixture.nativeElement.querySelector('[role=alert]')?.textContent).toContain(matchStrings.loadFailed)
       fixture.destroy()
       http.verify()
     })
 
-    it('ignores a match whose title does not belong to the opportunity at that position', () => {
+    it('ignores a match for another opportunity even when their titles match', () => {
       const { fixture, http } = createWithUser({ id: 'user-1', email: null })
       http.expectOne('http://localhost:8080/api/v1/projects/' + project.id + '/opportunity-matches')
-        .flush({ data: [{ ...match, title: 'Otra oportunidad' }] })
+        .flush({ data: [{ ...match, opportunityId: 'different-id' }] })
       fixture.detectChanges()
 
       expect(fixture.nativeElement.querySelector('pulso-opportunity-match')).toBeNull()

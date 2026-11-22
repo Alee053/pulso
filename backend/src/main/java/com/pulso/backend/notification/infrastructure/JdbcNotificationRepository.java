@@ -121,6 +121,7 @@ public class JdbcNotificationRepository implements NotificationRepository, Notif
                 from public.project_members member
                 where member.project_id = :projectId
                   and member.membership_status = 'ACTIVE'
+                  and member.role in ('OWNER', 'ADMIN')
                   and member.profile_id is not null
                   and member.profile_id <> :senderProfileId
                   and not exists (
@@ -148,6 +149,23 @@ public class JdbcNotificationRepository implements NotificationRepository, Notif
             UUID conversationId,
             UUID initiatorProfileId,
             UUID responderProfileId) {
+        connectionResponded(connectionIntentId, projectId, conversationId, initiatorProfileId, responderProfileId,
+                "ACCEPTED");
+    }
+
+    @Override
+    public void connectionDeclined(
+            UUID connectionIntentId, UUID projectId, UUID initiatorProfileId, UUID responderProfileId) {
+        connectionResponded(connectionIntentId, projectId, null, initiatorProfileId, responderProfileId, "DECLINED");
+    }
+
+    private void connectionResponded(
+            UUID connectionIntentId,
+            UUID projectId,
+            UUID conversationId,
+            UUID initiatorProfileId,
+            UUID responderProfileId,
+            String response) {
         jdbcClient.sql("""
                 insert into public.notifications (
                     recipient_profile_id,
@@ -166,7 +184,7 @@ public class JdbcNotificationRepository implements NotificationRepository, Notif
                     :connectionIntentId,
                     :type,
                     :title,
-                    jsonb_build_object('response', 'ACCEPTED')
+                    jsonb_build_object('response', cast(:response as text))
                 )
                 on conflict do nothing
                 """)
@@ -177,6 +195,7 @@ public class JdbcNotificationRepository implements NotificationRepository, Notif
                 .param("connectionIntentId", connectionIntentId)
                 .param("type", NotificationType.CONNECTION_RESPONSE.name())
                 .param("title", NotificationType.CONNECTION_RESPONSE.title())
+                .param("response", response)
                 .update();
     }
 

@@ -177,6 +177,26 @@ public fields while preserving other loaded pages. Own role changes update the
 parent team permissions; leaving removes that team. Requests and confirmations
 are cancelled when the project or authenticated account changes.
 
+`ProjectManagementComponent` uses the authorized current-team projection to
+edit project information, request publication review, and archive a project.
+It sends only changed information fields through `ProjectsApi`; role checks in
+the team view and the backend remain authoritative. The existing review note
+and status display remain visible to every active team member.
+
+`ProjectOpportunitySkillsComponent` manages opportunities and their skill
+associations inside the same project-team card. It creates a draft for a
+non-public project and an open opportunity for a published project, then uses
+the backend transition contract for edits and status actions. Reports on
+projects, public member profiles, and non-deleted conversation messages reuse
+`ReportFormComponent`. `ProfileBlockControlComponent` uses the profile block
+adapter beside public member profiles and the active conversation; the backend
+enforces bilateral contact policy for new requests, acceptance, and messages.
+
+The requests view opens the private conversation returned by accepting a
+pending intent. It includes message history, sending, contextual message
+reports, and profile blocking. The backend has no conversation-list endpoint,
+so this view does not restore a conversation after leaving or reloading it.
+
 `InvitationLink` consumes the initial `invitation` or SMTP `invite` URL fragment before Auth
 initialization, removes it from the location, and holds its token privately in
 memory for the acceptance request. The app composes `InvitationAcceptanceComponent`

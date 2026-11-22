@@ -74,7 +74,7 @@ describe('ConversationViewComponent', () => {
       .flush({ data: [message('second', 'Segundo')], meta: { offset: 1, limit: 1, hasMore: false } })
     fixture.detectChanges()
 
-    const form = root.querySelector('form')!
+    const form = root.querySelector<HTMLTextAreaElement>('#message-body')!.closest('form')!
     const textarea = form.querySelector('textarea')!
     const send = (body: string) => {
       textarea.value = body

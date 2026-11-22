@@ -19,11 +19,18 @@
         <h3 class="font-semibold">{{ reviewStrings.reviewNote }}</h3>
         <p class="mt-2 whitespace-pre-wrap break-words">{{ project.reviewNote }}</p>
       </div>
+      <pulso-project-management
+        *ngIf="project.role === 'OWNER' || project.role === 'ADMIN'"
+        [project]="project"
+        [sectors]="sectors"
+        (projectChanged)="updateProject($event)"
+      />
       <pulso-project-members [project]="project" (ownMembershipChanged)="updateOwnMembership($event)" />
       <pulso-project-opportunity-skills
         *ngIf="project.role === 'OWNER' || project.role === 'ADMIN'"
         [projectId]="project.projectId"
         [projectName]="project.name"
+        [projectStatus]="project.status || 'DRAFT'"
         [skills]="skills"
         [catalogsLoaded]="catalogsLoaded"
         [catalogsLoading]="catalogsLoading"

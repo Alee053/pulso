@@ -8,6 +8,10 @@ It builds on the `conversations` and `conversation_participants` tables created
 when a project contact request is accepted (see
 [connection conversations](./connection-conversations.md)).
 
+S6.6 renders the returned conversation inline after accepting a pending
+request. Each non-deleted message reuses the existing report form with its
+`targetMessageId`; message reporting does not create another moderation API.
+
 The model already contemplates the `SENT`, `EDITED` and `DELETED` statuses, but
 the API only creates `SENT` messages. Editing, deleting, replies, attachments,
 video calls, read receipts, and notifications are separate capabilities.

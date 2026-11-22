@@ -1,6 +1,9 @@
 <main class="discovery-view">
   <header class="discovery-view__heading flex-wrap">
     <h1 class="page-title">{{ strings.title }}</h1>
+    @if (otherProfileId(); as otherId) {
+      <pulso-profile-block-action [profileId]="otherId" />
+    }
     @if (loaded()) {
       <button type="button" class="contact-button" [disabled]="loading() || sending()"
               (click)="loadMore()">{{ hasMore() ? strings.more : strings.refresh }}</button>
@@ -17,6 +20,10 @@
             <time class="field-hint" [attr.datetime]="message.createdAt">{{ message.createdAt | date:'short' }}</time>
           </div>
           <p class="mt-1 whitespace-pre-wrap">{{ message.status === 'DELETED' ? strings.deleted : message.body }}</p>
+          @if (message.status !== 'DELETED') {
+            <pulso-report-form [target]="{ targetMessageId: message.id }"
+                               [label]="reportStrings.message(message.senderProfileId === profileId ? strings.me : strings.participant)" />
+          }
         </li>
       }
     </ol>

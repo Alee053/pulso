@@ -81,12 +81,11 @@ describe('PublicProjectDetailComponent', () => {
     const project = MOCK_PUBLIC_PROJECTS['eco-pack']
     http.expectOne('http://localhost:8080/api/v1/projects/eco-pack').flush({ data: project })
     fixture.detectChanges()
-
+    const firstMember = project.members[0]
     flushDecision(http, project.id)
 
     const root = fixture.nativeElement as HTMLElement
     const reportForms = root.querySelectorAll<HTMLFormElement>('pulso-report-form form')
-    const firstMember = project.members[0]
     expect(firstMember).toBeDefined()
 
     const submit = (form: HTMLFormElement) => {

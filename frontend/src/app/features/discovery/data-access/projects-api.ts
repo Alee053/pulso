@@ -9,6 +9,7 @@ import type {
   ProjectUpdateFormValue,
   UpdatedProject,
 } from '../domain/project'
+import { projectStatuses, type ProjectStatus } from '../domain/project-review'
 import type {
   MemberInvitationDto,
   ProjectCreateRequestDto,
@@ -63,6 +64,27 @@ export class ProjectsApi {
       )
       .pipe(map(toUpdatedProject))
   }
+
+  requestPublication(projectId: string): Observable<ProjectStatus> {
+    return this.lifecycleAction(projectId, 'publication-request')
+  }
+
+  archive(projectId: string): Observable<ProjectStatus> {
+    return this.lifecycleAction(projectId, 'archive')
+  }
+
+  private lifecycleAction(projectId: string, action: 'publication-request' | 'archive') {
+    return this.http.post<{ projectId: string; status: ProjectStatus }>(
+      `${appConfig.apiBaseUrl}${apiPaths.projects}/${encodeURIComponent(projectId)}/${action}`,
+      {},
+    ).pipe(map((response) => {
+      if (!response || response.projectId !== projectId
+        || !['DRAFT', 'PENDING_REVIEW', 'PUBLISHED', 'REJECTED', 'ARCHIVED', 'SUSPENDED'].includes(response.status)) {
+        throw new Error('Invalid project lifecycle response')
+      }
+      return response.status
+    }))
+  }
 }
 
 function toProjectCreateRequest(
@@ -94,7 +116,7 @@ function toCreatedDraftProject(
       sectorId: dto.project.sectorId,
       city: dto.project.city,
       stage: dto.project.stage as ProjectStage,
-      status: dto.project.status,
+      status: dto.project.status as ProjectStatus,
     },
     owner: {
       id: dto.owner.id,
@@ -134,6 +156,9 @@ function normalizeOptionalText(value: string | null): string | null {
 }
 
 function toUpdatedProject(dto: ProjectUpdateResponseDto): UpdatedProject {
+  if (!dto?.project || !projectStatuses.includes(dto.project.status as ProjectStatus)) {
+    throw new Error('Invalid project update response')
+  }
   return {
     id: dto.project.id,
     slug: dto.project.slug,
@@ -145,7 +170,7 @@ function toUpdatedProject(dto: ProjectUpdateResponseDto): UpdatedProject {
     stage: dto.project.stage as ProjectStage,
     city: dto.project.city,
     department: dto.project.department,
-    status: dto.project.status,
+    status: dto.project.status as ProjectStatus,
     verificationStatus: dto.project.verificationStatus,
     createdByProfileId: dto.project.createdByProfileId,
     createdAt: dto.project.createdAt,

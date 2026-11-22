@@ -66,9 +66,13 @@ class CurrentProjectsControllerTest {
     @Test
     void listsOnlyTheAuthenticatedActorsProjectsWithBoundedPagination() throws Exception {
         when(repository.findActive(PROFILE_ID, 0, 2)).thenReturn(List.of(
-                new CurrentProject(PROJECT_ID, "EcoPack", "OWNER", "ACTIVE", "REJECTED", "UNVERIFIED",
+                new CurrentProject(PROJECT_ID, "EcoPack", "Envases reutilizables", "Descripción privada",
+                        "Menos residuos", UUID.fromString("11111111-1111-1111-1111-111111111111"), "Tecnología",
+                        "MVP", "Cochabamba", "Cochabamba", "OWNER", "ACTIVE", "REJECTED", "UNVERIFIED",
                         "Completar descripción", java.time.Instant.parse("2026-11-16T18:00:00Z")),
-                new CurrentProject(UUID.randomUUID(), "AndeSolar", "MEMBER", "ACTIVE", "DRAFT", "UNVERIFIED", null, null)));
+                new CurrentProject(UUID.randomUUID(), "AndeSolar", "Energía limpia", null, null,
+                        UUID.fromString("22222222-2222-2222-2222-222222222222"), "Energía", "IDEA", null, null,
+                        "MEMBER", "ACTIVE", "DRAFT", "UNVERIFIED", null, null)));
 
         mockMvc.perform(get("/api/v1/me/projects?offset=0&limit=1")
                 .with(jwt().jwt(token -> token.subject(PROFILE_ID.toString()))))
@@ -76,6 +80,13 @@ class CurrentProjectsControllerTest {
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].projectId").value(PROJECT_ID.toString()))
                 .andExpect(jsonPath("$.data[0].name").value("EcoPack"))
+                .andExpect(jsonPath("$.data[0].tagline").value("Envases reutilizables"))
+                .andExpect(jsonPath("$.data[0].description").value("Descripción privada"))
+                .andExpect(jsonPath("$.data[0].valueProposition").value("Menos residuos"))
+                .andExpect(jsonPath("$.data[0].sectorId").value("11111111-1111-1111-1111-111111111111"))
+                .andExpect(jsonPath("$.data[0].sectorName").value("Tecnología"))
+                .andExpect(jsonPath("$.data[0].stage").value("MVP"))
+                .andExpect(jsonPath("$.data[0].city").value("Cochabamba"))
                 .andExpect(jsonPath("$.data[0].role").value("OWNER"))
                 .andExpect(jsonPath("$.data[0].membershipStatus").value("ACTIVE"))
                 .andExpect(jsonPath("$.data[0].status").value("REJECTED"))

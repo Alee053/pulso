@@ -1,18 +1,21 @@
 import { DatePipe } from '@angular/common'
 import { HttpErrorResponse } from '@angular/common/http'
-import { Component, DestroyRef, Input, OnChanges, inject, signal } from '@angular/core'
+import { Component, computed, DestroyRef, Input, OnChanges, inject, signal } from '@angular/core'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 import type { Subscription } from 'rxjs'
 import { commonStrings } from '../../../shared/strings/common.strings'
 import { ConversationMessagesApi } from '../data-access/conversation-messages-api'
 import type { ConversationMessage } from '../domain/communication'
 import { conversationStrings } from '../strings/conversation.strings'
+import { reportStrings } from '../strings/report.strings'
+import { ProfileBlockActionComponent } from './profile-block-action'
+import { ReportFormComponent } from './report-form'
 
 type SendError = 'restricted' | 'inactive' | 'invalid' | 'sendFailed'
 
 @Component({
   selector: 'pulso-conversation-view',
-  imports: [DatePipe],
+  imports: [DatePipe, ProfileBlockActionComponent, ReportFormComponent],
   templateUrl: './conversation-view.html',
 })
 export class ConversationViewComponent implements OnChanges {
@@ -20,8 +23,12 @@ export class ConversationViewComponent implements OnChanges {
   @Input({ required: true }) profileId!: string
 
   protected readonly strings = conversationStrings
+  protected readonly reportStrings = reportStrings
   protected readonly common = commonStrings
   protected readonly messages = signal<ConversationMessage[]>([])
+  protected readonly otherProfileId = computed(() =>
+    this.messages().find(message => message.senderProfileId !== this.profileId)?.senderProfileId ?? null,
+  )
   protected readonly loading = signal(false)
   protected readonly loaded = signal(false)
   protected readonly loadError = signal<'loadFailed' | 'unavailable' | null>(null)

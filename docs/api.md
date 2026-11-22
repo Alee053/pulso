@@ -731,8 +731,11 @@ Conflict`. Missing and ineligible projects or opportunities return the same
 reveals private project or profile state. Missing or invalid bearer tokens and
 `service_role` tokens return `401`. Invalid reasons or protected request fields
 return `400`, and database failures use the sanitized `503` response. This API
-creates requests only; deciding, withdrawing, conversations, and notifications
-are handled by later features.
+rejects contact with `403 connection_intent_forbidden` when either the sender or
+an active member of the target project has blocked the other profile. Accepted
+requests can open their conversation inline in the authenticated requests view,
+which uses the message and report endpoints below. Conversation lists remain
+outside this API surface.
 
 ## Profile blocks (PUL-33)
 
@@ -1063,6 +1066,24 @@ memberships return the same `403 Membership permission` problem. Invalid
 action fields return `400`; invalid lifecycle sources return `400`; a concurrent
 state change returns the sanitized `409 Project state conflict`. There is no
 team endpoint that accepts a direct `PUBLISHED` transition.
+
+## `GET /api/v1/me/projects` — active team projects
+
+Returns the authenticated profile's active project memberships, ordered by
+project name and ID. The endpoint accepts bounded `offset` and `limit` query
+parameters. It returns no rows for an account without an active team; callers
+cannot supply a profile or project ID to broaden the result.
+
+Each team row includes the project information required by its owner/admin
+management form: `projectId`, `name`, `tagline`, `description`,
+`valueProposition`, `sectorId`, `sectorName`, `stage`, `city`, and `department`,
+alongside the persisted `role` and `membershipStatus`. It also includes
+`status`, `verificationStatus`, `reviewNote`, and `reviewedAt` for publication
+review feedback. Nullable text and review values remain `null`. These fields
+are read-only in this response; edits and lifecycle actions use the project
+endpoints above. Members receive project details for their active teams, while
+Angular management controls are available only to active `OWNER` and `ADMIN`
+memberships. The backend remains authoritative for mutations.
 
 ## `GET /api/v1/me/preferences`
 
@@ -1803,3 +1824,16 @@ El perfil reportado puede ser público y activo o el perfil propio activo.
 El proyecto debe ser visible en el catálogo público o en los equipos del
 reportante. Para reportar un mensaje se requiere participación vigente en
 su conversación, igual que para leer el historial.
+
+## Gestionar un bloqueo de perfil
+
+Los endpoints vigentes y sus respuestas están descritos en
+[Profile blocks (PUL-33)](#profile-blocks-pul-33). El backend deriva el actor
+del JWT; el cliente no puede bloquearse a sí mismo. `profile_blocks` conserva
+la dirección de cada bloqueo y la política de contacto comprueba ambos sentidos.
+
+Los cambios de bloqueo se serializan con la creación y aceptación de solicitudes
+y con el envío de mensajes. Una solicitud solo se envía a los owners y admins
+activos que no hayan bloqueado al emisor; se rechaza si todos están bloqueados.
+Los participantes autorizados conservan la lectura de conversaciones existentes,
+pero un bloqueo impide enviar mensajes y aceptar la solicitud entre esos perfiles.

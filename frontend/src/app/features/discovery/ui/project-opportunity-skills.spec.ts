@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing'
 import { describe, expect, it } from 'vitest'
 import type { SkillCatalogItem } from '../domain/catalog'
+import { opportunitySkillsStrings } from '../strings/opportunity-skills.strings'
 import { ProjectOpportunitySkillsComponent } from './project-opportunity-skills'
 
 const projectId = 'project-1'
@@ -14,7 +15,7 @@ const catalog: SkillCatalogItem[] = [
   { id: 'skill-ts', slug: 'typescript', name: 'TypeScript', category: 'Frontend' },
 ]
 
-function setup() {
+function setup(projectStatus: 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED' | 'ARCHIVED' | 'SUSPENDED' = 'DRAFT') {
   TestBed.configureTestingModule({
     imports: [ProjectOpportunitySkillsComponent],
     providers: [provideHttpClient(), provideHttpClientTesting()],
@@ -24,6 +25,7 @@ function setup() {
   fixture.componentRef.setInput('projectName', 'Pulso')
   fixture.componentRef.setInput('skills', catalog)
   fixture.componentRef.setInput('catalogsLoaded', true)
+  fixture.componentRef.setInput('projectStatus', projectStatus)
   fixture.detectChanges()
   return { fixture, http: TestBed.inject(HttpTestingController) }
 }
@@ -31,10 +33,13 @@ function setup() {
 function loadOneOpportunity(
   fixture: ReturnType<typeof setup>['fixture'],
   http: HttpTestingController,
+  status: 'DRAFT' | 'OPEN' = 'OPEN',
 ): void {
   fixture.nativeElement.querySelector('button').click()
   http.expectOne(opportunitiesUrl).flush({
-    data: [{ id: 'opp-1', projectId, title: 'Desarrollador Frontend', status: 'OPEN' }],
+    data: [{ id: 'opp-1', projectId, opportunityType: 'TALENT', title: 'Desarrollador Frontend',
+      description: 'Construir el producto', status, city: 'Cochabamba', department: null,
+      remoteAllowed: true, createdAt: '2026-11-01T00:00:00Z', updatedAt: '2026-11-02T00:00:00Z' }],
     meta: { offset: 0, limit: 50, hasMore: false },
   })
   http.expectOne(skillsUrl).flush([{
@@ -53,9 +58,9 @@ describe('ProjectOpportunitySkillsComponent', () => {
     loadOneOpportunity(fixture, http)
 
     expect(fixture.nativeElement.textContent).toContain('Angular')
-    expect(fixture.nativeElement.textContent).toContain('REQUIRED')
+    expect(fixture.nativeElement.textContent).toContain(opportunitySkillsStrings.required)
 
-    fixture.nativeElement.querySelector('article button').click()
+    fixture.nativeElement.querySelector('[data-action="add-skill"]').click()
     fixture.detectChanges()
     const skillSelect = fixture.nativeElement.querySelector('#skill-opp-1') as HTMLSelectElement
     expect([...skillSelect.options].map((option) => option.value)).toEqual(['', 'skill-ts'])
@@ -129,6 +134,94 @@ describe('ProjectOpportunitySkillsComponent', () => {
     })
     fixture.detectChanges()
     expect(fixture.nativeElement.textContent).toContain('Este proyecto todavía no tiene oportunidades.')
+    http.verify()
+  })
+
+  it('creates, edits, and changes an opportunity status using the project lifecycle', async () => {
+    const { fixture, http } = setup('PUBLISHED')
+    loadOneOpportunity(fixture, http)
+    fixture.componentInstance.beginCreate()
+    fixture.componentInstance.opportunityForm.patchValue({
+      opportunityType: 'COLLABORATION',
+      title: '  Validar el producto  ',
+      description: '  Buscamos equipos piloto.  ',
+      city: '  La Paz  ',
+      department: '  La Paz  ',
+      remoteAllowed: false,
+    })
+    const creating = fixture.componentInstance.saveOpportunity()
+    const create = http.expectOne('http://localhost:8080/api/v1/projects/project-1/opportunities')
+    expect(create.request.method).toBe('POST')
+    expect(create.request.body).toEqual({
+      opportunityType: 'COLLABORATION', title: 'Validar el producto',
+      description: 'Buscamos equipos piloto.', city: 'La Paz', department: 'La Paz',
+      remoteAllowed: false, status: 'OPEN',
+    })
+    create.flush({
+      id: 'opp-2', projectId, opportunityType: 'COLLABORATION', title: 'Validar el producto',
+      description: 'Buscamos equipos piloto.', status: 'OPEN', city: 'La Paz', department: 'La Paz',
+      remoteAllowed: false, createdAt: '2026-11-01T00:00:00Z', updatedAt: '2026-11-02T00:00:00Z',
+    })
+    await creating
+    fixture.detectChanges()
+    expect(fixture.nativeElement.textContent).toContain('Validar el producto')
+
+    const created = fixture.componentInstance.opportunities()[0]
+    fixture.componentInstance.beginEdit(created)
+    fixture.componentInstance.opportunityForm.controls.title.setValue('Producto piloto')
+    const updating = fixture.componentInstance.saveOpportunity()
+    const update = http.expectOne('http://localhost:8080/api/v1/projects/project-1/opportunities/opp-2')
+    expect(update.request.method).toBe('PUT')
+    expect(update.request.body).toEqual({
+      opportunityType: 'COLLABORATION', title: 'Producto piloto',
+      description: 'Buscamos equipos piloto.', city: 'La Paz', department: 'La Paz', remoteAllowed: false,
+    })
+    update.flush({ ...created, title: 'Producto piloto', updatedAt: '2026-11-03T00:00:00Z' })
+    await updating
+    fixture.detectChanges()
+    expect(fixture.nativeElement.textContent).toContain('Producto piloto')
+
+    const changed = fixture.componentInstance.opportunities()[0]
+    const pausing = fixture.componentInstance.changeOpportunityStatus(changed, 'PAUSE')
+    const transition = http.expectOne('http://localhost:8080/api/v1/projects/project-1/opportunities/opp-2/actions')
+    expect(transition.request.method).toBe('POST')
+    expect(transition.request.body).toEqual({ action: 'PAUSE' })
+    transition.flush({ ...changed, status: 'PAUSED', updatedAt: '2026-11-04T00:00:00Z' })
+    await pausing
+    fixture.detectChanges()
+    expect(fixture.nativeElement.textContent).toContain('Estado: Pausada')
+    http.verify()
+  })
+
+  it('does not offer or send OPEN for a draft opportunity until the project is published', async () => {
+    const { fixture, http } = setup('PENDING_REVIEW')
+    loadOneOpportunity(fixture, http, 'DRAFT')
+
+    expect(fixture.nativeElement.querySelector('[data-status-action="OPEN"]')).toBeNull()
+    expect(fixture.nativeElement.querySelector('[data-status-action="ARCHIVE"]')).not.toBeNull()
+
+    await fixture.componentInstance.changeOpportunityStatus(
+      fixture.componentInstance.opportunities()[0],
+      'OPEN',
+    )
+
+    http.expectNone('http://localhost:8080/api/v1/projects/project-1/opportunities/opp-1/actions')
+    expect(fixture.nativeElement.textContent).not.toContain('No pudimos actualizar el estado.')
+    http.verify()
+  })
+
+  it('requires a location when an opportunity is not remote', async () => {
+    const { fixture, http } = setup()
+    loadOneOpportunity(fixture, http)
+    fixture.componentInstance.beginCreate()
+    fixture.componentInstance.opportunityForm.patchValue({
+      title: 'Oportunidad local', description: 'Descripción', remoteAllowed: false,
+      city: '', department: '',
+    })
+
+    await fixture.componentInstance.saveOpportunity()
+
+    expect(fixture.componentInstance.errorMessage()).toBe('Indica una ubicación o habilita la participación remota.')
     http.verify()
   })
 })

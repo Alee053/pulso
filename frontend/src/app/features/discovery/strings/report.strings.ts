@@ -4,6 +4,7 @@ export const reportStrings = defineStrings(
   {
     project: 'Reportar proyecto',
     profile: (name: string) => `Reportar perfil de ${name}`,
+    message: (name: string) => `Reportar mensaje de ${name}`,
     reason: 'Motivo',
     chooseReason: 'Selecciona un motivo',
     spam: 'Spam',
@@ -19,6 +20,7 @@ export const reportStrings = defineStrings(
   {
     project: 'Report project',
     profile: (name: string) => `Report ${name}’s profile`,
+    message: (name: string) => `Report a message from ${name}`,
     reason: 'Reason',
     chooseReason: 'Select a reason',
     spam: 'Spam',

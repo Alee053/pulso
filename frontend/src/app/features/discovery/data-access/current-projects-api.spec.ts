@@ -19,9 +19,13 @@ describe('CurrentProjectsApi', () => {
     await new Promise<void>((resolve) => queueMicrotask(resolve))
     const request = http.expectOne(path)
     expect(request.request.headers.get('Authorization')).toBe('Bearer session-token')
-    request.flush({ data: [{ projectId: 'p1', name: 'EcoPack', role: 'ADMIN', membershipStatus: 'ACTIVE', privateData: 'hidden' }],
+    request.flush({ data: [{ projectId: 'p1', name: 'EcoPack', tagline: 'Envases reutilizables',
+      description: 'Descripción', valueProposition: 'Menos residuos', sectorId: 'sector-1', sectorName: 'Tecnología', stage: 'MVP',
+      city: 'Cochabamba', department: null, role: 'ADMIN', membershipStatus: 'ACTIVE', privateData: 'hidden' }],
       meta: { offset: 20, limit: 20, hasMore: false } })
-    expect(await result).toEqual({ data: [{ projectId: 'p1', name: 'EcoPack', role: 'ADMIN', membershipStatus: 'ACTIVE' }],
+    expect(await result).toEqual({ data: [{ projectId: 'p1', name: 'EcoPack', tagline: 'Envases reutilizables',
+      description: 'Descripción', valueProposition: 'Menos residuos', sectorId: 'sector-1', sectorName: 'Tecnología', stage: 'MVP',
+      city: 'Cochabamba', department: null, role: 'ADMIN', membershipStatus: 'ACTIVE' }],
       meta: { offset: 20, limit: 20, hasMore: false } })
     http.verify()
   })
@@ -36,7 +40,9 @@ describe('CurrentProjectsApi', () => {
     TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] })
     const result = firstValueFrom(TestBed.inject(CurrentProjectsApi).list(20)).catch((error: unknown) => error)
     const http = TestBed.inject(HttpTestingController)
-    http.expectOne(path).flush({ data: [{ projectId: 'p1', name: 'EcoPack', role: 'OWNER', membershipStatus }],
+    http.expectOne(path).flush({ data: [{ projectId: 'p1', name: 'EcoPack', tagline: 'Lema', description: null,
+      valueProposition: null, sectorId: 'sector-1', sectorName: 'Tecnología', stage: 'IDEA', city: null, department: null,
+      role: 'OWNER', membershipStatus }],
       meta: { offset: 20, limit: 20, hasMore: false } })
     expect(await result).toEqual({ message: 'No pudimos cargar tus equipos. Inténtalo de nuevo.' })
     http.verify()

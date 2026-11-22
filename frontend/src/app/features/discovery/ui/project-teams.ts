@@ -18,17 +18,19 @@ import { invitationStrings } from '../strings/invitation.strings'
 import { projectReviewStrings } from '../strings/project-review.strings'
 import { ProjectMembersComponent } from './project-members'
 import type { UpdatedMembership } from '../domain/project-member'
-import type { SkillCatalogItem } from '../domain/catalog'
+import type { SectorCatalogItem, SkillCatalogItem } from '../domain/catalog'
 import { ProjectOpportunitySkillsComponent } from './project-opportunity-skills'
+import { ProjectManagementComponent } from './project-management'
 
 @Component({
   selector: 'pulso-project-teams',
   standalone: true,
-  imports: [CommonModule, ProjectMembersComponent, ProjectOpportunitySkillsComponent],
+  imports: [CommonModule, ProjectMembersComponent, ProjectOpportunitySkillsComponent, ProjectManagementComponent],
   templateUrl: './project-teams.html',
 })
 export class ProjectTeamsComponent implements OnDestroy {
   @Input() skills: readonly SkillCatalogItem[] = []
+  @Input() sectors: readonly SectorCatalogItem[] = []
   @Input() catalogsLoaded = false
   @Input() catalogsLoading = false
   @Input() catalogsErrorMessage: string | null = null
@@ -102,5 +104,10 @@ export class ProjectTeamsComponent implements OnDestroy {
     this.projects.update((projects) => member.membershipStatus === 'ACTIVE'
       ? projects.map((project) => project.projectId === member.projectId ? { ...project, role: member.role } : project)
       : projects.filter((project) => project.projectId !== member.projectId))
+  }
+
+  updateProject(project: CurrentProjectMembership): void {
+    this.projects.update((projects) => projects.map((current) =>
+      current.projectId === project.projectId ? project : current))
   }
 }

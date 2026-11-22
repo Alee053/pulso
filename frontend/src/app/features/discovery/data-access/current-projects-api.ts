@@ -5,6 +5,7 @@ import { appConfig } from '../../../core/config/app-config'
 import type { CurrentProjectsPage } from '../domain/member-invitation'
 import { invitationStrings } from '../strings/invitation.strings'
 import { projectStatuses } from '../domain/project-review'
+import { projectStages } from '../domain/project'
 
 @Injectable({ providedIn: 'root' })
 export class CurrentProjectsApi {
@@ -21,7 +22,13 @@ export class CurrentProjectsApi {
         if (!page || !Array.isArray(page.data) || !page.meta || page.meta.offset !== offset
           || page.meta.limit !== 20 || typeof page.meta.hasMore !== 'boolean' || page.data.length > 20
           || page.data.some((project) => !project || typeof project.projectId !== 'string' || !project.projectId
-            || typeof project.name !== 'string' || !['OWNER', 'ADMIN', 'MEMBER'].includes(project.role)
+            || typeof project.name !== 'string' || typeof project.tagline !== 'string'
+            || !nullableText(project.description) || !nullableText(project.valueProposition)
+            || typeof project.sectorId !== 'string' || !project.sectorId
+            || typeof project.sectorName !== 'string' || !project.sectorName
+            || !projectStages.includes(project.stage as (typeof projectStages)[number])
+            || !nullableText(project.city) || !nullableText(project.department)
+            || !['OWNER', 'ADMIN', 'MEMBER'].includes(project.role)
             || project.membershipStatus !== 'ACTIVE'
             || (project.status !== undefined && !projectStatuses.includes(project.status))
             || (project.reviewNote !== undefined && project.reviewNote !== null && typeof project.reviewNote !== 'string'))) {
@@ -29,6 +36,11 @@ export class CurrentProjectsApi {
         }
         return {
           data: page.data.map((project) => ({ projectId: project.projectId, name: project.name,
+            tagline: project.tagline, description: project.description,
+            valueProposition: project.valueProposition, sectorId: project.sectorId,
+            sectorName: project.sectorName,
+            stage: project.stage as (typeof projectStages)[number], city: project.city,
+            department: project.department,
             role: project.role, membershipStatus: project.membershipStatus,
             ...(project.status !== undefined ? { status: project.status } : {}),
             ...(project.verificationStatus !== undefined ? { verificationStatus: project.verificationStatus } : {}),
@@ -41,4 +53,8 @@ export class CurrentProjectsApi {
       catchError(() => throwError(() => ({ message: invitationStrings.teamsFailed }))),
     )
   }
+}
+
+function nullableText(value: unknown): value is string | null {
+  return value === null || typeof value === 'string'
 }

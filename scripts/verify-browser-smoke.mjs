@@ -19,12 +19,13 @@ async function main() {
 
   browser.on('Network.requestWillBeSent', (event) => {
     if (event.request.url.includes('/api/v1/')) {
-      const extraHeaders = extraHeadersByRequestId.get(event.request.requestId)
+      const request = { requestId: event.requestId, ...event.request }
+      const extraHeaders = extraHeadersByRequestId.get(event.requestId)
       if (extraHeaders) {
-        event.request.extraHeaders = extraHeaders
-        extraHeadersByRequestId.delete(event.request.requestId)
+        request.extraHeaders = extraHeaders
+        extraHeadersByRequestId.delete(event.requestId)
       }
-      apiRequests.push(event.request)
+      apiRequests.push(request)
     }
   })
 
@@ -77,7 +78,8 @@ async function main() {
 
   // Onboarding
   await clickButton(browser, 'Colaborar', 'la intención Colaborar')
-  await waitForText(browser, '1 intención seleccionada.', 'la selección de intenciones')
+  await waitForText(browser, '1 intención seleccionada.', 'la selección de intereses')
+
   await clickButton(browser, 'Entrar a Pulso', 'la entrada a discovery')
 
   // Discovery

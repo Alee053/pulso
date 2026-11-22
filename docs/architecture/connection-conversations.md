@@ -2,11 +2,14 @@
 
 ## Current scope
 
-PUL-27 turns an accepted contextual project request into one private
-conversation. S5.4 adds message sending and history. PUL-33 adds profile
-blocks to the project detail, request inbox, and profile settings.
-PUL-111 connects Angular's sent and received histories to the persisted
-requests and their conversations.
+PUL-27 implements the backend boundary that turns an accepted contextual
+project request into one private conversation. S5.4 adds message sending and
+history. PUL-33 adds profile blocks to project details, the request inbox, and
+profile settings. PUL-111 connects sent and received request histories to their
+persisted conversations, which can be reopened from a durable route after a
+reload. PUL-112 adds contextual reports for projects, public profiles, and
+conversation messages, and exposes profile blocking in the project detail and
+conversation flow.
 
 Request creation is provided by PUL-25 through the same `ConnectionIntent`
 domain and canonical `connection_intents` table. Acceptance restores the full

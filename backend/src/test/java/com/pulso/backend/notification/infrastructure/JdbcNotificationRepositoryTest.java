@@ -85,6 +85,7 @@ class JdbcNotificationRepositoryTest {
                   id uuid primary key default gen_random_uuid(),
                   project_id uuid not null references public.projects (id),
                   profile_id uuid references public.profiles (id),
+                  role text not null,
                   membership_status text not null
                 )
                 """).update();
@@ -117,13 +118,13 @@ class JdbcNotificationRepositoryTest {
             jdbcClient.sql("insert into public.profiles (id) values (:id)").param("id", profile).update();
         }
         jdbcClient.sql("insert into public.projects (id) values (:id)").param("id", PROJECT_ID).update();
-        insertMember(OWNER_ID, "ACTIVE");
-        insertMember(MEMBER_ID, "ACTIVE");
-        insertMember(SENDER_ID, "ACTIVE");
-        insertMember(LEFT_MEMBER_ID, "LEFT");
-        insertMember(BLOCKED_BY_SENDER_ID, "ACTIVE");
-        insertMember(BLOCKING_SENDER_ID, "ACTIVE");
-        insertMember(null, "INVITED");
+        insertMember(OWNER_ID, "OWNER", "ACTIVE");
+        insertMember(MEMBER_ID, "MEMBER", "ACTIVE");
+        insertMember(SENDER_ID, "ADMIN", "ACTIVE");
+        insertMember(LEFT_MEMBER_ID, "ADMIN", "LEFT");
+        insertMember(BLOCKED_BY_SENDER_ID, "ADMIN", "ACTIVE");
+        insertMember(BLOCKING_SENDER_ID, "ADMIN", "ACTIVE");
+        insertMember(null, "ADMIN", "INVITED");
         jdbcClient.sql("insert into public.profile_blocks values (:blocker, :blocked)")
                 .param("blocker", SENDER_ID)
                 .param("blocked", BLOCKED_BY_SENDER_ID)
@@ -142,11 +143,11 @@ class JdbcNotificationRepositoryTest {
     }
 
     @Test
-    void aConnectionRequestNotifiesActiveMembersExceptTheSenderAndBlockedProfiles() {
+    void aConnectionRequestNotifiesActiveManagersExceptTheSenderAndBlockedProfiles() {
         transactionTemplate.executeWithoutResult(status ->
                 repository.connectionRequested(INTENT_ID, PROJECT_ID, SENDER_ID));
 
-        assertThat(recipients()).containsExactlyInAnyOrder(OWNER_ID, MEMBER_ID);
+        assertThat(recipients()).containsExactly(OWNER_ID);
         Notification notification = repository.findPage(OWNER_ID, NotificationReadFilter.ALL, 0, 20).getFirst();
         assertThat(notification.type()).isEqualTo(NotificationType.CONNECTION_REQUEST);
         assertThat(notification.title()).isEqualTo("New connection request");
@@ -164,7 +165,7 @@ class JdbcNotificationRepositoryTest {
         transactionTemplate.executeWithoutResult(status ->
                 repository.connectionRequested(INTENT_ID, PROJECT_ID, SENDER_ID));
 
-        assertThat(count()).isEqualTo(2);
+        assertThat(count()).isEqualTo(1);
     }
 
     @Test
@@ -279,13 +280,14 @@ class JdbcNotificationRepositoryTest {
         assertThat(repository.countUnread(OWNER_ID)).isEqualTo(1);
     }
 
-    private void insertMember(UUID profileId, String membershipStatus) {
+    private void insertMember(UUID profileId, String role, String membershipStatus) {
         jdbcClient.sql("""
-                insert into public.project_members (project_id, profile_id, membership_status)
-                values (:projectId, :profileId, :status)
+                insert into public.project_members (project_id, profile_id, role, membership_status)
+                values (:projectId, :profileId, :role, :status)
                 """)
                 .param("projectId", PROJECT_ID)
                 .param("profileId", profileId)
+                .param("role", role)
                 .param("status", membershipStatus)
                 .update();
     }

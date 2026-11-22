@@ -32,7 +32,7 @@ describe('PublicProjectApi', () => {
         department: 'Cochabamba',
         remoteAllowed: true,
         requiredSkills: ['Angular', 'TypeScript'],
-        id: 'private-opportunity-id',
+        id: 'public-opportunity-id',
         status: 'OPEN',
         importance: 'REQUIRED',
         createdByProfileId: 'private-profile',
@@ -44,6 +44,7 @@ describe('PublicProjectApi', () => {
       imageUrl: null,
       imageAlt: null,
       opportunities: [{
+        id: 'public-opportunity-id',
         title: 'Desarrollador Frontend',
         opportunityType: 'TALENT',
         description: 'Implementa la experiencia web.',

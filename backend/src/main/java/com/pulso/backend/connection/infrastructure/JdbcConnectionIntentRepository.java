@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.pulso.backend.connection.application.ConnectionIntentRejectedException;
 import com.pulso.backend.connection.application.ConnectionIntentRejectedException.Reason;
-import com.pulso.backend.connection.application.ConnectionIntentPermissionException;
 import com.pulso.backend.connection.application.ConnectionIntentRepository;
 import com.pulso.backend.connection.domain.ConnectionIntent;
 import com.pulso.backend.connection.domain.ConnectionIntentReason;
@@ -24,6 +23,13 @@ public class JdbcConnectionIntentRepository implements ConnectionIntentRepositor
             "connection_intents_pending_project_context_uidx";
     private static final String OPPORTUNITY_CONTEXT_UNIQUE_INDEX =
             "connection_intents_pending_opportunity_context_uidx";
+    private static final String PROJECT_RECIPIENTS = """
+            from public.project_members member
+            where member.project_id = :projectId
+              and member.membership_status = 'ACTIVE'
+              and member.role in ('OWNER', 'ADMIN')
+              and member.profile_id <> :senderProfileId
+            """;
 
     private final JdbcClient jdbcClient;
 
@@ -48,8 +54,8 @@ public class JdbcConnectionIntentRepository implements ConnectionIntentRepositor
         if (opportunityId != null && !lockOpenOpportunity(projectId, opportunityId)) {
             throw new ConnectionIntentRejectedException(Reason.CONTEXT_UNAVAILABLE);
         }
-        if (isBlockedByProjectMember(senderProfileId, projectId)) {
-            throw ConnectionIntentPermissionException.profilesBlocked();
+        if (hasOnlyBlockedRecipients(senderProfileId, projectId)) {
+            throw new ConnectionIntentRejectedException(Reason.RECIPIENTS_BLOCKED);
         }
 
         try {
@@ -139,52 +145,33 @@ public class JdbcConnectionIntentRepository implements ConnectionIntentRepositor
                 .isPresent();
     }
 
-    private boolean isBlockedByProjectMember(UUID senderProfileId, UUID projectId) {
-        var members = jdbcClient.sql("""
-                select profile_id
-                from public.project_members
-                where project_id = :projectId
-                  and membership_status = 'ACTIVE'
-                  and profile_id is not null
-                  and profile_id <> :senderProfileId
-                order by profile_id
-                """)
-                .param("projectId", projectId)
-                .param("senderProfileId", senderProfileId)
-                .query(UUID.class)
-                .list();
-
-        for (UUID memberProfileId : members) {
-            lockContactPair(senderProfileId, memberProfileId);
-            boolean blocked = jdbcClient.sql("""
-                    select exists(
-                        select 1 from public.profile_blocks
-                        where (blocker_profile_id = :senderProfileId and blocked_profile_id = :memberProfileId)
-                           or (blocker_profile_id = :memberProfileId and blocked_profile_id = :senderProfileId)
-                    )
-                    """)
-                    .param("senderProfileId", senderProfileId)
-                    .param("memberProfileId", memberProfileId)
-                    .query(Boolean.class)
-                    .single();
-            if (blocked) return true;
-        }
-        return false;
-    }
-
-    private void lockContactPair(UUID firstProfileId, UUID secondProfileId) {
+    private boolean hasOnlyBlockedRecipients(UUID senderProfileId, UUID projectId) {
+        // The block check must take a new snapshot after waiting for in-flight block writes.
         jdbcClient.sql("""
                 select true
                 from (
-                    select pg_advisory_xact_lock(hashtextextended(
-                        concat_ws(':', least(cast(:firstProfileId as text), cast(:secondProfileId as text)),
-                                       greatest(cast(:firstProfileId as text), cast(:secondProfileId as text))),
-                        0
-                    ))
-                ) contact_lock
-                """)
-                .param("firstProfileId", firstProfileId)
-                .param("secondProfileId", secondProfileId)
+                    select pg_advisory_xact_lock(public.profile_contact_lock_key(:senderProfileId, member.profile_id))
+                    %s
+                    order by public.profile_contact_lock_key(:senderProfileId, member.profile_id)
+                    for share of member
+                ) contact_locks
+                """.formatted(PROJECT_RECIPIENTS))
+                .param("projectId", projectId)
+                .param("senderProfileId", senderProfileId)
+                .query(Boolean.class)
+                .list();
+
+        return jdbcClient.sql("""
+                select coalesce(bool_and(exists (
+                    select 1
+                    from public.profile_blocks block
+                    where (block.blocker_profile_id = :senderProfileId and block.blocked_profile_id = member.profile_id)
+                       or (block.blocker_profile_id = member.profile_id and block.blocked_profile_id = :senderProfileId)
+                )), false)
+                %s
+                """.formatted(PROJECT_RECIPIENTS))
+                .param("projectId", projectId)
+                .param("senderProfileId", senderProfileId)
                 .query(Boolean.class)
                 .single();
     }

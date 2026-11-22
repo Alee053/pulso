@@ -1,0 +1,56 @@
+<main class="discovery-view">
+  <header class="discovery-view__heading flex-wrap">
+    <div>
+      <h1 class="page-title">{{ strings.title }}</h1>
+      @if (unreadCount() !== null) {
+        <p class="field-hint" aria-live="polite">{{ strings.unreadCount(unreadCount() ?? 0) }}</p>
+      }
+    </div>
+    <button type="button" class="contact-button" [disabled]="loading() || marking() !== null"
+            (click)="refresh()">{{ strings.refresh }}</button>
+  </header>
+
+  <ul class="grid gap-3">
+    @for (item of entries(); track item.id) {
+      <li #row class="panel grid gap-3 p-4 sm:flex sm:items-start sm:justify-between" tabindex="-1">
+        <div class="min-w-0">
+          <h2 class="font-semibold">{{ label(item) }}</h2>
+          <div class="mt-1 flex flex-wrap items-center gap-2">
+            <time class="field-hint" [attr.datetime]="item.createdAt">{{ item.createdAt | date:'short' }}</time>
+            <span class="mini-badge" [style.color]="item.read ? null : 'var(--color-accent)'" aria-live="polite">
+              {{ item.read ? strings.read : strings.unread }}
+            </span>
+          </div>
+          @if (markFailed() === item.id) {
+            <p class="field-error mt-2" role="alert">{{ strings.markFailed }}</p>
+          }
+        </div>
+        <div class="flex flex-wrap gap-2">
+          @if (link(item); as target) {
+            <a class="contact-button" [href]="target.href">{{ target.label }}</a>
+          }
+          @if (!item.read) {
+            <button type="button" class="contact-button" [disabled]="loading() || marking() !== null"
+                    (click)="markRead(item, row)">{{ strings.markRead }}</button>
+          }
+        </div>
+      </li>
+    }
+  </ul>
+  @if (loading()) {
+    <div class="state-panel" role="status">
+      <span class="state-icon"><span class="spinner" aria-hidden="true"></span></span>
+      <h2>{{ strings.loading }}</h2>
+    </div>
+  } @else if (loadFailed()) {
+    <div class="state-panel">
+      <p role="alert">{{ strings.loadFailed }}</p>
+      <button type="button" class="contact-button" (click)="loadMore()">{{ common.retry }}</button>
+    </div>
+  } @else if (hasMore()) {
+    <button type="button" class="contact-button mt-4" [disabled]="marking() !== null"
+            (click)="loadMore()">{{ strings.more }}</button>
+  } @else if (entries().length === 0) {
+    <p class="state-panel" role="status">{{ strings.empty }}</p>
+  }
+</main>

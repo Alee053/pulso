@@ -38,6 +38,7 @@ describe('AppComponent', () => {
     expect(fixture.nativeElement.innerHTML).not.toContain('private-token')
     fixture.nativeElement.querySelector('[data-action=accept]').click()
     const http = TestBed.inject(HttpTestingController)
+    flushUnread(http)
     http.expectOne('http://localhost:8080/api/v1/project-members/accept')
       .flush({ projectId: 'project-1', role: 'MEMBER', membershipStatus: 'ACTIVE' })
     fixture.detectChanges()
@@ -197,11 +198,11 @@ describe('AppComponent', () => {
     trigger.click()
     fixture.detectChanges()
     const http = TestBed.inject(HttpTestingController)
+    flushUnread(http)
     http.expectOne(`http://localhost:8080/api/v1/projects/${mockStartups[0].id}`).flush({ data: MOCK_PUBLIC_PROJECTS['eco-pack'] })
     fixture.detectChanges()
-    const member = MOCK_PUBLIC_PROJECTS['eco-pack'].members[0]
-    http.expectOne(`http://localhost:8080/api/v1/me/blocks/${member.profileId}`)
-      .flush({ targetProfileId: member.profileId, blocked: false, createdAt: null })
+    http.expectOne(`http://localhost:8080/api/v1/me/project-feedback/${MOCK_PUBLIC_PROJECTS['eco-pack'].id}`)
+      .flush({ feedbackType: null })
     fixture.detectChanges()
     expect(fixture.nativeElement.querySelector('pulso-public-project-detail')).not.toBeNull()
     expect(fixture.nativeElement.querySelector('[role="dialog"]')).not.toBeNull()
@@ -328,6 +329,11 @@ describe('AppComponent', () => {
     fixture.destroy()
   })
 })
+
+function flushUnread(http: HttpTestingController): void {
+  http.expectOne('http://localhost:8080/api/v1/me/notifications?offset=0&limit=1')
+    .flush({ data: [], meta: { unreadCount: 0 } })
+}
 
 function createFeatureFlagsStub(initial = { language_switcher: true, project_creation: true }) {
   const values = signal(initial)

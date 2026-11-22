@@ -17,7 +17,7 @@ the rule new features should follow even when some interactions remain local.
 | Migrations | Supabase CLI ordered SQL migrations and seed | [`database/supabase/migrations`](../database/supabase/migrations) | Current |
 | Authorization | Supabase Auth issues JWTs; Spring Security validates user JWTs; Postgres RLS guards any deliberate direct Data API access | [`SecurityConfig.java`](../backend/src/main/java/com/pulso/backend/config/SecurityConfig.java), migration | Current baseline |
 | Backend persistence | Spring JDBC `JdbcClient` behind feature ports; explicit SQL, no JPA/Hibernate | [`JdbcStartupCatalog.java`](../backend/src/main/java/com/pulso/backend/discovery/infrastructure/JdbcStartupCatalog.java) | Convention |
-| Local orchestration | Docker through the Supabase CLI; root `compose.yaml` is intentionally not used | [`database/README.md`](../database/README.md) | Current |
+| Local orchestration | Root `compose.yaml` for daily development; the pinned Supabase CLI for pgTAP and the destructive browser smoke | [`README.md`](../README.md), [`database/README.md`](../database/README.md) | Current |
 
 The versioned minimum is Node 24 LTS or 26, Java 21, pnpm 11, Angular 22,
 Spring Boot 4.1, PostgreSQL via Supabase, and the pinned Supabase CLI in the
@@ -65,9 +65,9 @@ are versioned; health and Actuator endpoints are operational only.
   public `PULSO_*` API/Auth variables through the Angular build wrapper; server
   credentials are rejected before bundling.
 - [`PulsoSession`](../frontend/src/app/features/discovery/application/pulso-session.ts)
-  loads the discovery catalog through `StartupsApi`, maps it to the domain
-  model, and keeps saved/interested decisions local until persistence stories
-  are implemented. Loading, error, and empty states are explicit.
+  loads the personalized discovery feed and the saved/interested collections
+  through backend HTTP adapters and persists decisions through the API.
+  Loading, error, and empty states are explicit.
 
 ### Backend
 
@@ -81,25 +81,28 @@ are versioned; health and Actuator endpoints are operational only.
   configured hosted JWKS URI in deployment. An explicit HMAC secret remains a
   legacy fallback.
 - Backend tests cover the use-case, API response contract, validation, and
-  protected endpoint behavior without requiring a running database;
+  protected endpoint behavior; JDBC adapter tests use Testcontainers and are
+  skipped without Docker;
   `pnpm backend:verify` exercises the real local JDBC and health boundaries.
   `pnpm auth:verify` exercises local Auth registration, JWT validation through
   `/api/v1/me`, rejected unauthenticated/service-role requests, and logout.
   `pnpm smoke:verify` runs the ordered end-to-end local stack check, including
   the built browser application and a headless Chrome journey against the
-  seeded API.
+  seeded API. `pnpm smoke:critical-path` runs the complete
+  registration-to-message journey against an already running local stack; see
+  [the MVP critical path](./engineering/mvp-critical-path.md).
 
 ### Database
 
 - The first migration creates the historical `profiles`, `startups`, and
   `startup_members`; S0.3 transforms the foundation in place to the canonical
   `sectors`, `projects`, and `project_members` names.
-- Row Level Security is enabled on the canonical application tables;
-  profile/project-membership access is current-user scoped, active sectors are
-  readable by authenticated users, and project rows are not granted directly
-  to the public Data API in this base.
-- `seed.sql` inserts two fictional published projects for local endpoint
-  examples.
+- Row Level Security is enabled on every `public` table. `anon` has no direct
+  table privileges; `authenticated` reads only its own profile, preferences and
+  memberships plus the active catalogs. Product data is served by the backend.
+  `13_mvp_access_boundaries.sql` enforces this boundary.
+- `seed.sql` inserts the reference catalogs and fictional published projects
+  with demo opportunities for local endpoint examples.
 - `database/README.md` defines reset, lint, test, linking, and push commands.
 
 The `/api/v1/startups` route remains stable during that internal schema
@@ -110,13 +113,14 @@ full mapping and migration order.
 
 - Password recovery and account-management flows beyond the local signup/login
   surface.
-- Complete product features from the specification (profiles, submissions,
-  matching, messaging, notifications, moderation, and analytics).
+- Product features outside the MVP; see
+  [the MVP critical path](./engineering/mvp-critical-path.md#fuera-del-mvp).
 - Storage, realtime, Edge Functions, background jobs, deployment manifests, or
   hosted project credentials.
 - A shared Java/TypeScript model package or generated OpenAPI client. The first
   endpoint is small enough to keep contracts explicit at each seam.
-- Production observability, rate limiting, CI policy, and environment-specific
-  deployment configuration.
+- Production observability, rate limiting, and environment-specific
+  deployment configuration. Pull requests run the frontend, backend, and
+  database suites in [`tests.yml`](../.github/workflows/tests.yml).
 
 These are deliberate follow-ups, not missing pieces of the minimum stack.

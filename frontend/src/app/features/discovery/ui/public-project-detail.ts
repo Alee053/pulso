@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common'
 import {
     Component,
+    computed,
+    effect,
     AfterViewChecked,
     ElementRef,
     HostListener,
@@ -18,11 +20,11 @@ import { Subscription } from 'rxjs'
 import { SupabaseAuthGateway } from '../../../core/auth/supabase-auth.gateway'
 import { OpportunityMatchApi } from '../data-access/opportunity-match-api'
 import { PublicProjectApi } from '../data-access/public-project-api'
+import { toStartupViewModel } from '../data-access/startup-view-model'
 import type { OpportunityMatch } from '../domain/opportunity-match'
 import type {
     PublicProjectDetail,
     PublicProjectState,
-    Startup,
 } from '../domain/startup'
 import { IconComponent } from '../../../shared/icon/icon'
 import { detailStrings } from '../strings/detail.strings'
@@ -32,12 +34,17 @@ import { OpportunityMatchComponent } from './opportunity-match'
 import { ShareButtonComponent } from './share-button'
 import { ReportFormComponent } from './report-form'
 import { reportStrings } from '../strings/report.strings'
-import { ProfileBlockControlComponent } from './profile-block-control'
+import { ProfileBlockActionComponent } from './profile-block-action'
+import { ConnectionRequestFormComponent } from './connection-request-form'
+import { ProjectDecisionComponent } from './project-decision'
 
 @Component({
     selector: 'pulso-public-project-detail',
     standalone: true,
-    imports: [CommonModule, IconComponent, OpportunityMatchComponent, ShareButtonComponent, ReportFormComponent, ProfileBlockControlComponent],
+    imports: [
+        CommonModule, IconComponent, OpportunityMatchComponent, ShareButtonComponent,
+        ReportFormComponent, ProfileBlockActionComponent, ConnectionRequestFormComponent, ProjectDecisionComponent,
+    ],
     templateUrl: './public-project-detail.html',
 })
 export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterViewChecked, OnDestroy {
@@ -50,19 +57,49 @@ export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterVie
 
     private readonly api = inject(PublicProjectApi)
     private readonly matchApi = inject(OpportunityMatchApi)
-    private readonly auth = inject(SupabaseAuthGateway)
+    protected readonly auth = inject(SupabaseAuthGateway)
     private request?: Subscription
-    private matchRequest?: Subscription
     private readonly element = inject<ElementRef<HTMLElement>>(ElementRef)
     private previousActiveElement: HTMLElement | null = null
     private originalOverflow = ''
 
     readonly state = signal<PublicProjectState>({ status: 'loading' })
-    readonly matches = signal<OpportunityMatch[]>([])
+    protected readonly matches = signal(new Map<string, OpportunityMatch>())
+    protected readonly matchState = signal<'loading' | 'loaded' | 'error'>('loaded')
+    private readonly matchAttempts = signal(0)
+    protected readonly decisionStartup = computed(() => {
+        const state = this.state()
+        if (state.status !== 'loaded') return null
+        const { project } = state
+        const startup = toStartupViewModel({ ...project, city: project.city ?? '', sector: project.sector.name })
+        return { ...startup, tags: project.tags.map((tag) => tag.slug) }
+    })
+    private readonly loadMatches = effect((onCleanup) => {
+        const state = this.state()
+        const signedIn = this.auth.session() !== null
+        this.matchAttempts()
+        this.matches.set(new Map())
+        if (!signedIn || state.status !== 'loaded' || state.project.opportunities.length === 0) return
+
+        this.matchState.set('loading')
+        const request = this.matchApi.list(state.project.id).subscribe({
+            next: (matches) => {
+                this.matches.set(new Map(matches.map(match => [match.opportunityId, match])))
+                this.matchState.set('loaded')
+            },
+            error: () => this.matchState.set('error'),
+        })
+        onCleanup(() => request.unsubscribe())
+    })
     hasImageError = false
 
     get isSignedIn(): boolean {
         return this.auth.session() !== null
+    }
+
+    canBlockProfile(profileId: string): boolean {
+        const actor = this.auth.session()
+        return actor !== null && actor.id !== profileId
     }
 
     get isLoading(): boolean {
@@ -143,8 +180,6 @@ export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterVie
     loadProject(): void {
         this.hasImageError = false
         this.request?.unsubscribe()
-        this.matchRequest?.unsubscribe()
-        this.matches.set([])
         this.state.set({ status: 'loading' })
 
         this.request = this.api
@@ -155,7 +190,6 @@ export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterVie
                         this.state.set({ status: 'empty' })
                     } else {
                         this.state.set({ status: 'loaded', project })
-                        this.loadMatches(project)
                     }
                 },
                 error: (err) => {
@@ -188,23 +222,8 @@ export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterVie
         return (projectStageStrings as Record<string, string>)[stage] ?? stage
     }
 
-    /**
-     * The public detail and the match list share the same order (newest first), so
-     * an opportunity is paired by position and only when the titles agree.
-     */
-    matchFor(index: number, opportunity: { title: string }): OpportunityMatch | null {
-        const match = this.matches()[index]
-        return match && match.title === opportunity.title ? match : null
-    }
-
-    private loadMatches(project: PublicProjectDetail): void {
-        if (!this.isSignedIn || project.opportunities.length === 0) return
-
-        this.matchRequest?.unsubscribe()
-        this.matchRequest = this.matchApi.list(project.id).subscribe({
-            next: (matches) => this.matches.set(matches),
-            error: () => this.matches.set([]),
-        })
+    protected retryMatches(): void {
+        this.matchAttempts.update(attempts => attempts + 1)
     }
 
     retry(): void {
@@ -222,53 +241,8 @@ export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterVie
         if (event.target === event.currentTarget) this.close()
     }
 
-    mapToStartup(project: PublicProjectDetail): Startup {
-        return {
-            id: project.id,
-            name: project.name,
-            logoMark: project.name.charAt(0).toUpperCase(),
-            city: project.city ?? '',
-            department: project.department,
-            sector: project.sector.name,
-            pitch: project.tagline,
-            description: project.description ?? '',
-            valueProposition: project.valueProposition,
-            stage: project.stage,
-            tags: project.tags.map((t) => t.name),
-            badges: project.tags.map((t) => t.name),
-            image: project.imageUrl ?? '',
-            imageAlt: project.imageAlt || project.name,
-            accent: '#a9e1ff',
-            founders: project.members.map((m) => ({
-                name: m.displayName,
-                role: m.displayTitle ?? this.strings.memberFallbackRole,
-                initials: m.displayName
-                    .split(' ')
-                    .map((n) => n.charAt(0))
-                    .join('')
-                    .toUpperCase()
-                    .slice(0, 2),
-                isFeatured: m.isFeatured,
-            })),
-            lookingFor: [],
-            founded: '',
-            teamSize: `${project.members.length} miembros`,
-            traction: '',
-            website: project.externalLinks.find((l) => l.type === 'WEBSITE')?.url ?? '',
-            socials: project.externalLinks
-                .filter((l) => l.type !== 'WEBSITE')
-                .map((l) => l.url),
-            publicLinks: project.externalLinks,
-            recommendation: '',
-            metrics: [],
-            popularity: 0,
-            exploration: 0,
-        }
-    }
-
     ngOnDestroy(): void {
         this.request?.unsubscribe()
-        this.matchRequest?.unsubscribe()
         document.body.style.overflow = this.originalOverflow
         if (this.previousActiveElement?.isConnected) this.previousActiveElement.focus()
     }

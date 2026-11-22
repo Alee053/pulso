@@ -1,75 +1,122 @@
 import { provideHttpClient } from '@angular/common/http'
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing'
-import { signal } from '@angular/core'
 import { TestBed } from '@angular/core/testing'
-import { describe, expect, it } from 'vitest'
-import { SupabaseAuthGateway } from '../../../core/auth/supabase-auth.gateway'
+import { afterEach, describe, expect, it } from 'vitest'
+import { currentLanguage } from '../../../core/i18n/language'
+import type { ConnectionInboxEntry, RequestInbox } from '../domain/connection'
 import { RequestsViewComponent } from './requests-view'
 
-const actorId = 'profile-member'
-const senderId = 'profile-sender'
-const pendingUrl = 'http://localhost:8080/api/v1/connection-intents/pending'
-const messageUrl = 'http://localhost:8080/api/v1/conversations/conversation-1/messages?offset=0&limit=20'
-const blockUrl = `http://localhost:8080/api/v1/me/blocks/${senderId}`
+const base = 'http://localhost:8080/api/v1/connection-intents'
+const inbox = `${base}/received`
 
-function setup() {
-  const auth = { session: signal({ id: actorId, email: null }) }
+function intent(id: string, senderProfileId: string): ConnectionInboxEntry {
+  return {
+    request: {
+      id, senderProfileId, projectId: 'project', opportunityId: null, reason: 'OTHER',
+      message: `Request ${id}`, status: 'PENDING', createdAt: '2026-11-21T12:00:00Z',
+    },
+    projectName: 'Proyecto de prueba', opportunityTitle: null, conversationId: null,
+  }
+}
+
+function button(root: HTMLElement, label: string): HTMLButtonElement | undefined {
+  return Array.from(root.querySelectorAll('button')).find((control) => control.textContent?.trim() === label)
+}
+
+function setup(initialInbox: RequestInbox = 'received') {
   TestBed.configureTestingModule({
     imports: [RequestsViewComponent],
-    providers: [provideHttpClient(), provideHttpClientTesting(), { provide: SupabaseAuthGateway, useValue: auth }],
+    providers: [provideHttpClient(), provideHttpClientTesting()],
   })
   const fixture = TestBed.createComponent(RequestsViewComponent)
+  fixture.componentRef.setInput('initialInbox', initialInbox)
   fixture.detectChanges()
-  return { fixture, http: TestBed.inject(HttpTestingController) }
+  return { fixture, root: fixture.nativeElement as HTMLElement, http: TestBed.inject(HttpTestingController) }
 }
 
 describe('RequestsViewComponent', () => {
-  it('opens the accepted conversation and loads the existing private messaging endpoints', () => {
-    const { fixture, http } = setup()
-    http.expectOne(pendingUrl).flush([{
-      id: 'intent-1', fromProfileId: senderId, projectId: 'project-1', status: 'PENDING',
-      reason: 'COLLABORATE', message: 'Me interesa colaborar.', createdAt: '2026-11-20T10:00:00Z',
-    }])
-    fixture.detectChanges()
-    fixture.nativeElement.querySelector('button.solid-button').click()
-    const accept = http.expectOne('http://localhost:8080/api/v1/connection-intents/intent-1/accept')
-    expect(accept.request.method).toBe('POST')
-    accept.flush({
-      connectionIntentId: 'intent-1', conversationId: 'conversation-1',
-      conversationType: 'PROJECT_CONTACT', projectId: 'project-1', status: 'ACTIVE',
-      participants: [
-        { profileId: senderId, role: 'INITIATOR' },
-        { profileId: actorId, role: 'PROJECT_MEMBER' },
-      ],
-    })
-    http.expectOne(pendingUrl).flush([])
-    fixture.detectChanges()
-    http.expectOne(blockUrl).flush({ targetProfileId: senderId, blocked: false, createdAt: null })
-    http.expectOne(messageUrl).flush({ data: [], meta: { offset: 0, limit: 20, hasMore: false } })
+  afterEach(() => currentLanguage.set('es'))
+
+  it('blocks the API sender and reloads the inbox without declining the requests', () => {
+    const { fixture, root, http } = setup()
+    const anotherSender = intent('c', 'other')
+    http.expectOne(`${inbox}?offset=0&limit=21`).flush([
+      intent('a', 'sender'), intent('b', 'sender'), anotherSender,
+    ])
     fixture.detectChanges()
 
-    expect(fixture.nativeElement.textContent).toContain('Conversación abierta')
-    expect(fixture.nativeElement.textContent).toContain('Perfil de conexión')
-    expect(fixture.nativeElement.textContent).toContain('Todavía no hay mensajes en esta conversación.')
-    expect(fixture.nativeElement.querySelector('textarea')).not.toBeNull()
+    const action = root.querySelector('pulso-profile-block-action')!
+    action.querySelector('details')!.open = true
+    action.querySelectorAll('button')[1].click()
+    http.expectOne({ method: 'POST', url: 'http://localhost:8080/api/v1/profiles/sender/block' })
+      .flush(null, { status: 204, statusText: 'No Content' })
+    http.expectNone((request) => request.url.endsWith('/decline'))
+    http.expectOne(`${inbox}?offset=0&limit=21`).flush([anotherSender])
+    fixture.detectChanges()
+
+    expect(root.querySelectorAll('pulso-profile-block-action')).toHaveLength(1)
+    expect(root.textContent).toContain('Request c')
+    expect(root.textContent).not.toContain('Request a')
+    expect(root.querySelector('[role="status"]')?.textContent).toContain('Perfil bloqueado')
     http.verify()
   })
 
-  it('keeps the request and provides retry after an acceptance error', () => {
-    const { fixture, http } = setup()
-    http.expectOne(pendingUrl).flush([{
-      id: 'intent-1', fromProfileId: senderId, projectId: 'project-1', status: 'PENDING',
-      reason: 'COLLABORATE', message: null, createdAt: '2026-11-20T10:00:00Z',
-    }])
+  it('shows a retry after an inbox error and paginates while keeping the response localized', () => {
+    currentLanguage.set('en')
+    const { fixture, root, http } = setup()
+    const firstPage = `${inbox}?offset=0&limit=21`
+    http.expectOne(firstPage).flush(null, { status: 503, statusText: 'Unavailable' })
     fixture.detectChanges()
-    fixture.nativeElement.querySelector('button.solid-button').click()
-    http.expectOne('http://localhost:8080/api/v1/connection-intents/intent-1/accept')
-      .flush({}, { status: 403, statusText: 'Forbidden' })
+    expect(root.querySelector('[role="alert"]')?.textContent).toContain('Could not load requests')
+    button(root, 'Try again')!.click()
+    http.expectOne(firstPage).flush(Array.from({ length: 21 }, (_, index) => intent(String(index), 'sender')))
+    fixture.detectChanges()
+    expect(root.querySelectorAll('li')).toHaveLength(20)
+    button(root, 'Show more requests')!.click()
+    http.expectOne(`${inbox}?offset=20&limit=21`).flush([intent('20', 'sender')])
+    fixture.detectChanges()
+    expect(root.querySelectorAll('li')).toHaveLength(21)
+    http.verify()
+  })
+
+  it('uses the authorized conversation ID when accepting and renders the persisted history', () => {
+    const { fixture, root, http } = setup()
+    const entry = intent('a', 'sender')
+    http.expectOne(`${inbox}?offset=0&limit=21`).flush([entry])
     fixture.detectChanges()
 
-    expect(fixture.nativeElement.textContent)
-      .toContain('No pudimos aceptar la solicitud. Actualiza la lista e inténtalo de nuevo.')
-    expect(fixture.nativeElement.querySelector('button.solid-button')).not.toBeNull()
+    expect(button(root, 'Retirar solicitud')).toBeUndefined()
+    button(root, 'Aceptar')!.click()
+    http.expectOne({ method: 'POST', url: `${base}/a/accept` })
+      .flush({ connectionIntentId: 'a', conversationId: 'conversation-1', status: 'ACTIVE' })
+    fixture.detectChanges()
+    expect(root.textContent).toContain('Aceptada')
+    expect(root.querySelector('a[href="/conversaciones/conversation-1"]')).not.toBeNull()
+    expect(button(root, 'Rechazar')).toBeUndefined()
+
+    button(root, 'Actualizar solicitudes')!.click()
+    http.expectOne(`${inbox}?offset=0&limit=21`).flush([
+      { ...entry, request: { ...entry.request, status: 'ACCEPTED' }, conversationId: 'conversation-1' },
+    ])
+    fixture.detectChanges()
+    expect(root.querySelector('a[href="/conversaciones/conversation-1"]')).not.toBeNull()
+    http.verify()
+  })
+
+  it('offers only withdrawal for a pending sent request and renders the returned status', () => {
+    const { fixture, root, http } = setup('sent')
+    const entry = intent('a', 'sender')
+    http.expectOne(`${base}/sent?offset=0&limit=21`).flush([entry])
+    fixture.detectChanges()
+    expect(button(root, 'Aceptar')).toBeUndefined()
+    expect(button(root, 'Rechazar')).toBeUndefined()
+
+    button(root, 'Retirar solicitud')!.click()
+    http.expectOne({ method: 'POST', url: `${base}/a/withdraw` })
+      .flush({ ...entry.request, status: 'WITHDRAWN' })
+    fixture.detectChanges()
+    expect(root.textContent).toContain('Retirada')
+    expect(button(root, 'Retirar solicitud')).toBeUndefined()
     http.verify()
   })
 })

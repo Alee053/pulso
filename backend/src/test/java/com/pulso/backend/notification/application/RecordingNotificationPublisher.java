@@ -11,6 +11,7 @@ public final class RecordingNotificationPublisher implements NotificationPublish
 
     public final List<ConnectionRequested> requests = new ArrayList<>();
     public final List<ConnectionAccepted> acceptances = new ArrayList<>();
+    public final List<ConnectionDeclined> declines = new ArrayList<>();
     public final List<MessageSent> messages = new ArrayList<>();
 
     @Override
@@ -30,12 +31,18 @@ public final class RecordingNotificationPublisher implements NotificationPublish
     }
 
     @Override
+    public void connectionDeclined(
+            UUID connectionIntentId, UUID projectId, UUID initiatorProfileId, UUID responderProfileId) {
+        declines.add(new ConnectionDeclined(connectionIntentId, projectId, initiatorProfileId, responderProfileId));
+    }
+
+    @Override
     public void messageSent(UUID conversationId, UUID messageId, UUID senderProfileId) {
         messages.add(new MessageSent(conversationId, messageId, senderProfileId));
     }
 
     public boolean isEmpty() {
-        return requests.isEmpty() && acceptances.isEmpty() && messages.isEmpty();
+        return requests.isEmpty() && acceptances.isEmpty() && declines.isEmpty() && messages.isEmpty();
     }
 
     public record ConnectionRequested(UUID connectionIntentId, UUID projectId, UUID senderProfileId) {
@@ -50,5 +57,9 @@ public final class RecordingNotificationPublisher implements NotificationPublish
     }
 
     public record MessageSent(UUID conversationId, UUID messageId, UUID senderProfileId) {
+    }
+
+    public record ConnectionDeclined(
+            UUID connectionIntentId, UUID projectId, UUID initiatorProfileId, UUID responderProfileId) {
     }
 }

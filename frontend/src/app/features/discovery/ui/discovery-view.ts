@@ -6,15 +6,13 @@ import type { Decision, Startup } from '../domain/startup'
 import { feedStrings, searchStrings } from '../strings/feed.strings'
 import { StartupCardComponent } from './startup-card'
 import { SearchBarComponent } from './search-bar'
-// 1. IMPORTAR EL NUEVO COMPONENTE Y TIPOS
 import { SearchFiltersComponent } from './search-filters'
-import type { SearchFilters } from '../data-access/project-search-api'
-import type { SectorCatalogItem } from '../domain/catalog'
+import { hasSearchFilters, type SearchFilters } from '../data-access/project-search-api'
+import type { SectorCatalogItem, TagCatalogItem } from '../domain/catalog'
 
 @Component({
   selector: 'pulso-discovery-view',
   standalone: true,
-  // 2. AÑADIR SearchFiltersComponent A LOS IMPORTS
   imports: [CommonModule, IconComponent, SearchBarComponent, StartupCardComponent, SearchFiltersComponent],
   templateUrl: './discovery-view.html',
 })
@@ -35,10 +33,11 @@ export class DiscoveryViewComponent implements OnChanges, OnDestroy {
   @Input() searchResults: Startup[] = []
   @Input() searchTotal = 0
   
-  // 3. AÑADIR LOS NUEVOS @Input Y @Output PARA LOS FILTROS
-  @Input() activeFilters: SearchFilters = {};
-  @Input() sectorsList: SectorCatalogItem[] = [];
-  @Output() filtersChanged = new EventEmitter<SearchFilters>();
+  @Input() activeFilters: SearchFilters = {}
+  @Input() sectorsList: SectorCatalogItem[] = []
+  @Input() tagsList: TagCatalogItem[] = []
+  @Output() filtersChanged = new EventEmitter<SearchFilters>()
+  @Output() searchCleared = new EventEmitter<void>()
 
   @Output() decisionMade = new EventEmitter<Decision>()
   @Output() restarted = new EventEmitter<void>()
@@ -74,13 +73,8 @@ export class DiscoveryViewComponent implements OnChanges, OnDestroy {
     }
   }
 
-  // 4. ACTUALIZAR EL GETTER PARA QUE LOS FILTROS ACTIVEN LA BÚSQUEDA
   get isSearchActive(): boolean {
-    return this.searchQuery.trim().length > 0 
-        || !!this.activeFilters.sector 
-        || !!this.activeFilters.stage 
-        || !!this.activeFilters.location
-        || !!this.activeFilters.hasOpenOpportunities;
+    return this.searchQuery.trim().length > 0 || hasSearchFilters(this.activeFilters)
   }
 
   get isSaved(): boolean {
@@ -127,7 +121,7 @@ export class DiscoveryViewComponent implements OnChanges, OnDestroy {
       return
     }
 
-    if (this.isModalOpen || event.metaKey || event.ctrlKey || event.altKey || event.repeat) {
+    if (this.isModalOpen || this.isSearchActive || event.metaKey || event.ctrlKey || event.altKey || event.repeat) {
       return
     }
 

@@ -19,7 +19,7 @@ public class WithdrawConnectionIntent {
                 .orElseThrow(ConnectionIntentNotFoundException::new);
 
         if (!intent.fromProfileId().equals(authenticatedProfileId)) {
-            throw ConnectionIntentPermissionException.membershipRequired(); // O un error de "Solo el remitente puede cancelar"
+            throw ConnectionIntentPermissionException.senderRequired();
         }
         if (!intent.isPending()) {
             throw new ConnectionIntentConflictException();

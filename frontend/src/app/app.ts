@@ -1,5 +1,5 @@
-import { CommonModule } from '@angular/common'
-import { Component, effect, HostListener, inject, OnInit, signal } from '@angular/core'
+import { CommonModule, DOCUMENT } from '@angular/common'
+import { Component, computed, effect, HostListener, inject, OnInit, signal } from '@angular/core'
 import { AuthPageComponent } from './core/auth/auth-page'
 import { SupabaseAuthGateway } from './core/auth/supabase-auth.gateway'
 import { DiscoveryViewComponent } from './features/discovery/ui/discovery-view'
@@ -20,6 +20,10 @@ import { ProjectTeamsComponent } from './features/discovery/ui/project-teams'
 import { ProjectCreateFormComponent } from './features/discovery/ui/project-create-form'
 import { FeatureFlagsService } from './core/feature-flags/feature-flags.service'
 import { RequestsViewComponent } from './features/discovery/ui/requests-view'
+import { ConversationViewComponent } from './features/discovery/ui/conversation-view'
+import { NotificationsViewComponent } from './features/discovery/ui/notifications-view'
+import { UnreadNotifications } from './features/discovery/application/unread-notifications'
+import { readWorkspaceLink } from './features/discovery/application/workspace-link'
 
 @Component({
     selector: 'pulso-root',
@@ -36,6 +40,8 @@ import { RequestsViewComponent } from './features/discovery/ui/requests-view'
         ProjectCreateFormComponent,
         SavedViewComponent,
         RequestsViewComponent,
+        ConversationViewComponent,
+        NotificationsViewComponent,
         PublicProjectDetailComponent,
         IconComponent,
         LanguageSwitcherComponent,
@@ -50,7 +56,28 @@ export class AppComponent implements OnInit {
     private readonly language = inject(LanguageService)
     readonly session = inject(PulsoSession)
     readonly featureFlags = inject(FeatureFlagsService)
+    private readonly unread = inject(UnreadNotifications)
+    private readonly browser = inject(DOCUMENT).defaultView
     readonly selectedStartup = signal<Startup | null>(null)
+    private readonly workspaceLink = signal(readWorkspaceLink(this.browser?.location.pathname ?? ''))
+    readonly linkedProjectId = computed(() => {
+        const link = this.workspaceLink()
+        return link?.kind === 'project' ? link.reference : null
+    })
+    readonly conversationId = computed(() => {
+        const link = this.workspaceLink()
+        return link?.kind === 'conversation' ? link.id : null
+    })
+    readonly initialInbox = computed(() => {
+        const link = this.workspaceLink()
+        return link?.kind === 'requests' ? link.inbox : 'received'
+    })
+    readonly activeView = computed<AppView>(() => {
+        const link = this.workspaceLink()
+        if (link?.kind === 'conversation' || link?.kind === 'requests') return link.kind
+        return this.session.activeView()
+    })
+    readonly unreadCount = this.unread.unreadCount
     private activeUserId: string | null = null
 
     private readonly authSessionEffect = effect(() => {
@@ -60,6 +87,8 @@ export class AppComponent implements OnInit {
             if (this.activeUserId !== null) {
                 this.activeUserId = null
                 this.session.resetForUserChange()
+                this.selectedStartup.set(null)
+                this.unread.reset()
             }
             return
         }
@@ -70,12 +99,15 @@ export class AppComponent implements OnInit {
 
         if (this.activeUserId !== null) {
             this.session.resetForUserChange()
+            this.selectedStartup.set(null)
+            this.unread.reset()
         }
 
         this.activeUserId = authenticatedUser.id
         void this.session.loadReferenceCatalogs()
         void this.session.loadOnboardingPreferences()
         void this.session.loadProjectCollections()
+        this.unread.refresh()
     })
 
     private readonly documentTitleEffect = effect(() => {
@@ -95,10 +127,16 @@ export class AppComponent implements OnInit {
     }
 
     @HostListener('window:focus')
-    refreshFeatureFlags(): void {
+    refreshOnFocus(): void {
         if (!this.featureFlags.isLoading()) {
             void this.featureFlags.load()
         }
+        if (this.auth.session()) this.unread.refresh()
+    }
+
+    @HostListener('window:popstate')
+    readLink(): void {
+        this.workspaceLink.set(readWorkspaceLink(this.browser?.location.pathname ?? ''))
     }
 
     selectStartup(startup: Startup): void {
@@ -111,6 +149,14 @@ export class AppComponent implements OnInit {
 
     navigateTo(view: AppView): void {
         this.selectedStartup.set(null)
+        this.closeWorkspaceLink()
         this.session.goToView(view)
+    }
+
+    closeWorkspaceLink(): void {
+        if (!this.browser || !this.workspaceLink()) return
+        const { location, history } = this.browser
+        history.replaceState(history.state, '', '/' + location.search + location.hash)
+        this.workspaceLink.set(null)
     }
 }

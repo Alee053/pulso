@@ -1,14 +1,14 @@
 package com.pulso.backend.profile.application;
 
-import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
-import com.pulso.backend.profile.domain.ProfileBlock;
+import com.pulso.backend.profile.domain.BlockedProfile;
 
 public interface ProfileBlockRepository {
-    Optional<ProfileBlock> find(UUID blockerProfileId, UUID targetProfileId);
+    boolean blockActiveProfiles(UUID blockerId, UUID blockedId);
 
-    ProfileBlock createIfAbsent(UUID blockerProfileId, UUID targetProfileId);
+    void unblock(UUID blockerId, UUID blockedId);
 
-    void delete(UUID blockerProfileId, UUID targetProfileId);
+    List<BlockedProfile> findPage(UUID blockerId, int offset, int limit);
 }

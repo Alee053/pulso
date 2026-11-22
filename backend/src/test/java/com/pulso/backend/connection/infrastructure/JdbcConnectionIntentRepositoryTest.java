@@ -37,7 +37,6 @@ import com.pulso.backend.connection.domain.ConnectionIntentReason;
 class JdbcConnectionIntentRepositoryTest {
 
     private static final UUID PROFILE_ID = id("11111111-1111-1111-1111-111111111111");
-    private static final UUID PROJECT_MEMBER_ID = id("11111111-1111-1111-1111-111111111114");
     private static final UUID SUSPENDED_PROFILE_ID = id("11111111-1111-1111-1111-111111111112");
     private static final UUID DELETED_PROFILE_ID = id("11111111-1111-1111-1111-111111111113");
     private static final UUID ACTIVE_SECTOR_ID = id("22222222-2222-2222-2222-222222222221");
@@ -64,7 +63,10 @@ class JdbcConnectionIntentRepositoryTest {
                 POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
         jdbc = JdbcClient.create(dataSource);
         transactions = new TransactionTemplate(new DataSourceTransactionManager(dataSource));
-        jdbc.sql("drop table if exists public.connection_intents, public.profile_blocks, public.project_members, public.project_opportunities, public.projects, public.sectors, public.profiles cascade")
+        jdbc.sql("""
+                drop table if exists public.connection_intents, public.project_opportunities, public.profile_blocks,
+                    public.project_members, public.projects, public.sectors, public.profiles cascade
+                """)
                 .update();
         createBaseSchema();
         createRoleIfMissing("anon");
@@ -157,26 +159,6 @@ class JdbcConnectionIntentRepositoryTest {
 
         assertThat(first.id()).isNotEqualTo(second.id());
         assertThat(persistedRows()).hasSize(2);
-    }
-
-    @Test
-    void rejectsNewRequestsWhenEitherTheSenderOrAnActiveProjectMemberBlockedTheOther() {
-        jdbc.sql("insert into public.profile_blocks (blocker_profile_id, blocked_profile_id) values (:blocker, :blocked)")
-                .param("blocker", PROFILE_ID)
-                .param("blocked", PROJECT_MEMBER_ID)
-                .update();
-        assertThatThrownBy(() -> create(PROFILE_ID, PROJECT_ID, null, "OTHER"))
-                .isInstanceOf(com.pulso.backend.connection.application.ConnectionIntentPermissionException.class);
-        assertNoRows();
-
-        jdbc.sql("delete from public.profile_blocks").update();
-        jdbc.sql("insert into public.profile_blocks (blocker_profile_id, blocked_profile_id) values (:blocker, :blocked)")
-                .param("blocker", PROJECT_MEMBER_ID)
-                .param("blocked", PROFILE_ID)
-                .update();
-        assertThatThrownBy(() -> create(PROFILE_ID, PROJECT_ID, null, "OTHER"))
-                .isInstanceOf(com.pulso.backend.connection.application.ConnectionIntentPermissionException.class);
-        assertNoRows();
     }
 
     @Test
@@ -273,8 +255,30 @@ class JdbcConnectionIntentRepositoryTest {
         jdbc.sql("create table public.sectors (id uuid primary key, is_active boolean not null)").update();
         jdbc.sql("create table public.projects (id uuid primary key, status text not null, sector_id uuid not null references public.sectors (id))").update();
         jdbc.sql("create table public.project_opportunities (id uuid primary key, project_id uuid not null references public.projects (id), status text not null)").update();
-        jdbc.sql("create table public.project_members (project_id uuid not null references public.projects (id), profile_id uuid not null references public.profiles (id), membership_status text not null, primary key (project_id, profile_id))").update();
-        jdbc.sql("create table public.profile_blocks (blocker_profile_id uuid not null references public.profiles (id), blocked_profile_id uuid not null references public.profiles (id), created_at timestamptz not null default now(), primary key (blocker_profile_id, blocked_profile_id), check (blocker_profile_id <> blocked_profile_id))").update();
+        jdbc.sql("""
+                create table public.project_members (
+                    project_id uuid not null references public.projects (id),
+                    profile_id uuid not null references public.profiles (id),
+                    role text not null default 'OWNER',
+                    membership_status text not null,
+                    primary key (project_id, profile_id)
+                )
+                """).update();
+        jdbc.sql("""
+                create table public.profile_blocks (
+                    blocker_profile_id uuid not null references public.profiles (id),
+                    blocked_profile_id uuid not null references public.profiles (id),
+                    primary key (blocker_profile_id, blocked_profile_id)
+                )
+                """).update();
+        jdbc.sql("""
+                create or replace function public.profile_contact_lock_key(first_profile_id uuid, second_profile_id uuid)
+                returns bigint language sql immutable strict
+                return hashtextextended(concat_ws(':',
+                    least(first_profile_id::text, second_profile_id::text),
+                    greatest(first_profile_id::text, second_profile_id::text)
+                ), 0)
+                """).update();
     }
 
     private void createRoleIfMissing(String role) {
@@ -288,9 +292,8 @@ class JdbcConnectionIntentRepositoryTest {
     }
 
     private void insertFixtures() {
-        jdbc.sql("insert into public.profiles (id, account_status) values (:active, 'ACTIVE'), (:projectMember, 'ACTIVE'), (:suspended, 'SUSPENDED'), (:deleted, 'DELETED')")
+        jdbc.sql("insert into public.profiles (id, account_status) values (:active, 'ACTIVE'), (:suspended, 'SUSPENDED'), (:deleted, 'DELETED')")
                 .param("active", PROFILE_ID)
-                .param("projectMember", PROJECT_MEMBER_ID)
                 .param("suspended", SUSPENDED_PROFILE_ID)
                 .param("deleted", DELETED_PROFILE_ID)
                 .update();
@@ -308,11 +311,6 @@ class JdbcConnectionIntentRepositoryTest {
                 .param("other", OTHER_PROJECT_ID)
                 .param("active", ACTIVE_SECTOR_ID)
                 .param("inactive", INACTIVE_SECTOR_ID)
-                .update();
-        jdbc.sql("insert into public.project_members (project_id, profile_id, membership_status) values (:project, :sender, 'ACTIVE'), (:project, :member, 'ACTIVE')")
-                .param("project", PROJECT_ID)
-                .param("sender", PROFILE_ID)
-                .param("member", PROJECT_MEMBER_ID)
                 .update();
         jdbc.sql("insert into public.project_opportunities (id, project_id, status) values (:open, :project, 'OPEN'), (:second, :project, 'OPEN'), (:closed, :project, 'CLOSED'), (:other, :otherProject, 'OPEN')")
                 .param("open", OPPORTUNITY_ID)

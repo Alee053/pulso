@@ -563,6 +563,30 @@ describe('PulsoSession project search', () => {
     expect(session.searchResults().map((project) => project.id)).toEqual(['project-1'])
   })
 
+  it('searches and retries with tags alone, then clears all filters and the query', async () => {
+    vi.useFakeTimers()
+    const searchProjects = vi.fn()
+      .mockReturnValueOnce(throwError(() => new Error('offline')))
+      .mockReturnValue(of(searchPage(['project-1'], 1)))
+    const session = createSession({ searchProjects })
+
+    session.updateFilters({ tags: ['impacto'] })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(session.searchError()).toBe(searchStrings.failed)
+    session.retrySearch()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(searchProjects).toHaveBeenLastCalledWith({ tags: ['impacto'], query: undefined }, 0, 20)
+    expect(session.searchResults().map(project => project.id)).toEqual(['project-1'])
+
+    session.search('eco')
+    session.clearSearch()
+    await vi.advanceTimersByTimeAsync(300)
+    expect(searchProjects).toHaveBeenCalledTimes(2)
+    expect(session.searchFilters()).toEqual({})
+    expect(session.searchQuery()).toBe('')
+    expect(session.searchResults()).toEqual([])
+  })
+
   it('returns to discovery when the query is cleared before the request is sent', async () => {
     vi.useFakeTimers()
     const searchProjects = vi.fn().mockReturnValue(of(searchPage(['project-1'], 1)))
@@ -620,7 +644,7 @@ function createSession(overrides: {
   }))
   const saveProject = overrides.saveProject ?? vi.fn().mockReturnValue(of({}))
   const unsaveProject = overrides.unsaveProject ?? vi.fn().mockReturnValue(of({}))
-  const setFeedback = overrides.setFeedback ?? vi.fn().mockReturnValue(of({}))
+  const setFeedback = overrides.setFeedback ?? vi.fn((projectId, feedbackType) => of({ projectId, feedbackType }))
   const clearFeedback = overrides.clearFeedback ?? vi.fn().mockReturnValue(of({}))
   const loadCatalogs = overrides.loadCatalogs ?? vi.fn().mockReturnValue(of({
     intentions: [...onboardingIntentions],

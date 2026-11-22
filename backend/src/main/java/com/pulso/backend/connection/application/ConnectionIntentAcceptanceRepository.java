@@ -1,16 +1,19 @@
 package com.pulso.backend.connection.application;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import com.pulso.backend.connection.domain.AcceptedConnectionConversation;
+import com.pulso.backend.connection.domain.ConnectionInboxEntry;
+import com.pulso.backend.connection.domain.ConnectionInboxView;
 import com.pulso.backend.connection.domain.ConnectionIntent;
 
 public interface ConnectionIntentAcceptanceRepository {
 
     Optional<ConnectionIntent> findByIdForUpdate(UUID connectionIntentId);
 
-    boolean hasActiveProjectMembership(UUID projectId, UUID profileId);
+    boolean canManageProjectRequests(UUID projectId, UUID profileId);
 
     boolean profilesAreBlocked(UUID firstProfileId, UUID secondProfileId);
 
@@ -19,9 +22,8 @@ public interface ConnectionIntentAcceptanceRepository {
     AcceptedConnectionConversation acceptAndCreateConversation(
             ConnectionIntent connectionIntent,
             UUID responderProfileId);
-    
+
     void updateStatus(ConnectionIntent connectionIntent, UUID respondedByProfileId);
 
-    java.util.List<ConnectionIntent> findPendingByProjectMembership(java.util.UUID profileId);
-
+    List<ConnectionInboxEntry> findInbox(UUID profileId, ConnectionInboxView view, int offset, int limit);
 }

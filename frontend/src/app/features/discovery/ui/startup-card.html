@@ -1,6 +1,6 @@
 <article class="discovery-card" [class.discovery-card--dragging]="isDragging" [style.transform]="cardTransform"
          (pointerdown)="onPointerDown($event)" (pointermove)="onPointerMove($event)" (pointerup)="onPointerUp($event)"
-         (pointercancel)="onPointerCancel($event)" (click)="onCardClick($event)" role="group" tabindex="-1" [attr.aria-label]="strings.openAria(startup.name)">
+         (pointercancel)="onPointerCancel($event)" (click)="onCardClick($event)" tabindex="-1" [attr.aria-label]="strings.openAria(startup.name)">
     <div class="discovery-card__cover" [style.background]="'linear-gradient(130deg, ' + startup.accent + '55, #14273c)'">
         <img *ngIf="startup.image && !hasImageError" [src]="startup.image" [alt]="startup.imageAlt" class="discovery-card__image" draggable="false" (error)="hasImageError = true" />
         <div class="discovery-card__cover-shade" aria-hidden="true"></div>

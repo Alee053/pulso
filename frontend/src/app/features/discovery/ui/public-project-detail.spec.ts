@@ -21,8 +21,57 @@ function createFixture() {
   return { fixture, http: TestBed.inject(HttpTestingController) }
 }
 
+function flushDecision(http: HttpTestingController, projectId: string): void {
+  http.expectOne({ method: 'GET', url: 'http://localhost:8080/api/v1/me/project-feedback/' + projectId })
+    .flush({ projectId, feedbackType: null })
+}
+
 describe('PublicProjectDetailComponent', () => {
   afterEach(() => currentLanguage.set('es'))
+
+  it('blocks another member after confirmation and leaves the project detail open', () => {
+    const project = MOCK_PUBLIC_PROJECTS['eco-pack']
+    const [target] = project.members
+    const ownProfile = { ...target, profileId: 'signed-in-profile', displayName: 'Perfil propio' }
+    TestBed.configureTestingModule({
+      providers: [{ provide: SupabaseAuthGateway, useValue: { session: signal({ id: ownProfile.profileId, email: null }) } }],
+    })
+    const { fixture, http } = createFixture()
+    http.expectOne('http://localhost:8080/api/v1/projects/eco-pack')
+      .flush({ data: { ...project, members: [ownProfile, ...project.members] } })
+    fixture.detectChanges()
+
+    flushDecision(http, project.id)
+
+    const root = fixture.nativeElement as HTMLElement
+    const actions = root.querySelectorAll<HTMLElement>('pulso-profile-block-action')
+    expect(actions).toHaveLength(project.members.length)
+    const action = actions[0]
+    const details = action.querySelector('details')!
+    const url = `http://localhost:8080/api/v1/profiles/${target.profileId}/block`
+    details.open = true
+    action.querySelector<HTMLButtonElement>('button')!.click()
+    expect(details.open).toBe(false)
+    expect(document.activeElement).toBe(action.querySelector('summary'))
+    http.expectNone(url)
+
+    details.open = true
+    const confirm = action.querySelectorAll<HTMLButtonElement>('button')[1]
+    confirm.click()
+    fixture.detectChanges()
+    expect(confirm.disabled).toBe(true)
+    http.expectOne({ method: 'POST', url }).flush(null, { status: 503, statusText: 'Unavailable' })
+    fixture.detectChanges()
+    expect(action.querySelector('[role="alert"]')?.textContent).toContain('No se pudo bloquear')
+    expect(confirm.disabled).toBe(false)
+
+    confirm.click()
+    http.expectOne({ method: 'POST', url }).flush(null, { status: 204, statusText: 'No Content' })
+    fixture.detectChanges()
+    expect(action.querySelector('[role="status"]')?.textContent).toContain('Perfil bloqueado')
+    expect(root.querySelector('[role="dialog"]')).not.toBeNull()
+    http.verify()
+  })
 
   it('submits project and profile reports and allows retry after an error', () => {
     TestBed.configureTestingModule({
@@ -33,8 +82,7 @@ describe('PublicProjectDetailComponent', () => {
     http.expectOne('http://localhost:8080/api/v1/projects/eco-pack').flush({ data: project })
     fixture.detectChanges()
     const firstMember = project.members[0]
-    http.expectOne(`http://localhost:8080/api/v1/me/blocks/${firstMember.profileId}`)
-      .flush({ targetProfileId: firstMember.profileId, blocked: false, createdAt: null })
+    flushDecision(http, project.id)
 
     const root = fixture.nativeElement as HTMLElement
     const reportForms = root.querySelectorAll<HTMLFormElement>('pulso-report-form form')
@@ -170,6 +218,7 @@ describe('PublicProjectDetailComponent', () => {
         },
       ],
       opportunities: [{
+        id: 'opportunity-1',
         title: 'Desarrollador Frontend',
         opportunityType: 'TALENT',
         description: 'Implementa la experiencia web.',
@@ -341,6 +390,7 @@ describe('PublicProjectDetailComponent', () => {
     const project = {
       ...MOCK_PUBLIC_PROJECTS['eco-pack'],
       opportunities: [{
+        id: 'opportunity-1',
         title: 'Desarrollador Frontend',
         opportunityType: 'TALENT',
         description: 'Implementa la experiencia web.',
@@ -375,18 +425,14 @@ describe('PublicProjectDetailComponent', () => {
       const http = TestBed.inject(HttpTestingController)
       http.expectOne(PROJECT_URL).flush({ data: project })
       fixture.detectChanges()
-      if (user) {
-        const member = project.members[0]
-        http.expectOne(`http://localhost:8080/api/v1/me/blocks/${member.profileId}`)
-          .flush({ targetProfileId: member.profileId, blocked: false, createdAt: null })
-      }
+      if (user) flushDecision(http, project.id)
       return { fixture, http }
     }
 
     it('shows the explained match under each opportunity for a signed-in person', () => {
       const { fixture, http } = createWithUser({ id: 'user-1', email: null })
       http.expectOne('http://localhost:8080/api/v1/projects/' + project.id + '/opportunity-matches')
-        .flush({ data: [match] })
+        .flush({ data: [{ ...match, opportunityId: 'different-id', score: 9 }, match] })
       fixture.detectChanges()
 
       const element = fixture.nativeElement as HTMLElement
@@ -414,14 +460,15 @@ describe('PublicProjectDetailComponent', () => {
 
       expect(fixture.nativeElement.querySelector('pulso-opportunity-match')).toBeNull()
       expect((fixture.nativeElement as HTMLElement).textContent).toContain('Desarrollador Frontend')
+      expect(fixture.nativeElement.querySelector('[role=alert]')?.textContent).toContain(matchStrings.loadFailed)
       fixture.destroy()
       http.verify()
     })
 
-    it('ignores a match whose title does not belong to the opportunity at that position', () => {
+    it('ignores a match for another opportunity even when their titles match', () => {
       const { fixture, http } = createWithUser({ id: 'user-1', email: null })
       http.expectOne('http://localhost:8080/api/v1/projects/' + project.id + '/opportunity-matches')
-        .flush({ data: [{ ...match, title: 'Otra oportunidad' }] })
+        .flush({ data: [{ ...match, opportunityId: 'different-id' }] })
       fixture.detectChanges()
 
       expect(fixture.nativeElement.querySelector('pulso-opportunity-match')).toBeNull()

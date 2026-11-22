@@ -10,6 +10,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 import com.pulso.backend.connection.domain.AcceptedConnectionConversation;
+import com.pulso.backend.connection.domain.ConnectionInboxEntry;
+import com.pulso.backend.connection.domain.ConnectionInboxView;
 import com.pulso.backend.connection.domain.ConnectionIntent;
 import com.pulso.backend.connection.domain.ConnectionIntentReason;
 import com.pulso.backend.notification.application.RecordingNotificationPublisher;
@@ -85,7 +87,7 @@ class AcceptConnectionIntentTest {
 
         assertThatThrownBy(() -> service(repository).execute(INTENT_ID, RESPONDER_ID))
                 .isInstanceOf(ConnectionIntentPermissionException.class)
-                .hasMessageContaining("Active project membership");
+                .hasMessageContaining("active project owner or admin");
         assertThat(repository.createCalls).isZero();
     }
 
@@ -163,7 +165,7 @@ class AcceptConnectionIntentTest {
         }
 
         @Override
-        public boolean hasActiveProjectMembership(UUID projectId, UUID profileId) {
+        public boolean canManageProjectRequests(UUID projectId, UUID profileId) {
             return activeMember;
         }
 
@@ -198,7 +200,8 @@ class AcceptConnectionIntentTest {
         }
 
         @Override
-        public java.util.List<ConnectionIntent> findPendingByProjectMembership(java.util.UUID profileId) {
+        public java.util.List<ConnectionInboxEntry> findInbox(
+                UUID profileId, ConnectionInboxView view, int offset, int limit) {
             return java.util.List.of();
         }
 

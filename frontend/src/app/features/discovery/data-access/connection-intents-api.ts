@@ -1,28 +1,46 @@
 import { HttpClient } from '@angular/common/http'
 import { inject, Injectable } from '@angular/core'
-import type { Observable } from 'rxjs'
+import { map, type Observable } from 'rxjs'
 import { appConfig } from '../../../core/config/app-config'
-import type { ConnectionIntent } from '../domain/startup'
-import type { AcceptedConnectionConversation } from '../domain/conversation'
+import type {
+  AcceptedConnection, ConnectionInboxEntry, ConnectionIntent, ConnectionReason, RequestInbox,
+} from '../domain/connection'
+import { connectionInboxContract } from './discovery.catalog.contract'
 
 @Injectable({ providedIn: 'root' })
 export class ConnectionIntentsApi {
   private readonly http = inject(HttpClient)
+  private readonly base = `${appConfig.apiBaseUrl}/api/v1`
 
-  
-  getPendingIntents(): Observable<ConnectionIntent[]> {
-    return this.http.get<ConnectionIntent[]>(`${appConfig.apiBaseUrl}/api/v1/connection-intents/pending`)
+  list(inbox: RequestInbox, offset: number): Observable<{ entries: ConnectionInboxEntry[]; hasMore: boolean }> {
+    const { pageSize } = connectionInboxContract
+    return this.http.get<ConnectionInboxEntry[]>(`${this.base}/connection-intents/${inbox}`, {
+      params: { offset, limit: pageSize + 1 },
+    }).pipe(map((entries) => ({ entries: entries.slice(0, pageSize), hasMore: entries.length > pageSize })))
   }
 
-  acceptIntent(id: string): Observable<AcceptedConnectionConversation> {
-    return this.http.post<AcceptedConnectionConversation>(`${appConfig.apiBaseUrl}/api/v1/connection-intents/${id}/accept`, {})
+  create(
+    projectId: string, reason: ConnectionReason, message: string | null, opportunityId: string | null,
+  ): Observable<ConnectionIntent> {
+    return this.http.post<ConnectionIntent>(
+      `${this.base}/projects/${encodeURIComponent(projectId)}/connection-intents`,
+      { reason, message, opportunityId },
+    )
   }
 
-  declineIntent(id: string): Observable<unknown> {
-    return this.http.post(`${appConfig.apiBaseUrl}/api/v1/connection-intents/${id}/decline`, {})
+  acceptIntent(id: string): Observable<AcceptedConnection> {
+    return this.respond<AcceptedConnection>(id, 'accept')
   }
 
-  withdrawIntent(id: string): Observable<unknown> {
-    return this.http.post(`${appConfig.apiBaseUrl}/api/v1/connection-intents/${id}/withdraw`, {})
+  declineIntent(id: string): Observable<ConnectionIntent> {
+    return this.respond<ConnectionIntent>(id, 'decline')
+  }
+
+  withdrawIntent(id: string): Observable<ConnectionIntent> {
+    return this.respond<ConnectionIntent>(id, 'withdraw')
+  }
+
+  private respond<T>(id: string, action: 'accept' | 'decline' | 'withdraw'): Observable<T> {
+    return this.http.post<T>(`${this.base}/connection-intents/${encodeURIComponent(id)}/${action}`, {})
   }
 }

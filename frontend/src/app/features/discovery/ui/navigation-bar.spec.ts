@@ -16,13 +16,13 @@ describe('NavigationBarComponent language', () => {
     const fixture = TestBed.createComponent(NavigationBarComponent)
     fixture.detectChanges()
     const element = fixture.nativeElement as HTMLElement
-    expect(labels(element)).toEqual(['Descubrir', 'Crear proyecto', 'Mis equipos', 'Solicitudes', 'Guardados', 'Perfil'])
+    expect(labels(element)).toEqual(['Descubrir', 'Crear proyecto', 'Mis equipos', 'Solicitudes', 'Notificaciones', 'Guardados', 'Perfil'])
     expect(element.querySelector('aside')?.getAttribute('aria-label')).toBe('Navegación principal')
 
     currentLanguage.set('en')
     fixture.detectChanges()
 
-    expect(labels(element)).toEqual(['Discover', 'Create project', 'My teams', 'Requests', 'Saved', 'Profile'])
+    expect(labels(element)).toEqual(['Discover', 'Create project', 'My teams', 'Requests', 'Notifications', 'Saved', 'Profile'])
     expect(element.querySelector('aside')?.getAttribute('aria-label')).toBe('Main navigation')
     fixture.destroy()
   })
@@ -50,6 +50,18 @@ describe('NavigationBarComponent language', () => {
     expect(labels(element)).not.toContain('Crear proyecto')
     expect(Array.from(element.querySelectorAll('.mobile-nav__item')).map((item) => item.textContent?.trim()))
       .not.toContain('Crear proyecto')
+    fixture.destroy()
+  })
+
+  it('gives every mobile destination a wrappable label so narrow screens do not overlap them', () => {
+    const fixture = TestBed.createComponent(NavigationBarComponent)
+    fixture.componentRef.setInput('activeView', 'discover')
+    fixture.detectChanges()
+
+    const items = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('.mobile-nav__item'))
+    expect(items.map((item) => item.querySelector('.mobile-nav__label')?.textContent?.trim()))
+      .toEqual(['Descubrir', 'Crear proyecto', 'Mis equipos', 'Solicitudes', 'Avisos', 'Guardados', 'Perfil'])
+    expect(items[0].getAttribute('aria-current')).toBe('page')
     fixture.destroy()
   })
 })

@@ -3,6 +3,7 @@ package com.pulso.backend.connection.infrastructure;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -12,12 +13,28 @@ import org.springframework.stereotype.Repository;
 import com.pulso.backend.connection.application.ConnectionIntentAcceptanceRepository;
 import com.pulso.backend.connection.application.ConnectionIntentConflictException;
 import com.pulso.backend.connection.domain.AcceptedConnectionConversation;
+import com.pulso.backend.connection.domain.ConnectionInboxEntry;
+import com.pulso.backend.connection.domain.ConnectionInboxView;
 import com.pulso.backend.connection.domain.ConnectionIntent;
 import com.pulso.backend.connection.domain.ConnectionIntentReason;
 
 @Repository
 public class JdbcConnectionIntentAcceptanceRepository
         implements ConnectionIntentAcceptanceRepository {
+
+    private static final String RECEIVED = """
+            i.from_profile_id <> :profileId
+            and exists (
+                select 1 from public.project_members pm
+                where pm.project_id = i.project_id and pm.profile_id = :profileId
+                  and pm.membership_status = 'ACTIVE' and pm.role in ('OWNER', 'ADMIN')
+            )
+            and (c.id is not null or not exists (
+                select 1 from public.profile_blocks block
+                where (block.blocker_profile_id = :profileId and block.blocked_profile_id = i.from_profile_id)
+                   or (block.blocker_profile_id = i.from_profile_id and block.blocked_profile_id = :profileId)
+            ))
+            """;
 
     private final JdbcClient jdbcClient;
 
@@ -47,19 +64,20 @@ public class JdbcConnectionIntentAcceptanceRepository
     }
 
     @Override
-    public boolean hasActiveProjectMembership(UUID projectId, UUID profileId) {
+    public boolean canManageProjectRequests(UUID projectId, UUID profileId) {
         return jdbcClient.sql("""
-                select membership_status
+                select profile_id
                 from public.project_members
                 where project_id = :projectId
                   and profile_id = :profileId
+                  and membership_status = 'ACTIVE'
+                  and role in ('OWNER', 'ADMIN')
                 for update
                 """)
                 .param("projectId", projectId)
                 .param("profileId", profileId)
-                .query(String.class)
+                .query(UUID.class)
                 .optional()
-                .filter("ACTIVE"::equals)
                 .isPresent();
     }
 
@@ -236,21 +254,44 @@ public class JdbcConnectionIntentAcceptanceRepository
             throw new ConnectionIntentConflictException();
         }
     }
-  
+
     @Override
-    public java.util.List<ConnectionIntent> findPendingByProjectMembership(java.util.UUID profileId) {
+    public List<ConnectionInboxEntry> findInbox(
+            UUID profileId, ConnectionInboxView view, int offset, int limit) {
+        String visibility = switch (view) {
+            case SENT -> "i.from_profile_id = :profileId";
+            case RECEIVED -> RECEIVED;
+            case PENDING -> "i.status = 'PENDING' and " + RECEIVED;
+        };
         return jdbcClient.sql("""
-            select i.id, i.from_profile_id, i.project_id, i.opportunity_id, i.reason, i.message, i.status, i.responded_by_profile_id, i.created_at
+            select i.id, i.from_profile_id, i.project_id, i.opportunity_id,
+                   i.reason, i.message, i.status, i.responded_by_profile_id, i.created_at,
+                   case when project.status = 'PUBLISHED' and sector.is_active then project.name end as project_name,
+                   case when project.status = 'PUBLISHED' and sector.is_active and opportunity.status = 'OPEN'
+                        then opportunity.title end as opportunity_title,
+                   c.id as conversation_id
             from public.connection_intents i
-            join public.project_members pm on pm.project_id = i.project_id
-            where i.status = 'PENDING'
-              and pm.profile_id = :profileId
-              and pm.membership_status = 'ACTIVE'
-              and pm.role in ('OWNER', 'ADMIN')
-            order by i.created_at desc
-            """)
+            join public.projects project on project.id = i.project_id
+            join public.sectors sector on sector.id = project.sector_id
+            left join public.project_opportunities opportunity on opportunity.id = i.opportunity_id
+            left join public.conversations c on c.connection_intent_id = i.id and exists (
+                  select 1 from public.conversation_participants participant
+                  where participant.conversation_id = c.id and participant.profile_id = :profileId
+                    and participant.left_at is null
+              )
+            where %s
+            order by i.created_at desc, i.id desc
+            offset :offset
+            limit :limit
+            """.formatted(visibility))
             .param("profileId", profileId)
-            .query(JdbcConnectionIntentAcceptanceRepository::mapConnectionIntent)
+            .param("offset", offset)
+            .param("limit", limit)
+            .query((resultSet, rowNumber) -> new ConnectionInboxEntry(
+                    mapConnectionIntent(resultSet, rowNumber),
+                    resultSet.getString("project_name"),
+                    resultSet.getString("opportunity_title"),
+                    resultSet.getObject("conversation_id", UUID.class)))
             .list();
     }
 

@@ -3,10 +3,9 @@ import { firstValueFrom } from 'rxjs'
 import { CatalogsApi } from '../data-access/catalogs-api'
 import { preferenceContract } from '../data-access/discovery.catalog.contract'
 import { PreferencesApi } from '../data-access/preferences-api'
-import { ProjectInteractionsApi } from '../data-access/project-interactions-api'
-import { ProjectSearchApi } from '../data-access/project-search-api'
+import { ProjectInteractionsApi, type PersistedFeedbackType } from '../data-access/project-interactions-api'
+import { ProjectSearchApi, hasSearchFilters, type SearchFilters } from '../data-access/project-search-api'
 import { toStartupViewModel } from '../data-access/startup-view-model'
-import type { SearchFilters } from '../data-access/project-search-api';
 
 import { SupabaseAuthGateway } from '../../../core/auth/supabase-auth.gateway'
 
@@ -109,15 +108,16 @@ export class PulsoSession {
     readonly searchResults = signal<Startup[]>([])
     readonly searchTotal = signal(0)
     readonly searchError = signal<string | null>(null)
-    readonly searchHasMore = computed(() => this.searchResults().length < this.searchTotal())
-    readonly searchFilters = signal<SearchFilters>({});
+    private readonly searchNextOffset = signal(0)
+    readonly searchHasMore = computed(() => this.searchNextOffset() < this.searchTotal())
+    readonly searchFilters = signal<SearchFilters>({})
 
     readonly selectedProjectId = signal<string | null>(null)
 
     readonly currentUser = computed(() => this.auth.session())
 
     private preferencesSavedMessageTimeout: number | undefined
-    private pendingInteractionAction: (() => Promise<void>) | null = null
+    private pendingInteractionAction: (() => Promise<unknown>) | null = null
     private requestGeneration = 0
     private searchTimeout: number | undefined
     private searchGeneration = 0
@@ -445,50 +445,36 @@ export class PulsoSession {
         this.preferenceValidationMessage.set(null)
     }
 
-   
-search(query: string): void {
-    this.searchQuery.set(query);
-    this.cancelPendingSearch();
-
-    
-    if (!query.trim() && !this.hasActiveFilters()) {
-        this.clearSearch();
-        return;
+    search(query: string): void {
+        this.searchQuery.set(query.trim() ? query : '')
+        this.scheduleSearch(true)
     }
 
-    this.searchError.set(null);
-    this.isSearching.set(true);
-    this.searchTimeout = window.setTimeout(() => {
-        this.searchTimeout = undefined;
-        void this.runSearch(false);
-    }, searchDebounceMs);
-}
-
-
-updateFilters(filters: SearchFilters): void {
-    this.searchFilters.set(filters);
-    this.cancelPendingSearch();
-
-    if (!this.searchQuery().trim() && !this.hasActiveFilters()) {
-        this.clearSearch();
-        return;
+    updateFilters(filters: SearchFilters): void {
+        const locationChanged = filters.location !== this.searchFilters().location
+        this.searchFilters.set(filters)
+        this.scheduleSearch(locationChanged)
     }
 
-    this.searchError.set(null);
-    this.isSearching.set(true);
-    void this.runSearch(false);
-}
+    private scheduleSearch(debounce: boolean): void {
+        this.resetSearchPage()
+        if (!this.searchQuery().trim() && !hasSearchFilters(this.searchFilters())) return
 
-
-private hasActiveFilters(): boolean {
-    const f = this.searchFilters();
-    return !!(f.sector || f.stage || f.location || f.hasOpenOpportunities);
-}
+        this.isSearching.set(true)
+        if (debounce) {
+            this.searchTimeout = window.setTimeout(() => {
+                this.searchTimeout = undefined
+                void this.runSearch(false)
+            }, searchDebounceMs)
+        } else {
+            void this.runSearch(false)
+        }
+    }
 
     retrySearch(): void {
-        if (this.searchQuery().trim()) {
+        if (this.searchQuery().trim() || hasSearchFilters(this.searchFilters())) {
             this.cancelPendingSearch()
-            void this.runSearch(false)
+            void this.runSearch(this.searchNextOffset() > 0)
         }
     }
 
@@ -499,11 +485,17 @@ private hasActiveFilters(): boolean {
     }
 
     clearSearch(): void {
-        this.cancelPendingSearch()
         this.searchQuery.set('')
+        this.searchFilters.set({})
+        this.resetSearchPage()
+    }
+
+    private resetSearchPage(): void {
+        this.cancelPendingSearch()
         this.isSearching.set(false)
         this.searchResults.set([])
         this.searchTotal.set(0)
+        this.searchNextOffset.set(0)
         this.searchError.set(null)
     }
 
@@ -516,44 +508,32 @@ private hasActiveFilters(): boolean {
     }
 
     private async runSearch(append: boolean): Promise<void> {
-    const generation = ++this.searchGeneration;
-    const query = this.searchQuery().trim();
-    const currentFilters = this.searchFilters(); // Obtenemos los filtros actuales
-    const offset = append ? this.searchResults().length : 0;
+        const generation = ++this.searchGeneration
+        const query = this.searchQuery().trim()
+        const filters = this.searchFilters()
+        const offset = append ? this.searchNextOffset() : 0
 
-    this.isSearching.set(true);
-    this.searchError.set(null);
+        this.isSearching.set(true)
+        this.searchError.set(null)
 
-    try {
-        
-        const response = await firstValueFrom(
-            this.projectSearchApi.search(
-                { 
-                  ...currentFilters, 
-                  query: query || undefined 
-                }, 
-                offset, 
-                searchPageSize
-            ),
-        );
-        if (generation !== this.searchGeneration) {
-            return;
-        }
+        try {
+            const response = await firstValueFrom(this.projectSearchApi.search(
+                { ...filters, query: query || undefined },
+                offset,
+                searchPageSize,
+            ))
+            if (generation !== this.searchGeneration) return
 
-        const incoming = response.data.map(toStartupViewModel);
-        this.searchResults.update((current) => mergeProjects(current, incoming, append));
-        this.searchTotal.set(response.meta.totalCount);
-    } catch {
-        if (generation !== this.searchGeneration) {
-            return;
-        }
-        this.searchError.set(searchStrings.failed);
-    } finally {
-        if (generation === this.searchGeneration) {
-            this.isSearching.set(false);
+            const incoming = response.data.map(toStartupViewModel)
+            this.searchResults.update((current) => mergeProjects(current, incoming, append))
+            this.searchTotal.set(response.meta.totalCount)
+            this.searchNextOffset.set(incoming.length ? offset + incoming.length : response.meta.totalCount)
+        } catch {
+            if (generation === this.searchGeneration) this.searchError.set(searchStrings.failed)
+        } finally {
+            if (generation === this.searchGeneration) this.isSearching.set(false)
         }
     }
-}
 
     async startDiscovery(): Promise<void> {
         if (
@@ -683,68 +663,77 @@ private hasActiveFilters(): boolean {
     }
 
     async makeDecision(decision: Decision): Promise<void> {
-        const currentStartup = this.currentStartup()
+        const startup = this.currentStartup()
+        if (startup) await this.setProjectDecision(startup, decision)
+    }
 
-        if (!currentStartup || this.isSavingInteraction()) {
-            return
-        }
-
-        const nextWeights = adjustPreferenceWeights(
-            currentStartup,
-            decision,
-            this.preferenceWeights(),
-        )
-
-        const feedbackType = decision === 'interested' ? 'INTERESTED' : 'DISMISSED'
-        const generation = this.requestGeneration
-        await this.runInteraction(async () => {
-            await firstValueFrom(this.projectInteractionsApi.setFeedback(
-                currentStartup.id,
-                feedbackType,
+    setProjectDecision(
+        startup: Startup, decision: Decision, reportFailure = true,
+    ): Promise<PersistedFeedbackType | null | undefined> {
+        return this.runInteraction(async () => {
+            const generation = this.requestGeneration
+            const nextWeights = adjustPreferenceWeights(startup, decision, this.preferenceWeights())
+            const { feedbackType } = await firstValueFrom(this.projectInteractionsApi.setFeedback(
+                startup.id,
+                decision === 'interested' ? 'INTERESTED' : 'DISMISSED',
                 nextWeights,
             ))
-            if (generation !== this.requestGeneration) {
-                return
-            }
+            if (generation !== this.requestGeneration) return undefined
+
             this.preferenceWeights.set(nextWeights)
-            if (decision === 'interested') {
-                if (!this.interestedIds().includes(currentStartup.id)) {
+            if (feedbackType === 'INTERESTED') {
+                if (!this.interestedIds().includes(startup.id)) {
                     this.interestedProjectsRevision += 1
-                    this.interestedIds.update((current) => [...current, currentStartup.id])
-                    this.interestedProjects.update((current) => prependProject(current, currentStartup))
+                    this.interestedIds.update((current) => [...current, startup.id])
+                    this.interestedProjects.update((current) => prependProject(current, startup))
                     this.interestedCount.update((count) => count + 1)
                 }
-            } else {
-                this.dismissedIds.update((current) => unique([...current, currentStartup.id]))
+                this.dismissedIds.update((current) => current.filter((id) => id !== startup.id))
+            } else if (feedbackType === 'DISMISSED') {
+                this.removeInterest(startup.id)
+                this.dismissedIds.update((current) => unique([...current, startup.id]))
             }
-            this.feed.set(
-                this.feed().filter((startup) => startup.id !== currentStartup.id),
-            )
-            if (this.feed().length === 0 && this.feedHasMore()) {
-                void this.loadCatalog()
+            if (feedbackType) {
+                this.feed.update((current) => current.filter((item) => item.id !== startup.id))
+                if (this.feed().length === 0 && this.feedHasMore()) void this.loadCatalog()
             }
-        }, feedStrings.interactionFeedbackFailed)
+            return feedbackType
+        }, reportFailure ? feedStrings.interactionFeedbackFailed : null)
     }
 
     async clearInterest(projectId: string): Promise<void> {
-        if (this.isSavingInteraction() || !this.interestedIds().includes(projectId)) {
-            return
-        }
-        const generation = this.requestGeneration
-        await this.runInteraction(async () => {
-            await firstValueFrom(this.projectInteractionsApi.clearFeedback(projectId))
-            if (generation !== this.requestGeneration) {
-                return
+        if (this.interestedIds().includes(projectId)) await this.clearProjectDecision(projectId)
+    }
+
+    clearProjectDecision(
+        projectId: string, reportFailure = true,
+    ): Promise<PersistedFeedbackType | null | undefined> {
+        return this.runInteraction(async () => {
+            const generation = this.requestGeneration
+            const { feedbackType } = await firstValueFrom(this.projectInteractionsApi.clearFeedback(projectId))
+            if (generation !== this.requestGeneration) return undefined
+
+            if (feedbackType === null) {
+                this.removeInterest(projectId)
+                this.dismissedIds.update((current) => current.filter((id) => id !== projectId))
+                this.feedNextCursor = null
+                // Clearing a decision makes the project eligible for the feed again.
+                void this.loadCatalog()
             }
-            this.interestedProjectsRevision += 1
+            return feedbackType
+        }, reportFailure ? savedStrings.clearInterestFailed : null)
+    }
+
+    private removeInterest(projectId: string): void {
+        this.interestedProjectsRevision += 1
+        if (this.interestedIds().includes(projectId)) {
             this.interestedIds.update((current) => current.filter((id) => id !== projectId))
             this.interestedProjects.update((current) => current.filter((item) => item.id !== projectId))
             this.interestedCount.update((count) => Math.max(0, count - 1))
-            this.feedNextCursor = null
-            // A cleared project becomes eligible for discovery again.
-            // The next feed request must start from the beginning, not an old cursor.
-            void this.loadCatalog()
-        }, savedStrings.clearInterestFailed)
+        } else if (this.interestedHasMore()) {
+            // The project might have been interested on a page we have not read.
+            void this.loadInterestedProjects()
+        }
     }
 
     retryInteraction(): void {
@@ -873,21 +862,22 @@ private hasActiveFilters(): boolean {
         }
     }
 
-    private async runInteraction(
-        action: () => Promise<void>,
-        failureMessage: string,
-    ): Promise<void> {
+    private async runInteraction<T>(
+        action: () => Promise<T>,
+        failureMessage: string | null,
+    ): Promise<T | undefined> {
         if (this.isSavingInteraction()) {
             return
         }
         const generation = this.requestGeneration
         this.isSavingInteraction.set(true)
         this.interactionErrorMessage.set(null)
-        this.pendingInteractionAction = action
+        this.pendingInteractionAction = failureMessage ? action : null
         try {
-            await action()
+            const result = await action()
             if (generation === this.requestGeneration) {
                 this.pendingInteractionAction = null
+                return result
             }
         } catch {
             if (generation === this.requestGeneration) {
@@ -898,6 +888,7 @@ private hasActiveFilters(): boolean {
                 this.isSavingInteraction.set(false)
             }
         }
+        return undefined
     }
 }
 

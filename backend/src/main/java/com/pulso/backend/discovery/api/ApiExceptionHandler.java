@@ -122,7 +122,7 @@ public class ApiExceptionHandler {
     @ExceptionHandler(ConnectionIntentRejectedException.class)
     ProblemDetail rejectedConnectionIntent(ConnectionIntentRejectedException exception) {
         return switch (exception.reason()) {
-            case PROFILE_INACTIVE -> connectionIntentProblem(
+            case PROFILE_INACTIVE, RECIPIENTS_BLOCKED -> connectionIntentProblem(
                     HttpStatus.FORBIDDEN,
                     ApiMessages.CONNECTION_INTENT_FORBIDDEN_TITLE,
                     ApiMessages.CONNECTION_INTENT_FORBIDDEN_DETAIL,
@@ -467,10 +467,10 @@ public class ApiExceptionHandler {
     }
 
     @ExceptionHandler(ProfileNotFoundException.class)
-    ProblemDetail profileNotFound() {
+    ProblemDetail profileNotFound(ProfileNotFoundException exception) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.NOT_FOUND,
-                ApiMessages.PROFILE_NOT_FOUND_DETAIL);
+                exception.getMessage());
         problem.setTitle(ApiMessages.PROFILE_NOT_FOUND_TITLE);
         return problem;
     }

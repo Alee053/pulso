@@ -17,14 +17,15 @@ if ! pnpm --filter @pulso/frontend exec ng test \
   --watch=false \
   --include=src/app/features/discovery/data-access/current-projects-api.spec.ts \
   --include=src/app/features/discovery/data-access/project-reviews-api.spec.ts \
-  --include=src/app/features/discovery/ui/conversation-thread.spec.ts \
-  --include=src/app/features/discovery/ui/profile-block-control.spec.ts \
+  --include=src/app/features/discovery/ui/conversation-view.spec.ts \
+  --include=src/app/features/discovery/ui/profile-blocks.spec.ts \
   --include=src/app/features/discovery/ui/project-management.spec.ts \
   --include=src/app/features/discovery/ui/project-opportunity-skills.spec.ts \
   --include=src/app/features/discovery/ui/project-reviews.spec.ts \
   --include=src/app/features/discovery/ui/project-teams.spec.ts \
   --include=src/app/features/discovery/ui/public-project-detail.spec.ts \
   --include=src/app/features/discovery/ui/requests-view.spec.ts \
+  --include=src/app/features/discovery/ui/contact-flow.spec.ts \
   --reporters=json \
   --output-file="$frontend_report" >"$frontend_log" 2>&1; then
   cat "$frontend_log"
@@ -39,14 +40,15 @@ from pathlib import Path
 expected = {
     "src/app/features/discovery/data-access/current-projects-api.spec.ts",
     "src/app/features/discovery/data-access/project-reviews-api.spec.ts",
-    "src/app/features/discovery/ui/conversation-thread.spec.ts",
-    "src/app/features/discovery/ui/profile-block-control.spec.ts",
+    "src/app/features/discovery/ui/conversation-view.spec.ts",
+    "src/app/features/discovery/ui/profile-blocks.spec.ts",
     "src/app/features/discovery/ui/project-management.spec.ts",
     "src/app/features/discovery/ui/project-opportunity-skills.spec.ts",
     "src/app/features/discovery/ui/project-reviews.spec.ts",
     "src/app/features/discovery/ui/project-teams.spec.ts",
     "src/app/features/discovery/ui/public-project-detail.spec.ts",
     "src/app/features/discovery/ui/requests-view.spec.ts",
+    "src/app/features/discovery/ui/contact-flow.spec.ts",
 }
 
 path = Path(sys.argv[1])
@@ -93,7 +95,17 @@ printf '%s\n' 'Ejecutando pruebas backend específicas de PUL-112...'
 if ! sh ./backend/gradlew -p backend test \
   --tests com.pulso.backend.connection.api.ConnectionIntentControllerTest \
   --tests com.pulso.backend.connection.api.ConnectionIntentSecurityTest \
+  --tests com.pulso.backend.connection.api.ConnectionIntentAcceptanceControllerTest \
+  --tests com.pulso.backend.connection.api.ConnectionIntentAcceptanceSecurityTest \
   --tests com.pulso.backend.connection.infrastructure.JdbcConnectionIntentRepositoryTest \
+  --tests com.pulso.backend.connection.infrastructure.JdbcConnectionIntentAcceptanceRepositoryTest \
+  --tests com.pulso.backend.messaging.api.ConversationMessageControllerTest \
+  --tests com.pulso.backend.messaging.api.ConversationMessageSecurityTest \
+  --tests com.pulso.backend.messaging.application.SendTextMessageTest \
+  --tests com.pulso.backend.messaging.infrastructure.JdbcConversationMessageRepositoryTest \
+  --tests com.pulso.backend.notification.api.NotificationControllerTest \
+  --tests com.pulso.backend.notification.api.NotificationSecurityTest \
+  --tests com.pulso.backend.notification.infrastructure.JdbcNotificationRepositoryTest \
   --tests com.pulso.backend.opportunity.api.ProjectOpportunityControllerTest \
   --tests com.pulso.backend.opportunity.api.ProjectOpportunitySecurityTest \
   --tests com.pulso.backend.opportunity.api.ProjectOpportunitySkillsSecurityTest \
@@ -102,9 +114,7 @@ if ! sh ./backend/gradlew -p backend test \
   --tests com.pulso.backend.opportunity.domain.OpportunityLifecycleTest \
   --tests com.pulso.backend.opportunity.infrastructure.JdbcOpportunitySkillRepositoryTest \
   --tests com.pulso.backend.opportunity.infrastructure.JdbcProjectOpportunityRepositoryTest \
-  --tests com.pulso.backend.profile.api.ProfileBlockControllerTest \
-  --tests com.pulso.backend.profile.application.ManageProfileBlocksTest \
-  --tests com.pulso.backend.profile.infrastructure.JdbcProfileBlockRepositoryTest \
+  --tests com.pulso.backend.profile.infrastructure.ProfileBlockIntegrationTest \
   --tests com.pulso.backend.project.api.CurrentProjectsControllerTest \
   --tests com.pulso.backend.project.api.ProjectLifecycleControllerTest \
   --tests com.pulso.backend.project.api.ProjectLifecycleSecurityTest \
@@ -132,7 +142,17 @@ from xml.etree import ElementTree
 expected = {
     "com.pulso.backend.connection.api.ConnectionIntentControllerTest",
     "com.pulso.backend.connection.api.ConnectionIntentSecurityTest",
+    "com.pulso.backend.connection.api.ConnectionIntentAcceptanceControllerTest",
+    "com.pulso.backend.connection.api.ConnectionIntentAcceptanceSecurityTest",
     "com.pulso.backend.connection.infrastructure.JdbcConnectionIntentRepositoryTest",
+    "com.pulso.backend.connection.infrastructure.JdbcConnectionIntentAcceptanceRepositoryTest",
+    "com.pulso.backend.messaging.api.ConversationMessageControllerTest",
+    "com.pulso.backend.messaging.api.ConversationMessageSecurityTest",
+    "com.pulso.backend.messaging.application.SendTextMessageTest",
+    "com.pulso.backend.messaging.infrastructure.JdbcConversationMessageRepositoryTest",
+    "com.pulso.backend.notification.api.NotificationControllerTest",
+    "com.pulso.backend.notification.api.NotificationSecurityTest",
+    "com.pulso.backend.notification.infrastructure.JdbcNotificationRepositoryTest",
     "com.pulso.backend.opportunity.api.ProjectOpportunityControllerTest",
     "com.pulso.backend.opportunity.api.ProjectOpportunitySecurityTest",
     "com.pulso.backend.opportunity.api.ProjectOpportunitySkillsSecurityTest",
@@ -141,9 +161,7 @@ expected = {
     "com.pulso.backend.opportunity.domain.OpportunityLifecycleTest",
     "com.pulso.backend.opportunity.infrastructure.JdbcOpportunitySkillRepositoryTest",
     "com.pulso.backend.opportunity.infrastructure.JdbcProjectOpportunityRepositoryTest",
-    "com.pulso.backend.profile.api.ProfileBlockControllerTest",
-    "com.pulso.backend.profile.application.ManageProfileBlocksTest",
-    "com.pulso.backend.profile.infrastructure.JdbcProfileBlockRepositoryTest",
+    "com.pulso.backend.profile.infrastructure.ProfileBlockIntegrationTest",
     "com.pulso.backend.project.api.CurrentProjectsControllerTest",
     "com.pulso.backend.project.api.ProjectLifecycleControllerTest",
     "com.pulso.backend.project.api.ProjectLifecycleSecurityTest",

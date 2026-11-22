@@ -3,11 +3,13 @@
 ## Current scope
 
 PUL-27 implements the backend boundary that turns an accepted contextual
-project request into one private conversation. S6.6 adds directed profile-block
-management and opens a conversation inline after the current user accepts a
-pending request. A conversation list and a durable route for returning to an
-existing conversation remain outside the current scope. Message sending and
-history were added by S5.4.
+project request into one private conversation. S5.4 adds message sending and
+history. PUL-33 adds profile blocks to project details, the request inbox, and
+profile settings. PUL-111 connects sent and received request histories to their
+persisted conversations, which can be reopened from a durable route after a
+reload. PUL-112 adds contextual reports for projects, public profiles, and
+conversation messages, and exposes profile blocking in the project detail and
+conversation flow.
 
 Request creation is provided by PUL-25 through the same `ConnectionIntent`
 domain and canonical `connection_intents` table. Acceptance restores the full
@@ -41,12 +43,24 @@ The persisted aggregate uses four tables:
 All four tables have RLS enabled and direct `anon` and `authenticated` grants
 revoked. Product access is owned by the backend API.
 
-The authenticated profile can read, create, and remove its own directed block
-through `/api/v1/me/blocks/{profileId}`. Self-blocks and inactive targets are
-rejected. New project requests also check both directions between the sender
-and every active member of the target project. Blocks continue to apply to
-request acceptance and message sending according to the conversation's active
-participants.
+## Contact policy and profile blocks
+
+Only the authenticated blocker can list or remove their outgoing blocks.
+Either direction is sufficient to prevent contact. When both profiles
+block each other, each must remove their own block to restore contact.
+See the [profile block API](../api.md#profile-blocks-pul-33).
+
+Request creation validates the sender and context before checking the
+project's other active owners and admins. The transaction locks their profile pairs in
+advisory-key order and then checks for blocks. It rejects the request if
+every recipient is blocked. When at least one recipient is available, only
+unblocked owners and admins receive notifications. Blocked pending requests
+remain available to other eligible project owners and admins.
+
+Block and unblock acquire the existing `profile_contact_lock_key` before
+writing to `profile_blocks`. Request creation, acceptance and message
+sending use the same unordered pair key so that contact authorization
+and concurrent block writes take effect in a consistent order.
 
 ## Acceptance transaction
 
@@ -56,8 +70,8 @@ one transaction and the JDBC adapter locks the request with `FOR UPDATE`.
 
 For a pending request, acceptance requires:
 
-1. The responder has `ACTIVE` membership in the request's project. The project
-   role may be `OWNER`, `ADMIN`, or `MEMBER`.
+1. The responder has an `ACTIVE` membership as `OWNER` or `ADMIN` in the
+   request's project.
 2. The responder is not the initiating profile.
 3. Neither profile has blocked the other.
 
@@ -70,6 +84,12 @@ The transaction then changes the request to `ACCEPTED`, records the responder
 and response time, inserts one `PROJECT_CONTACT` conversation, and inserts the
 initiator and responder as `INITIATOR` and `PROJECT_MEMBER`. Any failure rolls
 back all of these writes.
+
+Declining marks a pending request `DECLINED` and records the response notice
+in the same transaction. The sender can move a pending request to `WITHDRAWN`.
+The sent history is scoped by the JWT subject. The received history uses the
+current project role. Both histories return the conversation identifier only
+to an active participant, who can open it from the history after reloading.
 
 ## Duplicate and retry behavior
 
@@ -91,16 +111,17 @@ roles `INITIATOR` and `PROJECT_MEMBER` when the transaction commits.
 ## Error boundary
 
 - `401` — invalid or missing authenticated subject.
-- `403 connection_intent_forbidden` — active project membership is absent, or
-  the profiles are blocked.
+- `403 connection_intent_forbidden` — the caller lacks the required project
+  role, the profiles are blocked, or the caller is trying to withdraw someone
+  else's request.
 - `404` — the request does not exist.
 - `409 connection_intent_conflict` — the lifecycle state or responder is
   incompatible with the operation.
 - `503` — sanitized persistence failure.
 
 Sending and reading text messages is documented in
-[conversation messages](./conversation-messages.md). Creating a request and
-accepting it also notify the people involved; see
-[notifications](./notifications.md). Read state per conversation, muting,
+[conversation messages](./conversation-messages.md). Creating, accepting and
+declining a request create the corresponding [notification](./notifications.md).
+Read state per conversation, muting,
 conversation closure, and confirmation of a successful real-world outcome remain
 separate capabilities.

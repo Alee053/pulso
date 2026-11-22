@@ -12,13 +12,14 @@
         class="desktop-nav__item"
         [class.desktop-nav__item--active]="item.id === activeView"
         [attr.aria-current]="item.id === activeView ? 'page' : null"
+        [attr.aria-label]="item.id === 'notifications' && unreadCount ? strings.notificationCount(unreadCount) : null"
         (click)="navigated.emit(item.id)"
       >
         <span class="desktop-nav__item-icon">
           <pulso-icon [name]="item.icon" [size]="18" [strokeWidth]="item.id === activeView ? 2 : 1.7" />
         </span>
         <span>{{ item.label }}</span>
-        <span *ngIf="countFor(item) > 0" class="desktop-nav__count">{{ countFor(item) }}</span>
+        <span *ngIf="countFor(item) > 0" class="desktop-nav__count">{{ countLabel(item) }}</span>
       </button>
     </nav>
   </div>
@@ -49,12 +50,13 @@
     class="mobile-nav__item"
     [class.mobile-nav__item--active]="item.id === activeView"
     [attr.aria-current]="item.id === activeView ? 'page' : null"
+    [attr.aria-label]="item.id === 'notifications' && unreadCount ? strings.notificationCount(unreadCount) : null"
     (click)="navigated.emit(item.id)"
   >
     <span class="relative">
       <pulso-icon [name]="item.icon" [size]="18" [strokeWidth]="item.id === activeView ? 2 : 1.7" />
-      <span *ngIf="countFor(item) > 0" class="mobile-nav__count">{{ countFor(item) }}</span>
+      <span *ngIf="countFor(item) > 0" class="mobile-nav__count">{{ countLabel(item) }}</span>
     </span>
-    <span>{{ item.label }}</span>
+    <span class="mobile-nav__label">{{ item.id === 'notifications' ? strings.notificationsShort : item.label }}</span>
   </button>
 </nav>

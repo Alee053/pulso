@@ -352,7 +352,7 @@ trabajar a diario; elige los que cubran tu cambio.
 | `pnpm backend:test` | Tests Java; Docker debe estar iniciado para las pruebas JDBC con Testcontainers |
 | `pnpm backend:build` | Build y tests del backend; JAR en `backend/build/libs/` |
 | `pnpm backend:verify` | Con Compose y `.env` local: JDBC, catálogo seed, liveness/readiness con conexión disponible y caída simulada |
-| `pnpm smoke:critical-path` | Con Compose, backend levantado y la base al día: recorrido registro → mensaje por API, permisos y RLS; crea cuentas de prueba y archiva su proyecto ([detalle](docs/engineering/mvp-critical-path.md)) |
+| `pnpm smoke:critical-path` | Registro, decisiones, solicitudes y conversación por API, con permisos y RLS. Admite el recorrido Angular de dos cuentas mediante `PULSO_SMOKE_FRONTEND_URL` ([detalle](docs/engineering/mvp-critical-path.md)). |
 | `docker compose --env-file .env.example config --quiet` | Valida el archivo Compose con la plantilla, sin iniciar contenedores ni imprimir valores |
 
 `backend:verify` inicia backends temporales en `18080` y `18081` y usa `55432`

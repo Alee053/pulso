@@ -259,6 +259,7 @@ class JdbcConnectionIntentRepositoryTest {
                 create table public.project_members (
                     project_id uuid not null references public.projects (id),
                     profile_id uuid not null references public.profiles (id),
+                    role text not null default 'OWNER',
                     membership_status text not null,
                     primary key (project_id, profile_id)
                 )

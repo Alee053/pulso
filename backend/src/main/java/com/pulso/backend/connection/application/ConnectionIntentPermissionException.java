@@ -17,4 +17,8 @@ public class ConnectionIntentPermissionException extends RuntimeException {
         return new ConnectionIntentPermissionException(
                 ApiMessages.CONNECTION_INTENT_PROFILES_BLOCKED);
     }
+
+    public static ConnectionIntentPermissionException senderRequired() {
+        return new ConnectionIntentPermissionException(ApiMessages.CONNECTION_INTENT_SENDER_REQUIRED);
+    }
 }

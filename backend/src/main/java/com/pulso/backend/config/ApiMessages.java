@@ -142,13 +142,15 @@ public final class ApiMessages {
             "The connection request does not exist.";
     public static final String CONNECTION_INTENT_PERMISSION_TITLE = "Connection request access denied";
     public static final String CONNECTION_INTENT_MEMBERSHIP_REQUIRED =
-            "Active project membership is required to accept the connection request.";
+            "An active project owner or admin is required to respond to the connection request.";
+    public static final String CONNECTION_INTENT_SENDER_REQUIRED =
+            "Only the sender can withdraw the connection request.";
     public static final String CONNECTION_INTENT_PROFILES_BLOCKED =
             "Blocked profiles cannot start a new conversation.";
     public static final String CONNECTION_INTENT_PERMISSION_CODE = "connection_intent_forbidden";
     public static final String CONNECTION_INTENT_CONFLICT_TITLE = "Connection request conflict";
     public static final String CONNECTION_INTENT_CONFLICT_DETAIL =
-            "The connection request cannot be accepted in its current state.";
+            "The connection request cannot be changed in its current state.";
     public static final String CONNECTION_INTENT_CONFLICT_CODE = "connection_intent_conflict";
 
     public static final String INVITATION_REQUIRED = "invitation is required.";

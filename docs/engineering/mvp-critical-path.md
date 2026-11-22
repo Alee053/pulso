@@ -1,15 +1,13 @@
 # Recorrido crítico y cierre del MVP (PUL-32)
 
-Esta página reúne la verificación transversal de la primera versión de Pulso:
-la prueba de humo del recorrido de usuario, los límites de permisos y RLS, la
-revisión de accesibilidad y la alineación de la documentación. No describe
-funcionalidades nuevas; indica cómo comprobar las existentes y qué queda fuera
-del MVP.
+Esta página reúne la prueba de humo del recorrido de usuario, los límites de
+permisos y RLS, y la verificación de accesibilidad. PUL-111 extiende el
+recorrido de PUL-32 con el flujo de contacto en Angular.
 
 ## Recorrido crítico
 
 ```text
-registro → onboarding → discovery → interés → conexión → mensaje
+registro → onboarding → Descubrir → interés → solicitud → conversación → aviso leído
 ```
 
 | Paso | Contrato | Superficie actual |
@@ -17,22 +15,18 @@ registro → onboarding → discovery → interés → conexión → mensaje
 | Registro | Supabase Auth `signup`/`token`; `GET /api/v1/me` | Interfaz y API |
 | Onboarding | `PATCH /api/v1/me`, `PUT /api/v1/me/preferences` con `completeOnboarding` | Interfaz y API |
 | Publicación | `POST /api/v1/projects`, `publication-request`, revisión en `/api/v1/admin/project-reviews` | Interfaz y API |
-| Discovery | `GET /api/v1/me/discovery-feed`, `GET /api/v1/projects/search`, `GET /api/v1/projects/{projectRef}` | Interfaz y API |
-| Interés | `PUT /api/v1/me/project-feedback/{projectId}` con `INTERESTED` | Interfaz y API |
-| Conexión | `POST /api/v1/projects/{projectId}/connection-intents`; `GET /api/v1/connection-intents/pending`; `POST .../accept` | Envío solo por API; bandeja y aceptación en **Solicitudes** |
-| Mensaje | `POST`/`GET /api/v1/conversations/{conversationId}/messages`; `GET /api/v1/me/notifications` | Solo API |
-
-La interfaz todavía no envía solicitudes de conexión ni muestra conversaciones
-o notificaciones: el detalle de proyecto indica que el contacto está en vista
-previa. Por eso el recorrido completo se valida contra la API y el tramo de
-interfaz se valida hasta el interés.
+| Descubrir | Feed autenticado, búsqueda y detalle público, coincidencia de oportunidades | Interfaz y API |
+| Decisión | Guardados y `GET`, `PUT`, `DELETE /api/v1/me/project-feedback/{projectId}` | Interfaz y API |
+| Conexión | Creación en el proyecto, `GET /api/v1/connection-intents/{inbox}`, `POST .../{accept,decline,withdraw}` | Detalle y bandeja de **Solicitudes** |
+| Mensaje | `GET`, `POST /api/v1/conversations/{conversationId}/messages` | Conversación enlazada desde **Solicitudes** y **Notificaciones** |
+| Notificación | `GET /api/v1/me/notifications`, `POST .../{notificationId}/read` | Bandeja, contador y enlace al contexto |
 
 ## Pruebas de humo
 
 ### `pnpm smoke:critical-path` — recorrido completo por API
 
 [`scripts/verify-critical-path.mjs`](../../scripts/verify-critical-path.mjs)
-recorre los seis pasos contra un entorno local ya levantado (Compose, backend
+ejecuta el recorrido contra un entorno local ya levantado (Compose, backend
 con `pnpm backend:run`). No reinicia ni borra la base. Requiere Node 24 y
 Docker para la promoción temporal de la cuenta revisora.
 
@@ -54,15 +48,19 @@ Qué hace, en orden:
 5. Registra una cuenta *revisora*, comprueba que sin rol de plataforma recibe
    `403`, la promueve temporalmente a `MODERATOR` y aprueba el proyecto. El
    propietario no puede aprobar su propio proyecto.
-6. Comprueba que el proyecto publicado aparece en el detalle, la búsqueda y el
-   feed de la cuenta interesada, sin exponer la nota de revisión.
-7. Marca interés y comprueba que la decisión es privada de cada cuenta.
-8. Envía la solicitud de conexión, rechaza un duplicado (`409`), verifica la
-   bandeja y la notificación del equipo, impide que la acepten el remitente o
-   una cuenta externa (`403`) y la acepta con la cuenta *owner*.
+6. Abre una oportunidad y comprueba el enlace público, el feed, los filtros
+   combinados, la paginación y la coincidencia por ID de oportunidad. La
+   coincidencia usa preferencias y ubicación y muestra la habilidad faltante.
+7. Guarda el proyecto y registra, lee y borra interés y descarte. Comprueba
+   que otra cuenta solo accede a su propia decisión.
+8. Envía la solicitud de conexión, rechaza un duplicado (`409`) e impide que la
+   acepten el remitente o una cuenta externa (`403`). El *owner* la acepta y ambas
+   cuentas leen el mismo ID de conversación desde su bandeja. Verifica el
+   rechazo, el aviso de rechazo y el retiro por el remitente.
 9. Intercambia dos mensajes, comprueba el orden del historial, el `404` para una
    cuenta externa, el `400` ante un remitente enviado por el cliente y las
-   notificaciones `NEW_MESSAGE` sin el texto del mensaje.
+   notificaciones `NEW_MESSAGE`. Lee de nuevo el estado de la notificación y
+   comprueba que una oportunidad cerrada ya no recibe solicitudes.
 10. Consulta PostgREST (`/rest/v1`) sin sesión y con sesión de usuario: las
     tablas de producto devuelven `401`/`403`; `project_members` solo devuelve las
     membresías propias.
@@ -70,8 +68,7 @@ Qué hace, en orden:
     historial de mensajes sigue disponible para sus participantes.
 
 Al terminar, incluso si falla, archiva el proyecto y devuelve la cuenta
-revisora a `USER`. Las cuatro cuentas quedan en la base local, igual que con
-`pnpm auth:verify`. El script no imprime tokens ni contraseñas.
+revisora a `USER`. Las cuentas de prueba quedan en la base local.
 
 | Variable | Valor por defecto | Uso |
 | --- | --- | --- |
@@ -79,16 +76,62 @@ revisora a `USER`. Las cuatro cuentas quedan en la base local, igual que con
 | `PULSO_SMOKE_SUPABASE_URL` | `http://127.0.0.1:54321` | Gateway de Auth y PostgREST |
 | `PULSO_SMOKE_SUPABASE_PUBLISHABLE_KEY` | `frontend/.env.development` o su plantilla | Clave pública de Auth |
 | `PULSO_SMOKE_DB_MODE` | `compose` | `compose` (`docker compose exec db`), `cli` (`docker exec`) o `skip` |
-| `PULSO_SMOKE_DB_CONTAINER` | `supabase_db_pulso` | Contenedor para el modo `cli` |
+| `PULSO_SMOKE_DB_CONTAINER` | `supabase_db_pulso` | Contenedor para el modo `cli`, incluso con un entorno aislado de Compose |
 | `PULSO_SMOKE_REVIEWER_EMAIL` / `PULSO_SMOKE_REVIEWER_PASSWORD` | vacío | Cuenta `MODERATOR`/`ADMIN` existente; obligatoria con `skip` |
 | `PULSO_SMOKE_EMAIL_DOMAIN` | `example.test` | Dominio de los correos temporales |
+| `PULSO_SMOKE_FRONTEND_URL` | vacío | Activa el recorrido adicional de Angular en un frontend ya levantado |
+| `PULSO_SMOKE_CDP_PORT` | `9222` | Puerto de depuración del navegador de prueba |
 
 Con la Supabase CLI (`pnpm db:up`) usa `PULSO_SMOKE_DB_MODE=cli` y la clave que
 muestra `pnpm db:status`. El paso 10 requiere la migración
 `20261121200000_restrict_project_member_grants.sql`; con Compose se aplica con
 `pnpm db:compose:seed`.
 
-### `pnpm smoke:verify` — recorrido de interfaz
+### Navegador con dos cuentas (PUL-111)
+
+Levanta Angular contra el mismo entorno de prueba y usa un perfil temporal de
+Chromium con depuración remota. Las URLs del frontend, Spring y Auth deben
+coincidir con la configuración de ese entorno.
+
+```sh
+chromium --headless --remote-debugging-port=9222 --user-data-dir="$(mktemp -d)" about:blank
+```
+
+```sh
+PULSO_SMOKE_FRONTEND_URL=http://localhost:4200 pnpm smoke:critical-path
+```
+
+La cuenta que se registra completa el onboarding, aplica los filtros, revisa
+los factores de coincidencia y registra, recarga y borra sus decisiones. Envía
+una solicitud a la oportunidad y otra al proyecto y prueba el duplicado.
+El *owner* acepta una y rechaza la otra. Las dos cuentas abren la misma
+conversación desde sus entradas persistentes. El *owner* lee el mensaje y
+comprueba el estado de su aviso después de marcarlo como leído y recargar.
+El remitente también retira una solicitud pendiente y comprueba su estado al
+recargar. El modo con acceso al contenedor vincula una etiqueta de catálogo
+al proyecto de prueba para verificar ese filtro. El modo `skip` omite la
+asociación de la etiqueta.
+
+#### Evidencia de PUL-111
+
+Validación del 22 de noviembre de 2026 en un entorno Compose aislado, con
+Spring y Supabase Auth locales.
+
+- `pnpm --filter @pulso/frontend test` — 304 pruebas con Node 24. Incluye
+  filtros, adaptadores HTTP, solicitudes, mensajes y notificaciones.
+- `pnpm backend:test` — 929 pruebas con Java 21 y Testcontainers, sin
+  omisiones. Incluye permisos por membresía, contexto público y acceso a
+  conversaciones con sesiones distintas.
+- `pnpm smoke:critical-path` con `PULSO_SMOKE_FRONTEND_URL` — 172 comprobaciones.
+  Chromium recorrió el flujo con dos sesiones, teclado a 1280×900 y 320×568,
+  y verificó la recarga de solicitudes, conversación y aviso leído. La
+  cuenta ajena recibió `404` al leer y al enviar un mensaje.
+- `pnpm build` — build Angular correcto con aviso de presupuesto inicial
+  de 500 kB. El paquete inicial pesó 620,71 kB.
+- `pnpm backend:build` — JAR generado. Gradle reutilizó la última ejecución
+  de pruebas.
+
+### `pnpm smoke:verify` — entorno Supabase CLI
 
 [`scripts/verify-browser-smoke.mjs`](../../scripts/verify-browser-smoke.mjs) se
 ejecuta dentro de `pnpm smoke:verify` (destructivo: reinicia la base de la CLI).
@@ -145,9 +188,11 @@ Correcciones:
 - La tarjeta de discovery declaraba `role="group"` sobre un `<article>`, un rol
   no permitido para ese elemento. Se quitó el rol.
 
-Tras las correcciones, axe no informa infracciones en las pantallas revisadas.
-La revisión usó datos simulados; queda pendiente repetir el recorrido de teclado
-con datos reales y con lector de pantalla.
+En PUL-32, axe no informó infracciones en las pantallas simuladas revisadas.
+El recorrido de PUL-111 usa Chromium con Spring y Supabase Auth reales e
+incluye la selección de etiqueta y el formulario por teclado en escritorio,
+y el envío de un mensaje con `Tab` y `Enter` en móvil. Sigue pendiente una
+revisión con lector de pantalla.
 
 ## Documentación alineada
 
@@ -170,8 +215,6 @@ actualizó al estado actual.
 La [especificación](../especificacion-general.md#27-alcance-funcional-objetivo)
 describe el alcance objetivo del producto. Esta versión no incluye:
 
-- interfaz para enviar solicitudes de conexión, conversar o ver notificaciones
-  (existen en la API);
 - recuperación de contraseña y gestión de cuenta;
 - silenciado, sanciones, panel administrativo completo y analítica;
 - verificación de identidad u organizaciones;

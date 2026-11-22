@@ -72,7 +72,7 @@ a {
 button, input, textarea, select, a {
   transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
-:where(button, a, input, textarea, select, [tabindex]):focus-visible {
+:where(button, a, input, textarea, select, summary, [tabindex]):focus-visible {
   outline: 3px solid var(--color-accent);
   outline-offset: 4px;
 }
@@ -570,7 +570,7 @@ textarea.field-input {
   overflow-wrap: anywhere;
   hyphens: auto;
 }
-/* Six destinations share 320px: tighten spacing so labels wrap inside their item instead of overlapping. */
+/* Let labels wrap within their destination at 320px. */
 @media (max-width: 23.75rem) {
   .mobile-nav {
     gap: 0.125rem;

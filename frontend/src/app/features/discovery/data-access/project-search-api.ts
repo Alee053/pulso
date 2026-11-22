@@ -15,6 +15,13 @@ export interface SearchFilters {
   hasOpenOpportunities?: boolean
 }
 
+export const searchMaxTags = 10
+
+export function hasSearchFilters(filters: SearchFilters): boolean {
+  return Boolean(filters.sector || filters.stage || filters.location?.trim()
+    || filters.tags?.length || filters.hasOpenOpportunities)
+}
+
 interface SearchResponseDto {
   data: StartupSummaryDto[]
   meta: {

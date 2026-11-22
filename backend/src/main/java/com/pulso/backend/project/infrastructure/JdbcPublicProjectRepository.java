@@ -82,6 +82,7 @@ public class JdbcPublicProjectRepository implements PublicProjectRepository {
                 coalesce((
                     select jsonb_agg(
                         jsonb_build_object(
+                            'id', opportunity.id,
                             'title', opportunity.title,
                             'opportunityType', opportunity.opportunity_type,
                             'description', opportunity.description,
@@ -259,6 +260,7 @@ public class JdbcPublicProjectRepository implements PublicProjectRepository {
     private List<PublicProjectDetail.Opportunity> parseOpportunities(String json) {
         List<PublicProjectDetail.Opportunity> opportunities = new ArrayList<>();
         forEachObject(json, node -> opportunities.add(new PublicProjectDetail.Opportunity(
+                uuid(node, "id"),
                 text(node, "title"),
                 text(node, "opportunityType"),
                 text(node, "description"),

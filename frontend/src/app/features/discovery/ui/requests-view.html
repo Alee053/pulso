@@ -1,0 +1,91 @@
+<main class="discovery-view">
+  <header class="discovery-view__heading">
+    <h1 #heading class="page-title" tabindex="-1">{{ strings.title }}</h1>
+  </header>
+
+  <div class="mb-4 flex flex-wrap gap-2">
+    <button type="button" class="contact-button"
+            [attr.aria-pressed]="inbox() === 'received'" [disabled]="responding() !== null"
+            (click)="switchInbox('received')">{{ strings.received }}</button>
+    <button type="button" class="contact-button"
+            [attr.aria-pressed]="inbox() === 'sent'" [disabled]="responding() !== null"
+            (click)="switchInbox('sent')">{{ strings.sent }}</button>
+    <button type="button" class="contact-button" [disabled]="loading() || responding() !== null"
+            (click)="loadRequests()">{{ strings.refresh }}</button>
+  </div>
+
+  @if (blocked()) {
+    <p role="status" class="status-message status-message--success mb-4">{{ blockStrings.blockSuccess }}</p>
+  }
+  @if (responseFailed()) {
+    <p role="alert" class="status-message status-message--error mb-4">{{ strings.responseFailed }}</p>
+  }
+
+  <ul class="grid gap-4">
+    @for (entry of entries(); track entry.request.id) {
+      <li class="panel flex flex-wrap items-start justify-between gap-3 p-4 [overflow-wrap:anywhere]">
+        <div class="min-w-0">
+          <h2 class="font-semibold">
+            @if (entry.projectName; as projectName) {
+              <a [href]="'/proyectos/' + entry.request.projectId" class="underline hover:text-[var(--color-accent)]">
+                {{ projectName }}
+              </a>
+            } @else {
+              {{ strings.project }}
+            }
+          </h2>
+          @if (entry.request.opportunityId) {
+            <p class="field-hint">{{ entry.opportunityTitle ?? strings.opportunity }}</p>
+          }
+          <p class="field-hint">{{ strings.reasons[entry.request.reason] }}</p>
+          @if (entry.request.message; as message) {
+            <p class="mt-1 whitespace-pre-wrap">{{ message }}</p>
+          }
+          <time class="field-hint mt-2 block" [attr.datetime]="entry.request.createdAt">
+            {{ entry.request.createdAt | date:'short' }}
+          </time>
+          <p aria-live="polite" class="mt-2 font-semibold text-[var(--color-accent)]">
+            {{ strings.statuses[entry.request.status] }}
+          </p>
+        </div>
+        <div class="grid gap-2">
+          @if (entry.conversationId; as conversationId) {
+            <a class="solid-button" [href]="conversationHref(conversationId)">{{ strings.conversation }}</a>
+          }
+          @if (entry.request.status === 'PENDING') {
+            @if (inbox() === 'received') {
+              <div class="flex flex-wrap gap-2">
+                <button type="button" class="solid-button" [disabled]="loading() || responding() !== null"
+                        (click)="respond(entry, 'accept', heading)">{{ strings.accept }}</button>
+                <button type="button" class="contact-button" [disabled]="loading() || responding() !== null"
+                        (click)="respond(entry, 'decline', heading)">{{ strings.decline }}</button>
+              </div>
+              <pulso-profile-block-action [profileId]="entry.request.senderProfileId"
+                                          (blocked)="onSenderBlocked(heading)" />
+            } @else {
+              <button type="button" class="contact-button" [disabled]="loading() || responding() !== null"
+                      (click)="respond(entry, 'withdraw', heading)">{{ strings.withdraw }}</button>
+            }
+          }
+        </div>
+      </li>
+    }
+  </ul>
+  @if (loading()) {
+    <div class="state-panel" role="status">
+      <span class="state-icon"><span class="spinner" aria-hidden="true"></span></span>
+      <h2>{{ strings.loading }}</h2>
+    </div>
+  } @else if (loadFailed()) {
+    <div class="state-panel">
+      <p role="alert">{{ strings.loadFailed }}</p>
+      <button type="button" class="contact-button" [disabled]="responding() !== null"
+              (click)="loadMore()">{{ common.retry }}</button>
+    </div>
+  } @else if (hasMore()) {
+    <button type="button" class="contact-button mt-4" [disabled]="responding() !== null"
+            (click)="loadMore()">{{ strings.more }}</button>
+  } @else if (entries().length === 0) {
+    <p class="state-panel" role="status">{{ inbox() === 'received' ? strings.emptyReceived : strings.emptySent }}</p>
+  }
+</main>

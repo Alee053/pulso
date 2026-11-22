@@ -202,8 +202,8 @@ Response `200 OK`:
 }
 ```
 
-The Angular discovery screen currently sends only the text query (`q`); the other
-filters are available to API clients.
+Angular combines the text and selected filters, including repeated tag slugs.
+Changing or clearing the filters restarts pagination at offset zero.
 
 ## `GET /api/v1/projects/{projectRef}/opportunity-matches` — profile and opportunity match (S4.4)
 
@@ -214,8 +214,9 @@ client. An anonymous request receives `401`; a project that is missing, not
 `PUBLISHED`, or whose sector is inactive receives the same `404` as the public
 project detail. A project without open opportunities returns `"data": []`.
 
-Matches follow the order of the open opportunities in the public project detail
-(newest first, at most 50), so a client can pair them by position.
+Matches follow the order of open opportunities (newest first, at most 50).
+Join a match's `opportunityId` to the public opportunity's `id`. The two
+responses can reflect different snapshots of the same project.
 
 Each match has a `score` from 0 to 100 and the factors behind it. The score is
 deterministic: it is computed only from stored data, with no machine learning,
@@ -345,6 +346,18 @@ Response `200 OK`:
         "displayTitle": "Co-fundadora",
         "isFeatured": true
       }
+    ],
+    "opportunities": [
+      {
+        "id": "55555555-5555-5555-5555-555555555555",
+        "title": "Colaboración en el prototipo",
+        "opportunityType": "COLLABORATION",
+        "description": "Apoyo para probar el prototipo.",
+        "city": "Cochabamba",
+        "department": null,
+        "remoteAllowed": true,
+        "requiredSkills": ["Diseño de producto"]
+      }
     ]
   }
 }
@@ -359,6 +372,10 @@ The response maps only public product data from the canonical model:
 | `tags` | `project_tags` → `tags` | Includes only active tags' `id`, `slug`, and `name`; an empty relation is returned as `[]`. |
 | `externalLinks` | `projects.external_links` | Includes only public `{type, url, label}` entries; absent links are returned as `[]`. |
 | `members` | `project_members` → `profiles` | Includes only members with `membership_status = ACTIVE`, `is_public = true`, and a linked active, public profile without a soft deletion (`account_status = ACTIVE`, `profile_visibility = PUBLIC`, `deleted_at IS NULL`). |
+| `opportunities` | `project_opportunities` | Includes up to 50 open opportunities with a stable public ID. |
+
+The canonical URL returned by `GET /api/v1/projects/{projectRef}/share` opens
+`/proyectos/{slug}` in Angular. The public detail is visible before sign-in.
 
 Each public member exposes only `profileId`, `displayName`,
 `avatarStoragePath`, `displayTitle`, and `isFeatured`. The contract never
@@ -655,10 +672,10 @@ catalog skill remains unchanged. A missing opportunity or association returns
 
 The public `GET /api/v1/projects/{projectRef}` contract retains its existing
 published-project and active-sector filters. Its `opportunities` array contains
-up to the 50 most recent `OPEN` opportunities. Each item exposes public title,
-type, description, location, remote availability, and names of active
-`REQUIRED` skills; it omits IDs, `PREFERRED` skills, creator/audit information,
-and non-open opportunities.
+up to the 50 most recent `OPEN` opportunities. Each item exposes a stable `id`
+for matching and contextual connection requests, along with its title, type,
+description, location, remote availability, and active `REQUIRED` skill names.
+Skill identifiers, preferred skills, creator and audit information stay private.
 
 ## `POST /api/v1/projects/{projectId}/connection-intents` — create a contextual connection request (PUL-25)
 
@@ -683,11 +700,12 @@ curl -X POST \
 omitted, the request targets the project generally; when present, the
 opportunity must belong to that project and be `OPEN`. In both cases the
 project must be `PUBLISHED` and its sector active, matching the public project
-detail contract. The sender's profile must be active. If every other active
-team member is separated from the sender by a profile block in either direction,
-the request returns `403 connection_intent_forbidden`. If some team members
-can receive the request, only those members are notified. Projects with no
-other active members may still receive a pending request. Clients cannot
+detail contract. The sender's profile must be active. A block in either
+direction restricts contact with an active project owner or admin. If every
+other active owner or admin is blocked, the API returns
+`403 connection_intent_forbidden`. The other unblocked active owners and
+admins receive notices. A project without another active owner or admin may
+still receive a pending request. Clients cannot
 provide `senderProfileId`, `status`, or other server-owned fields.
 
 Response `201 Created`:
@@ -751,22 +769,58 @@ The list takes `offset` (default `0`, maximum `100000`) and `limit`
 Limits are configured under `pulso.profile-blocks.*`.
 Missing or invalid authentication returns `401`.
 
-## `GET /api/v1/connection-intents/pending` — incoming requests
+## `GET /api/v1/connection-intents/{inbox}` — connection requests
 
-Lists pending requests for projects where the caller is an active `OWNER`
-or `ADMIN`. The caller's own requests and requests from profiles separated
-from the caller by a block in either direction are excluded. A blocked
-request stays pending for other eligible project members.
+The JWT subject determines which rows are visible in each inbox.
 
-Returns an array of the same request objects as the creation endpoint, ordered
-by creation time and ID, newest first. The array respects `offset` (default
+- `pending` returns pending requests for projects where the caller is an active
+  `OWNER` or `ADMIN`, in the creation endpoint's existing array format.
+- `received` returns the history for the same project roles, including pending
+  and processed requests. Both incoming views exclude the caller's own requests
+  and hide requests across blocks. Established conversations remain available in
+  the history to their active participants.
+- `sent` returns only the caller's own requests, including pending and processed
+  states.
+
+All arrays are ordered by creation time and ID, newest first. They respect `offset` (default
 `0`, maximum `100000`) and `limit` (default `20`, range `1..50`),
 configured under `pulso.connection-inbox.*`. Invalid windows return `400`.
 Missing or invalid authentication returns `401`.
 
-`POST /api/v1/connection-intents/{connectionIntentId}/decline` lets a project
-member decline a pending request. As with acceptance, a block between the
-member and the sender returns `403 connection_intent_forbidden`.
+The `sent` and `received` arrays wrap each request:
+
+```json
+{
+  "request": {
+    "id": "66666666-6666-6666-6666-666666666666",
+    "projectId": "33333333-3333-3333-3333-333333333333",
+    "opportunityId": "55555555-5555-5555-5555-555555555555",
+    "senderProfileId": "11111111-1111-1111-1111-111111111111",
+    "reason": "COLLABORATE",
+    "message": null,
+    "status": "ACCEPTED",
+    "createdAt": "2026-11-03T12:00:00Z"
+  },
+  "projectName": "EcoPack Bolivia",
+  "opportunityTitle": "Colaboración en el prototipo",
+  "conversationId": "28444444-4444-4444-8444-444444444444"
+}
+```
+
+`request` has the same fields as the creation response, including the project
+and optional opportunity identifiers. `projectName` and `opportunityTitle`
+are nullable and use currently public context. `conversationId` is nullable
+and appears only for a caller who is an active participant.
+
+`POST /api/v1/connection-intents/{connectionIntentId}/decline` requires an
+active project `OWNER` or `ADMIN` and no block with the sender. It returns
+the request with `status: DECLINED` and notifies the sender.
+`POST /api/v1/connection-intents/{connectionIntentId}/withdraw` requires the
+sender's session. It returns the request with `status: WITHDRAWN`.
+Both actions require `PENDING` and return `409 connection_intent_conflict` if
+the current state prevents the action. A missing request returns `404`, missing
+authentication returns `401`, and a denied action returns
+`403 connection_intent_forbidden`.
 
 ## `GET /api/v1/projects/{projectId}/members` — team administration list (PUL-85)
 
@@ -1422,7 +1476,7 @@ Accepts a pending contextual request for a project and creates its private
 the backend derives the responder from the JWT subject and does not accept a
 client-controlled profile, project, role, or participant list.
 
-Any active `OWNER`, `ADMIN`, or `MEMBER` of the request's project can accept it.
+An active `OWNER` or `ADMIN` of the request's project can accept it.
 The initiator cannot accept their own request. If either profile has blocked the
 other, the operation returns `403` and leaves the request pending.
 
@@ -1462,7 +1516,7 @@ original acceptance or the intent advanced to `CONVERTED`. A different
 responder or a request in another terminal state receives `409` with code
 `connection_intent_conflict`.
 
-Missing requests return `404`. Missing active membership and profile blocks
+Missing requests return `404`. Missing active owner/admin membership and profile blocks
 return `403` with code `connection_intent_forbidden`. Missing authentication
 returns `401`, and sanitized database failures return `503`.
 
@@ -1607,11 +1661,12 @@ Response `200 OK`:
 }
 ```
 
-`type` is `CONNECTION_REQUEST` (to the active members of the project, with
-`projectId` and `connectionIntentId`), `CONNECTION_RESPONSE` (to the person who
-sent the request, with `conversationId` and `payload.response`) or
-`NEW_MESSAGE` (to the other participants, with `conversationId` and
-`payload.messageId`). The model also reserves `USER_INTERESTED`,
+`CONNECTION_REQUEST` goes to the unblocked active owners and admins of the
+project, with `projectId` and `connectionIntentId`. `CONNECTION_RESPONSE` goes
+to the sender with `connectionIntentId` and `payload.response`. `ACCEPTED`
+includes the conversation ID. `DECLINED` returns `conversationId: null`.
+`NEW_MESSAGE` goes to the other active participants with `conversationId` and
+`payload.messageId`. The model also reserves `USER_INTERESTED`,
 `MEMBERSHIP_UPDATE`, `PROJECT_APPROVED`, `PROJECT_VERIFIED` and `ADMIN_UPDATE`,
 which no feature creates yet. Clients should present a notice from its `type`
 and ids; `title` is a stable English label. The message text is never included.

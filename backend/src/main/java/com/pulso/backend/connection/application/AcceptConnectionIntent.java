@@ -33,7 +33,7 @@ public class AcceptConnectionIntent {
             return repository.findConversation(connectionIntent.id())
                     .orElseThrow(ConnectionIntentConflictException::new);
         }
-        if (!repository.hasActiveProjectMembership(
+        if (!repository.canManageProjectRequests(
                 connectionIntent.projectId(),
                 authenticatedProfileId)) {
             throw ConnectionIntentPermissionException.membershipRequired();

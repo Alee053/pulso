@@ -71,6 +71,7 @@ public record PublicProjectDetail(
     }
 
     public record Opportunity(
+            UUID id,
             String title,
             String opportunityType,
             String description,

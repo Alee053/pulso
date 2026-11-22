@@ -5,11 +5,11 @@
 S5.5 adds the essential notices that tell a person when to review a connection
 request or a conversation: a new connection request, the answer to a request,
 and a new message. A person can list their own notifications, separate the read
-from the unread ones, and mark one as read.
+from the unread ones, and mark one as read. PUL-111 adds the Angular inbox and
+navigation badge using the server's unread count.
 
 Preferences, muting, email or push delivery, expiry policies, and grouping of
-many messages into one notice are separate capabilities. The Angular inbox is
-not part of this change.
+many messages into one notice are separate capabilities.
 
 ## Persistence
 
@@ -45,14 +45,17 @@ one SQL statement per event:
 
 | Event | Created by | Recipients |
 | --- | --- | --- |
-| `CONNECTION_REQUEST` | `CreateConnectionIntent` | Active members of the project, except the sender and anyone separated from the sender by a block in either direction |
+| `CONNECTION_REQUEST` | `CreateConnectionIntent` | Active project owners and admins who are neither the sender nor separated from them by a block |
 | `CONNECTION_RESPONSE` | `AcceptConnectionIntent` | The person who sent the request |
+| `CONNECTION_RESPONSE` | `DeclineConnectionIntent` | The person who sent the request |
 | `NEW_MESSAGE` | `SendTextMessage` | The other active participants of the conversation |
 
-Retrying an acceptance that was already completed returns the existing
-conversation without creating another notice. Only acceptance exists as a
-response today, so `CONNECTION_RESPONSE` carries `response: ACCEPTED`; declining
-can reuse the type with a different response when it exists.
+Retrying an acceptance returns the conversation and preserves the notice.
+An accepted response carries `response: ACCEPTED` and links to the
+conversation. A declined response carries `response: DECLINED` and links to
+sent requests. A new request links to received requests, and a new message
+links to its conversation. Angular displays the notice type in the active
+language.
 
 ## Listing and reading
 

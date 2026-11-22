@@ -23,6 +23,8 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 import com.pulso.backend.connection.application.AcceptConnectionIntent;
 import com.pulso.backend.connection.application.ConnectionIntentAcceptanceRepository;
 import com.pulso.backend.connection.domain.AcceptedConnectionConversation;
+import com.pulso.backend.connection.domain.ConnectionInboxEntry;
+import com.pulso.backend.connection.domain.ConnectionInboxView;
 import com.pulso.backend.connection.domain.ConnectionIntent;
 import com.pulso.backend.connection.domain.ConnectionIntentReason;
 import com.pulso.backend.discovery.api.ApiExceptionHandler;
@@ -145,7 +147,7 @@ class ConnectionIntentAcceptanceControllerTest {
         }
 
         @Override
-        public boolean hasActiveProjectMembership(UUID projectId, UUID profileId) {
+        public boolean canManageProjectRequests(UUID projectId, UUID profileId) {
             return true;
         }
 
@@ -178,7 +180,8 @@ class ConnectionIntentAcceptanceControllerTest {
     }
 
     @Override
-        public java.util.List<ConnectionIntent> findPendingByProjectMembership(UUID profileId, int offset, int limit) {
+        public java.util.List<ConnectionInboxEntry> findInbox(
+                UUID profileId, ConnectionInboxView view, int offset, int limit) {
             return java.util.List.of();
         }
     }

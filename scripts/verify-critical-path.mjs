@@ -25,6 +25,7 @@ const databaseContainer = process.env.PULSO_SMOKE_DB_CONTAINER ?? 'supabase_db_p
 const emailDomain = process.env.PULSO_SMOKE_EMAIL_DOMAIN ?? 'example.test'
 const reviewerEmail = process.env.PULSO_SMOKE_REVIEWER_EMAIL ?? ''
 const reviewerPassword = process.env.PULSO_SMOKE_REVIEWER_PASSWORD ?? ''
+const browserFrontend = process.env.PULSO_SMOKE_FRONTEND_URL
 
 const runId = `${Date.now().toString(36)}${randomBytes(3).toString('hex')}`
 const password = `Pulso-Smoke-${randomBytes(9).toString('base64url')}`
@@ -88,11 +89,14 @@ async function main() {
     label: 'los catálogos activos están disponibles',
   })
   const sector = catalogs.data?.sectors?.[0]
+  const skill = catalogs.data?.skills?.[0]
+  const tag = catalogs.data?.tags?.[0]
   check(Boolean(sector?.id), 'existe al menos un sector activo para el recorrido')
+  check(Boolean(skill?.id) && uuidPattern.test(tag?.id ?? ''), 'hay una habilidad y una etiqueta activas')
   for (const [account, intention] of [[owner, 'FIND_PARTNERS'], [interested, 'COLLABORATE']]) {
     await expectStatus('PATCH', '/api/v1/me', {
       token: account.token,
-      body: { displayName: `Smoke ${account.label} ${runId}` },
+      body: { displayName: `Smoke ${account.label} ${runId}`, city: 'Cochabamba' },
       expected: 200,
       label: `la cuenta ${account.label} completa su nombre visible`,
     })
@@ -102,6 +106,7 @@ async function main() {
         intentions: [intention],
         preferredSectors: [sector.id],
         preferredStages: ['MVP'],
+        preferredTags: [tag.id],
         completeOnboarding: true,
       },
       expected: 200,
@@ -193,6 +198,26 @@ async function main() {
   check(decision.status === 'PUBLISHED' && Boolean(decision.publishedAt), 'el proyecto queda PUBLISHED')
 
   step('5. Discovery')
+  const opportunityTitle = 'Colaboración para la prueba de humo'
+  const opportunity = await expectStatus('POST', `/api/v1/projects/${projectId}/opportunities`, {
+    token: owner.token,
+    body: {
+      title: opportunityTitle, description: 'Oportunidad de prueba temporal.',
+      opportunityType: 'COLLABORATION', city: 'Cochabamba', remoteAllowed: false,
+    },
+    expected: 201,
+    label: 'la cuenta owner abre una oportunidad',
+  })
+  await expectStatus('POST', `/api/v1/projects/${projectId}/opportunities/${opportunity.id}/skills`, {
+    token: owner.token,
+    body: { skillId: skill.id, importance: 'REQUIRED' },
+    expected: 201,
+    label: 'la cuenta owner asocia una habilidad requerida',
+  })
+  const filterTag = databaseMode === 'skip' ? null : tag
+  if (filterTag) {
+    runSql(`insert into public.project_tags (project_id, tag_id) values ('${projectId}', '${filterTag.id}')`)
+  }
   const detail = await expectStatus('GET', `/api/v1/projects/${projectSlug}`, {
     token: interested.token,
     expected: 200,
@@ -204,11 +229,47 @@ async function main() {
     label: 'el detalle público también es visible sin sesión',
   })
   check(detail.data?.reviewNote === undefined, 'el detalle público no expone la nota de revisión')
-  const search = await expectStatus('GET', `/api/v1/projects/search?q=${encodeURIComponent(projectName)}`, {
+  const share = await expectStatus('GET', `/api/v1/projects/${projectSlug}/share`, {
+    expected: 200,
+    label: 'el proyecto publicado ofrece un enlace compartible sin sesión',
+  })
+  const sharePath = new URL(share.url).pathname
+  check(sharePath === `/proyectos/${projectSlug}`, 'el enlace compartido conserva la ruta pública por slug')
+  const publicOpportunity = detail.data?.opportunities?.find((item) => item.id === opportunity.id)
+  check(publicOpportunity?.requiredSkills.includes(skill.name) && publicOpportunity.createdByProfileId === undefined,
+    'el detalle usa el identificador estable de la oportunidad y los datos públicos')
+  const matches = await expectStatus('GET', `/api/v1/projects/${projectSlug}/opportunity-matches`, {
+    token: interested.token,
+    expected: 200,
+    label: 'la cuenta interesada lee la coincidencia de oportunidad',
+  })
+  const match = matches.data?.find((item) => item.opportunityId === opportunity.id)
+  check(match?.missingFactors.includes('SKILLS')
+    && ['INTENTION', 'SECTOR', 'STAGE', 'LOCATION'].every((key) =>
+      match.factors.some((factor) => factor.key === key && factor.status === 'MATCHED'))
+    && match.factors.some((factor) => factor.key === 'LOCATION' && factor.reason === 'SAME_CITY'),
+  'la coincidencia usa el perfil y el onboarding y devuelve los datos de perfil faltantes')
+  if (filterTag) {
+    check(match.factors.some((factor) => factor.key === 'INTERESTS' && factor.status === 'MATCHED'),
+      'la coincidencia usa la etiqueta del catálogo seleccionada en onboarding')
+  }
+  const filters = new URLSearchParams({
+    q: projectName, sector: sector.slug, stage: 'MVP', location: 'Cochabamba',
+    hasOpenOpportunities: 'true', limit: '1',
+  })
+  if (filterTag) filters.append('tags', filterTag.slug)
+  const search = await expectStatus('GET', `/api/v1/projects/search?${filters}`, {
     expected: 200,
     label: 'la búsqueda pública responde',
   })
   check(search.data?.some((item) => item.id === projectId), 'la búsqueda encuentra el proyecto publicado')
+  filters.set('offset', '1')
+  const nextSearch = await expectStatus('GET', `/api/v1/projects/search?${filters}`, {
+    expected: 200,
+    label: 'la búsqueda combinada admite paginación',
+  })
+  check(nextSearch.meta?.offset === 1 && nextSearch.meta?.totalCount === 1 && nextSearch.data?.length === 0,
+    'la segunda página conserva el total y no repite el resultado')
   const feed = await expectStatus('GET', '/api/v1/me/discovery-feed?limit=50', {
     token: interested.token,
     expected: 200,
@@ -238,19 +299,23 @@ async function main() {
     label: 'otra cuenta consulta su propia decisión',
   })
   check(ownerFeedback.feedbackType === null, 'la decisión de interés no es visible para otra cuenta')
+  await verifyDiscoveryDecisions(interested, projectId)
 
   step('7. Conexión')
   const intent = await expectStatus('POST', `/api/v1/projects/${projectId}/connection-intents`, {
     token: interested.token,
-    body: { reason: 'COLLABORATE', message: 'Hola, me interesa colaborar (prueba de humo).' },
+    body: {
+      reason: 'COLLABORATE', message: 'Hola, me interesa colaborar (prueba de humo).',
+      opportunityId: publicOpportunity.id,
+    },
     expected: 201,
     label: 'la cuenta interesada envía una solicitud de conexión',
   })
-  check(intent.status === 'PENDING' && intent.senderProfileId === interested.id,
-    'la solicitud queda PENDING con el remitente del JWT')
+  check(intent.status === 'PENDING' && intent.senderProfileId === interested.id && intent.opportunityId === opportunity.id,
+    'la solicitud queda PENDING con el remitente del JWT y la oportunidad elegida')
   await expectStatus('POST', `/api/v1/projects/${projectId}/connection-intents`, {
     token: interested.token,
-    body: { reason: 'COLLABORATE' },
+    body: { reason: 'COLLABORATE', opportunityId: publicOpportunity.id },
     expected: 409,
     label: 'una segunda solicitud pendiente al mismo contexto devuelve 409',
   })
@@ -292,6 +357,14 @@ async function main() {
   const responseNotice = await findNotification(interested, (item) =>
     item.type === 'CONNECTION_RESPONSE' && item.conversationId === conversationId)
   check(Boolean(responseNotice), 'la cuenta interesada recibe CONNECTION_RESPONSE con la conversación')
+  for (const [account, inbox] of [[interested, 'sent'], [owner, 'received']]) {
+    const entries = await expectStatus('GET', `/api/v1/connection-intents/${inbox}`, {
+      token: account.token, expected: 200, label: `la cuenta ${account.label} vuelve a leer su bandeja`,
+    })
+    check(entries.some((item) => item.request.id === intent.id && item.request.status === 'ACCEPTED'
+      && item.conversationId === conversationId), `la cuenta ${account.label} recupera la misma conversación`)
+  }
+  await verifyConnectionResponses(owner, interested, projectId)
 
   step('8. Mensaje')
   const firstBody = 'Gracias por aceptar. ¿Coordinamos una reunión?'
@@ -347,6 +420,35 @@ async function main() {
     label: 'la cuenta owner marca la notificación como leída',
   })
   check(read.read === true, 'la notificación queda leída')
+  const reloadedNotice = await findNotification(owner, (item) => item.id === messageNotice.id)
+  check(reloadedNotice?.read === true && reloadedNotice.readAt === read.readAt,
+    'la lectura de la notificación se conserva al volver a consultar')
+
+  if (browserFrontend) {
+    step('8b. Interfaz Angular con dos cuentas')
+    const browser = spawnSync(process.execPath, [resolve(repositoryRoot, 'scripts/verify-browser-smoke.mjs')], {
+      env: {
+        ...process.env,
+        PULSO_SMOKE_BACKEND_URL: apiUrl,
+        PULSO_SMOKE_CONTACT_FIXTURE: JSON.stringify({
+          ownerEmail: owner.email, ownerPassword: password, projectName, sharePath,
+          sector: sector.slug, tag: filterTag?.name,
+        }),
+      },
+      stdio: 'inherit',
+      timeout: 180_000,
+    })
+    check(browser.status === 0, 'el flujo de navegador con dos cuentas concluye')
+  }
+
+  await expectStatus('POST', `/api/v1/projects/${projectId}/opportunities/${opportunity.id}/actions`, {
+    token: owner.token, body: { action: 'CLOSE' }, expected: 200, label: 'la cuenta owner cierra la oportunidad',
+  })
+  const unavailable = await expectStatus('POST', `/api/v1/projects/${projectId}/connection-intents`, {
+    token: interested.token, body: { reason: 'COLLABORATE', opportunityId: opportunity.id },
+    expected: 404, label: 'una oportunidad cerrada ya no recibe solicitudes',
+  })
+  check(unavailable.code === 'connection_context_unavailable', 'la API identifica el contexto que dejó de estar disponible')
 
   step('9. Acceso directo a tablas (RLS y grants)')
   for (const table of ['projects', 'project_members', 'connection_intents', 'conversations', 'messages', 'notifications']) {
@@ -379,6 +481,75 @@ async function main() {
   check(history2.data?.length === 2, 'archivar el proyecto conserva los mensajes')
 
   console.log(`\nRecorrido crítico validado: ${passedChecks} comprobaciones correctas.`)
+}
+
+async function verifyDiscoveryDecisions(account, projectId) {
+  const token = account.token
+  const path = `/api/v1/me/project-feedback/${projectId}`
+  let decision = await expectStatus('GET', path, {
+    token, expected: 200, label: 'la cuenta recupera su interés persistido',
+  })
+  check(decision.feedbackType === 'INTERESTED', 'la lectura de la decisión devuelve INTERESTED')
+  await expectStatus('PUT', `/api/v1/me/saved-projects/${projectId}`, {
+    token, expected: 200, label: 'guardar el proyecto es una acción independiente',
+  })
+  for (const feedbackType of ['INTERESTED', 'DISMISSED']) {
+    await expectStatus('PUT', path, {
+      token, body: { feedbackType }, expected: 200, label: `la cuenta registra ${feedbackType}`,
+    })
+    decision = await expectStatus('GET', path, {
+      token, expected: 200, label: `la cuenta vuelve a leer ${feedbackType}`,
+    })
+    check(decision.feedbackType === feedbackType, `la lectura conserva ${feedbackType}`)
+    const cleared = await expectStatus('DELETE', path, {
+      token, expected: 200, label: `la cuenta borra ${feedbackType}`,
+    })
+    check(cleared.feedbackType === null, 'el borrado devuelve la decisión vacía')
+  }
+  decision = await expectStatus('GET', path, {
+    token, expected: 200, label: 'la cuenta vuelve a cargar después de borrar',
+  })
+  check(decision.feedbackType === null, 'no queda interés ni descarte')
+  const saved = await expectStatus('GET', '/api/v1/me/saved-projects', {
+    token, expected: 200, label: 'la cuenta consulta sus proyectos guardados',
+  })
+  check(saved.data.some((item) => item.id === projectId), 'borrar decisiones conserva el proyecto guardado')
+}
+
+async function verifyConnectionResponses(owner, sender, projectId) {
+  const create = () => expectStatus('POST', `/api/v1/projects/${projectId}/connection-intents`, {
+    token: sender.token, body: { reason: 'OTHER' }, expected: 201,
+    label: 'la cuenta envía una solicitud general al proyecto',
+  })
+  const general = await create()
+  const path = '/api/v1/connection-intents'
+  const pending = await expectStatus('GET', `${path}/sent`, {
+    token: sender.token, expected: 200, label: 'el remitente consulta sus solicitudes enviadas',
+  })
+  check(pending.some((entry) => entry.request.id === general.id && entry.request.status === 'PENDING'),
+    'la solicitud general aparece pendiente para su remitente')
+  await expectStatus('POST', `${path}/${general.id}/withdraw`, {
+    token: owner.token, expected: 403, label: 'el owner no puede retirar una solicitud ajena',
+  })
+  const declined = await expectStatus('POST', `${path}/${general.id}/decline`, {
+    token: owner.token, expected: 200, label: 'el owner rechaza la solicitud general',
+  })
+  check(declined.status === 'DECLINED', 'la respuesta del servidor indica DECLINED')
+  const rejectedNotice = await findNotification(sender, (item) => item.connectionIntentId === general.id
+    && item.type === 'CONNECTION_RESPONSE' && item.payload.response === 'DECLINED')
+  check(rejectedNotice?.conversationId === null, 'el remitente recibe el aviso de rechazo sin conversación')
+
+  const second = await create()
+  const withdrawn = await expectStatus('POST', `${path}/${second.id}/withdraw`, {
+    token: sender.token, expected: 200, label: 'el remitente retira una solicitud propia pendiente',
+  })
+  check(withdrawn.status === 'WITHDRAWN', 'la respuesta del servidor indica WITHDRAWN')
+  const sent = await expectStatus('GET', `${path}/sent`, {
+    token: sender.token, expected: 200, label: 'el remitente vuelve a cargar sus solicitudes',
+  })
+  check(sent.some((entry) => entry.request.id === general.id && entry.request.status === 'DECLINED')
+    && sent.some((entry) => entry.request.id === second.id && entry.request.status === 'WITHDRAWN'),
+  'la bandeja conserva el rechazo y el retiro')
 }
 
 async function assertProjectHidden(projectId, projectSlug, projectName, viewer, status) {

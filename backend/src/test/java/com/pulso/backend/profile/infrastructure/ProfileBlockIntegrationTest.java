@@ -222,6 +222,56 @@ class ProfileBlockIntegrationTest {
         mvc.perform(get(PENDING).with(actor(OWNER))).andExpect(jsonPath("$[0].id").value(intent.toString()));
         mvc.perform(post("/api/v1/connection-intents/{id}/accept", intent).with(actor(ADMIN)))
                 .andExpect(status().isOk());
+
+        String conversationId = jdbc.sql("select id from public.conversations where connection_intent_id = :intent")
+                .param("intent", intent).query(UUID.class).single().toString();
+        mvc.perform(get("/api/v1/connection-intents/sent").with(actor(SENDER)))
+                .andExpect(jsonPath("$[0].request.status").value("ACCEPTED"))
+                .andExpect(jsonPath("$[0].conversationId").value(conversationId));
+        mvc.perform(get("/api/v1/connection-intents/received").with(actor(ADMIN)))
+                .andExpect(jsonPath("$[0].conversationId").value(conversationId));
+        mvc.perform(get("/api/v1/connection-intents/received").with(actor(OWNER)))
+                .andExpect(jsonPath("$[0].request.status").value("ACCEPTED"))
+                .andExpect(jsonPath("$[0].conversationId").isEmpty());
+    }
+
+    @Test
+    void onlyActiveManagersCanRespondAndOnlyTheSenderCanWithdraw() throws Exception {
+        jdbc.sql("""
+                insert into public.project_members (project_id, profile_id, role, membership_status, created_by_profile_id)
+                values (:project, :member, 'MEMBER', 'ACTIVE', :owner)
+                """).param("project", PROJECT).param("member", ADMIN).param("owner", OWNER).update();
+
+        request(SENDER, PROJECT, null).andExpect(status().isCreated());
+        UUID intent = jdbc.sql("select id from public.connection_intents").query(UUID.class).single();
+        String root = "/api/v1/connection-intents";
+        for (String box : List.of("sent", "received", "pending")) {
+            mvc.perform(get(root + "/" + box)).andExpect(status().isUnauthorized());
+        }
+        mvc.perform(get(root + "/received").with(actor(ADMIN))).andExpect(jsonPath("$").isEmpty());
+        mvc.perform(get(root + "/sent").with(actor(OWNER))).andExpect(jsonPath("$").isEmpty());
+        for (String action : List.of("accept", "decline")) {
+            mvc.perform(post(root + "/{id}/" + action, intent).with(actor(ADMIN)))
+                    .andExpect(status().isForbidden());
+        }
+        mvc.perform(post(root + "/{id}/withdraw", intent)).andExpect(status().isUnauthorized());
+        mvc.perform(post(root + "/{id}/withdraw", intent).with(actor(OWNER))).andExpect(status().isForbidden());
+        mvc.perform(post(root + "/{id}/withdraw", intent).with(actor(SENDER)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("WITHDRAWN"));
+        mvc.perform(get(root + "/sent").with(actor(SENDER)))
+                .andExpect(jsonPath("$[0].request.status").value("WITHDRAWN"));
+
+        request(SENDER, PROJECT, null).andExpect(status().isCreated());
+        UUID pending = jdbc.sql("select id from public.connection_intents where status = 'PENDING'")
+                .query(UUID.class).single();
+        mvc.perform(post(root + "/{id}/decline", pending).with(actor(OWNER)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("DECLINED"));
+        mvc.perform(get(root + "/received").with(actor(OWNER)))
+                .andExpect(jsonPath("$[?(@.request.status == 'DECLINED')]").isNotEmpty());
+        mvc.perform(get("/api/v1/me/notifications").with(actor(SENDER)))
+                .andExpect(jsonPath("$.data[0].type").value("CONNECTION_RESPONSE"))
+                .andExpect(jsonPath("$.data[0].payload.response").value("DECLINED"))
+                .andExpect(jsonPath("$.data[0].conversationId").isEmpty());
     }
 
     @Test

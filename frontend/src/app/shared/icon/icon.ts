@@ -8,6 +8,7 @@ export type IconName =
     | 'arrow-up'
     | 'arrow-up-right'
     | 'at-sign'
+    | 'bell'
     | 'bookmark'
     | 'calendar-days'
     | 'check'
@@ -73,6 +74,7 @@ export class IconComponent {
             'M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3 7.2',
         ],
         bookmark: ['m6 4 6-2 6 2v16l-6-3-6 3Z'],
+        bell: ['M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9', 'M10 21a2 2 0 0 0 4 0'],
         'calendar-days': [
             'M8 2v4',
             'M16 2v4',

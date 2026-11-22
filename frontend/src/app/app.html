@@ -57,10 +57,11 @@
             {{ message }}
         </div>
 
-        <pulso-navigation-bar [activeView]="session.activeView()"
+        <pulso-navigation-bar [activeView]="activeView()"
                               [projectCreationEnabled]="featureFlags.isEnabled('project_creation')"
                               [savedCount]="session.savedCount()"
                               [interestedCount]="session.interestedCount()"
+                              [unreadCount]="unreadCount() ?? 0"
                               (navigated)="navigateTo($event)"
                               (exampleRequested)="session.openProjectDetail(session.catalog()[0]?.id || 'eco-pack')" />
 
@@ -76,7 +77,7 @@
                     <pulso-icon name="arrow-up-right" [size]="16" />{{ common.exampleProject }}
                 </button>
             </header>
-            <ng-container [ngSwitch]="session.activeView()">
+            <ng-container [ngSwitch]="activeView()">
                 <pulso-discovery-view *ngSwitchCase="'discover'"
                                       [activeSignals]="session.activeSignals()"
                                       [currentStartup]="session.currentStartup()"
@@ -84,7 +85,7 @@
                                       [feedRemaining]="session.feed().length"
                                       [isLoading]="session.isLoading()"
                                       [isSavingInteraction]="session.isSavingInteraction()"
-                                      [isModalOpen]="selectedStartup() !== null"
+                                      [isModalOpen]="selectedStartup() !== null || linkedProjectId() !== null"
                                       [totalStartups]="session.catalog().length"
                                       [savedIds]="session.savedIds()"
                                       [isSearching]="session.isSearching()"
@@ -94,8 +95,10 @@
                                       [searchResults]="session.searchResults()"
                                       [searchTotal]="session.searchTotal()"
                                       [activeFilters]="session.searchFilters()"
-                                     [sectorsList]="session.referenceCatalogs().sectors"
+                                      [sectorsList]="session.referenceCatalogs().sectors"
+                                      [tagsList]="session.referenceCatalogs().tags"
                                       (searchChanged)="session.search($event)"
+                                      (searchCleared)="session.clearSearch()"
                                       (searchMoreRequested)="session.loadMoreSearch()"
                                       (searchRetried)="session.retrySearch()"
                                       (decisionMade)="session.makeDecision($event)"
@@ -120,7 +123,17 @@
                                      [catalogsErrorMessage]="session.catalogsErrorMessage()"
                                      (catalogsRetryRequested)="session.retryReferenceCatalogs()" />
 
-                 <pulso-requests-view *ngSwitchCase="'requests'" />
+                <pulso-requests-view *ngSwitchCase="'requests'" [initialInbox]="initialInbox()" />
+
+                <pulso-notifications-view *ngSwitchCase="'notifications'" />
+
+                <ng-container *ngSwitchCase="'conversation'">
+                    @if (auth.session(); as account) {
+                        @if (conversationId(); as id) {
+                            <pulso-conversation-view [conversationId]="id" [profileId]="account.id" />
+                        }
+                    }
+                </ng-container>
 
                 <pulso-saved-view *ngSwitchCase="'saved'"
                                   [savedStartups]="session.savedStartups()"
@@ -164,3 +177,7 @@
 </ng-template>
 
 </ng-template>
+
+@if (!invitation.requested() && !auth.isLoading() && linkedProjectId(); as projectId) {
+    <pulso-public-project-detail [projectId]="projectId" (closed)="closeWorkspaceLink()" />
+}

@@ -16,9 +16,11 @@ import org.springframework.web.bind.annotation.RestController;
 import com.pulso.backend.config.ApiMessages;
 import com.pulso.backend.config.ConnectionInboxProperties;
 import com.pulso.backend.connection.application.DeclineConnectionIntent;
-import com.pulso.backend.connection.application.ListPendingConnectionIntents;
+import com.pulso.backend.connection.application.ListConnectionIntents;
 import com.pulso.backend.connection.application.WithdrawConnectionIntent;
 import com.pulso.backend.connection.domain.ConnectionIntent;
+import com.pulso.backend.connection.domain.ConnectionInboxEntry;
+import com.pulso.backend.connection.domain.ConnectionInboxView;
 import com.pulso.backend.discovery.api.InvalidRequestException;
 import com.pulso.backend.profile.api.AuthenticatedProfileId;
 
@@ -27,17 +29,17 @@ public class ConnectionIntentResponseController {
 
     private final DeclineConnectionIntent declineConnectionIntent;
     private final WithdrawConnectionIntent withdrawConnectionIntent;
-    private final ListPendingConnectionIntents listPendingConnectionIntents;
+    private final ListConnectionIntents listConnectionIntents;
     private final ConnectionInboxProperties properties;
 
     public ConnectionIntentResponseController(
             DeclineConnectionIntent declineConnectionIntent,
             WithdrawConnectionIntent withdrawConnectionIntent,
-            ListPendingConnectionIntents listPendingConnectionIntents,
+            ListConnectionIntents listConnectionIntents,
             ConnectionInboxProperties properties) {
         this.declineConnectionIntent = declineConnectionIntent;
         this.withdrawConnectionIntent = withdrawConnectionIntent;
-        this.listPendingConnectionIntents = listPendingConnectionIntents;
+        this.listConnectionIntents = listConnectionIntents;
         this.properties = properties;
     }
 
@@ -47,6 +49,32 @@ public class ConnectionIntentResponseController {
             @AuthenticationPrincipal Jwt jwt,
             @RequestParam(defaultValue = "0") int offset,
             @RequestParam(required = false) Integer limit) {
+        return list(jwt, ConnectionInboxView.PENDING, offset, limit).stream()
+                .map(entry -> ConnectionIntentResponse.from(entry.intent()))
+                .toList();
+    }
+
+    @GetMapping("/api/v1/connection-intents/received")
+    public List<ConnectionInboxResponse> listReceived(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(required = false) Integer limit) {
+        return list(jwt, ConnectionInboxView.RECEIVED, offset, limit).stream()
+                .map(ConnectionInboxResponse::from)
+                .toList();
+    }
+
+    @GetMapping("/api/v1/connection-intents/sent")
+    public List<ConnectionInboxResponse> listSent(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(required = false) Integer limit) {
+        return list(jwt, ConnectionInboxView.SENT, offset, limit).stream()
+                .map(ConnectionInboxResponse::from)
+                .toList();
+    }
+
+    private List<ConnectionInboxEntry> list(Jwt jwt, ConnectionInboxView view, int offset, Integer limit) {
         UUID profileId = AuthenticatedProfileId.require(jwt);
         int pageLimit = limit == null ? properties.defaultLimit() : limit;
         if (offset < 0 || offset > properties.maxOffset()) {
@@ -57,8 +85,7 @@ public class ConnectionIntentResponseController {
             throw new InvalidRequestException(
                     String.format(ApiMessages.INVALID_LIMIT_DETAIL, properties.maxLimit()));
         }
-        List<ConnectionIntent> intents = listPendingConnectionIntents.execute(profileId, offset, pageLimit);
-        return intents.stream().map(ConnectionIntentResponse::from).toList();
+        return listConnectionIntents.execute(profileId, view, offset, pageLimit);
     }
 
     @PostMapping("/api/v1/connection-intents/{connectionIntentId}/decline")

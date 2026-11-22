@@ -176,8 +176,10 @@ en orden y ejecuta el [seed](database/supabase/seed.sql). Al terminar debe mostr
 es una tarea de una sola ejecución. Los servicios permanentes deben seguir
 levantados; los que tienen healthcheck deben llegar a `healthy`.
 
-El seed incorpora catálogos y dos proyectos publicados de ejemplo, **EcoPack
-Bolivia** y **AndeSolar**. No crea una cuenta de usuario para iniciar sesión.
+El seed incorpora catálogos y proyectos publicados de ejemplo, entre ellos
+**EcoPack Bolivia** y **AndeSolar** (ver
+[datos de demostración](#datos-de-demostración-de-oportunidades)). No crea una
+cuenta de usuario para iniciar sesión.
 Spring Boot no crea las tablas: si falla el migrador, revisa sus logs antes de
 continuar.
 
@@ -350,6 +352,7 @@ trabajar a diario; elige los que cubran tu cambio.
 | `pnpm backend:test` | Tests Java; Docker debe estar iniciado para las pruebas JDBC con Testcontainers |
 | `pnpm backend:build` | Build y tests del backend; JAR en `backend/build/libs/` |
 | `pnpm backend:verify` | Con Compose y `.env` local: JDBC, catálogo seed, liveness/readiness con conexión disponible y caída simulada |
+| `pnpm smoke:critical-path` | Con Compose, backend levantado y la base al día: recorrido registro → mensaje por API, permisos y RLS; crea cuentas de prueba y archiva su proyecto ([detalle](docs/engineering/mvp-critical-path.md)) |
 | `docker compose --env-file .env.example config --quiet` | Valida el archivo Compose con la plantilla, sin iniciar contenedores ni imprimir valores |
 
 `backend:verify` inicia backends temporales en `18080` y `18081` y usa `55432`

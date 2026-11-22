@@ -886,7 +886,9 @@ Pulso puede medir:
 
 ## 27. Alcance funcional objetivo
 
-La versión objetivo inicial de Pulso contempla los siguientes módulos:
+La versión objetivo inicial de Pulso contempla los siguientes módulos. Lo que
+implementa el MVP y lo que queda fuera está en
+[el recorrido crítico del MVP](./engineering/mvp-critical-path.md).
 
 ### Autenticación
 

@@ -135,13 +135,21 @@ pnpm db:test
 pnpm db:verify
 ```
 
-`seed.sql` supplies six active sectors, eight active tags, eight active skills,
-and two fictional published projects. Catalog rows use stable slugs and are
+`seed.sql` supplies six active sectors, eight active tags, twelve active skills,
+and seventeen fictional published projects, thirteen of them with demo
+opportunities. Catalog rows use stable slugs and are
 updated by slug, so the seed can be rerun without duplicating reference data or
 breaking the project fixtures. The pgTAP foundation checks live in
 `supabase/tests/database/01_foundation.sql`, while catalog and seed behavior
 checks live in `supabase/tests/database/03_catalog_seed.sql`; both run against
 the local database after a reset.
+
+`supabase/tests/database/13_mvp_access_boundaries.sql` checks the access
+boundary across every table: RLS enabled everywhere, no direct `anon`
+privileges, and `authenticated` limited to its own profile, preferences, and
+memberships plus the active catalogs. A new table must keep these checks green
+or update the documented allowlist intentionally; see
+[the MVP critical path](../docs/engineering/mvp-critical-path.md#permisos-rls-y-visibilidad).
 
 `pnpm db:reset` is the normal way to make a new checkout deterministic or to
 replay a migration. It removes local database data before applying the complete

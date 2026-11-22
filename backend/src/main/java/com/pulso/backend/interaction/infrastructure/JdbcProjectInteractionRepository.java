@@ -304,7 +304,6 @@ public class JdbcProjectInteractionRepository implements ProjectInteractionRepos
                 from public.projects
                 where id = :projectId
                   and status = 'PUBLISHED'
-                for share
                 """)
                 .param("projectId", projectId)
                 .query((resultSet, rowNumber) -> resultSet.getObject("id", UUID.class))

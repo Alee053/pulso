@@ -55,6 +55,6 @@
       <pulso-icon [name]="item.icon" [size]="18" [strokeWidth]="item.id === activeView ? 2 : 1.7" />
       <span *ngIf="countFor(item) > 0" class="mobile-nav__count">{{ countFor(item) }}</span>
     </span>
-    <span>{{ item.label }}</span>
+    <span class="mobile-nav__label">{{ item.label }}</span>
   </button>
 </nav>

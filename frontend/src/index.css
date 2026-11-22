@@ -563,6 +563,26 @@ textarea.field-input {
   font-weight: 550;
   line-height: 1.35;
 }
+.mobile-nav__label {
+  max-width: 100%;
+  text-align: center;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+/* Six destinations share 320px: tighten spacing so labels wrap inside their item instead of overlapping. */
+@media (max-width: 23.75rem) {
+  .mobile-nav {
+    gap: 0.125rem;
+    padding-left: max(0.25rem, env(safe-area-inset-left));
+    padding-right: max(0.25rem, env(safe-area-inset-right));
+  }
+  .mobile-nav__item {
+    gap: 0.25rem;
+    padding: 0.375rem 0.125rem;
+    font-size: 0.625rem;
+  }
+}
 .mobile-nav__item--active {
   border-color: #385673;
   background: var(--color-accent-surface);

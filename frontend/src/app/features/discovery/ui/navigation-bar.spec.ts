@@ -52,4 +52,16 @@ describe('NavigationBarComponent language', () => {
       .not.toContain('Crear proyecto')
     fixture.destroy()
   })
+
+  it('gives every mobile destination a wrappable label so narrow screens do not overlap them', () => {
+    const fixture = TestBed.createComponent(NavigationBarComponent)
+    fixture.componentRef.setInput('activeView', 'discover')
+    fixture.detectChanges()
+
+    const items = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('.mobile-nav__item'))
+    expect(items.map((item) => item.querySelector('.mobile-nav__label')?.textContent?.trim()))
+      .toEqual(['Descubrir', 'Crear proyecto', 'Mis equipos', 'Solicitudes', 'Guardados', 'Perfil'])
+    expect(items[0].getAttribute('aria-current')).toBe('page')
+    fixture.destroy()
+  })
 })

@@ -141,7 +141,7 @@ Table projects {
   product_or_service text
   sector_id uuid [not null]
   stage text [not null, note: "IDEA, PROTOTYPE, MVP, EARLY_STAGE, GROWING o ESTABLISHED"]
-  city text
+  city text [not null]
   department text
   logo_storage_path text
   cover_storage_path text
@@ -149,7 +149,7 @@ Table projects {
   external_links jsonb [note: "Website y redes sociales como objetos {type, url, label}"]
   status text [not null, default: 'DRAFT', note: "DRAFT, PENDING_REVIEW, PUBLISHED, REJECTED, ARCHIVED o SUSPENDED"]
   verification_status text [not null, default: 'UNVERIFIED', note: "UNVERIFIED, PENDING, VERIFIED o REVOKED"]
-  created_by_profile_id uuid [not null]
+  created_by_profile_id uuid [note: "Nullable solo para filas seed del sistema anteriores a Auth; los proyectos creados por usuarios siempre lo registran"]
   reviewed_by_profile_id uuid
   review_note text
   reviewed_at timestamptz

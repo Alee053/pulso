@@ -38,20 +38,17 @@ async function main() {
   await browser.send('Network.enable')
   await browser.navigate(frontendUrl)
 
-  await waitForText(browser, 'Conecta tu cuenta para probar Auth', 'el panel de Auth')
-  await browser.evaluate(`
-  [...document.querySelectorAll('button')]
-    .find((button) => button.textContent?.includes('Crear cuenta'))
-    ?.click()
-  `)
-  await waitForText(browser, 'Registrarme', 'el modo de registro de Auth')
+  // Registro
+  await waitForText(browser, 'Conecta con las ideas que mueven Bolivia.', 'la página de acceso')
+  await clickButton(browser, 'Crear cuenta', 'el cambio a modo registro')
+  await waitForButton(browser, 'Crear mi cuenta', 'el modo de registro de Auth')
   await fillInput(browser, 'input[name="email"]', testEmail)
   await fillInput(browser, 'input[name="password"]', testPassword)
   await browser.evaluate(`document.querySelector('form button[type="submit"]')?.click()`)
-  await waitForText(browser, 'Sesión conectada', 'el inicio de sesión')
+  await waitForText(browser, 'Tu próximo descubrimiento empieza aquí.', 'el onboarding tras el registro')
 
   await browser.reload()
-  await waitForText(browser, 'Sesión conectada', 'la sesión persistida tras recargar')
+  await waitForText(browser, 'Tu próximo descubrimiento empieza aquí.', 'la sesión persistida tras recargar')
 
   const meResult = await browser.evaluate(`
   (async () => {
@@ -74,34 +71,77 @@ async function main() {
     throw new Error('El navegador no pudo validar los claims autenticados en /api/v1/me.')
   }
 
-  await browser.evaluate(`
-  [...document.querySelectorAll('button')]
-    .find((button) => button.textContent?.includes('Colaborar'))
-    ?.click()
-  `)
-  await waitForText(browser, '1 interés seleccionado.', 'la selección de intereses')
-  await browser.evaluate(`
-  [...document.querySelectorAll('button')]
-    .find((button) => button.textContent?.includes('Entrar a Pulso'))
-    ?.click()
-  `)
-  await waitForAnyText(browser, ['EcoPack Bolivia', 'AndeSolar'], 'el catálogo seed de discovery')
-  await waitForText(browser, 'por ver', 'el feed de discovery')
+  // Onboarding
+  await clickButton(browser, 'Colaborar', 'la intención Colaborar')
+  await waitForText(browser, '1 intención seleccionada.', 'la selección de intenciones')
+  await clickButton(browser, 'Entrar a Pulso', 'la entrada a discovery')
 
-  const startupRequest = apiRequests.find((request) => request.url.includes('/api/v1/startups'))
-  if (!startupRequest || !hasBearerHeader(startupRequest)) {
+  // Discovery
+  await waitForText(browser, 'por ver', 'el feed de discovery')
+  const discoveryRequest = apiRequests.find((request) =>
+    request.url.includes('/api/v1/me/discovery-feed') || request.url.includes('/api/v1/startups'))
+  if (!discoveryRequest || !hasBearerHeader(discoveryRequest)) {
     throw new Error('El navegador no envió el bearer token al request de discovery del backend.')
   }
 
-  await browser.evaluate(`
-  [...document.querySelectorAll('button')]
-    .find((button) => button.textContent?.includes('Cerrar sesión'))
-    ?.click()
-  `)
-  await waitForText(browser, 'Conecta tu cuenta para probar Auth', 'el cierre de sesión')
+  // Interés
+  await browser.evaluate(`document.querySelector('button.discovery-action--interested')?.click()`)
+  await waitFor(
+    browser,
+    `(async () => {
+      const storageKey = Object.keys(localStorage).find((key) => key.endsWith('-auth-token'))
+      if (!storageKey) return false
+      const token = JSON.parse(localStorage.getItem(storageKey)).access_token
+      const response = await fetch(${JSON.stringify(`${backendUrl}/api/v1/me/interested-projects?limit=1`)}, {
+        headers: { Authorization: 'Bearer ' + token },
+      })
+      if (response.status !== 200) return false
+      const body = await response.json()
+      return (body.meta?.totalCount ?? 0) >= 1
+    })()`,
+    'el interés persistido en el backend',
+  )
+  const feedbackRequest = apiRequests.find((request) =>
+    request.url.includes('/api/v1/me/project-feedback/') && request.method === 'PUT')
+  if (!feedbackRequest || !hasBearerHeader(feedbackRequest)) {
+    throw new Error('El navegador no envió el interés al backend con el bearer token.')
+  }
+
+  // Cierre de sesión
+  await clickButton(browser, 'Perfil', 'la navegación a Perfil')
+  await clickButton(browser, 'Cerrar sesión', 'el cierre de sesión')
+  await waitForText(browser, 'Conecta con las ideas que mueven Bolivia.', 'la página de acceso tras cerrar sesión')
 
   await browser.close()
-  console.log('Smoke del navegador validado: Auth persistida, /me, discovery seed, bearer al backend y logout.')
+  console.log('Smoke del navegador validado: registro, sesión persistida, /me, onboarding, discovery, interés persistido y logout.')
+}
+
+async function clickButton(browserSession, label, description) {
+  await waitFor(
+    browserSession,
+    `[...document.querySelectorAll('button')].some((button) =>
+      button.textContent?.replace(/\\s+/g, ' ').trim() === ${JSON.stringify(label)}
+      || button.textContent?.includes(${JSON.stringify(label)}))`,
+    description,
+  )
+  await browserSession.evaluate(`
+  (() => {
+    const buttons = [...document.querySelectorAll('button')].filter((button) => !button.disabled && button.offsetParent !== null)
+    const normalized = (button) => button.textContent?.replace(/\\s+/g, ' ').trim() ?? ''
+    const target = buttons.find((button) => normalized(button) === ${JSON.stringify(label)})
+      ?? buttons.find((button) => normalized(button).includes(${JSON.stringify(label)}))
+    target?.click()
+  })()
+  `)
+}
+
+async function waitForButton(browserSession, label, description) {
+  await waitFor(
+    browserSession,
+    `[...document.querySelectorAll('button')].some((button) =>
+      button.textContent?.replace(/\\s+/g, ' ').trim() === ${JSON.stringify(label)})`,
+    description,
+  )
 }
 
 function hasBearerHeader(request) {
@@ -160,16 +200,12 @@ async function waitFor(browserSession, expression, description) {
     await new Promise((resolve) => setTimeout(resolve, 100))
   }
   const state = await browserSession.evaluate(`({
-    authConnected: document.body.innerText.includes('Sesión conectada'),
+    authPage: document.body.innerText.includes('Conecta con las ideas que mueven Bolivia.'),
     onboarding: document.body.innerText.includes('Entrar a Pulso'),
-    selectedInterest: document.body.innerText.includes('1 interés seleccionado.'),
-    discovery: document.body.innerText.includes('Ideas con pulso.'),
-    loading: document.body.innerText.includes('CARGANDO DISCOVERY'),
-    catalog: ['EcoPack Bolivia', 'AndeSolar'].some((name) => document.body.innerText.includes(name)),
+    selectedIntention: document.body.innerText.includes('1 intención seleccionada.'),
     feed: document.body.innerText.toLowerCase().includes('por ver'),
-    error: document.body.innerText.includes('NO SE PUDO CARGAR'),
-    empty: document.body.innerText.includes('CATÁLOGO VACÍO'),
-    completed: document.body.innerText.includes('PRIMERA VUELTA COMPLETA'),
+    error: Boolean(document.querySelector('[role="alert"]')),
+    alert: document.querySelector('[role="alert"]')?.textContent?.trim().slice(0, 120) ?? null,
   })`).catch(() => null)
   const stateMessage = state ? ` Estado: ${JSON.stringify(state)}.` : ''
   throw new Error(`El navegador no mostró ${description} dentro del tiempo límite.${stateMessage}`)

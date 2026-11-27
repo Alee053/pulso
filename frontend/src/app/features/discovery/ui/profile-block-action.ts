@@ -6,8 +6,8 @@ import { profileBlockStrings } from '../strings/profile-block.strings'
 @Component({
   selector: 'pulso-profile-block-action',
   template: `
-    <details #confirmation class="text-sm">
-      <summary #trigger class="cursor-pointer text-[var(--color-error)] hover:underline">
+    <details #confirmation class="min-w-0 text-sm">
+      <summary #trigger class="w-fit cursor-pointer rounded py-1.5 font-medium text-[var(--color-error)] hover:underline">
         @if (state() === 'blocked') {
           {{ strings.blocked }}
         } @else if (displayName(); as name) {
@@ -17,11 +17,11 @@ import { profileBlockStrings } from '../strings/profile-block.strings'
         }
       </summary>
       @if (state() !== 'blocked') {
-        <p class="mt-2 text-[var(--color-muted)]">{{ strings.confirm }}</p>
+        <p class="field-hint">{{ strings.confirm }}</p>
         <div class="mt-2 flex flex-wrap gap-2">
           <button type="button" class="contact-button" [disabled]="state() === 'blocking'"
                   (click)="confirmation.open = false; trigger.focus()">{{ strings.cancel }}</button>
-          <button type="button" class="contact-button" [disabled]="state() === 'blocking'"
+          <button type="button" class="contact-button text-[var(--color-error)]" [disabled]="state() === 'blocking'"
                   (click)="block(trigger)">{{ strings.block }}</button>
         </div>
       }
@@ -29,9 +29,9 @@ import { profileBlockStrings } from '../strings/profile-block.strings'
     @if (state() === 'blocking') {
       <p class="mt-2 text-sm" role="status">{{ strings.blocking }}</p>
     } @else if (state() === 'blocked') {
-      <p class="mt-2 text-sm" role="status">{{ strings.blockSuccess }}</p>
+      <p class="status-message status-message--success mt-2" role="status">{{ strings.blockSuccess }}</p>
     } @else if (state() === 'error') {
-      <p class="mt-2 text-sm text-[var(--color-error)]" role="alert">{{ strings.blockFailed }}</p>
+      <p class="field-error" role="alert">{{ strings.blockFailed }}</p>
     }
   `,
 })

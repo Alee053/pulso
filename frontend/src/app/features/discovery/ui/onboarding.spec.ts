@@ -70,9 +70,9 @@ describe('OnboardingComponent', () => {
       (button) => (button as HTMLButtonElement).textContent?.trim() === 'Comprar',
     ) as HTMLButtonElement
     buy.click()
-    const select = fixture.nativeElement.querySelector('select') as HTMLSelectElement
+    const select = fixture.nativeElement.querySelector('select[id^="proficiency-"]') as HTMLSelectElement
     expect(select.value).toBe('INTERMEDIATE')
-    expect(fixture.nativeElement.querySelector('label').htmlFor).toBe(select.id)
+    expect(fixture.nativeElement.querySelector('label[for^="proficiency-"]').htmlFor).toBe(select.id)
     select.value = 'EXPERT'
     select.dispatchEvent(new Event('change'))
     expect(intentions).toHaveBeenCalledWith('BUY')
@@ -93,9 +93,14 @@ describe('OnboardingComponent', () => {
     component.cancelled.subscribe(cancelled)
     fixture.detectChanges()
     expect(fixture.nativeElement.textContent).toContain('Guardar selecciones')
-    const select = fixture.nativeElement.querySelector('select') as HTMLSelectElement
+    const select = fixture.nativeElement.querySelector('select[id^="proficiency-"]') as HTMLSelectElement
     expect(select.getAttribute('aria-invalid')).toBe('true')
     expect(select.getAttribute('aria-describedby')).toBe('onboarding-validation')
+    const group = select.closest('details') as HTMLDetailsElement
+    expect(group.open).toBe(false)
+    component.submitPreferences()
+    expect(group.open).toBe(true)
+    expect(document.activeElement).toBe(select)
     const cancel = Array.from(fixture.nativeElement.querySelectorAll('button')).find(
       (button) => (button as HTMLButtonElement).textContent?.trim() === 'Cancelar edición',
     ) as HTMLButtonElement

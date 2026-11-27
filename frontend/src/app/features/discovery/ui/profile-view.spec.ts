@@ -104,14 +104,16 @@ describe('ProfileViewComponent', () => {
     expect(fixture.nativeElement.textContent).toContain(
       'No pudimos cargar tu perfil. Inténtalo de nuevo.',
     )
-    expect(
-      fixture.nativeElement.querySelector('button')?.textContent,
-    ).toContain('Reintentar')
+    expect(fixture.nativeElement.querySelector('[role="alert"] button')?.textContent).toContain('Reintentar')
+    expect(fixture.nativeElement.querySelector('header button')?.textContent).toContain('Cerrar sesión')
   })
 
   it('shows global feature controls when the loaded profile has the platform ADMIN role', async () => {
     const administrator = createFixture(createProfileApiStub(createCurrentUser({ platformRole: 'ADMIN' })))
     await administrator.whenStable()
+    administrator.detectChanges()
+    expect(administrator.nativeElement.querySelector('pulso-feature-flag-settings')).toBeNull()
+    administrator.nativeElement.querySelector('button[aria-controls="profile-admin-tools"]').click()
     administrator.detectChanges()
     expect(administrator.nativeElement.querySelector('pulso-feature-flag-settings')).not.toBeNull()
   })
@@ -120,6 +122,7 @@ describe('ProfileViewComponent', () => {
     const regularUser = createFixture(createProfileApiStub(createCurrentUser({ platformRole: 'USER' })))
     await regularUser.whenStable()
     regularUser.detectChanges()
+    expect(regularUser.nativeElement.querySelector('.profile-administration')).toBeNull()
     expect(regularUser.nativeElement.querySelector('pulso-feature-flag-settings')).toBeNull()
     expect(regularUser.nativeElement.querySelector('pulso-project-reviews')).toBeNull()
   })
@@ -127,6 +130,8 @@ describe('ProfileViewComponent', () => {
   it.each(['MODERATOR', 'ADMIN'])('shows project review for an active platform %s', async (platformRole) => {
     const fixture = createFixture(createProfileApiStub(createCurrentUser({ platformRole })))
     await fixture.whenStable()
+    fixture.detectChanges()
+    fixture.nativeElement.querySelector('button[aria-controls="profile-admin-tools"]').click()
     fixture.detectChanges()
     expect(fixture.nativeElement.querySelector('pulso-project-reviews')).not.toBeNull()
   })

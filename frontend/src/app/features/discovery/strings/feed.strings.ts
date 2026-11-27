@@ -2,26 +2,22 @@ import { defineStrings } from '../../../core/i18n/define-strings'
 
 export const feedStrings = defineStrings(
   {
-    pageEyebrow: 'EL ECOSISTEMA, MÁS CERCA',
-    pageTitle: 'Ideas con pulso.',
-    pageLead: 'Descubre proyectos, conoce sus ideas y guarda los que te inspiran.',
+    pageTitle: 'Descubrir proyectos',
+    forYou: 'Para ti',
+    next: 'A continuación',
+    edit: 'Editar preferencias',
+    pageLead: 'Conoce las ideas y los equipos que están creciendo en Bolivia.',
     feedAria: 'Proyectos por descubrir',
     actionsAria: 'Acciones del proyecto',
     contextAria: 'Tu exploración',
-    contextTitle: 'Una mirada propia',
+    contextTitle: 'Tus intereses',
     contextLead: 'Tus intereses orientan los proyectos que descubres.',
-    actionsTitle: 'Explora a tu ritmo',
-    actionsLead: 'Descarta un proyecto o expresa tu interés para personalizar tu exploración. También puedes guardarlo para después.',
     unsaveAria: 'Quitar de guardados (S)',
-    loadingEyebrow: 'PREPARANDO TU EXPLORACIÓN',
     loadingTitle: 'Buscando proyectos publicados.',
     loadingLead: 'Estamos preparando los proyectos publicados para ti.',
-    errorEyebrow: 'NO SE PUDO CARGAR',
     errorTitle: 'El catálogo no está disponible.',
     catalogFailed:
       'No pudimos cargar los proyectos publicados. Inténtalo de nuevo.',
-    progress: (current: number, total: number): string =>
-      `Exploración ${String(current).padStart(2, '0')} / ${String(total).padStart(2, '0')}`,
     remaining: (count: number): string => `${count} por ver`,
     skip: 'Descartar',
     interested: 'Me interesa',
@@ -31,11 +27,9 @@ export const feedStrings = defineStrings(
     skipAria: 'Descartar proyecto (←)',
     saveAria: 'Guardar (S)',
     interestedAria: 'Me interesa (→)',
-    emptyEyebrow: 'CATÁLOGO VACÍO',
     emptyTitle: 'Todavía no hay proyectos publicados.',
     emptyLead:
       'Cuando exista un proyecto publicado aparecerá aquí para descubrirlo.',
-    doneEyebrow: 'PRIMERA VUELTA COMPLETA',
     doneTitle: 'Ya viste todo el pulso.',
     doneLead:
       'Tus guardados e intereses quedan vinculados a tu cuenta. Puedes volver a explorar cuando quieras.',
@@ -47,26 +41,22 @@ export const feedStrings = defineStrings(
     retryInteraction: 'Reintentar',
   },
   {
-    pageEyebrow: 'THE ECOSYSTEM, CLOSER',
-    pageTitle: 'Ideas with a pulse.',
-    pageLead: 'Discover projects, get to know their ideas and save the ones that inspire you.',
+    pageTitle: 'Discover projects',
+    forYou: 'For you',
+    next: 'Up next',
+    edit: 'Edit preferences',
+    pageLead: 'Meet the ideas and teams growing across Bolivia.',
     feedAria: 'Projects to discover',
     actionsAria: 'Project actions',
     contextAria: 'Your exploration',
-    contextTitle: 'A view of your own',
+    contextTitle: 'Your interests',
     contextLead: 'Your interests guide the projects you discover.',
-    actionsTitle: 'Explore at your own pace',
-    actionsLead: 'Skip a project or show your interest to personalize your exploration. You can also save it for later.',
     unsaveAria: 'Remove from saved (S)',
-    loadingEyebrow: 'PREPARING YOUR EXPLORATION',
     loadingTitle: 'Looking for published projects.',
     loadingLead: 'We are getting the published projects ready for you.',
-    errorEyebrow: 'COULD NOT LOAD',
     errorTitle: 'The catalog is not available.',
     catalogFailed:
       'We could not load the published projects. Please try again.',
-    progress: (current: number, total: number): string =>
-      `Exploration ${String(current).padStart(2, '0')} / ${String(total).padStart(2, '0')}`,
     remaining: (count: number): string => `${count} left to see`,
     skip: 'Skip',
     interested: 'I am interested',
@@ -76,11 +66,9 @@ export const feedStrings = defineStrings(
     skipAria: 'Skip project (←)',
     saveAria: 'Save (S)',
     interestedAria: 'I am interested (→)',
-    emptyEyebrow: 'EMPTY CATALOG',
     emptyTitle: 'There are no published projects yet.',
     emptyLead:
       'When a project is published, it will show up here for you to discover.',
-    doneEyebrow: 'FIRST ROUND COMPLETE',
     doneTitle: 'You have seen the whole pulse.',
     doneLead:
       'Your saved projects and interests stay linked to your account. You can explore again whenever you like.',
@@ -95,6 +83,11 @@ export const feedStrings = defineStrings(
 
 export const cardStrings = defineStrings(
   {
+    share: (name: string) => `Compartir ${name}`,
+    copied: 'Enlace copiado',
+    copyFailed: 'No se pudo copiar el enlace',
+    shared: 'Compartido',
+    shareFailed: 'No se pudo generar el enlace',
     openAria: (name: string): string => `Ver perfil de ${name}`,
     saveAria: 'Guardar proyecto',
     unsaveAria: 'Quitar de guardados',
@@ -103,6 +96,11 @@ export const cardStrings = defineStrings(
       `Proyecto publicado en ${city}, dentro del sector ${sector}.`,
   },
   {
+    share: (name: string) => `Share ${name}`,
+    copied: 'Link copied',
+    copyFailed: 'Could not copy link',
+    shared: 'Shared',
+    shareFailed: 'Could not create the link',
     openAria: (name: string): string => `View ${name}'s profile`,
     saveAria: 'Save project',
     unsaveAria: 'Remove from saved',

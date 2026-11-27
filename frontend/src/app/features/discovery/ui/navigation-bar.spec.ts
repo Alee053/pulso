@@ -1,67 +1,53 @@
 import { TestBed } from '@angular/core/testing'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { currentLanguage } from '../../../core/i18n/language'
 import { NavigationBarComponent } from './navigation-bar'
 
-function labels(element: HTMLElement): string[] {
-  return Array.from(element.querySelectorAll('.desktop-nav__item'))
-    .map((item) => item.textContent?.trim() ?? '')
-}
+afterEach(() => {
+  currentLanguage.set('es')
+  history.replaceState(null, '', '/')
+})
 
-describe('NavigationBarComponent language', () => {
-  beforeEach(() => currentLanguage.set('es'))
-  afterEach(() => currentLanguage.set('es'))
-
-  it('renames the menu and its accessible names when the language changes', () => {
+describe('NavigationBarComponent', () => {
+  it('translates the desktop destinations and the notification control with its unread count', () => {
     const fixture = TestBed.createComponent(NavigationBarComponent)
+    fixture.componentRef.setInput('unreadCount', 2)
     fixture.detectChanges()
-    const element = fixture.nativeElement as HTMLElement
-    expect(labels(element)).toEqual(['Descubrir', 'Crear proyecto', 'Mis equipos', 'Solicitudes', 'Notificaciones', 'Guardados', 'Perfil'])
-    expect(element.querySelector('aside')?.getAttribute('aria-label')).toBe('Navegación principal')
-
+    const el: HTMLElement = fixture.nativeElement
+    const labels = () => Array.from(el.querySelectorAll('.desktop-nav__item'), item => item.textContent.trim())
+    expect(labels()).toEqual(['Crear proyecto', 'Descubrir', 'Guardados', 'Mensajes', 'Solicitudes', 'Mis equipos', 'Perfil'])
+    expect(el.querySelector('.notice-link')?.getAttribute('aria-label')).toBe('Notificaciones, 2 sin leer')
     currentLanguage.set('en')
     fixture.detectChanges()
-
-    expect(labels(element)).toEqual(['Discover', 'Create project', 'My teams', 'Requests', 'Notifications', 'Saved', 'Profile'])
-    expect(element.querySelector('aside')?.getAttribute('aria-label')).toBe('Main navigation')
-    fixture.destroy()
+    expect(labels()).toEqual(['Create project', 'Discover', 'Saved', 'Messages', 'Requests', 'My teams', 'Profile'])
+    expect(el.querySelector('aside')?.getAttribute('aria-label')).toBe('Main navigation')
+    expect(el.querySelector('.notice-link')?.getAttribute('aria-label')).toBe('Notifications, 2 unread')
   })
 
-  it('keeps the active item while the labels change', () => {
+  it('keeps Messages directly reachable and current on mobile and desktop inside a thread', () => {
     const fixture = TestBed.createComponent(NavigationBarComponent)
-    fixture.componentRef.setInput('activeView', 'saved')
+    history.replaceState(null, '', '/conversaciones/00000000-0000-4000-8000-000000000001')
+    fixture.componentRef.setInput('activeView', 'conversation')
     fixture.detectChanges()
-
-    currentLanguage.set('en')
-    fixture.detectChanges()
-
-    const active = fixture.nativeElement.querySelector('.desktop-nav__item--active') as HTMLElement
-    expect(active.textContent).toContain('Saved')
-    expect(active.getAttribute('aria-current')).toBe('page')
-    fixture.destroy()
+    const navigate = vi.fn()
+    fixture.componentInstance.navigated.subscribe(navigate)
+    const el: HTMLElement = fixture.nativeElement
+    expect(el.querySelector<HTMLAnchorElement>('.skip-link')?.pathname).toBe(location.pathname)
+    const items = el.querySelectorAll<HTMLButtonElement>('.mobile-nav__item')
+    expect(Array.from(items, item => item.textContent.trim())).toEqual(['Descubrir', 'Guardados', 'Mensajes', 'Más'])
+    expect(items[2].getAttribute('aria-current')).toBe('page')
+    items[2].click()
+    expect(navigate).toHaveBeenCalledWith('messages')
+    expect(el.querySelector('.desktop-nav__item[aria-current]')?.getAttribute('aria-keyshortcuts')).toBe('Alt+Shift+M')
   })
 
-  it('hides project creation from both navigation layouts when the flag is disabled', () => {
+  it('offers the additional mobile destinations and respects the creation flag in both layouts', () => {
     const fixture = TestBed.createComponent(NavigationBarComponent)
     fixture.componentRef.setInput('projectCreationEnabled', false)
     fixture.detectChanges()
-
-    const element = fixture.nativeElement as HTMLElement
-    expect(labels(element)).not.toContain('Crear proyecto')
-    expect(Array.from(element.querySelectorAll('.mobile-nav__item')).map((item) => item.textContent?.trim()))
-      .not.toContain('Crear proyecto')
-    fixture.destroy()
-  })
-
-  it('gives every mobile destination a wrappable label so narrow screens do not overlap them', () => {
-    const fixture = TestBed.createComponent(NavigationBarComponent)
-    fixture.componentRef.setInput('activeView', 'discover')
-    fixture.detectChanges()
-
-    const items = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('.mobile-nav__item'))
-    expect(items.map((item) => item.querySelector('.mobile-nav__label')?.textContent?.trim()))
-      .toEqual(['Descubrir', 'Crear proyecto', 'Mis equipos', 'Solicitudes', 'Avisos', 'Guardados', 'Perfil'])
-    expect(items[0].getAttribute('aria-current')).toBe('page')
-    fixture.destroy()
+    const el: HTMLElement = fixture.nativeElement
+    expect(el.textContent).not.toContain('Crear proyecto')
+    expect(Array.from(el.querySelectorAll('.mobile-more button'), item => item.textContent.trim()))
+      .toEqual(['Solicitudes', 'Mis equipos', 'Perfil'])
   })
 })

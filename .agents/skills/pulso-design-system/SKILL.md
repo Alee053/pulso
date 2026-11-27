@@ -14,16 +14,16 @@ description: Implement or review Pulso Angular UI using its existing theme, comp
    `frontend/src/app/shared/brand-mark/brand-mark.ts` for existing visual assets,
    and the affected feature's `ui/`, `strings/`, and tests.
 3. Establish the issue's intended behavior and preserve it during visual work.
-   Read `docs/research/ui-ux-refactor.md` when changing accessibility, responsive
-   layout, motion, or the overall visual direction. Its historical verification
-   is context, not evidence for the current diff.
+   Read `docs/research/interfaz-pulso.md` for the light and dark palettes,
+   responsive navigation, typography, and interaction patterns. Verify the
+   affected behavior against the current change.
 
 Proceed when the owning component, existing patterns, and required interaction
 states are identified. There is no separate component-library dependency to add.
 
 ## Apply the existing visual language
 
-- Reuse the navy/slate surfaces, sky-blue accent, typography, spacing, radii,
+- Reuse the light stone and graphite surfaces, cobalt accent, typography, spacing, radii,
   focus styles, and shared classes defined in `frontend/src/index.css`.
   Reference semantic variables instead of duplicating theme values in templates.
   Add a token only when the existing vocabulary cannot represent the need.

@@ -59,7 +59,7 @@ describe('MemberInvitationFormComponent', () => {
     fixture.componentInstance.submit()
     http.expectOne(path).flush({ detail: 'sensitive membership data' }, { status, statusText: 'Failure' })
     fixture.detectChanges()
-    const messages: Record<number, string> = { 400: 'Revisa el correo', 403: 'Solo un owner o admin',
+    const messages: Record<number, string> = { 400: 'Revisa el correo', 403: 'Solo quien administra el proyecto',
       404: 'Este proyecto ya no está disponible', 409: 'Ya existe una invitación activa' }
     expect(fixture.nativeElement.textContent).toContain(messages[status])
     expect(fixture.nativeElement.textContent).not.toContain('sensitive membership data')

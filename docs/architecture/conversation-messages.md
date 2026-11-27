@@ -8,9 +8,18 @@ It builds on the `conversations` and `conversation_participants` tables created
 when a project contact request is accepted (see
 [connection conversations](./connection-conversations.md)).
 
-S6.6 renders the returned conversation inline after accepting a pending
-request. Each non-deleted message reuses the existing report form with its
-`targetMessageId`; message reporting does not create another moderation API.
+The workspace opens **Mensajes** from its navigation or with Alt+Shift+M.
+`/conversaciones` lists the conversations linked by the authenticated sent
+and received request histories. Each history has its own pagination offset
+and retry state. The list merges entries by the conversation ID supplied to
+the participant and orders them by request creation time. A saved URL at
+`/conversaciones/:id` opens the thread even when its request is outside the
+loaded pages. A wide workspace places the list beside the thread. On a narrow
+screen, the thread has a back control to return to the list.
+
+The thread renders chronological pages and keeps a confirmed send visible
+until pagination reaches it in the history. Each non-deleted message offers the
+existing report form with its `targetMessageId`.
 
 The model already contemplates the `SENT`, `EDITED` and `DELETED` statuses, but
 the API only creates `SENT` messages. Editing, deleting, replies, attachments,
@@ -113,7 +122,8 @@ safety net: keep `body-max-length` at or below it.
 - No idempotency key: retrying a send after a lost response can create a second
   message. A client key can be added later without changing the contract.
 - No edit or delete endpoints, although their statuses are persisted and read.
-- No conversation list, unread counters, or push delivery. Each sent message
-  creates a notice for the other active participants, as described in
-  [notifications](./notifications.md); the notice stores identifiers only, never
-  the text.
+- The message API has no participant-wide list endpoint, per-thread unread
+  count, latest-message preview or push delivery. The Angular inbox uses the
+  two authorized request histories. A participant outside those histories can
+  still use a direct thread link. New messages generate an identifier-based
+  notice for other active participants. See [notifications](./notifications.md).

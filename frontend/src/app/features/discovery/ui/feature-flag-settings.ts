@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common'
 import { Component, inject, OnInit, signal } from '@angular/core'
 import { FeatureFlagsService } from '../../../core/feature-flags/feature-flags.service'
 import type { FeatureFlagKey } from '../../../core/feature-flags/feature-flags-api'
@@ -8,8 +7,8 @@ import { featureFlagSettingsStrings } from '../strings/feature-flag-settings.str
 @Component({
   selector: 'pulso-feature-flag-settings',
   standalone: true,
-  imports: [CommonModule],
   templateUrl: './feature-flag-settings.html',
+  styleUrl: './feature-flag-settings.css',
 })
 export class FeatureFlagSettingsComponent implements OnInit {
   readonly strings = featureFlagSettingsStrings

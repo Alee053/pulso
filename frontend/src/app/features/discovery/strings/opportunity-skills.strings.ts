@@ -1,6 +1,8 @@
 import { defineStrings } from '../../../core/i18n/define-strings'
 
 export const opportunitySkillsStrings = defineStrings({
+  sectionTitle: 'Oportunidades y habilidades',
+  manageHint: (project: string): string => `Gestiona las oportunidades de ${project} y las habilidades que necesita cada una.`,
   toggle: 'Gestionar oportunidades y habilidades',
   loading: 'Cargando oportunidades…',
   retry: 'Reintentar',
@@ -74,6 +76,8 @@ export const opportunitySkillsStrings = defineStrings({
   skillConflict: 'La habilidad ya está asociada a esta oportunidad. Actualiza la lista.',
   skillUnavailable: 'La oportunidad o la habilidad ya no está disponible. Actualiza la lista.',
 }, {
+  sectionTitle: 'Opportunities and skills',
+  manageHint: (project: string): string => `Manage opportunities for ${project} and the skills each one needs.`,
   toggle: 'Manage opportunities and skills',
   loading: 'Loading opportunities…',
   retry: 'Retry',

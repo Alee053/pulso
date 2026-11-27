@@ -1,12 +1,15 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
+import { IconComponent } from '../../../shared/icon/icon'
 import { commonStrings } from '../../../shared/strings/common.strings'
 import { ProfileBlockApi, type BlockedProfile } from '../data-access/profile-block-api'
 import { profileBlockStrings } from '../strings/profile-block.strings'
 
 @Component({
   selector: 'pulso-profile-blocks',
+  imports: [IconComponent],
   templateUrl: './profile-blocks.html',
+  styleUrl: './profile-blocks.css',
 })
 export class ProfileBlocksComponent {
   protected readonly strings = profileBlockStrings

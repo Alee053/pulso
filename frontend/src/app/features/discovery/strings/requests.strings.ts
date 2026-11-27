@@ -3,6 +3,7 @@ import { defineStrings } from '../../../core/i18n/define-strings'
 export const requestsStrings = defineStrings(
   {
     title: 'Solicitudes de conexión',
+    lead: 'Revisa quién quiere conectar y sigue las solicitudes que enviaste.',
     received: 'Recibidas',
     sent: 'Enviadas',
     emptyReceived: 'No hay solicitudes recibidas.',
@@ -52,6 +53,7 @@ export const requestsStrings = defineStrings(
   },
   {
     title: 'Connection requests',
+    lead: 'Review incoming connections and keep track of the requests you sent.',
     received: 'Received',
     sent: 'Sent',
     emptyReceived: 'No received requests.',

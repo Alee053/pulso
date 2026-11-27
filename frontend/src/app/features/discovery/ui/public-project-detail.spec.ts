@@ -38,7 +38,7 @@ describe('PublicProjectDetailComponent', () => {
     })
     const { fixture, http } = createFixture()
     http.expectOne('http://localhost:8080/api/v1/projects/eco-pack')
-      .flush({ data: { ...project, members: [ownProfile, ...project.members] } })
+      .flush({ data: { ...project, members: [ownProfile, ...project.members], externalLinks: [] } })
     fixture.detectChanges()
 
     flushDecision(http, project.id)
@@ -46,7 +46,11 @@ describe('PublicProjectDetailComponent', () => {
     const root = fixture.nativeElement as HTMLElement
     const actions = root.querySelectorAll<HTMLElement>('pulso-profile-block-action')
     expect(actions).toHaveLength(project.members.length)
+    const profileMenus = root.querySelectorAll<HTMLDetailsElement>('.sheet-profile-actions')
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, cancelable: true }))
+    expect(document.activeElement).toBe(profileMenus[profileMenus.length - 1].querySelector('summary'))
     const action = actions[0]
+    action.closest('details')!.open = true
     const details = action.querySelector('details')!
     const url = `http://localhost:8080/api/v1/profiles/${target.profileId}/block`
     details.open = true
@@ -108,6 +112,7 @@ describe('PublicProjectDetailComponent', () => {
     fixture.detectChanges()
     expect(reportForms[0].isConnected).toBe(false)
 
+    reportForms[1].closest<HTMLDetailsElement>('.sheet-profile-actions')!.open = true
     reportForms[1].querySelector('textarea')!.value = ' Contexto '
     const profileReport = submit(reportForms[1])
     expect(profileReport.request.body).toEqual({

@@ -1,18 +1,21 @@
-<section class="mt-6 border-t border-white/10 pt-5">
+<section class="border-t border-[var(--color-border)]">
   <button
     type="button"
-    class="contact-button"
+    class="flex min-h-[3.25rem] w-full items-center gap-2.5 py-2 text-start font-semibold hover:text-[var(--color-accent)]"
     [attr.aria-expanded]="expanded()"
     [attr.aria-controls]="'opportunity-skills-' + projectId"
     (click)="toggle()"
   >
-    {{ expanded() ? strings.close : strings.toggle }}
+    <pulso-icon name="handshake" class="text-[var(--color-accent)]" />
+    {{ strings.sectionTitle }}
+    <pulso-icon class="ml-auto text-[var(--color-accent)]" [name]="expanded() ? 'arrow-down' : 'chevron-right'" [size]="17" />
   </button>
 
-  <div *ngIf="expanded()" [id]="'opportunity-skills-' + projectId" class="mt-5">
+  <div *ngIf="expanded()" [id]="'opportunity-skills-' + projectId" class="mb-2">
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
-        <h3 class="text-lg font-semibold">{{ projectName }}</h3>
+        <h3 class="sr-only">{{ strings.sectionTitle }}</h3>
+        <p class="field-hint">{{ strings.manageHint(projectName) }}</p>
       </div>
       <button type="button" class="solid-button" data-action="create-opportunity" (click)="beginCreate()"
               [disabled]="opportunitySaving() || pendingOpportunityAction() !== null">
@@ -20,36 +23,38 @@
       </button>
     </div>
 
-    <form *ngIf="createOpen() || editingOpportunityId()" class="panel mt-4 grid gap-4 p-4 sm:grid-cols-2"
+    <form *ngIf="createOpen() || editingOpportunityId()" class="mt-4 grid gap-4 rounded-[var(--radius-md)] bg-[var(--color-surface-raised)] p-4 sm:grid-cols-2"
           [formGroup]="opportunityForm" (ngSubmit)="saveOpportunity()" [attr.aria-busy]="opportunitySaving()">
       <h4 class="text-base font-semibold sm:col-span-2">
         {{ editingOpportunityId() ? strings.edit : strings.createTitle }}
       </h4>
       <div>
-        <label class="field-label" for="opportunity-type">{{ strings.type }}</label>
-        <select id="opportunity-type" class="field-input" formControlName="opportunityType">
+        <label class="field-label" [for]="'opportunity-type-' + projectId">{{ strings.type }}</label>
+        <select [id]="'opportunity-type-' + projectId" class="field-input" formControlName="opportunityType">
           <option *ngFor="let type of opportunityTypes" [value]="type">{{ strings.typeOptions[type] }}</option>
         </select>
       </div>
       <div>
-        <label class="field-label" for="opportunity-title">{{ strings.title }}</label>
-        <input id="opportunity-title" class="field-input" formControlName="title" maxlength="160"
-               [attr.aria-invalid]="opportunityFieldError('title', 'required') ? 'true' : null" />
-        <p *ngIf="opportunityFieldError('title', 'required')" class="field-error" role="alert">{{ strings.titleRequired }}</p>
+        <label class="field-label" [for]="'opportunity-title-' + projectId">{{ strings.title }}</label>
+        <input [id]="'opportunity-title-' + projectId" class="field-input" formControlName="title" maxlength="160"
+               [attr.aria-invalid]="opportunityFieldError('title', 'required') || null"
+               [attr.aria-describedby]="opportunityFieldError('title', 'required') ? 'opportunity-title-error-' + projectId : null" />
+        <p *ngIf="opportunityFieldError('title', 'required')" [id]="'opportunity-title-error-' + projectId" class="field-error" role="alert">{{ strings.titleRequired }}</p>
       </div>
       <div class="sm:col-span-2">
-        <label class="field-label" for="opportunity-description">{{ strings.description }}</label>
-        <textarea id="opportunity-description" class="field-input" formControlName="description" maxlength="5000"
-                  [attr.aria-invalid]="opportunityFieldError('description', 'required') ? 'true' : null"></textarea>
-        <p *ngIf="opportunityFieldError('description', 'required')" class="field-error" role="alert">{{ strings.descriptionRequired }}</p>
+        <label class="field-label" [for]="'opportunity-description-' + projectId">{{ strings.description }}</label>
+        <textarea [id]="'opportunity-description-' + projectId" class="field-input" formControlName="description" maxlength="5000"
+                  [attr.aria-invalid]="opportunityFieldError('description', 'required') || null"
+               [attr.aria-describedby]="opportunityFieldError('description', 'required') ? 'opportunity-description-error-' + projectId : null"></textarea>
+        <p *ngIf="opportunityFieldError('description', 'required')" [id]="'opportunity-description-error-' + projectId" class="field-error" role="alert">{{ strings.descriptionRequired }}</p>
       </div>
       <div>
-        <label class="field-label" for="opportunity-city">{{ strings.city }}</label>
-        <input id="opportunity-city" class="field-input" formControlName="city" maxlength="120" />
+        <label class="field-label" [for]="'opportunity-city-' + projectId">{{ strings.city }}</label>
+        <input [id]="'opportunity-city-' + projectId" class="field-input" formControlName="city" maxlength="120" />
       </div>
       <div>
-        <label class="field-label" for="opportunity-department">{{ strings.department }}</label>
-        <input id="opportunity-department" class="field-input" formControlName="department" maxlength="120" />
+        <label class="field-label" [for]="'opportunity-department-' + projectId">{{ strings.department }}</label>
+        <input [id]="'opportunity-department-' + projectId" class="field-input" formControlName="department" maxlength="120" />
       </div>
       <label class="flex items-start gap-3 sm:col-span-2">
         <input class="mt-1 size-5 accent-[var(--color-accent)]" type="checkbox" formControlName="remoteAllowed" />
@@ -68,52 +73,33 @@
       </div>
     </form>
 
-    <p *ngIf="loading()" class="state-panel mt-4" role="status" aria-live="polite">
+    <p *ngIf="loading()" class="status-message mt-4" role="status" aria-live="polite">
       {{ strings.loading }}
     </p>
-    <div *ngIf="errorMessage() as error" class="state-panel mt-4" role="alert">
-      <p>{{ error }}</p>
+    <p *ngIf="errorMessage() as error" class="status-message status-message--error mt-4" role="alert">{{ error }}</p>
+    <div *ngIf="loadFailed()" class="status-message status-message--error mt-4" role="alert">
+      <p>{{ strings.loadFailed }}</p>
       <button type="button" class="solid-button mt-3" (click)="loadMore()" [disabled]="loading()">
         {{ strings.retry }}
       </button>
     </div>
-    <p *ngIf="!loading() && loaded() && opportunities().length === 0 && !errorMessage()"
-       class="state-panel mt-4" role="status">
+    <p *ngIf="!loading() && loaded() && opportunities().length === 0 && !loadFailed()"
+       class="status-message mt-4" role="status">
       {{ strings.empty }}
     </p>
 
     <div *ngIf="opportunities().length > 0" class="mt-4 grid gap-4">
       <article *ngFor="let opportunity of opportunities(); trackBy: trackOpportunity"
-               class="panel p-4 sm:p-5">
-        <header class="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h4 class="font-semibold break-words">{{ opportunity.title }}</h4>
-            <p class="field-hint mt-1">{{ strings.opportunityStatus(displayOpportunityStatus(opportunity.status)) }}</p>
-          </div>
-          <div class="flex flex-wrap gap-2">
-            <button *ngIf="opportunity.status !== 'ARCHIVED'" type="button" class="contact-button" data-action="edit-opportunity"
-                    (click)="beginEdit(opportunity)" [disabled]="opportunitySaving()">
-              {{ strings.edit }}
-            </button>
-            <button *ngIf="opportunity.status !== 'ARCHIVED'" type="button" class="contact-button" data-action="add-skill"
-                    (click)="beginAdding(opportunity.id)"
-                    [disabled]="!catalogsLoaded || catalogsLoading || saving() || pendingSkillKey() !== null">
-              {{ strings.add }}
-            </button>
-            <button *ngFor="let action of opportunityActions(opportunity)" type="button" data-action="change-opportunity-status"
-                    [attr.data-status-action]="action"
-                    [class.solid-button]="action === 'OPEN'" [class.contact-button]="action !== 'OPEN'"
-                    (click)="changeOpportunityStatus(opportunity, action)"
-                    [disabled]="pendingOpportunityAction() !== null || opportunitySaving()">
-              {{ pendingOpportunityAction() === opportunity.id ? strings.saving : strings.action[action] }}
-            </button>
-          </div>
+               class="rounded-[var(--radius-md)] border border-[var(--color-border)] p-4 sm:p-5">
+        <header class="flex flex-wrap items-center justify-between gap-2">
+          <h4 class="text-lg font-semibold break-words">{{ opportunity.title }}</h4>
+          <span class="mini-badge">{{ strings.opportunityStatus(displayOpportunityStatus(opportunity.status)) }}</span>
         </header>
 
         <p class="mt-2 whitespace-pre-line text-[var(--color-muted)]">{{ opportunity.description }}</p>
         <p class="field-hint mt-2">
           {{ strings.typeOptions[opportunity.opportunityType] }}
-          <span *ngIf="opportunity.city || opportunity.department"> · {{ opportunity.city }}<span *ngIf="opportunity.department">, {{ opportunity.department }}</span></span>
+          <span *ngIf="opportunity.city || opportunity.department"> · {{ opportunity.city || opportunity.department }}<span *ngIf="opportunity.city && opportunity.department && opportunity.city !== opportunity.department">, {{ opportunity.department }}</span></span>
           <span *ngIf="opportunity.remoteAllowed"> · {{ strings.remoteAllowed }}</span>
         </p>
 
@@ -136,7 +122,7 @@
           <ul *ngIf="associationsFor(opportunity.id).length > 0"
               class="mt-2 grid gap-2">
             <li *ngFor="let association of associationsFor(opportunity.id)"
-                class="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white/5 p-3">
+                class="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-[var(--color-surface-raised)] p-3">
               <span class="min-w-0 break-words">
                 {{ association.name }}
                 <span *ngIf="!association.active" class="field-hint">({{ strings.inactive }})</span>
@@ -165,8 +151,27 @@
           </ul>
         </section>
 
+        <div class="mt-4 flex flex-wrap gap-2 border-t border-[var(--color-border)] pt-3">
+          <button *ngIf="opportunity.status !== 'ARCHIVED'" type="button" class="contact-button" data-action="edit-opportunity"
+                  (click)="beginEdit(opportunity)" [disabled]="opportunitySaving()">
+            {{ strings.edit }}
+          </button>
+          <button *ngIf="opportunity.status !== 'ARCHIVED'" type="button" class="contact-button" data-action="add-skill"
+                  (click)="beginAdding(opportunity.id)"
+                  [disabled]="!catalogsLoaded || catalogsLoading || saving() || pendingSkillKey() !== null">
+            {{ strings.add }}
+          </button>
+          <button *ngFor="let action of opportunityActions(opportunity)" type="button" data-action="change-opportunity-status"
+                  [attr.data-status-action]="action"
+                  [class.solid-button]="action === 'OPEN'" [class.contact-button]="action !== 'OPEN'"
+                  (click)="changeOpportunityStatus(opportunity, action)"
+                  [disabled]="pendingOpportunityAction() !== null || opportunitySaving()">
+            {{ pendingOpportunityAction() === opportunity.id ? strings.saving : strings.action[action] }}
+          </button>
+        </div>
+
         <form *ngIf="formOpportunityId() === opportunity.id"
-              class="mt-4 grid gap-4 rounded-xl border border-white/10 p-4 sm:grid-cols-2"
+              class="mt-4 grid gap-4 rounded-xl border border-[var(--color-border)] p-4 sm:grid-cols-2"
               [formGroup]="form"
               (ngSubmit)="associate(opportunity.id)"
               [attr.aria-busy]="saving()">
@@ -208,10 +213,10 @@
       </article>
     </div>
 
-    <p *ngIf="successMessage() as success" class="status-message mt-4" role="status" aria-live="polite">
+    <p *ngIf="successMessage() as success" class="status-message status-message--success mt-4" role="status" aria-live="polite">
       {{ success }}
     </p>
-    <button *ngIf="hasMore() && !loading() && !errorMessage()"
+    <button *ngIf="hasMore() && !loading() && !loadFailed()"
             type="button" class="contact-button mt-4" (click)="loadMore()">
       {{ strings.loadMore }}
     </button>

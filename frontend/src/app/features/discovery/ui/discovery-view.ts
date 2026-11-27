@@ -4,6 +4,7 @@ import { IconComponent } from '../../../shared/icon/icon'
 import { commonStrings } from '../../../shared/strings/common.strings'
 import type { Decision, Startup } from '../domain/startup'
 import { feedStrings, searchStrings } from '../strings/feed.strings'
+import { StartupThumbComponent } from './startup-thumb'
 import { StartupCardComponent } from './startup-card'
 import { SearchBarComponent } from './search-bar'
 import { SearchFiltersComponent } from './search-filters'
@@ -13,10 +14,13 @@ import type { SectorCatalogItem, TagCatalogItem } from '../domain/catalog'
 @Component({
   selector: 'pulso-discovery-view',
   standalone: true,
-  imports: [CommonModule, IconComponent, SearchBarComponent, StartupCardComponent, SearchFiltersComponent],
+  imports: [CommonModule, IconComponent, SearchBarComponent, StartupCardComponent, StartupThumbComponent, SearchFiltersComponent],
   templateUrl: './discovery-view.html',
+  styleUrl: './discovery-view.css',
 })
 export class DiscoveryViewComponent implements OnChanges, OnDestroy {
+  @Input() upcoming: Startup[] = []
+  @Output() preferencesRequested = new EventEmitter<void>()
   @Input() activeSignals: string[] = []
   @Input() currentStartup: Startup | undefined
   @Input() errorMessage: string | null = null
@@ -32,7 +36,7 @@ export class DiscoveryViewComponent implements OnChanges, OnDestroy {
   @Input() searchQuery = ''
   @Input() searchResults: Startup[] = []
   @Input() searchTotal = 0
-  
+
   @Input() activeFilters: SearchFilters = {}
   @Input() sectorsList: SectorCatalogItem[] = []
   @Input() tagsList: TagCatalogItem[] = []
@@ -52,7 +56,6 @@ export class DiscoveryViewComponent implements OnChanges, OnDestroy {
   readonly search = searchStrings
   readonly common = commonStrings
 
-  direction = 1
   isTransitioning = false
   toast: string | null = null
   dragOffset = { x: 0, y: 0 }
@@ -83,14 +86,6 @@ export class DiscoveryViewComponent implements OnChanges, OnDestroy {
       : false
   }
 
-  get activeNumber(): number {
-    return Math.min(this.totalStartups - this.feedRemaining + 1, this.totalStartups)
-  }
-
-  get progress(): number {
-    return this.totalStartups > 0 ? (this.activeNumber / this.totalStartups) * 100 : 0
-  }
-
   get horizontalIntensity(): number {
     return Math.min(Math.abs(this.dragOffset.x) / 90, 1)
   }
@@ -117,7 +112,8 @@ export class DiscoveryViewComponent implements OnChanges, OnDestroy {
 
   @HostListener('window:keydown', ['$event'])
   handleKeyDown(event: KeyboardEvent): void {
-    if (isEditableTarget(event.target)) {
+    if (event.defaultPrevented || isEditableTarget(event.target)
+      || (event.target instanceof HTMLElement && event.target.closest('nav, header, [popover], [role="dialog"]'))) {
       return
     }
 
@@ -160,7 +156,6 @@ export class DiscoveryViewComponent implements OnChanges, OnDestroy {
       return
     }
 
-    this.direction = decision === 'interested' ? 1 : -1
     this.isTransitioning = true
     this.decisionMade.emit(decision)
     this.transitionTimeout = window.setTimeout(() => {

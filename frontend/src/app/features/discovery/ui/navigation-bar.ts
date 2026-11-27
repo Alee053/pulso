@@ -1,12 +1,13 @@
-import { CommonModule } from '@angular/common'
-import { Component, EventEmitter, Input, Output } from '@angular/core'
+import { DOCUMENT } from '@angular/common'
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core'
 import { BrandMarkComponent } from '../../../shared/brand-mark/brand-mark'
 import { IconComponent, type IconName } from '../../../shared/icon/icon'
+import { LanguageSwitcherComponent } from '../../../shared/language-switcher/language-switcher'
+import { ThemeSwitcherComponent } from '../../../shared/theme-switcher/theme-switcher'
 import type { AppView } from '../domain/startup'
-import { commonStrings } from '../../../shared/strings/common.strings'
 import { navigationStrings } from '../strings/navigation.strings'
 
-interface NavigationItem {
+interface Destination {
   id: AppView
   label: string
   icon: IconName
@@ -14,47 +15,67 @@ interface NavigationItem {
 
 @Component({
   selector: 'pulso-navigation-bar',
-  standalone: true,
-  imports: [CommonModule, BrandMarkComponent, IconComponent],
+  imports: [BrandMarkComponent, IconComponent, ThemeSwitcherComponent, LanguageSwitcherComponent],
   templateUrl: './navigation-bar.html',
 })
 export class NavigationBarComponent {
   @Input() activeView: AppView = 'discover'
   @Input() projectCreationEnabled = true
+  @Input() languageSwitcherEnabled = false
   @Input() savedCount = 0
-  @Input() interestedCount = 0
   @Input() unreadCount = 0
   @Output() navigated = new EventEmitter<AppView>()
 
-  @Output() exampleRequested = new EventEmitter<void>()
-
-  readonly common = commonStrings
   readonly strings = navigationStrings
+  private readonly document = inject(DOCUMENT)
 
-  navigationItems(): readonly NavigationItem[] {
-    const items: NavigationItem[] = [
-      { id: 'discover', label: navigationStrings.discover, icon: 'compass' },
-      { id: 'create-project', label: navigationStrings.createProject, icon: 'sparkles' },
-      { id: 'teams', label: navigationStrings.teams, icon: 'users-round' },
-      { id: 'requests', label: navigationStrings.requests, icon: 'heart' },
-      { id: 'notifications', label: navigationStrings.notifications, icon: 'bell' },
-      { id: 'saved', label: navigationStrings.saved, icon: 'bookmark' },
-      { id: 'profile', label: navigationStrings.profile, icon: 'user-round' },
+  get skipHref(): string {
+    const { pathname, search } = this.document.location
+    return pathname + search + '#workspace-content'
+  }
+
+  get explore(): Destination[] {
+    return [
+      { id: 'discover', label: this.strings.discover, icon: 'compass' },
+      { id: 'saved', label: this.strings.saved, icon: 'bookmark' },
     ]
-    return this.projectCreationEnabled ? items : items.filter(item => item.id !== 'create-project')
   }
 
-  get totalSaved(): number {
-    return this.savedCount + this.interestedCount
+  get community(): Destination[] {
+    return [
+      { id: 'messages', label: this.strings.messages, icon: 'message-circle' },
+      { id: 'requests', label: this.strings.requests, icon: 'handshake' },
+      { id: 'teams', label: this.strings.teams, icon: 'users-round' },
+    ]
   }
 
-  countFor(item: NavigationItem): number {
-    if (item.id === 'notifications') return this.unreadCount
-    return item.id === 'saved' ? this.savedCount : 0
+  get mobilePrimary(): Destination[] {
+    return [...this.explore, this.community[0]]
   }
 
-  countLabel(item: NavigationItem): string | number {
-    const count = this.countFor(item)
-    return count > 99 ? '99+' : count
+  get mobileMore(): Destination[] {
+    const items = this.community.slice(1)
+    if (this.projectCreationEnabled) items.push({ id: 'create-project', label: this.strings.createProject, icon: 'plus' })
+    items.push({ id: 'profile', label: this.strings.profile, icon: 'circle-user' })
+    return items
+  }
+
+  get currentLabel(): string {
+    if (this.activeView === 'notifications') return this.strings.notifications
+    if (this.activeView === 'detail') return this.strings.project
+    return [...this.mobilePrimary, ...this.mobileMore].find(item => this.isCurrent(item.id))?.label ?? ''
+  }
+
+  get inMore(): boolean {
+    return this.mobileMore.some(item => this.isCurrent(item.id))
+  }
+
+  isCurrent(id: AppView): boolean {
+    return this.activeView === id || (id === 'messages' && this.activeView === 'conversation')
+  }
+
+  chooseMore(item: Destination, popover: HTMLElement): void {
+    popover.hidePopover()
+    this.navigated.emit(item.id)
   }
 }

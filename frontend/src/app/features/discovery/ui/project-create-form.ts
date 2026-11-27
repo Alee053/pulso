@@ -1,8 +1,12 @@
 import { CommonModule } from '@angular/common'
 import {
   Component,
+  ElementRef,
+  EventEmitter,
   inject,
   Input,
+  Output,
+  ViewChild,
   signal,
 } from '@angular/core'
 import {
@@ -15,6 +19,7 @@ import { firstValueFrom } from 'rxjs'
 import { SupabaseAuthGateway } from '../../../core/auth/supabase-auth.gateway'
 import type { SectorCatalogItem } from '../../discovery/domain/catalog'
 import { projectContract } from '../data-access/project.contract'
+import { IconComponent } from '../../../shared/icon/icon'
 import { ProjectsApi } from '../data-access/projects-api'
 import { MemberInvitationPanelComponent } from './member-invitation-panel'
 import {
@@ -28,8 +33,9 @@ import { projectStrings } from '../strings/project.strings'
 @Component({
   selector: 'pulso-project-create-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MemberInvitationPanelComponent],
+  imports: [CommonModule, ReactiveFormsModule, MemberInvitationPanelComponent, IconComponent],
   templateUrl: './project-create-form.html',
+  styleUrl: './project-create-form.css',
 })
 export class ProjectCreateFormComponent {
   readonly strings = projectStrings
@@ -42,6 +48,13 @@ export class ProjectCreateFormComponent {
   @Input() catalogsLoading = false
   @Input() catalogsLoaded = false
   @Input() catalogsErrorMessage: string | null = null
+
+  @Output() teamsRequested = new EventEmitter<void>()
+  @Output() catalogsRetryRequested = new EventEmitter<void>()
+
+  @ViewChild('successTitle') set successTitle(element: ElementRef<HTMLElement> | undefined) {
+    element?.nativeElement.focus()
+  }
 
   readonly stages = projectStageOptions
 
@@ -105,8 +118,13 @@ export class ProjectCreateFormComponent {
     }),
   })
 
+  startAnother(): void {
+    this.form.reset()
+    this.createdProject.set(null)
+  }
+
   async submit(): Promise<void> {
-    if (this.isSubmitting()) {
+    if (this.isSubmitting() || this.createdProject()) {
       return
     }
 

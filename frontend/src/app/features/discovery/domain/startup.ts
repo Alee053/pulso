@@ -5,7 +5,7 @@ export type InterestId =
   | 'opportunities'
   | 'inspiration'
 
-export type AppView = 'discover' | 'create-project' | 'saved' | 'profile' | 'detail' | 'teams' | 'requests' | 'notifications' | 'conversation'
+export type AppView = 'discover' | 'create-project' | 'saved' | 'profile' | 'detail' | 'teams' | 'requests' | 'notifications' | 'conversation' | 'messages'
 
 
 export type Decision = 'skip' | 'interested'

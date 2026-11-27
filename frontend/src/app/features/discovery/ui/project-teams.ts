@@ -20,15 +20,20 @@ import { ProjectMembersComponent } from './project-members'
 import type { UpdatedMembership } from '../domain/project-member'
 import type { SectorCatalogItem, SkillCatalogItem } from '../domain/catalog'
 import { ProjectOpportunitySkillsComponent } from './project-opportunity-skills'
+import { IconComponent } from '../../../shared/icon/icon'
+import { projectStageStrings } from '../strings/project.strings'
 import { ProjectManagementComponent } from './project-management'
 
 @Component({
   selector: 'pulso-project-teams',
   standalone: true,
-  imports: [CommonModule, ProjectMembersComponent, ProjectOpportunitySkillsComponent, ProjectManagementComponent],
+  imports: [CommonModule, ProjectMembersComponent, ProjectOpportunitySkillsComponent, ProjectManagementComponent, IconComponent],
   templateUrl: './project-teams.html',
+  styleUrl: './project-teams.css',
 })
 export class ProjectTeamsComponent implements OnDestroy {
+  @Input() canCreate = false
+  @Output() createRequested = new EventEmitter<void>()
   @Input() skills: readonly SkillCatalogItem[] = []
   @Input() sectors: readonly SectorCatalogItem[] = []
   @Input() catalogsLoaded = false
@@ -37,6 +42,7 @@ export class ProjectTeamsComponent implements OnDestroy {
   @Output() catalogsRetryRequested = new EventEmitter<void>()
 
   readonly strings = invitationStrings
+  readonly stages = projectStageStrings
   readonly reviewStrings = projectReviewStrings
   private readonly auth = inject(SupabaseAuthGateway)
   private readonly api = inject(CurrentProjectsApi)
@@ -90,8 +96,6 @@ export class ProjectTeamsComponent implements OnDestroy {
       },
     })
   }
-
-  trackProject(_index: number, project: CurrentProjectMembership): string { return project.projectId }
 
   updateOwnMembership(member: Pick<UpdatedMembership, 'projectId' | 'role' | 'membershipStatus'>): void {
     if (!this.projects().some((project) => project.projectId === member.projectId)) return

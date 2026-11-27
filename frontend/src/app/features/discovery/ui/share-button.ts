@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common'
 import { Component, Input, inject, signal } from '@angular/core'
 import { firstValueFrom } from 'rxjs'
+import { cardStrings } from '../strings/feed.strings'
 import { IconComponent } from '../../../shared/icon/icon'
 import { ProjectShareApi, type ShareOrigin } from '../data-access/project-share-api'
 
@@ -18,6 +19,7 @@ export class ShareButtonComponent {
 
   private readonly shareApi = inject(ProjectShareApi)
 
+  readonly strings = cardStrings
   readonly isSharing = signal(false)
   readonly feedback = signal<string | null>(null)
 
@@ -37,9 +39,9 @@ export class ShareButtonComponent {
       if (!shared) {
         // Fallback: copiar al portapapeles
         const copied = await this.shareApi.copyToClipboard(link.url)
-        this.feedback.set(copied ? 'Enlace copiado' : 'No se pudo copiar')
+        this.feedback.set(copied ? this.strings.copied : this.strings.copyFailed)
       } else {
-        this.feedback.set('Compartido')
+        this.feedback.set(this.strings.shared)
       }
 
       // Registrar el evento SHARED (solo si el usuario está autenticado)
@@ -51,7 +53,7 @@ export class ShareButtonComponent {
 
       setTimeout(() => this.feedback.set(null), 3000)
     } catch {
-      this.feedback.set('No se pudo generar el enlace')
+      this.feedback.set(this.strings.shareFailed)
       setTimeout(() => this.feedback.set(null), 3000)
     } finally {
       this.isSharing.set(false)

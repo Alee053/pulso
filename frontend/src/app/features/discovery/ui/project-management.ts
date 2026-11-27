@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common'
-import { Component, EventEmitter, Input, Output, inject, signal } from '@angular/core'
+import { Component, ElementRef, EventEmitter, Input, Output, ViewChild, inject, signal } from '@angular/core'
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms'
 import { firstValueFrom } from 'rxjs'
 import type { SectorCatalogItem } from '../domain/catalog'
@@ -21,6 +21,10 @@ export class ProjectManagementComponent {
   @Input({ required: true }) project!: CurrentProjectMembership
   @Input() sectors: readonly SectorCatalogItem[] = []
   @Output() projectChanged = new EventEmitter<CurrentProjectMembership>()
+
+  @ViewChild('editName') set editName(input: ElementRef<HTMLInputElement> | undefined) {
+    input?.nativeElement.focus()
+  }
 
   readonly strings = strings
   readonly stages = projectStageOptions

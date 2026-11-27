@@ -8,7 +8,7 @@ import { searchStrings } from '../strings/feed.strings'
     imports: [IconComponent],
     template: `
         <div class="search-bar">
-            <label class="field-label" for="project-search">{{ strings.label }}</label>
+            <label class="sr-only" for="project-search">{{ strings.label }}</label>
             <div class="search-bar__control">
                 <pulso-icon name="search" [size]="18" class="search-bar__icon" />
                 <input id="project-search"

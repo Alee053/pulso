@@ -1,62 +1,69 @@
+<a class="skip-link" [href]="skipHref">{{ strings.skip }}</a>
 <aside class="desktop-nav" [attr.aria-label]="strings.aria">
-  <div class="desktop-nav__brand">
-    <pulso-brand-mark />
-  </div>
-
-  <div class="desktop-nav__section">
-    <p class="desktop-nav__eyebrow">{{ strings.menuLabel }}</p>
-    <nav class="desktop-nav__menu" [attr.aria-label]="strings.aria">
-      <button
-        *ngFor="let item of navigationItems()"
-        type="button"
-        class="desktop-nav__item"
-        [class.desktop-nav__item--active]="item.id === activeView"
-        [attr.aria-current]="item.id === activeView ? 'page' : null"
-        [attr.aria-label]="item.id === 'notifications' && unreadCount ? strings.notificationCount(unreadCount) : null"
-        (click)="navigated.emit(item.id)"
-      >
-        <span class="desktop-nav__item-icon">
-          <pulso-icon [name]="item.icon" [size]="18" [strokeWidth]="item.id === activeView ? 2 : 1.7" />
-        </span>
-        <span>{{ item.label }}</span>
-        <span *ngIf="countFor(item) > 0" class="desktop-nav__count">{{ countLabel(item) }}</span>
+  <div class="desktop-nav__brand"><pulso-brand-mark /></div>
+  <nav class="desktop-nav__menu" [attr.aria-label]="strings.aria">
+    @if (projectCreationEnabled) {
+      <button type="button" class="desktop-nav__item nav-create" [attr.aria-current]="isCurrent('create-project') ? 'page' : null"
+              (click)="navigated.emit('create-project')">
+        <pulso-icon name="plus" />{{ strings.createProject }}
       </button>
-    </nav>
-  </div>
-
-  <div class="desktop-nav__session">
-    <span class="desktop-nav__session-icon">
-      <pulso-icon name="sparkles" [size]="16" [strokeWidth]="1.7" />
-    </span>
-    <div class="min-w-0">
-      <p class="desktop-nav__eyebrow">{{ strings.sessionEyebrow }}</p>
-      <p class="mt-1 text-sm text-[var(--color-muted)]">{{ strings.savedSignals(totalSaved) }}</p>
-    </div>
-  </div>
+    }
+    @for (item of explore; track item.id) {
+      <button type="button" class="desktop-nav__item" [class.desktop-nav__item--active]="isCurrent(item.id)"
+              [attr.aria-current]="isCurrent(item.id) ? 'page' : null" (click)="navigated.emit(item.id)">
+        <pulso-icon [name]="item.icon" />{{ item.label }}
+        @if (item.id === 'saved' && savedCount > 0) { <span class="nav-count">{{ savedCount }}</span> }
+      </button>
+    }
+    <h2 class="nav-group-label">{{ strings.community }}</h2>
+    @for (item of community; track item.id) {
+      <button type="button" class="desktop-nav__item" [class.desktop-nav__item--active]="isCurrent(item.id)"
+              [attr.aria-current]="isCurrent(item.id) ? 'page' : null"
+              [attr.aria-keyshortcuts]="item.id === 'messages' ? 'Alt+Shift+M' : null"
+              [title]="item.id === 'messages' ? item.label + ' (Alt+Shift+M)' : item.label"
+              (click)="navigated.emit(item.id)"><pulso-icon [name]="item.icon" />{{ item.label }}</button>
+    }
+    <button type="button" class="desktop-nav__item nav-profile" [class.desktop-nav__item--active]="isCurrent('profile')"
+            [attr.aria-current]="isCurrent('profile') ? 'page' : null" (click)="navigated.emit('profile')">
+      <span class="profile-symbol"><pulso-icon name="user-round" [size]="18" /></span>{{ strings.profile }}
+      <pulso-icon name="chevron-right" [size]="15" class="ms-auto" />
+    </button>
+  </nav>
 </aside>
 
-<header class="mobile-topbar">
-  <pulso-brand-mark />
-  <button type="button" class="reference-example" (click)="exampleRequested.emit()" [attr.aria-label]="common.exampleProject">
-    <pulso-icon name="arrow-up-right" [size]="18" />
-    <span>{{ strings.exampleShortLabel }}</span>
-  </button>
+<header class="workspace-header">
+  <div class="workspace-crumb">
+    <pulso-icon name="layers" [size]="17" /><span>{{ strings.workspace }}</span>
+    <pulso-icon name="chevron-right" [size]="13" /><strong>{{ currentLabel }}</strong>
+  </div>
+  <pulso-brand-mark class="mobile-brand" />
+  <div class="workspace-tools">
+    <pulso-theme-switcher />
+    @if (languageSwitcherEnabled) { <pulso-language-switcher /> }
+    <button type="button" class="notice-link" [attr.aria-current]="isCurrent('notifications') ? 'page' : null"
+            [attr.aria-label]="unreadCount ? strings.notificationCount(unreadCount) : strings.notifications"
+            [title]="strings.notifications" (click)="navigated.emit('notifications')">
+      <pulso-icon name="bell" [size]="20" />
+      @if (unreadCount) { <span class="notice-count" aria-hidden="true">{{ unreadCount > 99 ? '99+' : unreadCount }}</span> }
+    </button>
+  </div>
 </header>
 
 <nav class="mobile-nav" [attr.aria-label]="strings.aria">
-  <button
-    *ngFor="let item of navigationItems()"
-    type="button"
-    class="mobile-nav__item"
-    [class.mobile-nav__item--active]="item.id === activeView"
-    [attr.aria-current]="item.id === activeView ? 'page' : null"
-    [attr.aria-label]="item.id === 'notifications' && unreadCount ? strings.notificationCount(unreadCount) : null"
-    (click)="navigated.emit(item.id)"
-  >
-    <span class="relative">
-      <pulso-icon [name]="item.icon" [size]="18" [strokeWidth]="item.id === activeView ? 2 : 1.7" />
-      <span *ngIf="countFor(item) > 0" class="mobile-nav__count">{{ countLabel(item) }}</span>
-    </span>
-    <span class="mobile-nav__label">{{ item.id === 'notifications' ? strings.notificationsShort : item.label }}</span>
+  @for (item of mobilePrimary; track item.id) {
+    <button type="button" class="mobile-nav__item" [attr.aria-current]="isCurrent(item.id) ? 'page' : null"
+            (click)="navigated.emit(item.id)">
+      <pulso-icon [name]="item.icon" [size]="21" /><span class="mobile-nav__label">{{ item.label }}</span>
+    </button>
+  }
+  <button type="button" class="mobile-nav__item" popovertarget="mobile-destinations" [class.mobile-nav__item--active]="inMore">
+    <pulso-icon name="menu" [size]="21" /><span class="mobile-nav__label">{{ strings.more }}</span>
   </button>
+  <div id="mobile-destinations" class="mobile-more" popover #menu>
+    @for (item of mobileMore; track item.id) {
+      <button type="button" [attr.aria-current]="isCurrent(item.id) ? 'page' : null" (click)="chooseMore(item, menu)">
+        <pulso-icon [name]="item.icon" [size]="19" />{{ item.label }}
+      </button>
+    }
+  </div>
 </nav>

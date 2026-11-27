@@ -16,6 +16,24 @@ describe('AuthPanelComponent', () => {
     expect(auth.initialize).toHaveBeenCalledOnce()
   })
 
+  it('can reveal a password and starts registration with a masked, empty password', () => {
+    const fixture = createFixture(createGatewayStub(true))
+    const root = fixture.nativeElement as HTMLElement
+    const input = root.querySelector<HTMLInputElement>('#auth-password')!
+    fixture.componentInstance.password = 'example-password'
+    root.querySelector<HTMLButtonElement>('[aria-controls="auth-password"]')!.click()
+    fixture.detectChanges()
+    expect(input.type).toBe('text')
+    expect(input.value).toBe('example-password')
+
+    root.querySelector<HTMLButtonElement>('.access-alternate button')!.click()
+    fixture.detectChanges()
+    expect(input.type).toBe('password')
+    expect(input.value).toBe('')
+    expect(input.autocomplete).toBe('new-password')
+    expect(document.activeElement?.id).toBe('auth-panel-title')
+  })
+
   it('submits credentials through the gateway and clears the password', async () => {
     const auth = createGatewayStub(true)
     auth.signIn.mockResolvedValue({

@@ -5,6 +5,21 @@ import { savedStrings } from '../strings/saved.strings'
 import { SavedViewComponent } from './saved-view'
 
 describe('SavedViewComponent', () => {
+  it('removes a saved project independently of an interest decision', () => {
+    const startup = mockStartups[0]!
+    const fixture = TestBed.createComponent(SavedViewComponent)
+    fixture.componentRef.setInput('savedStartups', [startup])
+    fixture.componentRef.setInput('savedCount', 1)
+    const removed = vi.fn()
+    const interest = vi.fn()
+    fixture.componentInstance.savedRemoved.subscribe(removed)
+    fixture.componentInstance.interestCleared.subscribe(interest)
+    fixture.detectChanges()
+    fixture.nativeElement.querySelector('.collection-card__remove').click()
+    expect(removed).toHaveBeenCalledExactlyOnceWith(startup.id)
+    expect(interest).not.toHaveBeenCalled()
+  })
+
   it('allows removing an interested project without exposing public popularity', () => {
     const startup = mockStartups[0]!
     const fixture = TestBed.createComponent(SavedViewComponent)

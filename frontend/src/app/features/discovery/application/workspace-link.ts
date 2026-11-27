@@ -2,6 +2,7 @@ import { requestInboxHref, type RequestInbox } from '../domain/connection'
 
 export type WorkspaceLink =
   | { kind: 'project'; reference: string }
+  | { kind: 'messages' }
   | { kind: 'conversation'; id: string }
   | { kind: 'requests'; inbox: RequestInbox }
 
@@ -16,6 +17,7 @@ export function readWorkspaceLink(pathname: string): WorkspaceLink | null {
     }
   }
 
+  if (path === '/conversaciones') return { kind: 'messages' }
   const conversation = /^\/conversaciones\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})$/i.exec(path)
   if (conversation) return { kind: 'conversation', id: conversation[1] }
   if (path === requestInboxHref('received')) return { kind: 'requests', inbox: 'received' }

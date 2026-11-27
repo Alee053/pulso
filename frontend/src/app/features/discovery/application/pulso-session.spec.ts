@@ -283,19 +283,20 @@ describe('PulsoSession', () => {
     expect(session.hasStarted()).toBe(false)
   })
 
-  it('cancels a draft and saves later edits with the same validation and completion date', async () => {
+  it.each(['profile', 'discover'] as const)('returns to %s after cancelling or saving preference edits', async (origin) => {
     const savePreferences = vi.fn().mockImplementation((payload) => of(savedPreferences({ ...payload })))
     const session = createSession({
       loadPreferences: vi.fn().mockReturnValue(of(savedPreferences())), savePreferences,
     })
     await session.loadOnboardingPreferences()
     await session.loadReferenceCatalogs()
-    session.goToView('profile')
+    session.goToView(origin)
     session.editPreferences()
     await Promise.resolve()
     session.toggleIntention('FIND_CUSTOMERS')
     session.changeSkillProficiency({ skillId: 'skill-1', proficiency: 'EXPERT' })
     session.cancelPreferencesEditing()
+    expect(session.activeView()).toBe(origin)
     expect(session.selectedIntentions()).toEqual(['BUY'])
     expect(session.selectedSkills()).toEqual([{ skillId: 'skill-1', proficiency: 'ADVANCED' }])
     expect(savePreferences).not.toHaveBeenCalled()
@@ -308,7 +309,7 @@ describe('PulsoSession', () => {
       preferredSectors: [], preferredStages: [], preferredTags: ['tag-1'],
       skills: [{ skillId: 'skill-1', proficiency: 'EXPERT' }], completeOnboarding: true })
     expect(session.isEditingPreferences()).toBe(false)
-    expect(session.activeView()).toBe('profile')
+    expect(session.activeView()).toBe(origin)
     expect(session.onboardingCompletedAt()).toBe('2026-10-09T12:00:00Z')
     expect(session.preferenceWeights()).toEqual({ sustainability: 2.5 })
   })

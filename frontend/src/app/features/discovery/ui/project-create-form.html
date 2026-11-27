@@ -1,336 +1,144 @@
-<main class="page stacked-view">
+<main class="page draft-page">
   <header class="page-header">
-    <p class="eyebrow">
-      {{ strings.eyebrow }}
-    </p>
-
-    <h1 class="page-title">
-      {{ strings.title }}
-    </h1>
-
-    <p class="page-lead">
-      {{ strings.leadLine1 }}
-      {{ strings.leadLine2 }}
-    </p>
+    <h1 class="page-title">{{ strings.title }}</h1>
+    <p class="page-lead">{{ strings.lead }}</p>
   </header>
 
-  <div
-    *ngIf="catalogsLoading"
-    class="state-panel"
-    role="status"
-    aria-live="polite"
-  >
-    <p class="text-sm text-slate-300">
-      {{ strings.loading }}
-    </p>
-  </div>
-
-  <div
-    *ngIf="!catalogsLoading && catalogsErrorMessage"
-    class="state-panel"
-    role="alert"
-  >
-    <p class="text-sm text-slate-300">
-      {{ catalogsErrorMessage }}
-    </p>
-  </div>
-
-  <form
-    *ngIf="!catalogsLoading && !catalogsErrorMessage"
-    class="panel p-5 sm:p-8"
-    [formGroup]="form"
-    (ngSubmit)="submit()"
-    novalidate
-    [attr.aria-busy]="isSubmitting()"
-  >
-    <div class="grid gap-6 sm:grid-cols-2">
-      <div class="sm:col-span-2">
-        <label
-          for="project-name"
-          class="field-label"
-        >
-          {{ strings.nameLabel }}
-        </label>
-
-        <input
-          id="project-name"
-          type="text"
-          formControlName="name"
-          [maxlength]="projectContract.nameMaxLength"
-          class="field-input mt-2"
-          aria-required="true"
-          [attr.aria-invalid]="form.controls.name.touched && form.controls.name.invalid ? 'true' : null"
-          [attr.aria-describedby]="hasError('name', 'required') ? 'project-name-error' : null"
-        />
-
-        <p
-          *ngIf="hasError('name', 'required')"
-          id="project-name-error"
-          class="field-error mt-2"
-          role="alert"
-        >
-          {{ strings.nameRequired }}
-        </p>
+  @if (createdProject(); as created) {
+    <section class="panel draft-success">
+      <span class="state-icon"><pulso-icon name="check" [size]="23" /></span>
+      <div role="status">
+        <h2 #successTitle tabindex="-1">{{ strings.createdTitle }}</h2>
+        <p class="field-hint">{{ strings.createdDetail(created.project.name) }}</p>
       </div>
-
-      <div>
-        <label
-          for="project-slug"
-          class="field-label"
-        >
-          {{ strings.slugLabel }}
-        </label>
-
-        <input
-          id="project-slug"
-          type="text"
-          formControlName="slug"
-          [maxlength]="projectContract.slugMaxLength"
-          class="field-input mt-2"
-          aria-required="true"
-          [attr.aria-invalid]="form.controls.slug.touched && form.controls.slug.invalid ? 'true' : null"
-          [attr.aria-describedby]="'project-slug-hint' + (hasError('slug', 'required') ? ' project-slug-error' : '') + (hasError('slug', 'minlength') ? ' project-slug-length-error' : '')"
-        />
-
-        <p id="project-slug-hint" class="field-hint mt-2">
-          {{ strings.slugHint }}
-        </p>
-
-        <p
-          *ngIf="hasError('slug', 'required')"
-          id="project-slug-error"
-          class="field-error mt-2"
-          role="alert"
-        >
-          {{ strings.slugRequired }}
-        </p>
-
-        <p
-          *ngIf="hasError('slug', 'minlength')"
-          id="project-slug-length-error"
-          class="field-error mt-2"
-          role="alert"
-        >
-          {{ strings.slugMinLength(projectContract.slugMinLength) }}
-        </p>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" class="solid-button" (click)="teamsRequested.emit()">{{ strings.goToTeams }}</button>
+        <button type="button" class="contact-button" (click)="startAnother()">{{ strings.another }}</button>
       </div>
-
-      <div>
-        <label
-          for="project-city"
-          class="field-label"
-        >
-          {{ strings.cityLabel }}
-        </label>
-
-        <input
-          id="project-city"
-          type="text"
-          formControlName="city"
-          [maxlength]="projectContract.cityMaxLength"
-          class="field-input mt-2"
-          aria-required="true"
-          [attr.aria-invalid]="form.controls.city.touched && form.controls.city.invalid ? 'true' : null"
-          [attr.aria-describedby]="hasError('city', 'required') ? 'project-city-error' : null"
-        />
-
-        <p
-          *ngIf="hasError('city', 'required')"
-          id="project-city-error"
-          class="field-error mt-2"
-          role="alert"
-        >
-          {{ strings.cityRequired }}
-        </p>
-      </div>
-
-      <div class="sm:col-span-2">
-        <label
-          for="project-tagline"
-          class="field-label"
-        >
-          {{ strings.taglineLabel }}
-        </label>
-
-        <input
-          id="project-tagline"
-          type="text"
-          formControlName="tagline"
-          [maxlength]="projectContract.taglineMaxLength"
-          class="field-input mt-2"
-          aria-required="true"
-          [attr.aria-invalid]="form.controls.tagline.touched && form.controls.tagline.invalid ? 'true' : null"
-          [attr.aria-describedby]="hasError('tagline', 'required') ? 'project-tagline-error' : null"
-        />
-
-        <p
-          *ngIf="hasError('tagline', 'required')"
-          id="project-tagline-error"
-          class="field-error mt-2"
-          role="alert"
-        >
-          {{ strings.taglineRequired }}
-        </p>
-      </div>
-
-      <div>
-        <label
-          for="project-sector"
-          class="field-label"
-        >
-          {{ strings.sectorLabel }}
-        </label>
-
-        <select
-          id="project-sector"
-          formControlName="sectorId"
-          class="field-input mt-2"
-          aria-required="true"
-          [attr.aria-invalid]="form.controls.sectorId.touched && form.controls.sectorId.invalid ? 'true' : null"
-          [attr.aria-describedby]="hasError('sectorId', 'required') ? 'project-sector-error' : hasError('sectorId', 'invalidSector') ? 'project-sector-unavailable-error' : null"
-        >
-          <option value="">
-            {{ strings.sectorPlaceholder }}
-          </option>
-
-          <option
-            *ngFor="let sector of sectors"
-            [value]="sector.id"
-          >
-            {{ sector.name }}
-          </option>
-        </select>
-
-        <p
-          *ngIf="catalogsLoaded && sectors.length === 0"
-          class="field-hint mt-2"
-          role="status"
-        >
-          {{ strings.sectorEmpty }}
-        </p>
-
-        <p
-          *ngIf="hasError('sectorId', 'required')"
-          id="project-sector-error"
-          class="field-error mt-2"
-          role="alert"
-        >
-          {{ strings.sectorRequired }}
-        </p>
-
-        <p
-          *ngIf="hasError('sectorId', 'invalidSector')"
-          id="project-sector-unavailable-error"
-          class="field-error mt-2"
-          role="alert"
-        >
-          {{ strings.sectorUnavailable }}
-        </p>
-      </div>
-
-      <div>
-        <label
-          for="project-stage"
-          class="field-label"
-        >
-          {{ strings.stageLabel }}
-        </label>
-
-        <select
-          id="project-stage"
-          formControlName="stage"
-          class="field-input mt-2"
-          aria-required="true"
-          [attr.aria-invalid]="form.controls.stage.touched && form.controls.stage.invalid ? 'true' : null"
-          [attr.aria-describedby]="hasError('stage', 'required') ? 'project-stage-error' : null"
-        >
-          <option value="">
-            {{ strings.stagePlaceholder }}
-          </option>
-
-          <option
-            *ngFor="let stage of stages"
-            [value]="stage.value"
-          >
-            {{ stage.label }}
-          </option>
-        </select>
-
-        <p
-          *ngIf="hasError('stage', 'required')"
-          id="project-stage-error"
-          class="field-error mt-2"
-          role="alert"
-        >
-          {{ strings.stageRequired }}
-        </p>
-      </div>
-
-      <div class="sm:col-span-2">
-        <label
-          for="project-description"
-          class="field-label"
-        >
-          {{ strings.descriptionLabel }}
-          <span class="font-normal text-slate-400">{{ strings.descriptionOptional }}</span>
-        </label>
-
-        <textarea
-          id="project-description"
-          formControlName="description"
-          [maxlength]="projectContract.descriptionMaxLength"
-          rows="6"
-          class="field-input mt-2 resize-y"
-        ></textarea>
-      </div>
+    </section>
+    <pulso-member-invitation-panel [projectId]="created.project.id" />
+  } @else if (catalogsLoading) {
+    <div class="state-panel" role="status"><span class="spinner" aria-hidden="true"></span><p>{{ strings.loading }}</p></div>
+  } @else if (catalogsErrorMessage) {
+    <div class="state-panel" role="alert">
+      <p>{{ catalogsErrorMessage }}</p>
+      <button type="button" class="contact-button" (click)="catalogsRetryRequested.emit()">{{ strings.retry }}</button>
     </div>
+  } @else {
+    <div class="draft-layout">
+      <form class="panel draft-form" [formGroup]="form" (ngSubmit)="submit()" novalidate [attr.aria-busy]="isSubmitting()">
+        <fieldset [disabled]="isSubmitting()">
+          <legend>{{ strings.identity }}</legend>
+          <div class="draft-fields">
+            <div>
+              <label for="project-name" class="field-label">{{ strings.nameLabel }}</label>
+              <input id="project-name" class="field-input" formControlName="name" required [maxlength]="projectContract.nameMaxLength"
+                     [attr.aria-invalid]="hasError('name', 'required') || null"
+                     [attr.aria-describedby]="hasError('name', 'required') ? 'project-name-error' : null" />
+              @if (hasError('name', 'required')) {
+                <p id="project-name-error" class="field-error" role="alert">{{ strings.nameRequired }}</p>
+              }
+            </div>
+            <div>
+              <label for="project-slug" class="field-label">{{ strings.slugLabel }}</label>
+              <input id="project-slug" class="field-input" formControlName="slug" required autocapitalize="none" spellcheck="false"
+                     [maxlength]="projectContract.slugMaxLength"
+                     [attr.aria-invalid]="form.controls.slug.touched && form.controls.slug.invalid || null"
+                     [attr.aria-describedby]="'project-slug-hint' + (form.controls.slug.touched && form.controls.slug.invalid ? ' project-slug-error' : '')" />
+              <p id="project-slug-hint" class="field-hint">{{ strings.slugHint }}</p>
+              @if (hasError('slug', 'required') || hasError('slug', 'minlength')) {
+                <p id="project-slug-error" class="field-error" role="alert">
+                  {{ hasError('slug', 'required') ? strings.slugRequired : strings.slugMinLength(projectContract.slugMinLength) }}
+                </p>
+              }
+            </div>
+            <div class="draft-span">
+              <label for="project-tagline" class="field-label">{{ strings.taglineLabel }}</label>
+              <input id="project-tagline" class="field-input" formControlName="tagline" required [maxlength]="projectContract.taglineMaxLength"
+                     [attr.aria-invalid]="hasError('tagline', 'required') || null"
+                     [attr.aria-describedby]="hasError('tagline', 'required') ? 'project-tagline-error' : null" />
+              @if (hasError('tagline', 'required')) {
+                <p id="project-tagline-error" class="field-error" role="alert">{{ strings.taglineRequired }}</p>
+              }
+            </div>
+            <div class="draft-span">
+              <label for="project-description" class="field-label">
+                {{ strings.descriptionLabel }} <span class="field-hint">{{ strings.descriptionOptional }}</span>
+              </label>
+              <textarea id="project-description" class="field-input" rows="3" formControlName="description"
+                        [maxlength]="projectContract.descriptionMaxLength"></textarea>
+            </div>
+          </div>
+        </fieldset>
+        <fieldset [disabled]="isSubmitting()">
+          <legend>{{ strings.discovery }}</legend>
+          <p class="field-hint mb-4">{{ strings.discoveryHint }}</p>
+          <div class="draft-fields">
+            <div>
+              <label for="project-sector" class="field-label">{{ strings.sectorLabel }}</label>
+              <select id="project-sector" class="field-input" required formControlName="sectorId"
+                      [attr.aria-invalid]="form.controls.sectorId.touched && form.controls.sectorId.invalid || null"
+                      [attr.aria-describedby]="hasError('sectorId', 'required') || hasError('sectorId', 'invalidSector') ? 'project-sector-error' : null">
+                <option value="">{{ strings.sectorPlaceholder }}</option>
+                @for (sector of sectors; track sector.id) {
+                  <option [value]="sector.id">{{ sector.name }}</option>
+                }
+              </select>
+              @if (catalogsLoaded && sectors.length === 0) {
+                <p class="field-hint" role="status">{{ strings.sectorEmpty }}</p>
+              }
+              @if (hasError('sectorId', 'required') || hasError('sectorId', 'invalidSector')) {
+                <p id="project-sector-error" class="field-error" role="alert">
+                  {{ hasError('sectorId', 'required') ? strings.sectorRequired : strings.sectorUnavailable }}
+                </p>
+              }
+            </div>
+            <div>
+              <label for="project-stage" class="field-label">{{ strings.stageLabel }}</label>
+              <select id="project-stage" class="field-input" formControlName="stage" required
+                      [attr.aria-invalid]="hasError('stage', 'required') || null"
+                      [attr.aria-describedby]="hasError('stage', 'required') ? 'project-stage-error' : null">
+                <option value="">{{ strings.stagePlaceholder }}</option>
+                @for (stage of stages; track stage.value) {
+                  <option [value]="stage.value">{{ stage.label }}</option>
+                }
+              </select>
+              @if (hasError('stage', 'required')) {
+                <p id="project-stage-error" class="field-error" role="alert">{{ strings.stageRequired }}</p>
+              }
+            </div>
+            <div class="draft-span">
+              <label for="project-city" class="field-label">{{ strings.cityLabel }}</label>
+              <input id="project-city" class="field-input" formControlName="city" required [maxlength]="projectContract.cityMaxLength"
+                     [attr.aria-invalid]="hasError('city', 'required') || null"
+                     [attr.aria-describedby]="hasError('city', 'required') ? 'project-city-error' : null" />
+              @if (hasError('city', 'required')) {
+                <p id="project-city-error" class="field-error" role="alert">{{ strings.cityRequired }}</p>
+              }
+            </div>
+          </div>
+        </fieldset>
+        @if (submitErrorMessage(); as error) {
+          <p class="status-message status-message--error" role="alert">{{ error }}</p>
+        }
+        <div class="draft-submit">
+          <button type="submit" class="solid-button" [disabled]="isSubmitting() || catalogsLoading || sectors.length === 0">
+            {{ isSubmitting() ? strings.creating : strings.create }} <pulso-icon name="arrow-right" [size]="16" />
+          </button>
+        </div>
+      </form>
 
-    <div
-      *ngIf="submitErrorMessage()"
-      class="status-message status-message--error mt-6"
-      role="alert"
-      aria-live="assertive"
-    >
-      <p class="text-sm">
-        {{ submitErrorMessage() }}
-      </p>
+      <aside class="draft-preview" [attr.aria-label]="strings.preview">
+        <h2 class="field-label">{{ strings.preview }}</h2>
+        <div class="panel draft-preview__card">
+          <span class="interest-pill">{{ strings.draft }}</span>
+          <h3>{{ form.controls.name.value.trim() || strings.previewName }}</h3>
+          <p>{{ form.controls.tagline.value.trim() || strings.previewTagline }}</p>
+          @if (form.controls.city.value.trim(); as city) {
+            <span class="field-hint flex items-center gap-1.5"><pulso-icon name="map-pin" [size]="16" />{{ city }}</span>
+          }
+        </div>
+      </aside>
     </div>
-
-    <div
-      *ngIf="createdProject() as created"
-      class="status-message mt-6"
-      role="status"
-      aria-live="polite"
-    >
-      <p class="text-sm font-semibold">
-        {{ strings.createdTitle }}
-      </p>
-
-      <p class="mt-2 text-sm">
-        {{ strings.createdDetail(created.project.name) }}
-      </p>
-    </div>
-
-    <div class="mt-8 flex justify-end border-t border-slate-700/60 pt-5">
-      <button
-        type="submit"
-        class="solid-button w-full sm:w-auto"
-        [disabled]="
-          form.invalid ||
-          isSubmitting() ||
-          catalogsLoading ||
-          sectors.length === 0
-        "
-      >
-        <ng-container *ngIf="!isSubmitting(); else submitting">
-          {{ strings.create }}
-        </ng-container>
-
-        <ng-template #submitting>
-          {{ strings.creating }}
-        </ng-template>
-      </button>
-    </div>
-  </form>
+  }
 </main>
-<pulso-member-invitation-panel *ngIf="createdProject() as result" [projectId]="result.project.id" />

@@ -125,6 +125,20 @@ describe('ProjectCreateFormComponent', () => {
     expect(fixture.nativeElement.textContent).toContain(
       'Proyecto creado correctamente.',
     )
+
+    const root: HTMLElement = fixture.nativeElement
+    expect(root.querySelector('#project-name')).toBeNull()
+    expect(root.querySelector('pulso-member-invitation-panel form')).not.toBeNull()
+    const teams = vi.fn()
+    component.teamsRequested.subscribe(teams)
+    const successActions = root.querySelectorAll<HTMLButtonElement>('.draft-success button')
+    successActions[0].click()
+    expect(teams).toHaveBeenCalledOnce()
+    successActions[1].click()
+    fixture.detectChanges()
+    expect(component.createdProject()).toBeNull()
+    expect(root.querySelector<HTMLInputElement>('#project-name')?.value).toBe('')
+    expect(root.querySelector('pulso-member-invitation-panel')).toBeNull()
   })
 
   it('shows a backend error without false success', async () => {

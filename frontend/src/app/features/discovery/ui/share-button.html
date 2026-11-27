@@ -1,10 +1,10 @@
 <button
   type="button"
-  class="share-button"
+  class="share-button icon-button"
   [disabled]="isSharing()"
   (pointerdown)="$event.stopPropagation()"
   (click)="share($event)"
-  [attr.aria-label]="'Compartir ' + projectName"
+  [attr.aria-label]="strings.share(projectName)"
 >
   <pulso-icon name="share" [size]="18" />
   <span *ngIf="feedback() as msg" class="share-feedback" role="status">{{ msg }}</span>

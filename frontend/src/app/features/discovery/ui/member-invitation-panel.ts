@@ -3,6 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http'
 import { Component, inject, input, signal } from '@angular/core'
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms'
 import { firstValueFrom } from 'rxjs'
+import { invitationStrings } from '../strings/invitation.strings'
 import { ProjectsApi } from '../data-access/projects-api'
 
 @Component({
@@ -12,6 +13,7 @@ import { ProjectsApi } from '../data-access/projects-api'
   templateUrl: './member-invitation-panel.html',
 })
 export class MemberInvitationPanelComponent {
+  readonly strings = invitationStrings
   readonly projectId = input.required<string>()
   private readonly api = inject(ProjectsApi)
   readonly busy = signal(false)
@@ -28,14 +30,14 @@ export class MemberInvitationPanelComponent {
     this.busy.set(true)
     try {
       await firstValueFrom(this.api.createInvitation(this.projectId(), this.form.controls.email.value))
-      this.success.set('La invitación fue registrada y enviada.')
+      this.success.set(this.strings.invited)
       this.form.reset()
     } catch (e) {
       this.error.set(e instanceof HttpErrorResponse
-        ? ({ 400:'Correo inválido.', 401:'Inicia sesión.', 403:'No tienes permisos.',
-             404:'Proyecto inexistente.', 409:'Ya existe una invitación para ese correo.' } as Record<number,string>)[e.status]
-            ?? 'No se pudo enviar la invitación.'
-        : 'No se pudo enviar la invitación.')
+        ? ({ 400: this.strings.emailRejected, 401: this.strings.sessionExpired, 403: this.strings.permission,
+             404: this.strings.projectUnavailable, 409: this.strings.duplicate } as Record<number,string>)[e.status]
+            ?? this.strings.inviteFailed
+        : this.strings.inviteFailed)
     } finally { this.busy.set(false) }
   }
 }

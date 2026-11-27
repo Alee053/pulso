@@ -1,43 +1,82 @@
-<main class="page stacked-view">
-  <header class="page-header">
-    <h1 class="page-title">{{ strings.teamsTitle }}</h1>
-    <p class="page-lead">{{ strings.teamsLead }}</p>
-    <button type="button" class="contact-button mt-4" data-action="refresh-teams" (click)="refresh()" [disabled]="loading()">{{ strings.refreshTeams }}</button>
+<main class="page teams-page">
+  <header class="page-header flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="page-title">{{ strings.teamsTitle }}</h1>
+      <p class="page-lead">{{ strings.teamsLead }}</p>
+    </div>
+    <button type="button" class="contact-button" data-action="refresh-teams" (click)="refresh()" [disabled]="loading()">
+      <pulso-icon name="rotate-ccw" [size]="16" />{{ strings.refreshTeams }}
+    </button>
   </header>
-  <p *ngIf="loading()" class="state-panel" role="status">{{ strings.teamsLoading }}</p>
-  <div *ngIf="errorMessage() as error" class="state-panel" role="alert">
-    <p>{{ error }}</p>
-    <button type="button" class="solid-button mt-4" (click)="load()" [disabled]="loading()">{{ strings.retry }}</button>
+  @if (loading()) {
+    <div class="state-panel" role="status"><span class="spinner" aria-hidden="true"></span><p>{{ strings.teamsLoading }}</p></div>
+  }
+  @if (errorMessage(); as error) {
+    <div class="state-panel" role="alert">
+      <p>{{ error }}</p>
+      <button type="button" class="solid-button" (click)="load()" [disabled]="loading()">{{ strings.retry }}</button>
+    </div>
+  } @else if (!loading() && !projects().length) {
+    <div class="state-panel">
+      <span class="state-icon"><pulso-icon name="users-round" [size]="26" /></span>
+      <h2 role="status">{{ strings.teamsEmpty }}</h2>
+      @if (canCreate) {
+        <button type="button" class="solid-button" (click)="createRequested.emit()">{{ strings.create }}</button>
+      }
+    </div>
+  }
+
+  <div class="team-list">
+    @for (project of projects(); track project.projectId) {
+      <article class="panel team-project" [attr.data-project]="project.projectId">
+        <header class="team-project__header">
+          <span class="team-project__mark" aria-hidden="true">{{ project.name.charAt(0) }}</span>
+          <div class="min-w-0 grow">
+            <h2>{{ project.name }}</h2>
+            <p class="field-hint">{{ project.sectorName }} · {{ stages[project.stage] }}</p>
+          </div>
+          @if (project.status; as status) {
+            <span class="interest-pill">{{ reviewStrings.status[status] }}</span>
+          }
+        </header>
+        <div class="team-project__summary">
+          <p>{{ project.tagline }}</p>
+          <span class="team-project__role"><pulso-icon name="user-round" [size]="15" />{{ strings.role[project.role] }}</span>
+          @if (project.status === 'PUBLISHED') {
+            <a class="team-project__link" [href]="'/proyectos/' + project.projectId">{{ strings.publicProfile }} <pulso-icon name="arrow-up-right" [size]="15" /></a>
+          }
+          @if (project.reviewNote) {
+            <div class="status-message" role="status">
+              <h3 class="font-semibold">{{ reviewStrings.reviewNote }}</h3>
+              <p class="mt-1 whitespace-pre-wrap">{{ project.reviewNote }}</p>
+            </div>
+          }
+        </div>
+
+        @if (project.role === 'OWNER' || project.role === 'ADMIN') {
+          <details class="team-task">
+            <summary><pulso-icon name="settings" /><span>{{ strings.overview }}</span><pulso-icon class="team-task__chevron" name="chevron-right" [size]="17" /></summary>
+            <div class="team-task__body">
+              <pulso-project-management [project]="project" [sectors]="sectors" (projectChanged)="updateProject($event)" />
+            </div>
+          </details>
+        }
+        <details class="team-task" [open]="project.role === 'MEMBER' && projects().length === 1">
+          <summary><pulso-icon name="users-round" /><span>{{ strings.people }}</span><pulso-icon class="team-task__chevron" name="chevron-right" [size]="17" /></summary>
+          <div class="team-task__body">
+            <pulso-project-members [project]="project" (ownMembershipChanged)="updateOwnMembership($event)" />
+          </div>
+        </details>
+        @if (project.role === 'OWNER' || project.role === 'ADMIN') {
+          <pulso-project-opportunity-skills
+            [projectId]="project.projectId" [projectName]="project.name" [projectStatus]="project.status || 'DRAFT'"
+            [skills]="skills" [catalogsLoaded]="catalogsLoaded" [catalogsLoading]="catalogsLoading"
+            [catalogsErrorMessage]="catalogsErrorMessage" (catalogsRetryRequested)="catalogsRetryRequested.emit()" />
+        }
+      </article>
+    }
   </div>
-  <p *ngIf="!loading() && !errorMessage() && projects().length === 0" class="state-panel" role="status">{{ strings.teamsEmpty }}</p>
-  <div class="grid gap-5">
-    <section *ngFor="let project of projects(); trackBy: trackProject" class="panel p-5 sm:p-8" [attr.data-project]="project.projectId">
-      <h2 class="text-xl font-semibold break-words">{{ project.name }}</h2>
-      <p class="field-hint mt-2">{{ strings.role[project.role] }}</p>
-      <p *ngIf="project.status as status" class="interest-pill mt-3">{{ reviewStrings.status[status] }}</p>
-      <div *ngIf="project.reviewNote" class="status-message mt-4" role="status">
-        <h3 class="font-semibold">{{ reviewStrings.reviewNote }}</h3>
-        <p class="mt-2 whitespace-pre-wrap break-words">{{ project.reviewNote }}</p>
-      </div>
-      <pulso-project-management
-        *ngIf="project.role === 'OWNER' || project.role === 'ADMIN'"
-        [project]="project"
-        [sectors]="sectors"
-        (projectChanged)="updateProject($event)"
-      />
-      <pulso-project-members [project]="project" (ownMembershipChanged)="updateOwnMembership($event)" />
-      <pulso-project-opportunity-skills
-        *ngIf="project.role === 'OWNER' || project.role === 'ADMIN'"
-        [projectId]="project.projectId"
-        [projectName]="project.name"
-        [projectStatus]="project.status || 'DRAFT'"
-        [skills]="skills"
-        [catalogsLoaded]="catalogsLoaded"
-        [catalogsLoading]="catalogsLoading"
-        [catalogsErrorMessage]="catalogsErrorMessage"
-        (catalogsRetryRequested)="catalogsRetryRequested.emit()"
-      />
-    </section>
-  </div>
-  <button *ngIf="hasMore() && !errorMessage()" type="button" class="contact-button mt-5" (click)="load()" [disabled]="loading()">{{ strings.more }}</button>
+  @if (hasMore() && !errorMessage()) {
+    <button type="button" class="contact-button mt-5" (click)="load()" [disabled]="loading()">{{ strings.more }}</button>
+  }
 </main>

@@ -68,6 +68,37 @@ describe('AppComponent', () => {
     fixture.destroy()
   })
 
+  it('restores the collection on reload and opens Messages with the workspace shortcut', async () => {
+    history.replaceState({ pulsoView: 'saved' }, '', '/')
+    const session = createSessionStub()
+    session.hasStarted.set(true)
+    session.goToView = vi.fn((view: string) => session.activeView.set(view))
+    const auth = createAuthStub()
+    auth.session.set({ id: 'profile-1', email: 'demo@example.test' })
+    TestBed.configureTestingModule({
+      imports: [AppComponent],
+      providers: [
+        provideHttpClient(), provideHttpClientTesting(),
+        { provide: FeatureFlagsService, useValue: createFeatureFlagsStub() },
+        { provide: PulsoSession, useValue: session }, { provide: SupabaseAuthGateway, useValue: auth },
+      ],
+    })
+    const fixture = TestBed.createComponent(AppComponent)
+    fixture.detectChanges()
+    expect(fixture.nativeElement.querySelector('pulso-saved-view')).not.toBeNull()
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'M', shiftKey: true, altKey: true }))
+    fixture.detectChanges()
+    expect(location.pathname).toBe('/conversaciones')
+    await fixture.whenStable()
+    fixture.detectChanges()
+    expect(fixture.nativeElement.querySelector('pulso-messages-view')).not.toBeNull()
+    history.replaceState({ pulsoView: 'saved' }, '', '/')
+    window.dispatchEvent(new PopStateEvent('popstate'))
+    fixture.detectChanges()
+    expect(fixture.nativeElement.querySelector('pulso-saved-view')).not.toBeNull()
+    fixture.destroy()
+  })
+
   it('shows the standalone Auth page before the authenticated application', () => {
     const session = createSessionStub()
     const auth = createAuthStub()
@@ -171,7 +202,7 @@ describe('AppComponent', () => {
   it.each([
     ['discover', 'close'], ['discover', 'backdrop'], ['discover', 'escape'],
     ['saved', 'close'], ['saved', 'backdrop'], ['saved', 'escape'],
-  ])('opens server detail from %s and dismisses via %s without losing the feed or persisted decisions', (view, dismissal) => {
+  ])('opens server detail from %s and dismisses via %s without losing the feed or persisted decisions', async (view, dismissal) => {
     const session = createSessionStub()
     const auth = createAuthStub()
     auth.session.set({ id: 'user-1', email: 'person@example.test' })
@@ -188,6 +219,8 @@ describe('AppComponent', () => {
       ],
     })
     const fixture = TestBed.createComponent(AppComponent)
+    fixture.detectChanges()
+    await fixture.whenStable()
     fixture.detectChanges()
     const feed = session.feed()
     const trigger = view === 'saved'
@@ -298,7 +331,7 @@ describe('AppComponent', () => {
     fixture.destroy()
   })
 
-  it('returns to discovery if project creation is disabled while its view is active', () => {
+  it('returns to discovery if project creation is disabled while its view is active', async () => {
     const session = createSessionStub()
     const auth = createAuthStub()
     const flags = createFeatureFlagsStub({ language_switcher: true, project_creation: true })
@@ -316,6 +349,8 @@ describe('AppComponent', () => {
     })
 
     const fixture = TestBed.createComponent(AppComponent)
+    fixture.detectChanges()
+    await fixture.whenStable()
     fixture.detectChanges()
     expect(fixture.nativeElement.querySelector('pulso-language-switcher')).not.toBeNull()
     expect(fixture.nativeElement.querySelector('pulso-project-create-form')).not.toBeNull()

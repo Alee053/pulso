@@ -1,0 +1,123 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+.discovery-card {
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.discovery-card__cover {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 3rem;
+  min-height: clamp(14rem, 20vw, 21rem);
+  padding: clamp(1.15rem, 2.2vw, 2rem);
+  overflow: hidden;
+  background: #244879;
+  color: #fff;
+}
+.discovery-card__cover::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(
+    0deg,
+    rgb(9 18 23 / 0.94),
+    rgb(9 18 23 / 0.76) 27%,
+    transparent 72%
+  );
+}
+.discovery-card__image {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cover-monogram {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  justify-content: end;
+  padding-right: 7%;
+  background: repeating-radial-gradient(
+    ellipse at 110% 20%,
+    #3b62a0 0 1px,
+    transparent 2px 1.3rem
+  );
+  color: #bad2ff;
+  font: 700 clamp(5rem, 10vw, 9rem)/1 var(--font-display);
+  letter-spacing: -0.1em;
+}
+.project-stage {
+  padding: 0.3rem 0.65rem;
+  border-radius: 50rem;
+  color: #242925;
+  background: #fbfaf6;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+.discovery-card__metadata,
+.discovery-card__metadata span {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+.discovery-card__metadata {
+  gap: 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.discovery-card__identity h2 {
+  margin-top: 0.3rem;
+  font: 700 clamp(2.2rem, 3.6vw, 4rem)/1.03 var(--font-display);
+  letter-spacing: -0.05em;
+}
+.discovery-card__content {
+  padding: 1.15rem clamp(1.15rem, 2vw, 1.75rem) 0.85rem;
+}
+.discovery-card__pitch {
+  font-size: clamp(1rem, 1.25vw, 1.15rem);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+.discovery-card__links {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.55rem;
+}
+.discovery-card__profile-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  color: var(--color-accent);
+  font-weight: 650;
+  font-size: 0.89rem;
+}
+.discovery-card__profile-link:hover {
+  text-decoration: underline;
+}
+@media (max-width: 63.99rem) {
+  .discovery-card__cover {
+    touch-action: pinch-zoom;
+    cursor: grab;
+  }
+  .discovery-card--dragging .discovery-card__cover {
+    cursor: grabbing;
+  }
+}

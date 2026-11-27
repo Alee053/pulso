@@ -11,8 +11,8 @@ import { projectDecisionStrings } from '../strings/project-decision.strings'
 @Component({
   selector: 'pulso-project-decision',
   template: `
-    <section class="panel my-6 grid gap-3 p-4" aria-labelledby="project-decision-title">
-      <h2 #heading id="project-decision-title" class="field-label" tabindex="-1">{{ strings.title }}</h2>
+    <section class="flex flex-wrap items-center gap-3" aria-labelledby="project-decision-title">
+      <h2 #heading id="project-decision-title" class="field-hint" tabindex="-1">{{ strings.title }}</h2>
       @if (state() === 'loading') {
         <p role="status" class="field-hint">{{ strings.loading }}</p>
       } @else if (state() === 'error') {

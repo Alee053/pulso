@@ -9,12 +9,14 @@ import { filtersStrings } from '../strings/filters.strings'
   selector: 'pulso-search-filters',
   imports: [IconComponent],
   template: `
-    <div class="mb-6">
-      <div class="flex flex-wrap gap-2">
+    <div class="filter-cluster">
+      <div class="filter-actions">
         <button #toggleButton type="button" class="contact-button" aria-controls="project-search-filters"
+                [attr.aria-label]="expanded() ? strings.toggleHide : strings.toggleShow"
                 [attr.aria-expanded]="expanded()" (click)="expanded.update(toggle)">
-          <pulso-icon name="search" [size]="16" />
-          {{ expanded() ? strings.toggleHide : strings.toggleShow }}
+          <pulso-icon name="sliders" [size]="16" />
+          <span class="filter-label-full">{{ expanded() ? strings.toggleHide : strings.toggleShow }}</span>
+          <span class="filter-label-short" aria-hidden="true">{{ strings.compact }}</span>
         </button>
         @if (searchActive) {
           <button type="button" class="contact-button" (click)="clear(toggleButton)">{{ strings.clear }}</button>

@@ -14,9 +14,11 @@ import { languageNames, languageStrings } from '../strings/language.strings'
               type="button"
               class="language-switcher__option"
               [lang]="language"
+              [attr.aria-label]="names[language]"
               [attr.aria-pressed]="languages.language() === language"
               (click)="select(language)">
-        {{ names[language] }}
+        <span class="language-switcher__full">{{ names[language] }}</span>
+        <span class="language-switcher__short" aria-hidden="true">{{ language.toUpperCase() }}</span>
       </button>
     </div>
   `,

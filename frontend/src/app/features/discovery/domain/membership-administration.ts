@@ -27,29 +27,29 @@ export interface MembershipAdministrationError {
 const permissionError = {
   kind: 'permission',
   code: 'membership_permission',
-  title: membershipStrings.permissionTitle,
-  message: membershipStrings.permissionDetail,
+  title: 'Membership permission',
+  get message() { return membershipStrings.permissionDetail },
 } as const satisfies MembershipAdministrationError
 
 const selfElevationError = {
   kind: 'permission',
   code: 'membership_permission',
-  title: membershipStrings.selfElevationTitle,
-  message: membershipStrings.selfElevationDetail,
+  title: 'Membership permission',
+  get message() { return membershipStrings.selfElevationDetail },
 } as const satisfies MembershipAdministrationError
 
 const invalidTransitionError = {
   kind: 'invalidTransition',
   code: 'membership_invalid_transition',
-  title: membershipStrings.invalidTransitionTitle,
-  message: membershipStrings.invalidTransitionDetail,
+  title: 'Invalid membership transition',
+  get message() { return membershipStrings.invalidTransitionDetail },
 } as const satisfies MembershipAdministrationError
 
 const ownerInvariantError = {
   kind: 'ownerInvariant',
   code: 'membership_owner_required',
-  title: membershipStrings.ownerRequiredTitle,
-  message: membershipStrings.ownerRequiredDetail,
+  title: 'Membership owner required',
+  get message() { return membershipStrings.ownerRequiredDetail },
 } as const satisfies MembershipAdministrationError
 
 export const membershipAdministrationErrors = {

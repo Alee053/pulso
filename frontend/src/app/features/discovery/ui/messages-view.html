@@ -1,0 +1,85 @@
+<main class="page messages-page" [class.has-thread]="conversationId()">
+  <header class="messages-heading">
+    <div>
+      <h1 class="page-title">{{ strings.inbox }}</h1>
+      <p class="page-lead">{{ strings.inboxLead }}</p>
+    </div>
+    <a class="contact-button" [href]="requestsHref">
+      <pulso-icon name="handshake" [size]="17" />{{ strings.seeRequests }}
+    </a>
+  </header>
+
+  <div class="messages-desks" [class.has-conversations]="conversations().length || conversationId()">
+    <section class="inbox-column" aria-labelledby="conversation-list-title">
+      <header class="inbox-heading">
+        <h2 #inboxHeading id="conversation-list-title" tabindex="-1">{{ strings.conversations }}</h2>
+        <button type="button" class="icon-button" [disabled]="loading()"
+                [attr.aria-label]="strings.refreshInbox" [title]="strings.refreshInbox" (click)="refresh()">
+          <pulso-icon name="rotate-ccw" [size]="16" />
+        </button>
+      </header>
+
+      @if (conversations().length) {
+        <ul class="inbox-list">
+          @for (entry of conversations(); track entry.id) {
+            <li>
+              <a #threadLink class="thread-link" [href]="conversationHref(entry.id)" [attr.data-conversation]="entry.id"
+                 [attr.aria-current]="entry.id === conversationId() ? 'page' : null" (click)="follow($event, entry.id)">
+                <span class="thread-avatar" aria-hidden="true">
+                  @if (entry.connection.projectName; as name) {
+                    {{ name.slice(0, 1) }}
+                  } @else {
+                    <pulso-icon name="message-circle" [size]="18" />
+                  }
+                </span>
+                <span class="thread-link__body">
+                  <strong>{{ entry.connection.projectName || strings.title }}</strong>
+                  <span class="thread-context">{{ entry.connection.opportunityTitle || requests.reasons[entry.connection.request.reason] }}</span>
+                  <time class="thread-date" [attr.datetime]="entry.connection.request.createdAt">
+                    {{ entry.connection.request.createdAt | activityDate:language():'date' }}
+                  </time>
+                </span>
+                <pulso-icon class="thread-arrow" name="chevron-right" [size]="15" />
+              </a>
+            </li>
+          }
+        </ul>
+      }
+
+      @if (loading()) {
+        <p class="inbox-feedback" role="status"><span class="spinner" aria-hidden="true"></span>{{ strings.loadingInbox }}</p>
+      }
+      @if (failed()) {
+        <div class="inbox-feedback">
+          <p role="alert">{{ strings.inboxFailed }}</p>
+          <button type="button" class="contact-button" (click)="loadMore(true)">{{ common.retry }}</button>
+        </div>
+      }
+      @if (canLoadMore()) {
+        <div class="inbox-feedback">
+          @if (!conversations().length) { <p>{{ strings.moreInHistory }}</p> }
+          <button type="button" class="contact-button" (click)="loadMore()">{{ strings.moreConversations }}</button>
+        </div>
+      }
+      @if (!loading() && !failed() && !canLoadMore() && !conversations().length) {
+        <div class="inbox-empty">
+          <span class="state-icon"><pulso-icon name="message-circle" [size]="26" /></span>
+          <h3>{{ strings.emptyInbox }}</h3>
+          <p>{{ strings.emptyInboxLead }}</p>
+        </div>
+      }
+    </section>
+
+    @if (conversationId(); as id) {
+      <pulso-conversation-view class="thread-column" [conversationId]="id" [profileId]="profileId()"
+                               [projectName]="selected()?.projectName ?? null"
+                               [context]="selected()?.opportunityTitle ?? null"
+                               (closed)="conversationSelected.emit(null)" />
+    } @else if (conversations().length) {
+      <div class="thread-column thread-placeholder">
+        <span class="state-icon"><pulso-icon name="message-circle" [size]="27" /></span>
+        <p>{{ strings.chooseConversation }}</p>
+      </div>
+    }
+  </div>
+</main>

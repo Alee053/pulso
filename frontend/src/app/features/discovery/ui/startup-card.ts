@@ -3,8 +3,8 @@ import { Component, EventEmitter, Input, Output } from '@angular/core'
 import { IconComponent } from '../../../shared/icon/icon'
 import { ShareButtonComponent } from './share-button'
 import type { Decision, Startup } from '../domain/startup'
+import { projectStageOptions } from '../domain/project'
 import { cardStrings } from '../strings/feed.strings'
-
 
 const GESTURE_MAX_WIDTH = 1023
 const DRAG_LIMIT = 135
@@ -22,20 +22,22 @@ function clampOffset(value: number): number {
     standalone: true,
     imports: [CommonModule, IconComponent, ShareButtonComponent],
     templateUrl: './startup-card.html',
+    styleUrl: './startup-card.css',
 })
 export class StartupCardComponent {
     readonly strings = cardStrings
 
     @Input() startup!: Startup
-    @Input() direction = 1
     @Input() disabled = false
-    @Input() isSaved = false
     @Output() saved = new EventEmitter<void>()
     @Output() dragChanged = new EventEmitter<{ x: number; y: number }>()
     @Output() selected = new EventEmitter<Startup>()
     @Output() dragDecision = new EventEmitter<Decision>()
 
-    hasImageError = false
+    failedImage = ''
+    get stageLabel(): string {
+        return projectStageOptions.find(option => option.value === this.startup.stage)?.label ?? this.startup.stage
+    }
     dragX = 0
     dragY = 0
     isDragging = false
@@ -67,7 +69,8 @@ export class StartupCardComponent {
         this.dragX = 0
         this.dragY = 0
         this.isDragging = false
-            ; (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
+        const cover = event.currentTarget as HTMLElement
+        cover.setPointerCapture(event.pointerId)
     }
 
     onPointerMove(event: PointerEvent): void {
@@ -151,15 +154,9 @@ export class StartupCardComponent {
         }
 
         if (!this.disabled) {
-            ; (event.currentTarget as HTMLElement).focus()
+            const card = event.currentTarget as HTMLElement
+            card.focus()
             this.selected.emit(this.startup)
-        }
-    }
-
-    saveFromButton(event: MouseEvent): void {
-        event.stopPropagation()
-        if (!this.disabled) {
-            this.saved.emit()
         }
     }
 

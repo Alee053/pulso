@@ -1,0 +1,42 @@
+.access-form {
+  color: var(--color-text);
+}
+.access-form h2 {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 3vw, 3.05rem);
+  font-weight: 650;
+  line-height: 1.08;
+  letter-spacing: -0.045em;
+}
+.access-session {
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  overflow-wrap: anywhere;
+}
+.access-link {
+  min-height: 2rem;
+  padding-inline: 0.2rem;
+  color: var(--color-accent);
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+.access-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+.access-reveal {
+  font-size: 0.8rem;
+}
+.access-alternate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  margin-top: 1.6rem;
+  border-top: 1px solid var(--color-border);
+  padding-top: 1rem;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}

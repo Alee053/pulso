@@ -1,12 +1,18 @@
-<details class="mt-3">
-  <summary #trigger class="cursor-pointer text-sm text-[var(--color-muted)]">{{ label() }}</summary>
+<details class="report" [class.report--compact]="compact()">
+  <summary #trigger [attr.aria-label]="compact() ? label() : null" [attr.title]="compact() ? label() : null">
+    @if (compact()) {
+      <span class="report__dots" aria-hidden="true">···</span>
+    } @else {
+      {{ label() }}
+    }
+  </summary>
   @if (state() === 'success') {
-    <p role="status" class="mt-2">{{ strings.success }}</p>
+    <p role="status" class="status-message status-message--success mt-2">{{ strings.success }}</p>
   } @else {
-    <form #form class="mt-3 grid gap-3" (submit)="submit($event, form, trigger, reason.value, description.value)">
+    <form #form class="report__form" (submit)="submit($event, form, trigger, reason.value, description.value)">
       <fieldset class="grid min-w-0 gap-3" [disabled]="state() === 'sending'">
         <label class="grid gap-1">
-          {{ strings.reason }}
+          <span class="field-label">{{ strings.reason }}</span>
           <select #reason required class="field-input">
             <option value="" disabled selected>{{ strings.chooseReason }}</option>
             <option value="SPAM">{{ strings.spam }}</option>
@@ -16,16 +22,16 @@
           </select>
         </label>
         <label class="grid gap-1">
-          {{ strings.description }}
+          <span class="field-label">{{ strings.description }}</span>
           <textarea #description class="field-input" rows="3" maxlength="2000"></textarea>
         </label>
         <button type="submit" class="solid-button justify-self-start">{{ strings.submit }}</button>
       </fieldset>
       @if (state() === 'sending') {
-        <p role="status">{{ strings.submitting }}</p>
+        <p role="status" class="field-hint">{{ strings.submitting }}</p>
       }
       @if (state() === 'error') {
-        <p role="alert" class="text-[var(--color-error)]">{{ strings.error }}</p>
+        <p role="alert" class="field-error">{{ strings.error }}</p>
       }
     </form>
   }

@@ -1,174 +1,165 @@
-<main class="onboarding-page">
-  <div class="mx-auto w-full max-w-6xl">
-    <header class="flex items-center justify-between gap-4">
-      <pulso-brand-mark />
-      <span class="text-sm text-slate-400">{{ strings.stepMark }}</span>
+<main class="preferences-page">
+  <header class="preferences-header">
+    <pulso-brand-mark />
+    <div class="flex flex-wrap items-center gap-2">
+      <pulso-language-switcher *ngIf="languageSwitcherEnabled" />
+      <pulso-theme-switcher />
+    </div>
+  </header>
+
+  <div class="preferences-layout">
+    <header class="preferences-intro">
+      <span class="preferences-compass" aria-hidden="true"><pulso-icon name="compass" [size]="28" /></span>
+      <h1 class="page-title">{{ editing ? strings.editTitle : strings.title }}</h1>
+      <p class="page-lead">{{ strings.lead }}</p>
     </header>
 
-    <div class="onboarding-page__content">
-      <div class="page-header fade-in-up">
-        <span class="eyebrow">{{ common.eyebrowComingMap }}</span>
-        <h1 class="page-title mt-3 text-balance">{{ editing ? strings.editTitle : strings.title }}</h1>
-        <p class="page-lead mt-4 max-w-2xl">{{ strings.lead }}</p>
-      </div>
+    <div class="preferences-fields">
+      <section class="preferences-panel" aria-labelledby="interest-options-title">
+        <h2 id="interest-options-title">{{ strings.startTitle }}</h2>
+        <p class="field-hint">{{ strings.startHintLine2 }}</p>
 
-      <section class="mt-8" aria-labelledby="interest-options-title">
-        <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p class="eyebrow">{{ strings.startEyebrow }}</p>
-            <h2 id="interest-options-title" class="mt-2 text-xl font-semibold tracking-tight text-slate-50">{{ strings.startTitle }}</h2>
+        @if (preferencesLoading) {
+          <p class="status-message mt-4" role="status">{{ strings.preferencesLoading }}</p>
+        } @else if (preferencesErrorMessage) {
+          <div class="status-message status-message--error mt-4" role="alert">
+            <p>{{ preferencesErrorMessage }}</p>
+            <button type="button" class="contact-button mt-2" (click)="preferencesRetryRequested.emit()">{{ common.retry }}</button>
           </div>
-          <p class="text-sm leading-6 text-slate-400">{{ strings.startHintLine1 }} {{ strings.startHintLine2 }}</p>
-        </div>
+        }
+        @if (catalogsLoading) {
+          <p class="status-message mt-4" role="status">{{ strings.catalogsLoading }}</p>
+        } @else if (catalogsErrorMessage) {
+          <div class="status-message status-message--error mt-4" role="alert">
+            <p>{{ catalogsErrorMessage }}</p>
+            <button type="button" class="contact-button mt-2" (click)="catalogsRetryRequested.emit()">{{ common.retry }}</button>
+          </div>
+        }
 
-        <fieldset class="onboarding-page__choices" [disabled]="controlsDisabled" aria-labelledby="interest-options-title">
-          <button
-            *ngFor="let intention of intentionOptions"
-            type="button"
-            class="choice-card relative text-left"
-            [class.choice-card--selected]="isSelected(intention)"
-            [attr.aria-pressed]="isSelected(intention)"
-            (click)="intentionToggled.emit(intention.id)"
-          >
-            <span class="block pr-5 text-sm font-semibold leading-5 text-slate-50">{{ intention.label }}</span>
-            <span *ngIf="isSelected(intention)" class="absolute right-4 top-4 text-sky-300" aria-hidden="true">
-              <pulso-icon name="check" [size]="14" [strokeWidth]="3" />
-            </span>
-          </button>
+        <fieldset class="intention-grid" [disabled]="controlsDisabled" aria-labelledby="interest-options-title">
+          @for (intention of intentionOptions; track intention.id) {
+            <button type="button" class="intention-option" [attr.aria-pressed]="isSelected(intention)"
+                    (click)="intentionToggled.emit(intention.id)">
+              <pulso-icon [name]="intentionIcons[intention.id]" [size]="19" />
+              <span>{{ intention.label }}</span>
+              @if (isSelected(intention)) { <pulso-icon name="check" [size]="15" class="intention-option__check" /> }
+            </button>
+          }
         </fieldset>
-        <p *ngIf="catalogsLoaded && intentionOptions.length === 0" class="field-hint" role="status">{{ strings.intentionsEmpty }}</p>
+        @if (catalogsLoaded && intentionOptions.length === 0) {
+          <p class="field-hint" role="status">{{ strings.intentionsEmpty }}</p>
+        }
       </section>
 
-      <section class="mt-8" aria-labelledby="catalog-preferences-title">
-        <div class="mb-5">
-          <p class="eyebrow">{{ strings.optionalEyebrow }}</p>
-          <h2 id="catalog-preferences-title" class="mt-2 text-xl font-semibold tracking-tight text-slate-50">{{ strings.catalogTitle }}</h2>
-          <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-400">{{ strings.catalogLead }}</p>
-        </div>
-
-        <div *ngIf="preferencesLoading" class="status-message mb-4" role="status">{{ strings.preferencesLoading }}</div>
-
-        <div *ngIf="!preferencesLoading && preferencesErrorMessage" class="status-message status-message--error mb-4" role="alert">
-          <p>{{ preferencesErrorMessage }}</p>
-          <button type="button" class="contact-button mt-3" (click)="preferencesRetryRequested.emit()">{{ common.retry }}</button>
-        </div>
-
-        <div *ngIf="catalogsLoading" class="state-panel" role="status">{{ strings.catalogsLoading }}</div>
-
-        <div *ngIf="!catalogsLoading && catalogsErrorMessage" class="status-message status-message--error" role="alert">
-          <p>{{ catalogsErrorMessage }}</p>
-          <button type="button" class="contact-button mt-3" (click)="catalogsRetryRequested.emit()">{{ common.retry }}</button>
-        </div>
-
-        <div *ngIf="!catalogsLoading && !catalogsErrorMessage && catalogsLoaded" class="grid gap-4 md:grid-cols-2">
-          <fieldset class="contents" [disabled]="controlsDisabled">
-          <section class="panel p-5" aria-labelledby="sector-options-title">
-            <h3 id="sector-options-title" class="text-base font-semibold text-slate-100">{{ strings.sectorsTitle }}</h3>
-            <p class="field-hint mt-1">{{ strings.sectorsHint }}</p>
-            <div *ngIf="sectors.length > 0; else emptySectors" class="mt-4 flex flex-wrap gap-2">
-              <button
-                *ngFor="let sector of sectors"
-                type="button"
-                class="contact-button"
-                [attr.aria-pressed]="isSectorSelected(sector)"
-                (click)="sectorToggled.emit(sector.id)"
-              >{{ sector.name }}</button>
-            </div>
-            <ng-template #emptySectors><p class="field-hint mt-4" role="status">{{ strings.sectorsEmpty }}</p></ng-template>
-          </section>
-
-          <section class="panel p-5" aria-labelledby="stage-options-title">
-            <h3 id="stage-options-title" class="text-base font-semibold text-slate-100">{{ strings.stagesTitle }}</h3>
-            <p class="field-hint mt-1">{{ strings.stagesHint }}</p>
-            <div *ngIf="stages.length > 0; else emptyStages" class="mt-4 flex flex-wrap gap-2">
-              <button
-                *ngFor="let stage of stages"
-                type="button"
-                class="contact-button"
-                [attr.aria-pressed]="isStageSelected(stage)"
-                (click)="stageToggled.emit(stage.id)"
-              >{{ stage.label }}</button>
-            </div>
-            <ng-template #emptyStages><p class="field-hint mt-4" role="status">{{ strings.stagesEmpty }}</p></ng-template>
-          </section>
-
-          <section class="panel p-5" aria-labelledby="tag-options-title">
-            <h3 id="tag-options-title" class="text-base font-semibold text-slate-100">{{ strings.tagsTitle }}</h3>
-            <p class="field-hint mt-1">{{ strings.tagsHint }}</p>
-            <div *ngIf="tags.length > 0; else emptyTags" class="mt-4 flex flex-wrap gap-2">
-              <button
-                *ngFor="let tag of tags"
-                type="button"
-                class="contact-button"
-                [attr.aria-pressed]="isTagSelected(tag)"
-                (click)="tagToggled.emit(tag.id)"
-              >{{ tag.name }}</button>
-            </div>
-            <ng-template #emptyTags><p class="field-hint mt-4" role="status">{{ strings.tagsEmpty }}</p></ng-template>
-          </section>
-
-          <section class="panel p-5" aria-labelledby="skill-options-title">
-            <h3 id="skill-options-title" class="text-base font-semibold text-slate-100">{{ strings.skillsTitle }}</h3>
-            <p class="field-hint mt-1">{{ strings.skillsHint }}</p>
-            <div *ngIf="skills.length > 0; else emptySkills" class="mt-4 flex flex-col gap-3">
-              <div *ngFor="let skill of skills" class="min-w-0">
-                <button type="button" class="contact-button" [attr.aria-pressed]="isSkillSelected(skill)"
-                  (click)="skillToggled.emit(skill.id)">{{ skill.name }}</button>
-                <div *ngIf="isSkillSelected(skill)" class="mt-2">
-                  <label class="field-label" [for]="'proficiency-' + skill.id">{{ strings.proficiencyLabel(skill.name) }}</label>
-                  <select class="field-input" [id]="'proficiency-' + skill.id"
-                    [attr.aria-invalid]="validationMessage && !proficiencyFor(skill.id) ? 'true' : null"
-                    [attr.aria-describedby]="validationMessage ? 'onboarding-validation' : null"
-                    (change)="changeProficiency(skill.id, $event)" required>
-                    <option value="" disabled [selected]="!proficiencyFor(skill.id)">{{ strings.chooseProficiency }}</option>
-                    <option *ngFor="let level of proficiencyOptions" [value]="level.id" [selected]="proficiencyFor(skill.id) === level.id">{{ level.label }}</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-            <ng-template #emptySkills><p class="field-hint mt-4" role="status">{{ strings.skillsEmpty }}</p></ng-template>
-          </section>
-          </fieldset>
-        </div>
-      </section>
-
-      <div class="onboarding-page__footer mt-6">
-        <p class="text-sm leading-6 text-slate-400" role="status">
-          <ng-container [ngSwitch]="selectedIntentions.length">
-            <span *ngSwitchCase="0">{{ strings.needInterest }}</span>
-            <span *ngSwitchCase="1">{{ strings.oneInterest }}</span>
-            <span *ngSwitchDefault>{{ strings.nInterests(selectedIntentions.length) }}</span>
-          </ng-container>
-        </p>
-        <div class="flex w-full flex-col items-start gap-3 sm:w-auto sm:items-end">
-          <p *ngIf="validationMessage" id="onboarding-validation" class="field-error" role="alert">{{ validationMessage }}</p>
-          <button *ngIf="editing" type="button" class="contact-button" [disabled]="preferencesSaving" (click)="cancelled.emit()">{{ strings.cancel }}</button>
-          <div *ngIf="preferencesSaveErrorMessage" class="status-message status-message--error flex flex-wrap items-center gap-3" role="alert">
-            <p>{{ preferencesSaveErrorMessage }}</p>
-            <button
-              type="button"
-              class="contact-button"
-              [disabled]="preferencesSaving"
-              (click)="preferencesSaveRetryRequested.emit()"
-            >{{ strings.saveRetry }}</button>
+      @if (!catalogsLoading && !catalogsErrorMessage && catalogsLoaded) {
+        <section class="preferences-panel" aria-labelledby="catalog-preferences-title">
+          <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h2 id="catalog-preferences-title">{{ strings.catalogTitle }}</h2>
+            <span class="preferences-optional">{{ strings.optionalEyebrow }}</span>
           </div>
-          <button
-            type="button"
-            class="solid-button w-full sm:w-auto"
-            [disabled]="selectedIntentions.length === 0 || controlsDisabled"
-            [attr.aria-busy]="preferencesSaving"
-            (click)="started.emit()"
-          >
-            <ng-container *ngIf="preferencesSaving; else readyToStart">{{ strings.savingPreferences }}</ng-container>
-            <ng-template #readyToStart>{{ editing ? strings.saveChanges : strings.enter }} <pulso-icon name="arrow-right" [size]="17" /></ng-template>
-          </button>
-        </div>
-      </div>
+          <p class="field-hint">{{ strings.catalogLead }}</p>
+
+          <fieldset class="preference-groups" [disabled]="controlsDisabled" aria-labelledby="catalog-preferences-title">
+            <details class="preference-group">
+              <summary>
+                <span>{{ strings.sectorsTitle }}</span>
+                @if (selectedSectorIds.length) { <span class="preference-count">{{ strings.selectedCount(selectedSectorIds.length) }}</span> }
+                <pulso-icon name="chevron-right" [size]="16" />
+              </summary>
+              <div class="preference-options">
+                @for (sector of sectors; track sector.id) {
+                  <button type="button" class="contact-button" [attr.aria-pressed]="isSectorSelected(sector)"
+                          (click)="sectorToggled.emit(sector.id)">{{ sector.name }}</button>
+                } @empty { <p class="field-hint" role="status">{{ strings.sectorsEmpty }}</p> }
+              </div>
+            </details>
+            <details class="preference-group">
+              <summary>
+                <span>{{ strings.stagesTitle }}</span>
+                @if (selectedStageIds.length) { <span class="preference-count">{{ strings.selectedCount(selectedStageIds.length) }}</span> }
+                <pulso-icon name="chevron-right" [size]="16" />
+              </summary>
+              <div class="preference-options">
+                @for (stage of stages; track stage.id) {
+                  <button type="button" class="contact-button" [attr.aria-pressed]="isStageSelected(stage)"
+                          (click)="stageToggled.emit(stage.id)">{{ stage.label }}</button>
+                } @empty { <p class="field-hint" role="status">{{ strings.stagesEmpty }}</p> }
+              </div>
+            </details>
+            <details class="preference-group">
+              <summary>
+                <span>{{ strings.tagsTitle }}</span>
+                @if (selectedTagIds.length) { <span class="preference-count">{{ strings.selectedCount(selectedTagIds.length) }}</span> }
+                <pulso-icon name="chevron-right" [size]="16" />
+              </summary>
+              <div class="preference-options">
+                @for (tag of tags; track tag.id) {
+                  <button type="button" class="contact-button" [attr.aria-pressed]="isTagSelected(tag)"
+                          (click)="tagToggled.emit(tag.id)">{{ tag.name }}</button>
+                } @empty { <p class="field-hint" role="status">{{ strings.tagsEmpty }}</p> }
+              </div>
+            </details>
+            <details class="preference-group" #skillGroup>
+              <summary>
+                <span>{{ strings.skillsTitle }}</span>
+                @if (selectedSkills.length) { <span class="preference-count">{{ strings.selectedCount(selectedSkills.length) }}</span> }
+                <pulso-icon name="chevron-right" [size]="16" />
+              </summary>
+              <p class="field-hint mb-3">{{ strings.skillsHint }}</p>
+              <div class="preference-options">
+                @for (skill of skills; track skill.id) {
+                  <button type="button" class="contact-button" [attr.aria-pressed]="isSkillSelected(skill)"
+                          (click)="skillToggled.emit(skill.id)">{{ skill.name }}</button>
+                } @empty { <p class="field-hint" role="status">{{ strings.skillsEmpty }}</p> }
+              </div>
+              @for (skill of skills; track skill.id) {
+                @if (isSkillSelected(skill)) {
+                  <div class="proficiency-field">
+                    <label class="field-label" [for]="'proficiency-' + skill.id">{{ strings.proficiencyLabel(skill.name) }}</label>
+                    <select class="field-input" [id]="'proficiency-' + skill.id" required (change)="changeProficiency(skill.id, $event)"
+                            [attr.aria-invalid]="validationMessage && !proficiencyFor(skill.id) ? 'true' : null"
+                            [attr.aria-describedby]="validationMessage ? 'onboarding-validation' : null">
+                      <option value="" disabled [selected]="!proficiencyFor(skill.id)">{{ strings.chooseProficiency }}</option>
+                      @for (level of proficiencyOptions; track level.id) {
+                        <option [value]="level.id" [selected]="proficiencyFor(skill.id) === level.id">{{ level.label }}</option>
+                      }
+                    </select>
+                  </div>
+                }
+              }
+            </details>
+          </fieldset>
+        </section>
+      }
     </div>
 
-    <footer class="auth-page__footer">
-      <span>{{ common.madeWithCuriosity }}</span>
-      <span>{{ common.localeLine }}</span>
-    </footer>
+    <div class="preferences-actions">
+      <p class="selection-count" role="status">
+        @switch (selectedIntentions.length) {
+          @case (0) { {{ strings.needInterest }} }
+          @case (1) { {{ strings.oneInterest }} }
+          @default { {{ strings.nInterests(selectedIntentions.length) }} }
+        }
+      </p>
+      @if (validationMessage) { <p id="onboarding-validation" class="field-error" role="alert">{{ validationMessage }}</p> }
+      @if (preferencesSaveErrorMessage) {
+        <div class="status-message status-message--error" role="alert">
+          <p>{{ preferencesSaveErrorMessage }}</p>
+          <button type="button" class="contact-button mt-2" [disabled]="preferencesSaving"
+                  (click)="preferencesSaveRetryRequested.emit()">{{ strings.saveRetry }}</button>
+        </div>
+      }
+      <div class="flex flex-wrap gap-2">
+        <button type="button" class="solid-button" [disabled]="selectedIntentions.length === 0 || controlsDisabled"
+                [attr.aria-busy]="preferencesSaving" (click)="submitPreferences()">
+          @if (preferencesSaving) { {{ strings.savingPreferences }} } @else {
+            {{ editing ? strings.saveChanges : strings.enter }} <pulso-icon name="arrow-right" [size]="17" />
+          }
+        </button>
+        @if (editing) {
+          <button type="button" class="contact-button" [disabled]="preferencesSaving" (click)="cancelled.emit()">{{ strings.cancel }}</button>
+        }
+      </div>
+    </div>
   </div>
 </main>

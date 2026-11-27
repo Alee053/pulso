@@ -11,47 +11,51 @@
 
 <ng-template #authenticatedApplication>
     <ng-container *ngIf="!session.hasStarted() || session.isEditingPreferences(); else applicationShell">
-        <pulso-onboarding [intentionOptions]="session.intentionOptions()"
-                          [selectedIntentions]="session.selectedIntentions()"
-                          [editing]="session.isEditingPreferences()"
-                          [validationMessage]="session.preferenceValidationMessage()"
-                          [sectors]="session.referenceCatalogs().sectors"
-                          [tags]="session.referenceCatalogs().tags"
-                          [skills]="session.referenceCatalogs().skills"
-                          [selectedSectorIds]="session.selectedSectorIds()"
-                          [selectedTagIds]="session.selectedTagIds()"
-                          [selectedSkills]="session.selectedSkills()"
-                          [stages]="session.stageOptions()"
-                          [selectedStageIds]="session.selectedStageIds()"
-                          [catalogsLoading]="session.areCatalogsLoading()"
-                          [catalogsLoaded]="session.hasLoadedReferenceCatalogs()"
-                          [catalogsErrorMessage]="session.catalogsErrorMessage()"
-                          [preferencesLoading]="session.arePreferencesLoading()"
-                          [preferencesLoaded]="session.hasLoadedPreferences()"
-                          [preferencesErrorMessage]="session.preferencesErrorMessage()"
-                          [preferencesSaving]="session.arePreferencesSaving()"
-                          [preferencesSaveErrorMessage]="session.preferencesSaveErrorMessage()"
-                          (intentionToggled)="session.toggleIntention($event)"
-                          (proficiencyChanged)="session.changeSkillProficiency($event)"
-                          (cancelled)="session.cancelPreferencesEditing()"
-                          (sectorToggled)="session.toggleSector($event)"
-                          (tagToggled)="session.toggleTag($event)"
-                          (skillToggled)="session.toggleSkill($event)"
-                          (stageToggled)="session.toggleStage($event)"
-                          (catalogsRetryRequested)="session.retryReferenceCatalogs()"
-                          (preferencesRetryRequested)="session.retryOnboardingPreferences()"
-                          (preferencesSaveRetryRequested)="session.retryPreferencesSave()"
-                          (started)="session.startDiscovery()" />
+        @defer (on immediate) {
+            <pulso-onboarding [intentionOptions]="session.intentionOptions()"
+                              [selectedIntentions]="session.selectedIntentions()"
+                              [editing]="session.isEditingPreferences()"
+                              [languageSwitcherEnabled]="featureFlags.isEnabled('language_switcher')"
+                              [validationMessage]="session.preferenceValidationMessage()"
+                              [sectors]="session.referenceCatalogs().sectors"
+                              [tags]="session.referenceCatalogs().tags"
+                              [skills]="session.referenceCatalogs().skills"
+                              [selectedSectorIds]="session.selectedSectorIds()"
+                              [selectedTagIds]="session.selectedTagIds()"
+                              [selectedSkills]="session.selectedSkills()"
+                              [stages]="session.stageOptions()"
+                              [selectedStageIds]="session.selectedStageIds()"
+                              [catalogsLoading]="session.areCatalogsLoading()"
+                              [catalogsLoaded]="session.hasLoadedReferenceCatalogs()"
+                              [catalogsErrorMessage]="session.catalogsErrorMessage()"
+                              [preferencesLoading]="session.arePreferencesLoading()"
+                              [preferencesLoaded]="session.hasLoadedPreferences()"
+                              [preferencesErrorMessage]="session.preferencesErrorMessage()"
+                              [preferencesSaving]="session.arePreferencesSaving()"
+                              [preferencesSaveErrorMessage]="session.preferencesSaveErrorMessage()"
+                              (intentionToggled)="session.toggleIntention($event)"
+                              (proficiencyChanged)="session.changeSkillProficiency($event)"
+                              (cancelled)="session.cancelPreferencesEditing()"
+                              (sectorToggled)="session.toggleSector($event)"
+                              (tagToggled)="session.toggleTag($event)"
+                              (skillToggled)="session.toggleSkill($event)"
+                              (stageToggled)="session.toggleStage($event)"
+                              (catalogsRetryRequested)="session.retryReferenceCatalogs()"
+                              (preferencesRetryRequested)="session.retryOnboardingPreferences()"
+                              (preferencesSaveRetryRequested)="session.retryPreferencesSave()"
+                              (started)="session.startDiscovery()" />
+        } @loading (after 150ms) {
+            <ng-container *ngTemplateOutlet="viewLoading" />
+        } @error {
+            <ng-container *ngTemplateOutlet="viewFailed" />
+        }
     </ng-container>
 </ng-template>
 
 <ng-template #applicationShell>
-    <div class="app-shell relative flex min-h-screen flex-col overflow-hidden text-white">
-        <div class="ambient-orb ambient-orb--sky" aria-hidden="true"></div>
-        <div class="ambient-orb ambient-orb--blue" aria-hidden="true"></div>
-
+    <div class="app-shell">
         <div *ngIf="session.preferencesSavedMessage() as message" class="toast" role="status" aria-live="polite">
-            <span class="flex size-7 items-center justify-center rounded-full bg-[#a9e1ff]/15 text-[#a9e1ff]">
+            <span class="toast-check">
                 <pulso-icon name="check" [size]="14" />
             </span>
             {{ message }}
@@ -60,83 +64,124 @@
         <pulso-navigation-bar [activeView]="activeView()"
                               [projectCreationEnabled]="featureFlags.isEnabled('project_creation')"
                               [savedCount]="session.savedCount()"
-                              [interestedCount]="session.interestedCount()"
+                              [languageSwitcherEnabled]="featureFlags.isEnabled('language_switcher')"
                               [unreadCount]="unreadCount() ?? 0"
-                              (navigated)="navigateTo($event)"
-                              (exampleRequested)="session.openProjectDetail(session.catalog()[0]?.id || 'eco-pack')" />
+                              (navigated)="navigateTo($event)" />
 
-        <div class="app-shell__content">
+        <div class="app-shell__content" id="workspace-content" tabindex="-1">
             <div *ngIf="session.interactionErrorMessage() as interactionError" class="status-message status-message--error mb-4 flex flex-wrap items-center gap-3" role="alert">
                 <p>{{ interactionError }}</p>
                 <button type="button" class="contact-button" [disabled]="session.isSavingInteraction()" (click)="session.retryInteraction()">{{ common.retry }}</button>
             </div>
-            <header class="workspace-header">
-                <span>{{ common.workspaceLabel }}</span>
-                <pulso-language-switcher *ngIf="featureFlags.isEnabled('language_switcher')" />
-                <button type="button" class="reference-example" (click)="session.openProjectDetail(session.catalog()[0]?.id || 'eco-pack')">
-                    <pulso-icon name="arrow-up-right" [size]="16" />{{ common.exampleProject }}
-                </button>
-            </header>
+            @if (activeView() === 'messages' || activeView() === 'conversation') {
+                @if (auth.session(); as account) {
+                    @defer (on immediate) {
+                        <pulso-messages-view [profileId]="account.id" [conversationId]="conversationId()"
+                                             (conversationSelected)="openConversation($event)" />
+                    } @loading (after 150ms) {
+                        <ng-container *ngTemplateOutlet="viewLoading" />
+                    } @error {
+                        <ng-container *ngTemplateOutlet="viewFailed" />
+                    }
+                }
+            }
             <ng-container [ngSwitch]="activeView()">
-                <pulso-discovery-view *ngSwitchCase="'discover'"
-                                      [activeSignals]="session.activeSignals()"
-                                      [currentStartup]="session.currentStartup()"
-                                      [errorMessage]="session.errorMessage()"
-                                      [feedRemaining]="session.feed().length"
-                                      [isLoading]="session.isLoading()"
-                                      [isSavingInteraction]="session.isSavingInteraction()"
-                                      [isModalOpen]="selectedStartup() !== null || linkedProjectId() !== null"
-                                      [totalStartups]="session.catalog().length"
-                                      [savedIds]="session.savedIds()"
-                                      [isSearching]="session.isSearching()"
-                                      [searchError]="session.searchError()"
-                                      [searchHasMore]="session.searchHasMore()"
-                                      [searchQuery]="session.searchQuery()"
-                                      [searchResults]="session.searchResults()"
-                                      [searchTotal]="session.searchTotal()"
-                                      [activeFilters]="session.searchFilters()"
-                                      [sectorsList]="session.referenceCatalogs().sectors"
-                                      [tagsList]="session.referenceCatalogs().tags"
-                                      (searchChanged)="session.search($event)"
-                                      (searchCleared)="session.clearSearch()"
-                                      (searchMoreRequested)="session.loadMoreSearch()"
-                                      (searchRetried)="session.retrySearch()"
-                                      (decisionMade)="session.makeDecision($event)"
-                                      (restarted)="session.restartDiscovery()"
-                                      (retryRequested)="session.retryDiscovery()"
-                                      (startupSaved)="session.toggleSaved($event)"
-                                      (startupSelected)="selectStartup($event)" 
-                                      (filtersChanged)="session.updateFilters($event)" />
-
-                <ng-container *ngSwitchCase="'create-project'">
-                    <pulso-project-create-form *ngIf="featureFlags.isEnabled('project_creation')"
-                                               [sectors]="session.referenceCatalogs().sectors"
-                                               [catalogsLoading]="session.areCatalogsLoading()"
-                                               [catalogsLoaded]="session.hasLoadedReferenceCatalogs()"
-                                               [catalogsErrorMessage]="session.catalogsErrorMessage()" />
+                <ng-container *ngSwitchCase="'discover'">
+                    @defer (on immediate) {
+                        <pulso-discovery-view
+                                              [activeSignals]="session.activeSignals()"
+                                              [upcoming]="session.feed().slice(1, 4)"
+                                              (preferencesRequested)="session.editPreferences()"
+                                              [currentStartup]="session.currentStartup()"
+                                              [errorMessage]="session.errorMessage()"
+                                              [feedRemaining]="session.feed().length"
+                                              [isLoading]="session.isLoading()"
+                                              [isSavingInteraction]="session.isSavingInteraction()"
+                                              [isModalOpen]="selectedStartup() !== null || linkedProjectId() !== null"
+                                              [totalStartups]="session.catalog().length"
+                                              [savedIds]="session.savedIds()"
+                                              [isSearching]="session.isSearching()"
+                                              [searchError]="session.searchError()"
+                                              [searchHasMore]="session.searchHasMore()"
+                                              [searchQuery]="session.searchQuery()"
+                                              [searchResults]="session.searchResults()"
+                                              [searchTotal]="session.searchTotal()"
+                                              [activeFilters]="session.searchFilters()"
+                                              [sectorsList]="session.referenceCatalogs().sectors"
+                                              [tagsList]="session.referenceCatalogs().tags"
+                                              (searchChanged)="session.search($event)"
+                                              (searchCleared)="session.clearSearch()"
+                                              (searchMoreRequested)="session.loadMoreSearch()"
+                                              (searchRetried)="session.retrySearch()"
+                                              (decisionMade)="session.makeDecision($event)"
+                                              (restarted)="session.restartDiscovery()"
+                                              (retryRequested)="session.retryDiscovery()"
+                                              (startupSaved)="session.toggleSaved($event)"
+                                              (startupSelected)="selectStartup($event)"
+                                              (filtersChanged)="session.updateFilters($event)" />
+                    } @loading (after 150ms) {
+                        <ng-container *ngTemplateOutlet="viewLoading" />
+                    } @error {
+                        <ng-container *ngTemplateOutlet="viewFailed" />
+                    }
                 </ng-container>
 
-                <pulso-project-teams *ngSwitchCase="'teams'"
-                                     [skills]="session.referenceCatalogs().skills"
-                                     [sectors]="session.referenceCatalogs().sectors"
-                                     [catalogsLoaded]="session.hasLoadedReferenceCatalogs()"
-                                     [catalogsLoading]="session.areCatalogsLoading()"
-                                     [catalogsErrorMessage]="session.catalogsErrorMessage()"
-                                     (catalogsRetryRequested)="session.retryReferenceCatalogs()" />
+                <ng-container *ngSwitchCase="'create-project'">
+                    @defer (on immediate) {
+                        <pulso-project-create-form *ngIf="featureFlags.isEnabled('project_creation')"
+                                                   [sectors]="session.referenceCatalogs().sectors"
+                                                   [catalogsLoading]="session.areCatalogsLoading()"
+                                                   [catalogsLoaded]="session.hasLoadedReferenceCatalogs()"
+                                                   [catalogsErrorMessage]="session.catalogsErrorMessage()"
+                                                   (teamsRequested)="navigateTo('teams')"
+                                                   (catalogsRetryRequested)="session.retryReferenceCatalogs()" />
+                    } @loading (after 150ms) {
+                        <ng-container *ngTemplateOutlet="viewLoading" />
+                    } @error {
+                        <ng-container *ngTemplateOutlet="viewFailed" />
+                    }
+                </ng-container>
 
-                <pulso-requests-view *ngSwitchCase="'requests'" [initialInbox]="initialInbox()" />
+                <ng-container *ngSwitchCase="'teams'">
+                    @defer (on immediate) {
+                        <pulso-project-teams [canCreate]="featureFlags.isEnabled('project_creation')"
+                                             (createRequested)="navigateTo('create-project')"
+                                             [skills]="session.referenceCatalogs().skills"
+                                             [sectors]="session.referenceCatalogs().sectors"
+                                             [catalogsLoaded]="session.hasLoadedReferenceCatalogs()"
+                                             [catalogsLoading]="session.areCatalogsLoading()"
+                                             [catalogsErrorMessage]="session.catalogsErrorMessage()"
+                                             (catalogsRetryRequested)="session.retryReferenceCatalogs()" />
+                    } @loading (after 150ms) {
+                        <ng-container *ngTemplateOutlet="viewLoading" />
+                    } @error {
+                        <ng-container *ngTemplateOutlet="viewFailed" />
+                    }
+                </ng-container>
 
-                <pulso-notifications-view *ngSwitchCase="'notifications'" />
+                <ng-container *ngSwitchCase="'requests'">
+                    @defer (on immediate) {
+                        <pulso-requests-view [initialInbox]="initialInbox()" (inboxSelected)="openRequests($event)" />
+                    } @loading (after 150ms) {
+                        <ng-container *ngTemplateOutlet="viewLoading" />
+                    } @error {
+                        <ng-container *ngTemplateOutlet="viewFailed" />
+                    }
+                </ng-container>
 
-                <ng-container *ngSwitchCase="'conversation'">
-                    @if (auth.session(); as account) {
-                        @if (conversationId(); as id) {
-                            <pulso-conversation-view [conversationId]="id" [profileId]="account.id" />
-                        }
+                <ng-container *ngSwitchCase="'notifications'">
+                    @defer (on immediate) {
+                        <pulso-notifications-view />
+                    } @loading (after 150ms) {
+                        <ng-container *ngTemplateOutlet="viewLoading" />
+                    } @error {
+                        <ng-container *ngTemplateOutlet="viewFailed" />
                     }
                 </ng-container>
 
                 <pulso-saved-view *ngSwitchCase="'saved'"
+                                  (discoverRequested)="navigateTo('discover')"
+                                  (savedRemoved)="session.toggleSaved($event)"
                                   [savedStartups]="session.savedStartups()"
                                   [interestedStartups]="session.interestedStartups()"
                                   [isSavingInteraction]="session.isSavingInteraction()"
@@ -157,12 +202,19 @@
                                   (loadMoreSavedRequested)="session.loadMoreSavedProjects()"
                                   (loadMoreInterestedRequested)="session.loadMoreInterestedProjects()" />
 
-                <pulso-profile-view *ngSwitchCase="'profile'"
-                                    [intentionOptions]="session.intentionOptions()"
-                                    [selectedIntentions]="session.selectedIntentions()"
-                                    [selectedTags]="session.selectedTags()"
-                                    [preferencesBusy]="session.arePreferencesSaving() || session.arePreferencesLoading()"
-                                    (preferencesEditRequested)="session.editPreferences()" />
+                <ng-container *ngSwitchCase="'profile'">
+                    @defer (on immediate) {
+                        <pulso-profile-view [intentionOptions]="session.intentionOptions()"
+                                            [selectedIntentions]="session.selectedIntentions()"
+                                            [selectedTags]="session.selectedTags()"
+                                            [preferencesBusy]="session.arePreferencesSaving() || session.arePreferencesLoading()"
+                                            (preferencesEditRequested)="session.editPreferences()" />
+                    } @loading (after 150ms) {
+                        <ng-container *ngTemplateOutlet="viewLoading" />
+                    } @error {
+                        <ng-container *ngTemplateOutlet="viewFailed" />
+                    }
+                </ng-container>
 
                 <pulso-public-project-detail *ngSwitchCase="'detail'"
                                              [projectId]="session.selectedProjectId() || ''"
@@ -182,3 +234,15 @@
 @if (!invitation.requested() && !auth.isLoading() && linkedProjectId(); as projectId) {
     <pulso-public-project-detail [projectId]="projectId" (closed)="closeWorkspaceLink()" />
 }
+
+<ng-template #viewLoading>
+    <p role="status" class="page field-hint">{{ common.viewLoading }}</p>
+</ng-template>
+<ng-template #viewFailed>
+    <section class="page">
+        <div class="state-panel">
+            <p role="alert">{{ common.viewFailed }}</p>
+            <button type="button" class="contact-button" (click)="reloadPage()">{{ common.retry }}</button>
+        </div>
+    </section>
+</ng-template>

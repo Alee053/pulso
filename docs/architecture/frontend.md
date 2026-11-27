@@ -25,7 +25,8 @@ frontend/src/
     └── shared/
         ├── brand-mark/                  # stable Pulso brand primitive
         ├── icon/                        # small local icon surface for the prototype
-        └── language-switcher/           # Spanish/English selector
+        ├── language-switcher/           # Spanish/English selector
+        └── theme-switcher/              # system, light and dark appearance
 ```
 
 [`PulsoSession`](../../frontend/src/app/features/discovery/application/pulso-session.ts) is the application-facing session module: it owns onboarding completion, the active view, the API-backed discovery feed, saved items, interested items, and learned preference weights. [`recommendations.ts`](../../frontend/src/app/features/discovery/domain/recommendations.ts) is a pure policy module and has no Angular or browser dependency. [`mock-startups.ts`](../../frontend/src/app/features/discovery/data-access/mock-startups.ts) remains a fixture for domain tests, not the runtime catalog source.
@@ -40,7 +41,7 @@ public opportunity ID ties the detail to the authenticated match response and
 to the form that creates a contextual connection request.
 
 The application shell opens shared project links at `/proyectos/{reference}`
-and signed-in conversation links at `/conversaciones/{id}`. The sent and
+and signed-in messaging at `/conversaciones` and `/conversaciones/{id}`. The sent and
 received request screens also open directly from notifications. The request
 and conversation screens own their page and action state. The notifications
 screen and the navigation badge share the server's `unreadCount`, refreshed on
@@ -111,21 +112,14 @@ These are deep-module seams: the caller-facing surface is small, while the modul
 
 ### Language support (PUL-108)
 
-The interface can switch between Spanish and English without reloading. Spanish is the default and the reference language. Only the general surfaces are translated; the rest of the application stays in Spanish until its strings module is migrated.
-
-| Translated | Still Spanish |
-| --- | --- |
-| `common`, `navigation`, `auth`, `language` | `team`, `membership`, `invitation` |
-| `feed` (cards and search), filters, `saved`, `detail`, `match` | `opportunity-skills` |
-| Requests, conversations and notifications | |
-| `profile`, `onboarding`, `recommendations`, project stage names | the rest of `project` (creation form) |
+The interface can switch between Spanish and English without reloading. Spanish is the default and the reference language. Account access, preferences, discovery, project and team management, invitations, membership feedback, activity, and messaging all use bilingual copy.
 
 How it works:
 
 - [`LanguageService`](../../frontend/src/app/core/i18n/language.service.ts) restores the language from `localStorage` (`pulso.language`), ignores invalid values, persists a change, and sets `<html lang>`. The preference belongs to the browser, not to the account, and it falls back to Spanish when storage is unavailable.
 - [`defineStrings(es, en)`](../../frontend/src/app/core/i18n/define-strings.ts) turns a strings module into an object with the same shape that reads the current language on every access. Templates keep using `{{ strings.title }}` and `strings.count(2)`. Reads inside templates, `computed`, and `effect` react to a language change because the language is a signal.
 - The English module must have exactly the Spanish keys, nested keys, and function parameters, or the project does not compile. [`translated-strings.spec.ts`](../../frontend/src/app/translated-strings.spec.ts) also checks that both languages expose the same texts and that the English texts contain no Spanish characters.
-- [`LanguageSwitcherComponent`](../../frontend/src/app/shared/language-switcher/language-switcher.ts) is mounted on the sign-in page and in the workspace header. Language names are always written in their own language.
+- [`LanguageSwitcherComponent`](../../frontend/src/app/shared/language-switcher/language-switcher.ts) appears on sign-in, invitations, preferences and in the workspace header when its feature flag is enabled. Language names are always written in their own language.
 
 To make another strings module translatable:
 
@@ -137,13 +131,11 @@ Known limits: a message already stored in a signal (for example an error shown a
 
 ### Visual system
 
-- `frontend/src/index.css` owns semantic color, spacing, radius, and navigation tokens, plus stable presentation primitives: `page`, `page-header`, `panel`, `field-*`, `state-panel`, and button styles.
-- Feature templates compose these primitives with Tailwind layout utilities. Feature state, events, validators, and data access remain in their existing modules.
-- Dark navy/slate surfaces and sky-blue actions carry the Pulso identity. Essential text uses readable opaque colors; imagery sits beside or behind a controlled overlay rather than determining text contrast.
-- Mobile discovery retains gestures on the cover and offers the same labeled actions above the bottom navigation; the card text allows vertical panning and pinch zoom. Long pages use normal document scrolling and reserve room for these controls and device safe areas.
-- Project dialogs scroll as one surface, keep dismissal reachable, contain keyboard focus, and restore the opener on close. Nonessential motion is disabled throughout when reduced motion is requested.
+`frontend/src/index.css` defines light and dark semantic colors, spacing, radii, type and navigation breakpoints. Opaque stone and graphite surfaces use cobalt for actions and selection. Bricolage Grotesque sets display type and DM Sans sets interface copy. Both fonts ship locally. Feature styles compose the shared form, panel, button, status and page classes.
 
-The design research and scope are recorded in [UI/UX refactor research](../research/ui-ux-refactor.md).
+The default theme follows the device through CSS. A system, light or dark override is stored in `pulso.theme` per browser. The same controls serve sign-in, invitations, preferences and the workspace.
+
+On desktop the workspace has a labeled sidebar. Mobile keeps Discover, Saved and Messages visible beside More. Project cards expose buttons for each gesture. Dialogs contain focus, close on Escape and restore the opener. The app respects reduced motion and reserves space for fixed navigation and device safe areas. [Design decisions and contrast](../research/interfaz-pulso.md) · [Screen gallery](../evidence/interfaz/README.md)
 
 ### Naming and files
 
@@ -164,13 +156,13 @@ by `CurrentProjectsApi`. Review strings support Spanish and English.
 `ProjectTeamsComponent` owns its page, loading/error/retry state, and account
 changes. `MemberInvitationFormComponent` uses the existing membership policy to
 show owner/admin controls, while `MemberInvitationsApi` sends create/accept
-requests through the Auth interceptor and translates server failures into safe
-Spanish copy. No browser product query goes to Supabase.
+requests through the Auth interceptor and translates server failures into localizable
+feedback. No browser product query goes to Supabase.
 
 `ProjectMembersComponent` owns each team's roster, pagination, inline action
 confirmation, and mutation feedback. `ProjectMembersApi` consumes the protected
 GET roster and existing PATCH membership contract, validates responses, and maps
-recognized failures to Spanish copy. Controls and the invitation form use the
+recognized failures to localizable copy. Controls and the invitation form use the
 roster's persisted actor role; a member sees only the public read projection.
 Successful mutations replace the row by membership ID and reload its page for
 public fields while preserving other loaded pages. Own role changes update the
@@ -192,13 +184,15 @@ projects, public member profiles, and non-deleted conversation messages reuse
 adapter beside public member profiles and the active conversation; the backend
 enforces bilateral contact policy for new requests, acceptance, and messages.
 
-The requests view opens the private conversation returned by accepting a
-pending intent. It includes message history, sending, contextual message
-reports, and profile blocking. The backend has no conversation-list endpoint,
-so this view does not restore a conversation after leaving or reloading it.
+The Messages view lists accessible conversations from the authorized sent and
+received request histories, ordered by request creation date. A private thread
+opens from that list, a request, a notification, or its own URL and survives a
+reload. The thread supports message history, sending, reporting and profile
+blocking. [Conversation behavior](./conversation-messages.md)
 
 `InvitationLink` consumes the initial `invitation` or SMTP `invite` URL fragment before Auth
-initialization, removes it from the location, and holds its token privately in
+initialization and observes subsequent fragment changes. It removes the fragment
+from the location and holds its token privately in
 memory for the acceptance request. The app composes `InvitationAcceptanceComponent`
 before onboarding so an invited account can authenticate, accept, or switch
 accounts. These components clear stale results on identity changes while keeping
@@ -228,8 +222,8 @@ the existing domain model. `PulsoSession` owns the draft skill levels, validates
 that each selected skill has a level, and saves with `completeOnboarding: true`.
 The persisted `onboardingCompletedAt` determines whether onboarding is complete.
 
-The profile opens the same onboarding component for later edits. Cancelling
-restores the last persisted selections without a request; saving uses the same
-validation and returns to the profile. Controls are locked during load/save and
+Discover and Profile open the same onboarding component for later edits.
+Cancelling restores the persisted selections. Saving runs the original
+validation. Both actions return to the view that opened the editor. Controls are locked during load/save and
 responses from previous authenticated accounts are discarded. Legacy preference
 calls using skill IDs remain supported by the backend; see [API](../api.md).

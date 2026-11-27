@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common'
 import { Component, inject, OnInit, signal } from '@angular/core'
+import { IconComponent } from '../../shared/icon/icon'
 import { commonStrings } from '../../shared/strings/common.strings'
 import { SupabaseAuthGateway } from './supabase-auth.gateway'
 import { authStrings } from './strings/auth.strings'
@@ -9,20 +10,33 @@ type AuthMode = 'sign-in' | 'sign-up'
 @Component({
   selector: 'pulso-auth-panel',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, IconComponent],
   templateUrl: './auth-panel.html',
+  styleUrl: './auth-panel.css',
 })
 export class AuthPanelComponent implements OnInit {
   readonly strings = authStrings
   readonly common = commonStrings
   readonly auth = inject(SupabaseAuthGateway)
   readonly mode = signal<AuthMode>('sign-in')
+  readonly passwordVisible = signal(false)
   readonly isBusy = signal(false)
   readonly message = signal<string | null>(null)
   readonly messageIsError = signal(false)
 
   email = ''
   password = ''
+
+  get passwordDescription(): string | null {
+    const hints = []
+    if (this.mode() === 'sign-up') hints.push('auth-password-hint')
+    if (this.messageIsError()) hints.push('auth-feedback')
+    return hints.join(' ') || null
+  }
+
+  togglePassword(): void {
+    this.passwordVisible.update((visible) => !visible)
+  }
 
   ngOnInit(): void {
     void this.auth.initialize().catch(() => {
@@ -48,6 +62,7 @@ export class AuthPanelComponent implements OnInit {
         ? await this.auth.signUp(email, this.password)
         : await this.auth.signIn(email, this.password)
       this.password = ''
+      this.passwordVisible.set(false)
       this.setFeedback(
         result.requiresEmailConfirmation
           ? this.strings.confirmEmail
@@ -90,6 +105,8 @@ export class AuthPanelComponent implements OnInit {
   }
 
   toggleMode(): void {
+    this.password = ''
+    this.passwordVisible.set(false)
     this.mode.update((current) => current === 'sign-in' ? 'sign-up' : 'sign-in')
     this.setFeedback(null)
   }

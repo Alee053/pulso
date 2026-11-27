@@ -1,7 +1,9 @@
 import { CommonModule } from '@angular/common'
-import { Component, EventEmitter, Input, Output } from '@angular/core'
+import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from '@angular/core'
 import { BrandMarkComponent } from '../../../shared/brand-mark/brand-mark'
-import { IconComponent } from '../../../shared/icon/icon'
+import { LanguageSwitcherComponent } from '../../../shared/language-switcher/language-switcher'
+import { ThemeSwitcherComponent } from '../../../shared/theme-switcher/theme-switcher'
+import { IconComponent, type IconName } from '../../../shared/icon/icon'
 import { commonStrings } from '../../../shared/strings/common.strings'
 import type {
   SectorCatalogItem,
@@ -14,12 +16,14 @@ import { onboardingStrings } from '../strings/onboarding.strings'
 @Component({
   selector: 'pulso-onboarding',
   standalone: true,
-  imports: [CommonModule, BrandMarkComponent, IconComponent],
+  imports: [CommonModule, BrandMarkComponent, IconComponent, LanguageSwitcherComponent, ThemeSwitcherComponent],
   templateUrl: './onboarding.html',
+  styleUrl: './onboarding.css',
 })
 export class OnboardingComponent {
   @Input() intentionOptions: readonly IntentionOption[] = []
   @Input() selectedIntentions: OnboardingIntention[] = []
+  @Input() languageSwitcherEnabled = false
   @Input() editing = false
   @Input() validationMessage: string | null = null
 
@@ -56,6 +60,23 @@ export class OnboardingComponent {
   readonly common = commonStrings
 
   readonly proficiencyOptions = proficiencyOptions
+  readonly intentionIcons: Record<OnboardingIntention, IconName> = {
+    DISCOVER: 'compass', BUY: 'bookmark', COLLABORATE: 'handshake', WORK: 'user-round',
+    INVEST: 'trending-up', FIND_PARTNERS: 'users-round', FIND_CUSTOMERS: 'at-sign',
+    FIND_PROVIDERS: 'search', EXPLORE_ECOSYSTEM: 'map-pin',
+  }
+
+  @ViewChild('skillGroup') private skillGroup?: ElementRef<HTMLDetailsElement>
+
+  submitPreferences(): void {
+    this.started.emit()
+    const group = this.skillGroup?.nativeElement
+    const missingProficiency = group?.querySelector<HTMLSelectElement>('select:invalid')
+    if (group && missingProficiency) {
+      group.open = true
+      missingProficiency.focus()
+    }
+  }
 
   get controlsDisabled(): boolean {
     return this.preferencesLoading || !this.preferencesLoaded || this.preferencesSaving

@@ -1,0 +1,58 @@
+.feature-settings {
+  padding: clamp(1.1rem, 2vw, 1.75rem);
+}
+.feature-settings h2 {
+  font: 650 1.25rem/1.25 var(--font-display);
+  letter-spacing: -0.03em;
+}
+.feature-setting {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.9rem 0;
+  border-top: 1px solid var(--color-border);
+  cursor: pointer;
+}
+.feature-setting .field-hint {
+  margin-top: 0.2rem;
+}
+.feature-switch {
+  flex: none;
+  width: 2.6rem;
+  height: 1.5rem;
+  padding: 0.15rem;
+  appearance: none;
+  border: 1px solid var(--color-control-border);
+  border-radius: 2rem;
+  background: var(--color-surface-raised);
+  cursor: pointer;
+}
+.feature-switch::before {
+  content: "";
+  display: block;
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 50%;
+  background: var(--color-muted);
+}
+.feature-switch:checked {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+}
+.feature-switch:checked::before {
+  margin-inline-start: auto;
+  background: var(--color-accent-ink);
+}
+.feature-switch:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+@media (forced-colors: active) {
+  .feature-switch {
+    appearance: auto;
+  }
+  .feature-switch::before {
+    display: none;
+  }
+}

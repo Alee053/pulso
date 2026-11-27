@@ -1,4 +1,4 @@
-<section class="mt-5 border-t border-[var(--color-border)] pt-5" [attr.aria-label]="strings.title">
+<section class="min-w-0" [attr.aria-label]="strings.title">
   <div class="flex flex-wrap items-center justify-between gap-3">
     <h3 class="text-lg font-semibold">{{ strings.title }}</h3>
     <button type="button" class="contact-button" (click)="refresh()" [disabled]="loading() || submitting()">{{ strings.refresh }}</button>
@@ -12,13 +12,20 @@
   <p *ngIf="succeeded()" class="status-message status-message--success mt-4" role="status">{{ strings.success }}</p>
   <p *ngIf="!loading() && !loadError() && !canAdminister()" class="field-hint">{{ strings.readOnly }}</p>
   <p *ngIf="!loading() && !loadError() && members().length === 0" class="status-message mt-4" role="status">{{ strings.empty }}</p>
-  <ul class="mt-4 grid gap-4" [attr.aria-busy]="loading() || submitting()">
-    <li *ngFor="let member of members(); trackBy: trackMember" class="min-w-0 rounded-[var(--radius-md)] border border-[var(--color-border)] p-4" [attr.data-member]="member.id">
-      <h4 class="font-semibold break-words">{{ member.displayName || (member.profileId ? strings.privateName : strings.invitationName) }}</h4>
-      <p *ngIf="member.displayTitle" class="field-hint break-words">{{ member.displayTitle }}</p>
-      <p class="field-hint">{{ strings.roleLabel }}: {{ strings.role[member.role] }} · {{ strings.statusLabel }}: {{ strings.status[member.membershipStatus] }}</p>
-      <p *ngIf="isOwn(member)" class="field-hint">{{ strings.you }}</p>
-      <p *ngIf="!member.displayName && canAdminister()" class="field-hint break-all">{{ strings.reference }}: {{ member.id }}</p>
+  <ul class="mt-4 divide-y divide-[var(--color-border)]" [attr.aria-busy]="loading() || submitting()">
+    <li *ngFor="let member of members(); trackBy: trackMember" class="min-w-0 py-4 [overflow-wrap:anywhere]" [attr.data-member]="member.id">
+      <div class="flex flex-wrap items-start gap-3">
+        <span class="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--color-accent-surface)] font-semibold text-[var(--color-accent)]" aria-hidden="true">
+          {{ member.displayName?.charAt(0) || '·' }}
+        </span>
+        <div class="min-w-0 grow">
+          <h4 class="font-semibold">{{ member.displayName || (member.profileId ? strings.privateName : strings.invitationName) }}</h4>
+          <p *ngIf="member.displayTitle" class="field-hint">{{ member.displayTitle }}</p>
+          <p class="field-hint"><span class="sr-only">{{ strings.roleLabel }}: </span>{{ strings.role[member.role] }}<span *ngIf="isOwn(member)"> · {{ strings.you }}</span></p>
+          <p *ngIf="!member.displayName && canAdminister()" class="field-hint">{{ strings.reference }}: {{ member.id }}</p>
+        </div>
+        <span class="mini-badge"><span class="sr-only">{{ strings.statusLabel }}: </span>{{ strings.status[member.membershipStatus] }}</span>
+      </div>
       <div *ngIf="canAdminister()" class="mt-4 flex flex-wrap items-end gap-3">
         <label *ngIf="roleOptions(member).length > 1" class="field-label w-full min-w-0 sm:w-auto" [attr.for]="'member-role-' + member.id">
           {{ strings.changeRole }}

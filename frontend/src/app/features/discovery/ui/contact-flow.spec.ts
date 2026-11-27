@@ -69,7 +69,9 @@ describe('ConversationViewComponent', () => {
     http.expectOne(messagesUrl + '?offset=0')
       .flush({ data: [message('first', 'Primero')], meta: { offset: 0, limit: 1, hasMore: true } })
     fixture.detectChanges()
-    root.querySelector<HTMLButtonElement>('header button')!.click()
+    const nextPage = [...root.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Ver los siguientes mensajes')
+    expect(nextPage).toBeDefined()
+    nextPage!.click()
     http.expectOne(messagesUrl + '?offset=1')
       .flush({ data: [message('second', 'Segundo')], meta: { offset: 1, limit: 1, hasMore: false } })
     fixture.detectChanges()
@@ -151,6 +153,34 @@ describe('NotificationsViewComponent', () => {
     expect(root.textContent).toContain('2 sin leer')
     expect(root.querySelector('li .mini-badge')?.textContent?.trim()).toBe('Leída')
     expect(root.querySelector('li button')).toBeNull()
+    http.verify()
+  })
+})
+
+describe('Unread notifications filter', () => {
+  it('filters at the API and keeps the correct offset when marking the last displayed unread item', () => {
+    const { fixture, root, http } = setup(NotificationsViewComponent)
+    const url = api + '/me/notifications'
+    const item: InboxNotification = {
+      id: 'first', type: 'NEW_MESSAGE', conversationId: 'conversation', payload: {}, connectionIntentId: null,
+      read: false, createdAt: '2026-11-21T12:00:00Z',
+    }
+    fixture.detectChanges()
+    http.expectOne(url + '?offset=0').flush({ data: [item], meta: { hasMore: true, unreadCount: 2 } })
+    fixture.detectChanges()
+    const button = (label: string) => [...root.querySelectorAll('button')].find(control => control.textContent?.trim() === label)!
+    button('Sin leer').click()
+    http.expectOne(url + '?offset=0&status=UNREAD').flush({ data: [item], meta: { hasMore: true, unreadCount: 2 } })
+    fixture.detectChanges()
+    button('Marcar como leída').click()
+    http.expectOne({ url: url + '/first/read', method: 'POST' }).flush({ ...item, read: true })
+    http.expectOne(url + '?offset=0&limit=1').flush({ data: [], meta: { unreadCount: 1 } })
+    http.expectOne(url + '?offset=0&status=UNREAD')
+      .flush({ data: [{ ...item, id: 'second' }], meta: { hasMore: false, unreadCount: 1 } })
+    fixture.detectChanges()
+    expect(root.querySelectorAll('.activity-row')).toHaveLength(1)
+    expect(root.querySelector('.activity-row .mini-badge')?.textContent).toContain('Sin leer')
+    expect(root.textContent).toContain('1 sin leer')
     http.verify()
   })
 })

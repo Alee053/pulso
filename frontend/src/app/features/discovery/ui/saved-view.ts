@@ -11,6 +11,7 @@ import { StartupThumbComponent } from './startup-thumb'
   standalone: true,
   imports: [CommonModule, IconComponent, StartupThumbComponent],
   templateUrl: './saved-view.html',
+  styleUrl: './saved-view.css',
 })
 export class SavedViewComponent {
   readonly strings = savedStrings
@@ -28,7 +29,9 @@ export class SavedViewComponent {
   @Input() isLoadingInterestedProjects = false
   @Input() savedProjectsErrorMessage: string | null = null
   @Input() interestedProjectsErrorMessage: string | null = null
+  @Output() discoverRequested = new EventEmitter<void>()
   @Output() startupSelected = new EventEmitter<Startup>()
+  @Output() savedRemoved = new EventEmitter<string>()
   @Output() interestCleared = new EventEmitter<string>()
   @Output() retrySavedRequested = new EventEmitter<void>()
   @Output() retryInterestedRequested = new EventEmitter<void>()

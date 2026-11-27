@@ -2,7 +2,7 @@ import { signal } from '@angular/core'
 import { provideHttpClient } from '@angular/common/http'
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing'
 import { TestBed } from '@angular/core/testing'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { SupabaseAuthGateway } from '../../../core/auth/supabase-auth.gateway'
 import { ProjectTeamsComponent } from './project-teams'
 
@@ -77,6 +77,21 @@ describe('ProjectTeamsComponent', () => {
     http.expectOne(path).flush({ data: [], meta: { offset: 0, limit: 20, hasMore: false } })
     fixture.detectChanges()
     expect(fixture.nativeElement.textContent).toContain('Todavía no formas parte de un equipo activo')
+    http.verify()
+  })
+
+  it('links an empty team list to project creation when the feature is enabled', () => {
+    const { fixture, http } = setup()
+    http.expectOne(path).flush({ data: [], meta: { offset: 0, limit: 20, hasMore: false } })
+    fixture.detectChanges()
+    const root: HTMLElement = fixture.nativeElement
+    expect(root.querySelector('.state-panel button')).toBeNull()
+    fixture.componentRef.setInput('canCreate', true)
+    fixture.detectChanges()
+    const create = vi.fn()
+    fixture.componentInstance.createRequested.subscribe(create)
+    root.querySelector<HTMLButtonElement>('.state-panel button')!.click()
+    expect(create).toHaveBeenCalledOnce()
     http.verify()
   })
 

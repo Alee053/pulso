@@ -15,6 +15,7 @@ import type {
   OpportunitySkill,
   OpportunitySkillImportance,
 } from '../domain/project-opportunity-skills'
+import { IconComponent } from '../../../shared/icon/icon'
 import { ProjectOpportunitySkillsApi } from '../data-access/project-opportunity-skills-api'
 import { opportunitySkillsStrings as strings } from '../strings/opportunity-skills.strings'
 import type { ProjectStatus } from '../domain/project-review'
@@ -32,7 +33,7 @@ const opportunityActionsByStatus: Record<OpportunityStatus, readonly Opportunity
 @Component({
   selector: 'pulso-project-opportunity-skills',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, IconComponent],
   templateUrl: './project-opportunity-skills.html',
 })
 export class ProjectOpportunitySkillsComponent {
@@ -65,6 +66,7 @@ export class ProjectOpportunitySkillsComponent {
   readonly hasMore = signal(false)
   readonly opportunities = signal<ManagedProjectOpportunity[]>([])
   readonly skillsByOpportunity = signal<Record<string, OpportunitySkill[]>>({})
+  readonly loadFailed = signal(false)
   readonly errorMessage = signal<string | null>(null)
   readonly successMessage = signal<string | null>(null)
   readonly formOpportunityId = signal<string | null>(null)
@@ -100,6 +102,7 @@ export class ProjectOpportunitySkillsComponent {
   loadMore(): void {
     if (this.loading()) return
     this.loading.set(true)
+    this.loadFailed.set(false)
     this.errorMessage.set(null)
     this.successMessage.set(null)
     this.api.listOpportunities(this.projectId, this.nextOffset).subscribe({
@@ -126,13 +129,13 @@ export class ProjectOpportunitySkillsComponent {
             this.loading.set(false)
           },
           error: () => {
-            this.errorMessage.set(strings.loadFailed)
+            this.loadFailed.set(true)
             this.loading.set(false)
           },
         })
       },
       error: () => {
-        this.errorMessage.set(strings.loadFailed)
+        this.loadFailed.set(true)
         this.loading.set(false)
       },
     })

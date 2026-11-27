@@ -1,41 +1,27 @@
-<main class="auth-page">
-  <div class="auth-page__container">
-    <header class="flex flex-wrap items-center justify-between gap-4">
+<main class="entry-page">
+  <header class="entry-header">
+    <div class="flex min-w-0 items-center gap-4">
       <pulso-brand-mark />
-      <span class="text-sm text-slate-400">{{ strings.pageKicker }}</span>
-      <pulso-language-switcher *ngIf="featureFlags.isEnabled('language_switcher')" />
-    </header>
-
-    <div class="auth-page__layout">
-      <section class="auth-page__story fade-in-up" aria-labelledby="auth-page-title">
-        <span class="eyebrow">{{ common.eyebrowComingMap }}</span>
-        <h1 id="auth-page-title" class="page-title mt-4 max-w-xl text-balance">{{ strings.pageTitle }}</h1>
-        <p class="page-lead mt-5 max-w-lg">{{ strings.pageLead }}</p>
-
-        <ol class="auth-page__benefits mt-8" aria-label="{{ strings.benefitsAria }}">
-          <li class="auth-page__benefit">
-            <span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-sky-400/10 text-sm font-semibold text-sky-300" aria-hidden="true">{{ strings.stepMark1 }}</span>
-            <p class="text-sm leading-6 text-slate-300">{{ strings.step1 }}</p>
-          </li>
-          <li class="auth-page__benefit">
-            <span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-sky-400/10 text-sm font-semibold text-sky-300" aria-hidden="true">{{ strings.stepMark2 }}</span>
-            <p class="text-sm leading-6 text-slate-300">{{ strings.step2 }}</p>
-          </li>
-          <li class="auth-page__benefit">
-            <span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-sky-400/10 text-sm font-semibold text-sky-300" aria-hidden="true">{{ strings.stepMark3 }}</span>
-            <p class="text-sm leading-6 text-slate-300">{{ strings.step3 }}</p>
-          </li>
-        </ol>
-      </section>
-
-      <div class="auth-page__form fade-in-up fade-in-up--delayed">
-        <pulso-auth-panel />
-      </div>
+      <span class="entry-community">{{ strings.pageKicker }}</span>
     </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <pulso-language-switcher *ngIf="featureFlags.isEnabled('language_switcher')" />
+      <pulso-theme-switcher />
+    </div>
+  </header>
 
-    <footer class="auth-page__footer">
-      <span>{{ common.madeWithCuriosity }}</span>
-      <span>{{ common.localeLine }}</span>
-    </footer>
+  <div class="entry-spread">
+    <section class="entry-cover" aria-labelledby="auth-page-title">
+      <img class="entry-cover__image" src="assets/pulso-la-paz.webp" alt="" fetchpriority="high" />
+      <div class="entry-cover__caption">
+        <p class="entry-location"><pulso-icon name="map-pin" [size]="17" />{{ strings.location }}</p>
+        <h1 id="auth-page-title">{{ strings.pageTitle }}</h1>
+        <p>{{ strings.pageLead }}</p>
+      </div>
+    </section>
+
+    <div class="entry-access">
+      <pulso-auth-panel />
+    </div>
   </div>
 </main>

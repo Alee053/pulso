@@ -46,6 +46,7 @@ import { ProjectDecisionComponent } from './project-decision'
         ReportFormComponent, ProfileBlockActionComponent, ConnectionRequestFormComponent, ProjectDecisionComponent,
     ],
     templateUrl: './public-project-detail.html',
+    styleUrl: './public-project-detail.css',
 })
 export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterViewChecked, OnDestroy {
     readonly strings = detailStrings
@@ -166,11 +167,14 @@ export class PublicProjectDetailComponent implements OnChanges, OnInit, AfterVie
 
     private focusableElements(): HTMLElement[] {
         const candidates = this.element.nativeElement.querySelectorAll<HTMLElement>(
-            'button:not(:disabled), a[href], summary, select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+            'button:not(:disabled), a[href], summary, input:not(:disabled):not([type="hidden"]), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
         )
-        return Array.from(candidates).filter(candidate =>
-            candidate.tagName === 'SUMMARY' || !candidate.closest('details:not([open])'),
-        )
+        return Array.from(candidates).filter(candidate => {
+            // A closed disclosure exposes its own summary, even inside another open disclosure.
+            const container = candidate.matches('details > summary:first-of-type')
+                ? candidate.parentElement?.parentElement : candidate
+            return !container?.closest('details:not([open])') && !candidate.closest('[hidden], [inert]')
+        })
     }
 
     ngOnChanges(changes: SimpleChanges): void {

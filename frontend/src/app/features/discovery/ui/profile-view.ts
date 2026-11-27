@@ -1,5 +1,4 @@
-import { CommonModule } from '@angular/common'
-import { Component, EventEmitter, inject, Input, OnInit, Output, signal } from '@angular/core'
+import { Component, EventEmitter, computed, inject, Input, OnInit, Output, signal } from '@angular/core'
 import { firstValueFrom } from 'rxjs'
 import { SupabaseAuthGateway } from '../../../core/auth/supabase-auth.gateway'
 import { IconComponent } from '../../../shared/icon/icon'
@@ -20,8 +19,9 @@ import { ProjectReviewsComponent } from './project-reviews'
 @Component({
     selector: 'pulso-profile-view',
     standalone: true,
-    imports: [CommonModule, IconComponent, FeatureFlagSettingsComponent, ProjectReviewsComponent, ProfileBlocksComponent],
+    imports: [IconComponent, FeatureFlagSettingsComponent, ProjectReviewsComponent, ProfileBlocksComponent],
     templateUrl: './profile-view.html',
+    styleUrl: './profile-view.css',
 })
 export class ProfileViewComponent implements OnInit {
     readonly strings = profileStrings
@@ -41,7 +41,22 @@ export class ProfileViewComponent implements OnInit {
     readonly isSaving = signal(false)
     readonly errorMessage = signal<string | null>(null)
     readonly validationMessage = signal<string | null>(null)
-    readonly feedbackMessage = signal<string | null>(null)
+    readonly signingOut = signal(false)
+    readonly signOutFailed = signal(false)
+    private readonly section = signal<'profile' | 'administration'>('profile')
+    readonly administrationVisited = signal(false)
+    readonly canReview = computed(() => {
+        const profile = this.profile()?.profile
+        return profile?.accountStatus === 'ACTIVE'
+            && (profile.platformRole === 'MODERATOR' || profile.platformRole === 'ADMIN')
+    })
+    readonly hasAdministration = computed(() => this.canReview() || this.profile()?.profile.platformRole === 'ADMIN')
+    readonly administrationOpen = computed(() => this.hasAdministration() && this.section() === 'administration')
+    readonly feedbackStatus = signal<'saved' | 'saveFailed' | null>(null)
+    readonly feedbackMessage = computed(() => {
+        const status = this.feedbackStatus()
+        return status ? this.strings[status] : null
+    })
 
     displayName = ''
     shortBio = ''
@@ -59,17 +74,17 @@ export class ProfileViewComponent implements OnInit {
     }
 
     get avatarInitial(): string {
-        return (this.displayName.trim().charAt(0) || 'U').toUpperCase()
+        return (this.profile()?.profile.displayName?.trim().charAt(0) || this.strings.account.charAt(0)).toUpperCase()
     }
 
     async loadProfile(): Promise<void> {
-        if (this.isSaving()) {
+        if (this.isSaving() || this.signingOut()) {
             return
         }
 
         this.isLoading.set(true)
         this.errorMessage.set(null)
-        this.feedbackMessage.set(null)
+        this.feedbackStatus.set(null)
 
         try {
             const currentUser = await firstValueFrom(this.profileApi.getCurrent())
@@ -85,7 +100,7 @@ export class ProfileViewComponent implements OnInit {
 
     async saveProfile(event?: SubmitEvent): Promise<void> {
         event?.preventDefault()
-        if (this.isSaving()) {
+        if (this.isSaving() || this.signingOut()) {
             return
         }
 
@@ -96,7 +111,7 @@ export class ProfileViewComponent implements OnInit {
         }
 
         this.validationMessage.set(null)
-        this.feedbackMessage.set(null)
+        this.feedbackStatus.set(null)
         this.isSaving.set(true)
 
         try {
@@ -110,27 +125,32 @@ export class ProfileViewComponent implements OnInit {
             const currentUser = await firstValueFrom(this.profileApi.update(patch))
             this.profile.set(currentUser)
             this.hydrateForm(currentUser)
-            this.feedbackMessage.set(this.strings.saved)
+            this.feedbackStatus.set('saved')
         } catch {
-            this.feedbackMessage.set(this.strings.saveFailed)
+            this.feedbackStatus.set('saveFailed')
         } finally {
             this.isSaving.set(false)
         }
     }
 
+    selectSection(section: 'profile' | 'administration'): void {
+        this.section.set(section)
+        if (section === 'administration') this.administrationVisited.set(true)
+    }
+
     async signOut(): Promise<void> {
-        if (this.isSaving()) {
+        if (this.isSaving() || this.signingOut()) {
             return
         }
 
-        this.isSaving.set(true)
-        this.feedbackMessage.set(null)
+        this.signingOut.set(true)
+        this.signOutFailed.set(false)
         try {
             await this.auth.signOut()
         } catch {
-            this.feedbackMessage.set(this.common.sessionCloseFailed)
+            this.signOutFailed.set(true)
         } finally {
-            this.isSaving.set(false)
+            this.signingOut.set(false)
         }
     }
 

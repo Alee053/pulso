@@ -3,6 +3,9 @@ import { defineStrings } from '../../../core/i18n/define-strings'
 export const notificationsStrings = defineStrings(
   {
     title: 'Notificaciones',
+    all: 'Todas',
+    onlyUnread: 'Sin leer',
+    emptyUnread: 'Estás al día. No tienes notificaciones sin leer.',
     loading: 'Cargando notificaciones…',
     empty: 'Todavía no tienes notificaciones.',
     loadFailed: 'No se pudieron cargar las notificaciones.',
@@ -25,6 +28,9 @@ export const notificationsStrings = defineStrings(
   },
   {
     title: 'Notifications',
+    all: 'All',
+    onlyUnread: 'Unread',
+    emptyUnread: 'You’re up to date. You have no unread notifications.',
     loading: 'Loading notifications…',
     empty: 'You have no notifications yet.',
     loadFailed: 'Could not load notifications.',

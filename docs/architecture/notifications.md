@@ -72,6 +72,13 @@ read and returns it. It is idempotent: marking it again keeps the first read
 time. Expired notices (`expires_at` in the past) are left out of the list and the
 counter; nothing sets an expiry yet.
 
+The Angular inbox offers **Todas** and **Sin leer**. The second filter
+requests `status=UNREAD` for every page. After a successful read mutation,
+the filtered list removes the notice, keeps the next offset aligned with the
+remaining unread rows, and refreshes the navigation counter from the API.
+Conversation links open the thread directly. The received and sent request
+links preserve the selected inbox when the page reloads.
+
 ## Access boundary
 
 The recipient is always taken from the validated JWT; there is no recipient in

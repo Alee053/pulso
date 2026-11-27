@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http'
 import { Component, DestroyRef, Input, inject, signal } from '@angular/core'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
+import { IconComponent } from '../../../shared/icon/icon'
 import { ConnectionIntentsApi } from '../data-access/connection-intents-api'
 import { connectionReasons, requestInboxHref, type ConnectionReason } from '../domain/connection'
 import { requestsStrings } from '../strings/requests.strings'
@@ -9,16 +10,17 @@ type RequestError = 'duplicate' | 'unavailable' | 'restricted' | 'createFailed'
 
 @Component({
   selector: 'pulso-connection-request-form',
+  imports: [IconComponent],
   template: `
-    <details class="mt-4">
-      <summary #toggle class="contact-button w-fit cursor-pointer">
-        {{ opportunityId ? strings.requestOpportunity : strings.requestProject }}
+    <details>
+      <summary #toggle class="contact-button max-w-full cursor-pointer text-start">
+        <pulso-icon name="handshake" [size]="17" />{{ opportunityId ? strings.requestOpportunity : strings.requestProject }}
       </summary>
       @if (pending()) {
         <p class="status-message status-message--success mt-3" role="status">{{ strings.pending }}</p>
         <a [href]="sentHref" class="contact-button mt-2">{{ strings.openSent }}</a>
       } @else {
-        <form class="mt-3 grid gap-3" (submit)="submit($event, reason.value, message.value, toggle)">
+        <form class="mt-3 grid gap-3 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4" (submit)="submit($event, reason.value, message.value, toggle)">
           <label>
             <span class="field-label">{{ strings.reason }}</span>
             <select #reason class="field-input" required [disabled]="sending()">

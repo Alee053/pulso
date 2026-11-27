@@ -1,21 +1,26 @@
-import { DatePipe } from '@angular/common'
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
+import { currentLanguage } from '../../../core/i18n/language'
+import { IconComponent, type IconName } from '../../../shared/icon/icon'
 import { commonStrings } from '../../../shared/strings/common.strings'
 import { UnreadNotifications } from '../application/unread-notifications'
-import { NotificationsApi } from '../data-access/notifications-api'
+import { NotificationsApi, type NotificationFilter } from '../data-access/notifications-api'
 import type { InboxNotification } from '../domain/communication'
 import { conversationHref, requestInboxHref } from '../domain/connection'
 import { notificationsStrings } from '../strings/notifications.strings'
+import { ActivityDatePipe } from './activity-date'
 
 @Component({
   selector: 'pulso-notifications-view',
-  imports: [DatePipe],
+  imports: [ActivityDatePipe, IconComponent],
   templateUrl: './notifications-view.html',
+  styleUrl: './activity-list.css',
 })
 export class NotificationsViewComponent implements OnInit {
   protected readonly strings = notificationsStrings
   protected readonly common = commonStrings
+  protected readonly language = currentLanguage
+  protected readonly filter = signal<NotificationFilter>('ALL')
   private readonly unread = inject(UnreadNotifications)
   private readonly api = inject(NotificationsApi)
   private readonly destroyRef = inject(DestroyRef)
@@ -32,9 +37,16 @@ export class NotificationsViewComponent implements OnInit {
     this.refresh()
   }
 
+  protected switchFilter(filter: NotificationFilter): void {
+    if (this.filter() === filter || this.loading() || this.marking()) return
+    this.filter.set(filter)
+    this.refresh()
+  }
+
   protected refresh(): void {
     if (this.loading() || this.marking()) return
     this.entries.set([])
+    this.markFailed.set(null)
     this.hasMore.set(false)
     this.loadMore()
   }
@@ -44,7 +56,7 @@ export class NotificationsViewComponent implements OnInit {
 
     this.loading.set(true)
     this.loadFailed.set(false)
-    this.api.list(this.entries().length).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.api.list(this.entries().length, undefined, this.filter()).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: ({ data, meta }) => {
         this.entries.update((entries) => [...entries, ...data])
         this.hasMore.set(meta.hasMore)
@@ -58,23 +70,35 @@ export class NotificationsViewComponent implements OnInit {
     })
   }
 
-  protected markRead(item: InboxNotification, row: HTMLElement): void {
+  protected markRead(item: InboxNotification, row: HTMLElement, heading: HTMLElement): void {
     if (this.marking() || this.loading() || item.read) return
 
     this.marking.set(item.id)
     this.markFailed.set(null)
     this.api.markRead(item.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (updated) => {
-        row.focus()
-        this.entries.update((entries) => entries.map(entry => entry.id === updated.id ? updated : entry))
         this.marking.set(null)
+        if (this.filter() === 'UNREAD') {
+          heading.focus({ preventScroll: true })
+          this.entries.update(entries => entries.filter(entry => entry.id !== updated.id))
+        } else {
+          row.focus({ preventScroll: true })
+          this.entries.update(entries => entries.map(entry => entry.id === updated.id ? updated : entry))
+        }
         this.unread.refresh()
+        if (!this.entries().length && this.hasMore()) this.loadMore()
       },
       error: () => {
         this.marking.set(null)
         this.markFailed.set(item.id)
       },
     })
+  }
+
+  protected icon(item: InboxNotification): IconName {
+    if (item.type === 'NEW_MESSAGE') return 'message-circle'
+    if (item.type === 'CONNECTION_REQUEST' || item.type === 'CONNECTION_RESPONSE') return 'handshake'
+    return 'bell'
   }
 
   protected label(item: InboxNotification): string {

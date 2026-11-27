@@ -25,7 +25,7 @@ describe('LanguageSwitcherComponent', () => {
 
     const group = element.querySelector('[role="group"]') as HTMLElement
     expect(group.getAttribute('aria-label')).toBe('Idioma')
-    expect(options(element).map((option) => option.textContent?.trim())).toEqual(['Español', 'English'])
+    expect(options(element).map((option) => option.getAttribute('aria-label'))).toEqual(['Español', 'English'])
     expect(options(element).map((option) => option.lang)).toEqual(['es', 'en'])
     fixture.destroy()
   })

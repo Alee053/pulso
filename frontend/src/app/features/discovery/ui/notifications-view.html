@@ -1,56 +1,67 @@
-<main class="discovery-view">
-  <header class="discovery-view__heading flex-wrap">
+<main class="page activity-page">
+  <header class="activity-heading">
     <div>
-      <h1 class="page-title">{{ strings.title }}</h1>
+      <h1 #heading class="page-title" tabindex="-1">{{ strings.title }}</h1>
       @if (unreadCount() !== null) {
-        <p class="field-hint" aria-live="polite">{{ strings.unreadCount(unreadCount() ?? 0) }}</p>
+        <p class="page-lead" aria-live="polite">{{ strings.unreadCount(unreadCount() ?? 0) }}</p>
       }
     </div>
-    <button type="button" class="contact-button" [disabled]="loading() || marking() !== null"
-            (click)="refresh()">{{ strings.refresh }}</button>
+    <button type="button" class="contact-button refresh" [disabled]="loading() || marking() !== null" (click)="refresh()">
+      <pulso-icon name="rotate-ccw" [size]="16" />{{ strings.refresh }}
+    </button>
   </header>
 
-  <ul class="grid gap-3">
-    @for (item of entries(); track item.id) {
-      <li #row class="panel grid gap-3 p-4 sm:flex sm:items-start sm:justify-between" tabindex="-1">
-        <div class="min-w-0">
-          <h2 class="font-semibold">{{ label(item) }}</h2>
-          <div class="mt-1 flex flex-wrap items-center gap-2">
-            <time class="field-hint" [attr.datetime]="item.createdAt">{{ item.createdAt | date:'short' }}</time>
-            <span class="mini-badge" [style.color]="item.read ? null : 'var(--color-accent)'" aria-live="polite">
-              {{ item.read ? strings.read : strings.unread }}
-            </span>
+  <div class="activity-segments" role="group" [attr.aria-label]="strings.title">
+    <button type="button" [attr.aria-pressed]="filter() === 'ALL'" [disabled]="loading() || marking() !== null"
+            (click)="switchFilter('ALL')">{{ strings.all }}</button>
+    <button type="button" [attr.aria-pressed]="filter() === 'UNREAD'" [disabled]="loading() || marking() !== null"
+            (click)="switchFilter('UNREAD')">{{ strings.onlyUnread }}</button>
+  </div>
+
+  @if (entries().length) {
+    <ul class="activity-list">
+      @for (item of entries(); track item.id) {
+        <li #row class="activity-row" [class.unread]="!item.read" tabindex="-1">
+          <span class="activity-icon" aria-hidden="true"><pulso-icon [name]="icon(item)" [size]="20" /></span>
+          <div class="activity-detail">
+            <div class="activity-title">
+              <h2>{{ label(item) }}</h2>
+              <span class="mini-badge" [class.has-accent]="!item.read" aria-live="polite">
+                {{ item.read ? strings.read : strings.unread }}
+              </span>
+            </div>
+            <div class="activity-meta">
+              <time [attr.datetime]="item.createdAt">{{ item.createdAt | activityDate:language() }}</time>
+            </div>
+            @if (markFailed() === item.id) { <p class="field-error" role="alert">{{ strings.markFailed }}</p> }
+            <div class="activity-actions">
+              @if (link(item); as target) {
+                <a class="activity-link" [href]="target.href">{{ target.label }}<pulso-icon name="arrow-right" [size]="15" /></a>
+              }
+              @if (!item.read) {
+                <button type="button" class="activity-link mark-read" [disabled]="loading() || marking() !== null" (click)="markRead(item, row, heading)">
+                  <pulso-icon name="check" [size]="15" />{{ strings.markRead }}
+                </button>
+              }
+            </div>
           </div>
-          @if (markFailed() === item.id) {
-            <p class="field-error mt-2" role="alert">{{ strings.markFailed }}</p>
-          }
-        </div>
-        <div class="flex flex-wrap gap-2">
-          @if (link(item); as target) {
-            <a class="contact-button" [href]="target.href">{{ target.label }}</a>
-          }
-          @if (!item.read) {
-            <button type="button" class="contact-button" [disabled]="loading() || marking() !== null"
-                    (click)="markRead(item, row)">{{ strings.markRead }}</button>
-          }
-        </div>
-      </li>
-    }
-  </ul>
+        </li>
+      }
+    </ul>
+  }
   @if (loading()) {
-    <div class="state-panel" role="status">
-      <span class="state-icon"><span class="spinner" aria-hidden="true"></span></span>
-      <h2>{{ strings.loading }}</h2>
-    </div>
+    <div class="activity-feedback" role="status"><span class="spinner" aria-hidden="true"></span>{{ strings.loading }}</div>
   } @else if (loadFailed()) {
     <div class="state-panel">
       <p role="alert">{{ strings.loadFailed }}</p>
       <button type="button" class="contact-button" (click)="loadMore()">{{ common.retry }}</button>
     </div>
   } @else if (hasMore()) {
-    <button type="button" class="contact-button mt-4" [disabled]="marking() !== null"
-            (click)="loadMore()">{{ strings.more }}</button>
-  } @else if (entries().length === 0) {
-    <p class="state-panel" role="status">{{ strings.empty }}</p>
+    <button type="button" class="contact-button" [disabled]="marking() !== null" (click)="loadMore()">{{ strings.more }}</button>
+  } @else if (!entries().length) {
+    <div class="state-panel" role="status">
+      <span class="state-icon"><pulso-icon name="bell" [size]="25" /></span>
+      <h2>{{ filter() === 'UNREAD' ? strings.emptyUnread : strings.empty }}</h2>
+    </div>
   }
 </main>

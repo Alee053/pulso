@@ -51,6 +51,21 @@ describe('DiscoveryViewComponent interactions', () => {
     expect(decision).not.toHaveBeenCalled()
   })
 
+  it('leaves arrow keys in the workspace navigation to the focused control', () => {
+    const fixture = TestBed.createComponent(DiscoveryViewComponent)
+    fixture.componentRef.setInput('currentStartup', startup)
+    fixture.detectChanges()
+    const decision = vi.fn()
+    fixture.componentInstance.decisionMade.subscribe(decision)
+    const nav = document.createElement('nav')
+    const button = document.createElement('button')
+    nav.append(button)
+    fixture.nativeElement.append(nav)
+    button.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    expect(decision).not.toHaveBeenCalled()
+    fixture.destroy()
+  })
+
   it('keeps failed, empty, and completed feed states distinct', () => {
     const fixture = TestBed.createComponent(DiscoveryViewComponent)
     fixture.componentRef.setInput('errorMessage', 'Request failed')

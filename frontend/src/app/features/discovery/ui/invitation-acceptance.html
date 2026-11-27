@@ -1,27 +1,44 @@
-<main class="page stacked-view">
-  <header class="page-header">
-    <h1 class="page-title">{{ strings.acceptTitle }}</h1>
-    <p class="page-lead">{{ strings.acceptLead }}</p>
+<main class="mx-auto w-full max-w-3xl px-4 py-5 sm:px-7">
+  <header class="flex flex-wrap items-center justify-between gap-3">
+    <pulso-brand-mark />
+    <div class="flex items-center gap-2">
+      <pulso-language-switcher *ngIf="flags.isEnabled('language_switcher')" />
+      <pulso-theme-switcher />
+    </div>
   </header>
-  <section class="panel p-5 sm:p-8" [attr.aria-busy]="submitting()">
-    <p *ngIf="accepted()" class="status-message" role="status">{{ strings.accepted }}</p>
-    <ng-container *ngIf="!accepted()">
-      <p *ngIf="!link.hasToken" class="status-message status-message--error" role="alert">{{ strings.invalid }}</p>
-      <ng-container *ngIf="link.hasToken">
-        <pulso-auth-panel *ngIf="!auth.session()" />
-        <ng-container *ngIf="auth.session()">
-          <button *ngIf="!failure()" type="button" class="solid-button w-full sm:w-auto" data-action="accept" [disabled]="submitting() || switchingAccount()" (click)="accept()">
-            {{ submitting() ? strings.accepting : strings.accept }}
-          </button>
-          <div *ngIf="failure() as error" class="status-message status-message--error" role="alert">
-            <p>{{ error.message }}</p>
-            <button *ngIf="error.retryable" type="button" class="solid-button mt-4" data-action="accept" [disabled]="submitting() || switchingAccount()" (click)="accept()">{{ strings.retry }}</button>
-          </div>
-          <button type="button" class="contact-button mt-4 w-full sm:w-auto" [disabled]="submitting() || switchingAccount()" (click)="changeAccount()">{{ strings.changeAccount }}</button>
-          <p *ngIf="signOutError() as error" class="field-error mt-3" role="alert">{{ error }}</p>
-        </ng-container>
-      </ng-container>
-    </ng-container>
-    <button type="button" class="contact-button mt-5 w-full sm:w-auto" [disabled]="submitting() || switchingAccount()" (click)="link.dismiss()">{{ strings.continue }}</button>
+  <section class="panel my-8 p-5 sm:my-16 sm:p-9" [attr.aria-busy]="submitting()">
+    <span class="state-icon mb-5"><pulso-icon [name]="accepted() ? 'check' : 'users-round'" [size]="26" /></span>
+    <h1 class="page-title">{{ accepted() ? strings.acceptedTitle : strings.acceptTitle }}</h1>
+    <p *ngIf="!accepted()" class="page-lead mb-6">{{ strings.acceptLead }}</p>
+    @if (accepted()) {
+      <p class="page-lead" role="status">{{ strings.accepted }}</p>
+    } @else if (!link.hasToken) {
+      <p class="status-message status-message--error" role="alert">{{ strings.invalid }}</p>
+    } @else if (!auth.session()) {
+      <pulso-auth-panel />
+    } @else {
+      <p *ngIf="auth.session()?.email as email" class="mb-4 grid gap-1 [overflow-wrap:anywhere]">
+        <span class="field-label">{{ strings.signedInAs }}</span>{{ email }}
+      </p>
+      @if (failure(); as error) {
+        <div class="status-message status-message--error mb-4" role="alert">
+          <p>{{ error.message }}</p>
+          <button *ngIf="error.retryable" type="button" class="solid-button mt-3" data-action="accept"
+                  [disabled]="submitting() || switchingAccount()" (click)="accept()">{{ strings.retry }}</button>
+        </div>
+      }
+      <div class="flex flex-wrap gap-2">
+        <button *ngIf="!failure()" type="button" class="solid-button" data-action="accept" [disabled]="submitting() || switchingAccount()" (click)="accept()">
+          {{ submitting() ? strings.accepting : strings.accept }}
+        </button>
+        <button type="button" class="contact-button" [disabled]="submitting() || switchingAccount()" (click)="changeAccount()">{{ strings.changeAccount }}</button>
+      </div>
+      <p *ngIf="signOutError() as error" class="field-error mt-3" role="alert">{{ error }}</p>
+    }
+    <footer class="mt-6 border-t border-[var(--color-border)] pt-4">
+      <button type="button" [class]="accepted() ? 'solid-button' : 'contact-button'" [disabled]="submitting() || switchingAccount()" (click)="link.dismiss()">
+        {{ strings.continue }}<pulso-icon name="arrow-right" [size]="15" />
+      </button>
+    </footer>
   </section>
 </main>

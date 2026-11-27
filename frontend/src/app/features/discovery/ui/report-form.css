@@ -1,0 +1,47 @@
+.report > summary {
+  width: fit-content;
+  max-width: 100%;
+  cursor: pointer;
+  padding-block: 0.4rem;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+.report > summary:hover {
+  color: var(--color-accent);
+}
+.report--compact > summary {
+  display: grid;
+  place-items: center;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  border-radius: var(--radius-sm);
+  padding: 0;
+  text-decoration: none;
+  color: inherit;
+  list-style: none;
+}
+.report--compact > summary:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+.report--compact > summary::-webkit-details-marker {
+  display: none;
+}
+.report__dots {
+  line-height: 1;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.report__form {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  padding: 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+}

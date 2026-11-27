@@ -1,0 +1,33 @@
+.blocked-profiles {
+  padding-inline: clamp(1.1rem, 2vw, 1.75rem);
+}
+.blocked-profiles[open] {
+  padding-bottom: 1.15rem;
+}
+.blocked-profiles summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 3.5rem;
+  list-style: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+.blocked-profiles summary::-webkit-details-marker {
+  display: none;
+}
+.blocked-profiles[open] summary pulso-icon {
+  transform: rotate(90deg);
+}
+.blocked-profile {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding-block: 0.75rem;
+  border-top: 1px solid var(--color-border);
+  overflow-wrap: anywhere;
+  font-size: 0.9rem;
+}

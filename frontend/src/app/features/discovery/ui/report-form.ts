@@ -6,8 +6,10 @@ import { reportStrings } from '../strings/report.strings'
 @Component({
   selector: 'pulso-report-form',
   templateUrl: './report-form.html',
+  styleUrl: './report-form.css',
 })
 export class ReportFormComponent {
+  readonly compact = input(false)
   readonly target = input.required<ReportTarget>()
   readonly label = input.required<string>()
 

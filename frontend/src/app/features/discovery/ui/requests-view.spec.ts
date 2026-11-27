@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http'
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing'
 import { TestBed } from '@angular/core/testing'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { currentLanguage } from '../../../core/i18n/language'
 import type { ConnectionInboxEntry, RequestInbox } from '../domain/connection'
 import { RequestsViewComponent } from './requests-view'
@@ -36,6 +36,27 @@ function setup(initialInbox: RequestInbox = 'received') {
 
 describe('RequestsViewComponent', () => {
   afterEach(() => currentLanguage.set('es'))
+
+  it('emits an inbox choice once and restores the received list when navigation changes', () => {
+    const { fixture, root, http } = setup()
+    http.expectOne(inbox + '?offset=0&limit=21').flush([])
+    fixture.detectChanges()
+    const selected = vi.fn()
+    fixture.componentInstance.inboxSelected.subscribe(selected)
+    button(root, 'Enviadas')!.click()
+    http.expectOne(base + '/sent?offset=0&limit=21').flush([])
+    expect(selected).toHaveBeenCalledExactlyOnceWith('sent')
+    fixture.componentRef.setInput('initialInbox', 'sent')
+    fixture.detectChanges()
+    http.expectNone(base + '/sent?offset=0&limit=21')
+    fixture.componentRef.setInput('initialInbox', 'received')
+    fixture.detectChanges()
+    http.expectOne(inbox + '?offset=0&limit=21').flush([intent('r1', 'person')])
+    fixture.detectChanges()
+    expect(root.textContent).toContain('Request r1')
+    expect(selected).toHaveBeenCalledTimes(1)
+    http.verify()
+  })
 
   it('blocks the API sender and reloads the inbox without declining the requests', () => {
     const { fixture, root, http } = setup()

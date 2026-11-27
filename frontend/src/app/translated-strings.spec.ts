@@ -3,6 +3,7 @@ import { authStrings } from './core/auth/strings/auth.strings'
 import { currentLanguage, supportedLanguages, type Language } from './core/i18n/language'
 import { cardStrings, feedStrings, searchStrings } from './features/discovery/strings/feed.strings'
 import { detailStrings } from './features/discovery/strings/detail.strings'
+import { membershipStrings } from './features/discovery/strings/membership.strings'
 import { navigationStrings } from './features/discovery/strings/navigation.strings'
 import {
   interestStrings,
@@ -11,7 +12,9 @@ import {
   proficiencyStrings,
 } from './features/discovery/strings/onboarding.strings'
 import { profileStrings } from './features/discovery/strings/profile.strings'
-import { projectStageStrings } from './features/discovery/strings/project.strings'
+import { invitationStrings } from './features/discovery/strings/invitation.strings'
+import { teamStrings } from './features/discovery/strings/team.strings'
+import { projectStrings, projectStageStrings } from './features/discovery/strings/project.strings'
 import { projectReviewStrings } from './features/discovery/strings/project-review.strings'
 import { recommendationStrings } from './features/discovery/strings/recommendations.strings'
 import { savedStrings } from './features/discovery/strings/saved.strings'
@@ -21,8 +24,10 @@ import { intentionOptions, proficiencyOptions, projectStageOptions as preference
 import { projectStageOptions as formStageOptions } from './features/discovery/domain/project'
 import { commonStrings } from './shared/strings/common.strings'
 import { languageStrings } from './shared/strings/language.strings'
+import { themeStrings } from './shared/strings/theme.strings'
 
 const modules: Record<string, object> = {
+  themeStrings,
   authStrings,
   cardStrings,
   commonStrings,
@@ -31,9 +36,13 @@ const modules: Record<string, object> = {
   interestStrings,
   intentionStrings,
   languageStrings,
+  membershipStrings,
   navigationStrings,
   onboardingStrings,
   profileStrings,
+  invitationStrings,
+  teamStrings,
+  projectStrings,
   projectStageStrings,
   projectReviewStrings,
   proficiencyStrings,

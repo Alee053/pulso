@@ -1,114 +1,64 @@
-<main class="page stacked-view">
+<main class="page">
   <header class="page-header">
-    <span class="eyebrow">{{ strings.eyebrow }}</span>
     <h1 class="page-title">{{ strings.title }}</h1>
     <p class="page-lead">{{ strings.lead }}</p>
   </header>
 
-  <section
-    *ngIf="(!hasLoadedSavedProjects && isLoadingSavedProjects) || (!hasLoadedInterestedProjects && isLoadingInterestedProjects)"
-    class="state-panel"
-    role="status"
-    aria-live="polite"
-  >{{ strings.loading }}</section>
-
-  <ng-container *ngIf="hasLoadedSavedProjects && hasLoadedInterestedProjects && savedCount === 0 && interestedCount === 0 && !savedProjectsErrorMessage && !interestedProjectsErrorMessage; else collections">
-    <section class="state-panel flex flex-col items-center py-12 text-center">
-      <span class="flex size-12 items-center justify-center rounded-2xl border border-slate-700 bg-slate-800 text-sky-300">
-        <pulso-icon name="bookmark" [size]="22" />
-      </span>
-      <h2 class="mt-5 text-lg font-semibold text-slate-100">{{ strings.emptyTitle }}</h2>
-      <p class="mt-2 max-w-sm text-sm leading-6 text-slate-400">{{ strings.emptyLead }}</p>
+  @if (hasLoadedSavedProjects && hasLoadedInterestedProjects && !savedCount && !interestedCount && !savedProjectsErrorMessage && !interestedProjectsErrorMessage) {
+    <section class="state-panel">
+      <span class="state-icon"><pulso-icon name="bookmark" [size]="24" /></span>
+      <h2>{{ strings.emptyTitle }}</h2>
+      <p>{{ strings.emptyLead }}</p>
+      <button type="button" class="solid-button" (click)="discoverRequested.emit()">{{ strings.discover }}</button>
     </section>
-  </ng-container>
-
-  <ng-template #collections>
-    <div class="grid items-start gap-8 xl:grid-cols-2">
-      <section aria-labelledby="saved-heading">
-        <div class="mb-4 flex items-center justify-between gap-4">
-          <h2 id="saved-heading" class="flex items-center gap-3 text-base font-semibold text-slate-100">
-            <pulso-icon name="bookmark" [size]="19" class="text-sky-300" />
-            {{ strings.savedHeading }}
-            <span class="rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-300">{{ savedCount }}</span>
-          </h2>
-        </div>
-        <section *ngIf="savedProjectsErrorMessage as error" class="state-panel" role="alert">
-          <p>{{ error }}</p>
-          <button type="button" class="contact-button mt-3" (click)="retrySavedRequested.emit()">{{ common.retry }}</button>
-        </section>
-        <ng-container *ngIf="!savedProjectsErrorMessage && hasLoadedSavedProjects">
-          <div *ngIf="savedStartups.length > 0; else noSaved" class="space-y-3">
-            <button *ngFor="let startup of savedStartups" type="button" class="collection-card group" (click)="startupSelected.emit(startup)">
-              <pulso-startup-thumb [startup]="startup" />
-              <span class="collection-card__content">
-                <span class="flex items-start justify-between gap-3">
-                  <span class="min-w-0">
-                    <span class="collection-card__title">{{ startup.name }}</span>
-                    <span class="collection-card__meta">{{ startup.city }} · {{ startup.sector }}</span>
-                  </span>
-                  <pulso-icon name="chevron-right" [size]="18" class="mt-1 shrink-0 text-slate-400" />
-                </span>
-                <span class="collection-card__pitch">{{ startup.pitch }}</span>
-                <span class="mt-3 flex flex-wrap gap-1.5">
-                  <span *ngFor="let badge of startup.badges | slice:0:2" class="mini-badge">{{ badge }}</span>
-                </span>
-              </span>
-            </button>
+  } @else {
+    @for (kind of ['saved', 'interested']; track kind) {
+      @let saved = kind === 'saved';
+      @let collection = saved ? savedStartups : interestedStartups;
+      @let loaded = saved ? hasLoadedSavedProjects : hasLoadedInterestedProjects;
+      @let loading = saved ? isLoadingSavedProjects : isLoadingInterestedProjects;
+      @let error = saved ? savedProjectsErrorMessage : interestedProjectsErrorMessage;
+      <section class="collection" [attr.aria-labelledby]="kind + '-heading'">
+        <h2 [id]="kind + '-heading'">
+          <pulso-icon [name]="saved ? 'bookmark' : 'heart'" [size]="20" />
+          {{ saved ? strings.savedHeading : strings.interestedHeading }}
+          <small>{{ saved ? savedCount : interestedCount }}</small>
+        </h2>
+        @if (error) {
+          <div class="status-message status-message--error" role="alert">
+            <p>{{ error }}</p>
+            <button type="button" class="contact-button mt-2" (click)="saved ? retrySavedRequested.emit() : retryInterestedRequested.emit()">{{ common.retry }}</button>
           </div>
-          <ng-template #noSaved><p class="state-panel text-sm">{{ strings.noneSaved }}</p></ng-template>
-          <button *ngIf="savedHasMore" type="button" class="contact-button mt-4" [disabled]="isLoadingSavedProjects" (click)="loadMoreSavedRequested.emit()">
-            {{ isLoadingSavedProjects ? strings.loading : strings.loadMore }}
-          </button>
-        </ng-container>
-        <p *ngIf="isLoadingSavedProjects && hasLoadedSavedProjects" class="field-hint mt-3" role="status">{{ strings.loading }}</p>
-      </section>
-
-      <section aria-labelledby="interested-heading">
-        <div class="mb-4 flex items-center justify-between gap-4">
-          <h2 id="interested-heading" class="flex items-center gap-3 text-base font-semibold text-slate-100">
-            <pulso-icon name="heart" [size]="19" class="text-rose-300" />
-            {{ strings.interestedHeading }}
-            <span class="rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-300">{{ interestedCount }}</span>
-          </h2>
-        </div>
-        <section *ngIf="interestedProjectsErrorMessage as error" class="state-panel" role="alert">
-          <p>{{ error }}</p>
-          <button type="button" class="contact-button mt-3" (click)="retryInterestedRequested.emit()">{{ common.retry }}</button>
-        </section>
-        <ng-container *ngIf="!interestedProjectsErrorMessage && hasLoadedInterestedProjects">
-          <div *ngIf="interestedStartups.length > 0; else noInterested" class="space-y-3">
-            <article *ngFor="let startup of interestedStartups" class="collection-card collection-card--interested group">
-              <button type="button" class="collection-card__select" (click)="startupSelected.emit(startup)">
-                <pulso-startup-thumb [startup]="startup" />
-                <span class="collection-card__content">
-                  <span class="flex items-start justify-between gap-3">
-                    <span class="min-w-0">
-                      <span class="collection-card__title">{{ startup.name }}</span>
-                      <span class="collection-card__meta">{{ startup.city }} · {{ startup.sector }}</span>
-                    </span>
-                    <pulso-icon name="chevron-right" [size]="18" class="mt-1 shrink-0 text-slate-400" />
+        }
+        @if (collection.length) {
+          <ul class="collection-grid">
+            @for (startup of collection; track startup.id) {
+              <li class="collection-card" [class.collection-card--interested]="!saved">
+                <button type="button" class="collection-card__select" (click)="startupSelected.emit(startup)">
+                  <pulso-startup-thumb [startup]="startup" />
+                  <span class="collection-card__content">
+                    <strong>{{ startup.name }}</strong>
+                    <small>{{ startup.sector }} @if (startup.city) { · {{ startup.city }} }</small>
+                    <span class="collection-card__pitch">{{ startup.pitch }}</span>
                   </span>
-                  <span class="collection-card__pitch">{{ startup.pitch }}</span>
-                  <span class="mt-3 flex flex-wrap gap-1.5">
-                    <span *ngFor="let badge of startup.badges | slice:0:2" class="mini-badge">{{ badge }}</span>
-                  </span>
-                </span>
-              </button>
-              <button type="button" class="collection-card__remove" [disabled]="isSavingInteraction"
-                      [attr.aria-label]="strings.clearInterest + ': ' + startup.name"
-                      (click)="interestCleared.emit(startup.id)">
-                <pulso-icon name="x" [size]="14" aria-hidden="true" />
-                {{ strings.clearInterest }}
-              </button>
-            </article>
-          </div>
-          <ng-template #noInterested><p class="state-panel text-sm">{{ strings.noneInterested }}</p></ng-template>
-          <button *ngIf="interestedHasMore" type="button" class="contact-button mt-4" [disabled]="isLoadingInterestedProjects" (click)="loadMoreInterestedRequested.emit()">
-            {{ isLoadingInterestedProjects ? strings.loading : strings.loadMore }}
-          </button>
-        </ng-container>
-        <p *ngIf="isLoadingInterestedProjects && hasLoadedInterestedProjects" class="field-hint mt-3" role="status">{{ strings.loading }}</p>
+                </button>
+                <button type="button" class="collection-card__remove" [disabled]="isSavingInteraction"
+                        [attr.aria-label]="(saved ? strings.removeSaved : strings.clearInterest) + ': ' + startup.name"
+                        (click)="saved ? savedRemoved.emit(startup.id) : interestCleared.emit(startup.id)">
+                  <pulso-icon name="x" [size]="14" />{{ saved ? strings.removeSaved : strings.clearInterest }}
+                </button>
+              </li>
+            }
+          </ul>
+        } @else if (loaded && !error) {
+          <p class="collection-empty">{{ saved ? strings.noneSaved : strings.noneInterested }}</p>
+        }
+        @if (loading) { <p class="field-hint" role="status">{{ strings.loading }}</p> }
+        @if (!error && (saved ? savedHasMore : interestedHasMore)) {
+          <button type="button" class="contact-button mt-3" [disabled]="loading"
+                  (click)="saved ? loadMoreSavedRequested.emit() : loadMoreInterestedRequested.emit()">{{ strings.loadMore }}</button>
+        }
       </section>
-    </div>
-  </ng-template>
+    }
+  }
 </main>

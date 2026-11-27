@@ -2,6 +2,7 @@ import { defineStrings } from '../../../core/i18n/define-strings'
 
 export const filtersStrings = defineStrings(
   {
+    compact: 'Filtros',
     toggleShow: 'Mostrar filtros',
     toggleHide: 'Ocultar filtros',
     clear: 'Limpiar búsqueda y filtros',
@@ -16,6 +17,7 @@ export const filtersStrings = defineStrings(
     openOpportunities: 'Solo con oportunidades abiertas',
   },
   {
+    compact: 'Filters',
     toggleShow: 'Show filters',
     toggleHide: 'Hide filters',
     clear: 'Clear search and filters',

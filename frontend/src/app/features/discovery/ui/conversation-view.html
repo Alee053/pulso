@@ -1,63 +1,99 @@
-<main class="discovery-view">
-  <header class="discovery-view__heading flex-wrap">
-    <h1 class="page-title">{{ strings.title }}</h1>
-    @if (otherProfileId(); as otherId) {
-      <pulso-profile-block-action [profileId]="otherId" />
-    }
-    @if (loaded()) {
-      <button type="button" class="contact-button" [disabled]="loading() || sending()"
-              (click)="loadMore()">{{ hasMore() ? strings.more : strings.refresh }}</button>
-    }
-  </header>
+<header class="thread-heading">
+  <button type="button" class="thread-control" (click)="closed.emit()" [attr.aria-label]="strings.back" [title]="strings.back">
+    <pulso-icon name="arrow-left" [size]="19" />
+  </button>
+  <div class="thread-title">
+    <h2 #heading tabindex="-1">{{ projectName() || strings.title }}</h2>
+    @if (context(); as detail) { <p>{{ detail }}</p> }
+  </div>
+  @if (loaded() && !hasMore()) {
+    <button type="button" class="thread-control" [disabled]="loading() || sending()" (click)="loadMore()"
+            [attr.aria-label]="strings.refresh" [title]="strings.refresh">
+      <pulso-icon name="rotate-ccw" [size]="17" />
+    </button>
+  }
+</header>
 
+<div #timeline class="timeline" role="region" [attr.aria-label]="strings.messageHistory" tabindex="0">
   @if (messages().length) {
-    <ol class="grid gap-3" [attr.aria-label]="strings.title">
-      @for (message of messages(); track message.id) {
-        <li class="panel p-4 [overflow-wrap:anywhere]"
-            [style.border-color]="message.senderProfileId === profileId ? 'var(--color-accent)' : null">
-          <div class="flex flex-wrap justify-between gap-x-3">
-            <span class="font-semibold">{{ message.senderProfileId === profileId ? strings.me : strings.participant }}</span>
-            <time class="field-hint" [attr.datetime]="message.createdAt">{{ message.createdAt | date:'short' }}</time>
-          </div>
-          <p class="mt-1 whitespace-pre-wrap">{{ message.status === 'DELETED' ? strings.deleted : message.body }}</p>
-          @if (message.status !== 'DELETED') {
-            <pulso-report-form [target]="{ targetMessageId: message.id }"
-                               [label]="reportStrings.message(message.senderProfileId === profileId ? strings.me : strings.participant)" />
+    <ol class="message-list" [attr.aria-label]="strings.messageHistory">
+      @for (message of messages(); track message.id; let index = $index) {
+        @if (index === historyLength() && hasMore()) {
+          <li class="history-gap">
+            <button type="button" class="contact-button" [disabled]="loading() || sending()" (click)="loadMore()">{{ strings.more }}</button>
+          </li>
+        }
+        <li class="message" [class.message--mine]="message.senderProfileId === profileId()">
+          @if (isNewDay(index)) {
+            <time class="day-divider" [attr.datetime]="message.createdAt">{{ message.createdAt | activityDate:language():'date' }}</time>
           }
+          <div class="message-line">
+            <div class="message-content">
+              <span class="message-meta">
+                <span class="speaker">{{ message.senderProfileId === profileId() ? strings.me : strings.participant }}</span>
+                <time [attr.datetime]="message.createdAt">{{ message.createdAt | activityDate:language():'time' }}</time>
+                @if (message.status === 'EDITED') { <span>{{ strings.edited }}</span> }
+              </span>
+              <p class="bubble" [class.bubble--deleted]="message.status === 'DELETED'">
+                {{ message.status === 'DELETED' ? strings.deleted : message.body }}
+              </p>
+            </div>
+            @if (message.status !== 'DELETED') {
+              <pulso-report-form [compact]="true" [target]="{ targetMessageId: message.id }"
+                                 [label]="reportStrings.message(message.senderProfileId === profileId() ? strings.me : strings.participant)" />
+            }
+          </div>
         </li>
       }
     </ol>
   } @else if (loaded()) {
-    <p class="status-message" role="status">{{ strings.empty }}</p>
+    <div class="thread-empty" role="status">
+      <pulso-icon name="message-circle" [size]="22" />
+      <p>{{ strings.empty }}</p>
+      <span>{{ strings.emptyLead }}</span>
+    </div>
   }
 
   @if (loading()) {
-    <p class="state-panel mt-3" role="status">{{ strings.waiting }}</p>
+    <p class="thread-feedback" role="status">{{ strings.waiting }}</p>
   } @else if (loadError(); as error) {
-    <div class="state-panel mt-3">
+    <div class="thread-feedback">
       <p role="alert">{{ strings[error] }}</p>
       @if (error === 'loadFailed') {
         <button type="button" class="contact-button" (click)="loadMore()">{{ common.retry }}</button>
       }
     </div>
+  } @else if (hasMore() && historyLength() === messages().length) {
+    <div class="history-gap">
+      <button type="button" class="contact-button" [disabled]="sending()" (click)="loadMore()">{{ strings.more }}</button>
+    </div>
   }
+</div>
 
-  @if (loaded()) {
-    <form class="panel mt-4 grid gap-3 p-4" (submit)="send($event, body)">
-      <label for="message-body" class="field-label">{{ strings.body }}</label>
-      <textarea #body id="message-body" class="field-input" rows="3" required
-                [value]="draft()" (input)="draft.set(body.value)"
+@if (loaded()) {
+  <form class="composer" (submit)="send($event, body)">
+    <label for="message-body" class="field-label">{{ strings.body }}</label>
+    <div class="composer-input">
+      <textarea #body id="message-body" rows="2" required [value]="draft()"
+                (input)="draft.set(body.value); sent.set(false)"
+                (keydown.control.enter)="send($event, body)" (keydown.meta.enter)="send($event, body)"
                 [readOnly]="sending() || sendUnavailable()"></textarea>
-      @if (sendError(); as error) {
-        <p class="status-message status-message--error" role="alert">{{ strings[error] }}</p>
-      }
-      @if (sent()) {
-        <p class="status-message status-message--success" role="status">{{ strings.sent }}</p>
-      }
-      <button type="submit" class="solid-button w-fit"
+      <button type="submit" class="solid-button" [title]="strings.send"
               [disabled]="!draft().trim() || loading() || sending() || sendUnavailable()">
-        {{ sending() ? strings.sending : strings.send }}
+        <span>{{ sending() ? strings.sending : strings.send }}</span><pulso-icon name="arrow-up" [size]="18" />
       </button>
-    </form>
+    </div>
+    @if (sendError(); as error) {
+      <p class="field-error" role="alert">{{ strings[error] }}</p>
+    }
+    @if (sent()) {
+      <p class="sr-only" role="status">{{ strings.sent }}</p>
+    }
+  </form>
+  @if (otherProfileId(); as otherId) {
+    <details class="thread-options">
+      <summary>{{ strings.options }}</summary>
+      <pulso-profile-block-action [profileId]="otherId" (blocked)="sendError.set('restricted')" />
+    </details>
   }
-</main>
+}

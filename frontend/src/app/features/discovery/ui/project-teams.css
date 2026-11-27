@@ -1,0 +1,97 @@
+.team-list {
+  display: grid;
+  gap: 1.25rem;
+}
+.team-project {
+  min-width: 0;
+  padding: clamp(1.1rem, 3vw, 1.8rem);
+  overflow-wrap: anywhere;
+}
+.team-project__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.85rem;
+}
+.team-project__header h2 {
+  font-size: clamp(1.4rem, 3vw, 1.85rem);
+  font-weight: 680;
+  line-height: 1.18;
+}
+.team-project__mark {
+  display: grid;
+  width: 2.9rem;
+  aspect-ratio: 1;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent-surface);
+  color: var(--color-accent);
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 650;
+}
+.team-project__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  margin-block: 1rem;
+}
+.team-project__summary > p,
+.team-project__summary > .status-message {
+  width: 100%;
+}
+.team-project__summary > p {
+  max-width: 65ch;
+  color: var(--color-muted);
+}
+.team-project__role,
+.team-project__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.875rem;
+}
+.team-project__role {
+  color: var(--color-muted);
+}
+.team-project__link {
+  min-height: 2rem;
+  color: var(--color-accent);
+  font-weight: 650;
+}
+.team-project__link:hover {
+  text-decoration: underline;
+}
+.team-task {
+  border-top: 1px solid var(--color-border);
+}
+.team-task > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 3.25rem;
+  padding-block: 0.6rem;
+  cursor: pointer;
+  font-weight: 650;
+  list-style: none;
+}
+.team-task > summary::-webkit-details-marker {
+  display: none;
+}
+.team-task > summary > pulso-icon {
+  color: var(--color-accent);
+}
+.team-task > summary:hover {
+  color: var(--color-accent);
+}
+.team-task__chevron {
+  margin-left: auto;
+}
+.team-task[open] > summary .team-task__chevron {
+  transform: rotate(90deg);
+}
+.team-task__body {
+  padding-bottom: 1.25rem;
+}

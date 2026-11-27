@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common'
 import { HttpErrorResponse } from '@angular/common/http'
 import { Component, inject, input, signal } from '@angular/core'
 import { firstValueFrom } from 'rxjs'
+import { invitationStrings } from '../strings/invitation.strings'
 import { ProjectsApi } from '../data-access/projects-api'
 
 @Component({
@@ -11,6 +12,7 @@ import { ProjectsApi } from '../data-access/projects-api'
   templateUrl: './member-invitation-accept.html',
 })
 export class MemberInvitationAcceptComponent {
+  readonly strings = invitationStrings
   readonly token = input.required<string>()
   readonly busy = signal(false)
   readonly error = signal('')
@@ -26,11 +28,10 @@ export class MemberInvitationAcceptComponent {
       history.replaceState(null, '', location.pathname + location.search)
     } catch (e) {
       this.error.set(e instanceof HttpErrorResponse
-        ? ({ 400:'Invitación inválida.', 401:'Inicia sesión.',
-             404:'La invitación no está disponible para esta cuenta.',
-             409:'Ya perteneces al proyecto.' } as Record<number,string>)[e.status]
-            ?? 'No se pudo aceptar la invitación.'
-        : 'No se pudo aceptar la invitación.')
+        ? ({ 400: this.strings.invalid, 401: this.strings.sessionExpired,
+             404: this.strings.unavailable, 409: this.strings.unavailable } as Record<number,string>)[e.status]
+            ?? this.strings.acceptFailed
+        : this.strings.acceptFailed)
     } finally { this.busy.set(false) }
   }
 }

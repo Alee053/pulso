@@ -1,24 +1,29 @@
-import { DatePipe } from '@angular/common'
-import { Component, DestroyRef, Input, OnChanges, inject, signal } from '@angular/core'
+import { Component, DestroyRef, Input, OnChanges, OnInit, inject, output, signal, type SimpleChanges } from '@angular/core'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 import { map, type Observable, type Subscription } from 'rxjs'
+import { currentLanguage } from '../../../core/i18n/language'
+import { IconComponent } from '../../../shared/icon/icon'
 import { commonStrings } from '../../../shared/strings/common.strings'
 import { ConnectionIntentsApi } from '../data-access/connection-intents-api'
 import { conversationHref, type ConnectionInboxEntry, type RequestInbox } from '../domain/connection'
 import { profileBlockStrings } from '../strings/profile-block.strings'
 import { requestsStrings } from '../strings/requests.strings'
+import { ActivityDatePipe } from './activity-date'
 import { ProfileBlockActionComponent } from './profile-block-action'
 
 type RequestAction = 'accept' | 'decline' | 'withdraw'
 
 @Component({
   selector: 'pulso-requests-view',
-  imports: [DatePipe, ProfileBlockActionComponent],
+  imports: [ActivityDatePipe, IconComponent, ProfileBlockActionComponent],
   templateUrl: './requests-view.html',
+  styleUrl: './activity-list.css',
 })
-export class RequestsViewComponent implements OnChanges {
+export class RequestsViewComponent implements OnChanges, OnInit {
   @Input() initialInbox: RequestInbox = 'received'
+  readonly inboxSelected = output<RequestInbox>()
 
+  protected readonly language = currentLanguage
   protected readonly strings = requestsStrings
   protected readonly blockStrings = profileBlockStrings
   protected readonly common = commonStrings
@@ -35,13 +40,26 @@ export class RequestsViewComponent implements OnChanges {
   private readonly api = inject(ConnectionIntentsApi)
   private readonly destroyRef = inject(DestroyRef)
   private pageRequest?: Subscription
+  private responseRequest?: Subscription
 
-  ngOnChanges(): void {
-    this.switchInbox(this.initialInbox)
+  ngOnInit(): void {
+    this.showInbox(this.initialInbox)
   }
 
-  protected switchInbox(inbox: RequestInbox): void {
-    if (this.inbox() !== inbox) this.blocked.set(false)
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['initialInbox'] && !changes['initialInbox'].firstChange && this.initialInbox !== this.inbox()) this.showInbox(this.initialInbox)
+  }
+
+  protected selectInbox(inbox: RequestInbox): void {
+    if (this.inbox() === inbox || this.responding()) return
+    this.showInbox(inbox)
+    this.inboxSelected.emit(inbox)
+  }
+
+  private showInbox(inbox: RequestInbox): void {
+    this.responseRequest?.unsubscribe()
+    this.responding.set(null)
+    this.blocked.set(false)
     this.inbox.set(inbox)
     this.loadRequests()
   }
@@ -70,7 +88,7 @@ export class RequestsViewComponent implements OnChanges {
     const id = entry.request.id
     this.responding.set(id)
     this.responseFailed.set(false)
-    this.responseFor(entry, action).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.responseRequest = this.responseFor(entry, action).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (updated) => {
         heading.focus()
         this.entries.update((entries) => entries.map((item) => item.request.id === id ? updated : item))

@@ -5,6 +5,7 @@
   "outputDirectory": "frontend/dist/pulso-frontend/browser",
   "rewrites": [
     { "source": "/proyectos/:reference", "destination": "/index.html" },
+    { "source": "/conversaciones", "destination": "/index.html" },
     { "source": "/conversaciones/:conversationId", "destination": "/index.html" },
     { "source": "/solicitudes/:inbox", "destination": "/index.html" }
   ]

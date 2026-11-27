@@ -1,4 +1,4 @@
-<form *ngIf="canInvite" class="mt-5 border-t border-[var(--color-border)] pt-5" (submit)="$event.preventDefault(); submit()" novalidate [attr.aria-busy]="submitting()">
+<form *ngIf="canInvite" class="mt-5 rounded-[var(--radius-md)] bg-[var(--color-surface-raised)] p-4 sm:p-5" (submit)="$event.preventDefault(); submit()" novalidate [attr.aria-busy]="submitting()">
   <h3 class="text-base font-semibold">{{ strings.inviteTitle }}</h3>
   <fieldset [disabled]="submitting()" class="mt-4">
     <label [for]="'invite-email-' + project.projectId" class="field-label">{{ strings.emailLabel }}</label>
@@ -13,5 +13,5 @@
     <p>{{ error.message }}</p>
     <button *ngIf="error.retryable" type="button" class="contact-button mt-3" (click)="submit()" [disabled]="submitting()">{{ strings.retry }}</button>
   </div>
-  <p *ngIf="registered()" class="status-message mt-4" role="status">{{ strings.invited }}</p>
+  <p *ngIf="registered()" class="status-message status-message--success mt-4" role="status">{{ strings.invited }}</p>
 </form>

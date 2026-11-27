@@ -206,7 +206,7 @@ async function verifyContact(browser, fixture) {
 
   await signIn(browser, testEmail, testPassword)
   await browser.send('Emulation.setDeviceMetricsOverride', { width: 320, height: 568, deviceScaleFactor: 1, mobile: true })
-  await clickButton(browser, 'Avisos', 'las notificaciones en móvil')
+  await clickButton(browser, 'Notificaciones', 'las notificaciones en móvil')
   await waitForText(browser, 'Aceptaron tu solicitud de conexión', 'el aviso de aceptación')
   await waitForText(browser, 'Rechazaron tu solicitud de conexión', 'el aviso de rechazo')
   await waitFor(browser, "document.querySelector('pulso-notifications-view header button')?.getBoundingClientRect().right <= innerWidth",
@@ -223,6 +223,10 @@ async function verifyContact(browser, fixture) {
   await pressKey(browser, 'Enter')
   await waitForText(browser, 'Mensaje enviado.', 'la confirmación de envío desde móvil')
   await waitForText(browser, chatMessage, 'el mensaje en el historial del remitente')
+  await clickButton(browser, 'Mensajes', 'la bandeja accesible desde la barra móvil')
+  await waitFor(browser, "location.pathname === '/conversaciones'", 'la ruta de Mensajes')
+  await clickLink(browser, conversation)
+  await waitForText(browser, chatMessage, 'la reapertura del hilo desde la bandeja')
   await waitFor(browser, 'innerWidth === 320 && document.documentElement.scrollWidth === 320', 'la conversación sin desbordamiento en móvil')
 
   await browser.navigate(detailUrl)
@@ -235,10 +239,10 @@ async function verifyContact(browser, fixture) {
   await signOut(browser)
 
   await signIn(browser, ownerEmail, ownerPassword)
-  await clickButton(browser, 'Avisos', 'las notificaciones del destinatario')
+  await clickButton(browser, 'Notificaciones', 'las notificaciones del destinatario')
   await clickLink(browser, conversation)
   await waitForText(browser, chatMessage, 'el mensaje que leyó el destinatario')
-  await clickButton(browser, 'Avisos', 'el regreso a las notificaciones')
+  await clickButton(browser, 'Notificaciones', 'el regreso a las notificaciones')
   const notice = `[...document.querySelectorAll('pulso-notifications-view li')]
     .find(row => row.querySelector('a')?.getAttribute('href') === ${JSON.stringify(conversation)}
       && row.querySelector('h2')?.textContent.trim() === 'Nuevo mensaje')`
@@ -246,7 +250,7 @@ async function verifyContact(browser, fixture) {
   await browser.evaluate(`(${notice}).querySelector('button').click()`)
   await waitFor(browser, `(${notice})?.querySelector('.mini-badge')?.textContent.trim() === 'Leída'`, 'el aviso leído')
   await browser.reload()
-  await clickButton(browser, 'Avisos', 'las notificaciones tras recargar')
+  await clickButton(browser, 'Notificaciones', 'las notificaciones tras recargar')
   await waitFor(browser, `(${notice})?.querySelector('.mini-badge')?.textContent.trim() === 'Leída'`, 'la lectura persistida')
   console.log('Interfaz verificada con dos cuentas en 1280×900 y 320×568: filtros, coincidencia, interés, duplicados, aceptación, rechazo, retiro, conversación y lectura persistidos.')
 }
@@ -270,6 +274,9 @@ async function requestConnection(browser, context, message) {
 }
 
 async function signOut(browser) {
+  if (await browser.evaluate("document.querySelector('[popovertarget=mobile-destinations]')?.getClientRects().length > 0")) {
+    await clickButton(browser, 'Más', 'los otros destinos móviles')
+  }
   await clickButton(browser, 'Perfil', 'la navegación a Perfil')
   await clickButton(browser, 'Cerrar sesión', 'el cierre de sesión')
   await waitForText(browser, 'Conecta con las ideas que mueven Bolivia.', 'la página de acceso tras cerrar sesión')
@@ -330,22 +337,15 @@ async function clickRowButton(browser, component, content, label) {
 }
 
 async function clickButton(browserSession, label, description) {
-  await waitFor(
-    browserSession,
-    `[...document.querySelectorAll('button')].some((button) =>
-      !button.disabled && button.getClientRects().length > 0
-      && button.textContent?.replace(/\\s+/g, ' ').includes(${JSON.stringify(label)}))`,
-    description,
-  )
-  await browserSession.evaluate(`
-  (() => {
-    const buttons = [...document.querySelectorAll('button')].filter((button) => !button.disabled && button.getClientRects().length > 0)
-    const normalized = (button) => button.textContent?.replace(/\\s+/g, ' ').trim() ?? ''
-    const target = buttons.find((button) => normalized(button) === ${JSON.stringify(label)})
-      ?? buttons.find((button) => normalized(button).includes(${JSON.stringify(label)}))
-    target?.click()
-  })()
-  `)
+  const target = `(() => {
+    const root = document.querySelector('[role="dialog"]') ?? document
+    const visible = [...root.querySelectorAll('button')].filter(button => !button.disabled && button.getClientRects().length > 0)
+    const names = button => [button.getAttribute('aria-label'), button.textContent].map(name => name?.replace(/\\s+/g, ' ').trim() ?? '')
+    return visible.find(button => names(button).includes(${JSON.stringify(label)}))
+      ?? visible.find(button => names(button).some(name => name.includes(${JSON.stringify(label)})))
+  })()`
+  await waitFor(browserSession, `Boolean(${target})`, description)
+  await browserSession.evaluate(`(${target}).click()`)
 }
 
 async function waitForButton(browserSession, label, description) {

@@ -428,7 +428,6 @@ export class PulsoSession {
         this.preferencesSaveErrorMessage.set(null)
         this.preferenceValidationMessage.set(null)
         this.isEditingPreferences.set(false)
-        this.activeView.set('profile')
     }
 
     private canEditPreferences(): boolean {
@@ -579,7 +578,7 @@ export class PulsoSession {
             this.isEditingPreferences.set(false)
             this.showPreferencesSavedMessage()
             this.hasStarted.set(true)
-            this.activeView.set(editing ? 'profile' : 'discover')
+            if (!editing) this.activeView.set('discover')
             this.feedNextCursor = null
             await this.loadCatalog()
         } catch {

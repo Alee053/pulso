@@ -1,148 +1,124 @@
-<main class="page stacked-view">
-  <header class="page-header">
-    <span class="eyebrow">{{ strings.eyebrow }}</span>
-    <h1 class="page-title">{{ strings.title }}</h1>
-    <p class="page-lead">{{ strings.lead }}</p>
+<main class="page profile-page">
+  <header class="page-header flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <h1 class="page-title">{{ administrationOpen() ? strings.administration : strings.title }}</h1>
+      <p class="page-lead">{{ administrationOpen() ? (profile()?.profile?.platformRole === 'ADMIN' ? strings.adminLead : strings.moderationLead) : strings.lead }}</p>
+    </div>
+    <button type="button" class="contact-button" [disabled]="isSaving() || signingOut()" (click)="signOut()">
+      {{ common.signOut }}
+    </button>
   </header>
+  @if (signOutFailed()) {
+    <p class="status-message status-message--error mb-4" role="alert">{{ common.sessionCloseFailed }}</p>
+  }
 
-  <ng-container *ngIf="isLoading(); else loadedProfile">
-    <section class="state-panel" role="status" aria-live="polite">
-      <p>{{ strings.loading }}</p>
+  @if (isLoading()) {
+    <section class="state-panel" role="status">
+      <span class="spinner" aria-hidden="true"></span><p>{{ strings.loading }}</p>
     </section>
-  </ng-container>
-
-  <ng-template #loadedProfile>
-    <section *ngIf="errorMessage() as error; else profileContent" class="state-panel" role="alert">
+  } @else if (errorMessage(); as error) {
+    <section class="state-panel" role="alert">
       <p>{{ error }}</p>
-      <button type="button" class="contact-button mt-5" (click)="loadProfile()">{{ common.retry }}</button>
+      <button type="button" class="contact-button" (click)="loadProfile()">{{ common.retry }}</button>
     </section>
-  </ng-template>
-
-  <ng-template #profileContent>
-    <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-      <section class="panel p-5 sm:p-8" aria-labelledby="profile-form-title">
-        <div class="flex flex-wrap items-center justify-between gap-4">
-          <div class="flex min-w-0 items-center gap-4">
-            <span class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-sky-200 text-lg font-semibold text-slate-950" aria-hidden="true">
-              {{ avatarInitial }}
-            </span>
-            <div class="min-w-0">
-              <h2 id="profile-form-title" class="text-lg font-semibold text-slate-100">{{ strings.formTitle }}</h2>
-              <p class="mt-1 break-all text-sm text-slate-400">{{ auth.session()?.email || profile()?.email }}</p>
-            </div>
-          </div>
-          <button type="button" class="contact-button" [disabled]="isSaving()" (click)="signOut()">
-            {{ common.signOut }}
-          </button>
-        </div>
-        <p class="mt-5 text-sm leading-6 text-slate-400">{{ strings.formHint }}</p>
-
-        <form class="mt-7 flex flex-col gap-5" (submit)="saveProfile($event)" [attr.aria-busy]="isSaving()">
-          <div>
-            <label for="profile-display-name" class="field-label">{{ strings.displayName }}</label>
-            <input
-              id="profile-display-name"
-              class="field-input mt-2"
-              type="text"
-              name="displayName"
-              autocomplete="name"
-              [attr.maxlength]="profileContract.displayNameMaxLength"
-              [value]="displayName"
-              (input)="displayName = $any($event.target).value"
-              required
-              [attr.aria-invalid]="validationMessage() && !displayName.trim() ? 'true' : null"
-              [attr.aria-describedby]="validationMessage() ? 'profile-validation' : null"
-            />
-            <p id="profile-validation" *ngIf="validationMessage() as validation" class="field-error mt-2" role="alert">
-              {{ validation }}
+  } @else if (profile(); as account) {
+    @if (hasAdministration()) {
+      <nav class="profile-sections" [attr.aria-label]="strings.sections">
+        <button type="button" aria-controls="profile-settings" [attr.aria-current]="administrationOpen() ? null : 'page'"
+                (click)="selectSection('profile')"><pulso-icon name="user-round" [size]="16" />{{ strings.account }}</button>
+        <button type="button" aria-controls="profile-admin-tools" [attr.aria-current]="administrationOpen() ? 'page' : null"
+                (click)="selectSection('administration')"><pulso-icon name="settings" [size]="16" />{{ strings.adminSection }}</button>
+      </nav>
+    }
+    <div class="profile-layout" id="profile-settings" [hidden]="administrationOpen()">
+      <aside class="profile-sidebar">
+        <section class="profile-identity" aria-labelledby="account-name">
+          <span class="profile-avatar" aria-hidden="true">{{ avatarInitial }}</span>
+          <h2 id="account-name">{{ account.profile.displayName || strings.account }}</h2>
+          @if (account.profile.city || account.profile.department) {
+            <p class="profile-place">
+              <pulso-icon name="map-pin" [size]="16" />
+              <span>{{ account.profile.city || account.profile.department }}</span>
             </p>
-          </div>
-
-          <div>
-            <label for="profile-short-bio" class="field-label">{{ strings.shortBio }}</label>
-            <textarea
-              id="profile-short-bio"
-              class="field-input mt-2 min-h-28 resize-y"
-              name="shortBio"
-              rows="4"
-              [attr.maxlength]="profileContract.shortBioMaxLength"
-              [placeholder]="strings.shortBioPlaceholder"
-              [value]="shortBio"
-              (input)="shortBio = $any($event.target).value"
-            ></textarea>
-          </div>
-
-          <div class="grid gap-5 sm:grid-cols-2">
-            <div>
-              <label for="profile-city" class="field-label">{{ strings.city }}</label>
-              <input
-                id="profile-city"
-                class="field-input mt-2"
-                type="text"
-                name="city"
-                autocomplete="address-level2"
-                [attr.maxlength]="profileContract.cityMaxLength"
-                [placeholder]="strings.cityPlaceholder"
-                [value]="city"
-                (input)="city = $any($event.target).value"
-              />
-            </div>
-            <div>
-              <label for="profile-department" class="field-label">{{ strings.department }}</label>
-              <input
-                id="profile-department"
-                class="field-input mt-2"
-                type="text"
-                name="department"
-                autocomplete="address-level1"
-                [attr.maxlength]="profileContract.departmentMaxLength"
-                [placeholder]="strings.departmentPlaceholder"
-                [value]="department"
-                (input)="department = $any($event.target).value"
-              />
-            </div>
-          </div>
-
-          <p *ngIf="feedbackMessage() as feedback" class="status-message" [class.status-message--error]="feedback !== strings.saved" [attr.role]="feedback === strings.saved ? 'status' : 'alert'">
-            {{ feedback }}
-          </p>
-          <div class="flex justify-end border-t border-slate-700/60 pt-5">
-            <button type="submit" class="solid-button w-full sm:w-auto" [disabled]="isSaving()">
-              {{ isSaving() ? strings.saving : strings.save }}
-            </button>
-          </div>
-        </form>
-      </section>
-
-      <aside class="flex flex-col gap-6">
-        <section class="panel p-5 sm:p-6" aria-labelledby="profile-interests-title">
-          <div class="flex items-center justify-between gap-4">
-            <div>
-              <h2 id="profile-interests-title" class="text-base font-semibold text-slate-100">{{ strings.selection }}</h2>
-              <p class="mt-1 text-sm text-slate-400">{{ strings.activeInterests(selectedOptions.length) }}</p>
-            </div>
-            <pulso-icon name="sparkles" [size]="20" class="text-sky-300" />
-          </div>
-          <div class="mt-5 flex flex-wrap gap-2">
-            <span *ngFor="let interest of selectedOptions" class="interest-pill">
-              {{ interest.label }}
-            </span>
-            <p *ngIf="selectedOptions.length === 0" class="text-sm leading-6 text-slate-400">{{ strings.noInterests }}</p>
-          </div>
-          <div class="mt-3 flex flex-wrap gap-2">
-            <span *ngFor="let tag of selectedTags" class="interest-pill">{{ tag.name }}</span>
-          </div>
-          <button type="button" class="contact-button mt-5" [disabled]="isSaving() || preferencesBusy" (click)="preferencesEditRequested.emit()">{{ strings.editPreferences }}</button>
+          }
+          <p class="profile-email">{{ auth.session()?.email || account.email }}</p>
         </section>
-        <section class="panel p-5 sm:p-6">
-          <span class="eyebrow">{{ strings.noteEyebrow }}</span>
-          <h2 class="mt-3 text-xl font-semibold leading-snug text-slate-100">{{ strings.noteTitle }}</h2>
-          <p class="mt-3 text-sm leading-6 text-slate-400">{{ strings.noteLead }}</p>
+
+        <section class="panel profile-selection" aria-labelledby="profile-interests-title">
+          <h2 id="profile-interests-title">{{ strings.selection }}</h2>
+          @if (selectedOptions.length || selectedTags.length) {
+            <ul class="mt-4 flex flex-wrap gap-2">
+              @for (intention of selectedOptions; track intention.id) {
+                <li class="interest-pill">{{ intention.label }}</li>
+              }
+              @for (tag of selectedTags; track tag.id) { <li class="interest-pill">{{ tag.name }}</li> }
+            </ul>
+          } @else {
+            <p class="field-hint">{{ strings.noInterests }}</p>
+          }
+          <button type="button" class="contact-button mt-4" [disabled]="isSaving() || preferencesBusy || signingOut()"
+                  (click)="preferencesEditRequested.emit()">{{ strings.editPreferences }} <pulso-icon name="arrow-right" [size]="15" /></button>
         </section>
         <pulso-profile-blocks />
-        <pulso-feature-flag-settings *ngIf="profile()?.profile?.platformRole === 'ADMIN'" />
       </aside>
+
+      <section class="panel profile-form" aria-labelledby="profile-form-title">
+        <h2 id="profile-form-title">{{ strings.formTitle }}</h2>
+        <p class="field-hint">{{ strings.formHint }}</p>
+        <form class="mt-6" (submit)="saveProfile($event)" [attr.aria-busy]="isSaving()">
+          <fieldset class="grid min-w-0 gap-5" aria-labelledby="profile-form-title" [disabled]="isSaving() || signingOut()">
+            <div>
+              <label for="profile-display-name" class="field-label">{{ strings.displayName }}</label>
+              <input id="profile-display-name" class="field-input" type="text" name="displayName" autocomplete="name" required
+                     [attr.maxlength]="profileContract.displayNameMaxLength" [value]="displayName"
+                     (input)="displayName = $any($event.target).value"
+                     [attr.aria-invalid]="validationMessage() && !displayName.trim() ? 'true' : null"
+                     [attr.aria-describedby]="validationMessage() ? 'profile-validation' : null" />
+              @if (validationMessage(); as validation) {
+                <p id="profile-validation" class="field-error" role="alert">{{ validation }}</p>
+              }
+            </div>
+            <div>
+              <label for="profile-short-bio" class="field-label">{{ strings.shortBio }}</label>
+              <textarea id="profile-short-bio" class="field-input" name="shortBio" rows="4"
+                        [attr.maxlength]="profileContract.shortBioMaxLength" [placeholder]="strings.shortBioPlaceholder"
+                        [value]="shortBio" (input)="shortBio = $any($event.target).value"></textarea>
+            </div>
+            <div class="grid gap-5 sm:grid-cols-2">
+              <div>
+                <label for="profile-city" class="field-label">{{ strings.city }}</label>
+                <input id="profile-city" class="field-input" type="text" name="city" autocomplete="address-level2"
+                       [attr.maxlength]="profileContract.cityMaxLength" [placeholder]="strings.cityPlaceholder"
+                       [value]="city" (input)="city = $any($event.target).value" />
+              </div>
+              <div>
+                <label for="profile-department" class="field-label">{{ strings.department }}</label>
+                <input id="profile-department" class="field-input" type="text" name="department" autocomplete="address-level1"
+                       [attr.maxlength]="profileContract.departmentMaxLength" [placeholder]="strings.departmentPlaceholder"
+                       [value]="department" (input)="department = $any($event.target).value" />
+              </div>
+            </div>
+
+            @if (feedbackMessage(); as feedback) {
+              <p class="status-message" [class.status-message--error]="feedbackStatus() === 'saveFailed'"
+                 [class.status-message--success]="feedbackStatus() === 'saved'"
+                 [attr.role]="feedbackStatus() === 'saved' ? 'status' : 'alert'">{{ feedback }}</p>
+            }
+            <div class="profile-form__actions">
+              <button type="submit" class="solid-button" [disabled]="isSaving() || signingOut()">{{ isSaving() ? strings.saving : strings.save }}</button>
+            </div>
+          </fieldset>
+        </form>
+      </section>
     </div>
-    <pulso-project-reviews *ngIf="profile()?.profile?.accountStatus === 'ACTIVE' && (profile()?.profile?.platformRole === 'MODERATOR' || profile()?.profile?.platformRole === 'ADMIN')" />
-  </ng-template>
+
+    @if (hasAdministration()) {
+      <div class="profile-administration" id="profile-admin-tools" [hidden]="!administrationOpen()">
+        @if (administrationVisited()) {
+          @if (account.profile.platformRole === 'ADMIN') { <pulso-feature-flag-settings /> }
+          @if (canReview()) { <pulso-project-reviews /> }
+        }
+      </div>
+    }
+  }
 </main>

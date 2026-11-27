@@ -84,4 +84,30 @@ describe('ConversationViewComponent', () => {
     expect(root.querySelector('pulso-profile-block-action')).not.toBeNull()
     http.verify()
   })
+
+  it('shows a confirmed send immediately across a gap and reconciles it when more history arrives', () => {
+    const { fixture, root, http } = setup()
+    const earlier = message({ id: 'earlier', body: 'Primero' })
+    const between = message({ id: 'between', body: 'Segundo' })
+    const delivered = message({ id: 'delivered', body: 'Recibido', senderProfileId: currentProfileId })
+    http.expectOne(messagesUrl + '?offset=0').flush({ data: [earlier], meta: { offset: 0, limit: 1, hasMore: true } })
+    fixture.detectChanges()
+    const field = root.querySelector<HTMLTextAreaElement>('#message-body')!
+    field.value = 'Recibido'
+    field.dispatchEvent(new Event('input'))
+    field.closest('form')!.dispatchEvent(new Event('submit', { cancelable: true }))
+    http.expectOne({ method: 'POST', url: messagesUrl }).flush(delivered)
+    fixture.detectChanges()
+    expect(root.querySelector('.message--mine .bubble')?.textContent?.trim()).toBe('Recibido')
+    root.querySelector<HTMLButtonElement>('.history-gap button')!.click()
+    http.expectOne(messagesUrl + '?offset=1').flush({
+      data: [between, delivered], meta: { offset: 1, limit: 2, hasMore: false },
+    })
+    fixture.detectChanges()
+    expect([...root.querySelectorAll('.bubble')].map(bubble => bubble.textContent?.trim()))
+      .toEqual(['Primero', 'Segundo', 'Recibido'])
+    expect(root.querySelector('.history-gap')).toBeNull()
+    http.verify()
+  })
+
 })
